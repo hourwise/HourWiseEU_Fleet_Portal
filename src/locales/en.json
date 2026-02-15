@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Smart Fleet Management Made Simple"
+  },
+  "navigation": {
+    "home": "Home",
+    "howTo": "How To",
+    "privacy": "Privacy Policy",
+    "signIn": "Sign In",
+    "getStarted": "Get Started"
+  },
+  "auth": {
+    "login": "Log In",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "createAccount": "Create Account"
+  },
+  "dashboard": {
+    "driver": {
+      "title": "Driver Dashboard",
+      "submitHours": "Submit Daily Hours",
+      "weeklyTotal": "Weekly Total",
+      "fortnightlyTotal": "Fortnightly Total"
+    },
+    "manager": {
+      "title": "Fleet Manager Dashboard",
+      "drivers": "Drivers",
+      "compliance": "Compliance",
+      "infractions": "Infractions",
+      "audit": "Audit Trail"
+    }
+  }
+}
