@@ -139,7 +139,7 @@ function AppContent() {
   const isAuth = useMemo(() => AUTH_ROUTES.includes(currentPath), [currentPath]);
   const isProtected = useMemo(() => PROTECTED_ROUTES.includes(currentPath), [currentPath]);
 
-  const DEBUG = true; // set false to hide
+  const DEBUG = false; // set false to hide
 
   const debugOverlay = !DEBUG ? null : (
     <div className="fixed bottom-3 left-3 z-50 text-xs bg-black/70 text-white px-3 py-2 rounded-lg">

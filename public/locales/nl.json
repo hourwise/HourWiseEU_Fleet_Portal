@@ -1,0 +1,705 @@
+{
+  "locale": "nl-NL",
+  "common": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "delete": "Verwijderen",
+    "error": "Fout",
+    "success": "Succes",
+    "date": "Datum",
+    "startTime": "Starttijd",
+    "endTime": "Eindtijd",
+    "minutes": "minuten",
+    "saving": "Opslaan...",
+    "failedToSave": "Gegevens opslaan mislukt.",
+    "gotIt": "Begrepen!"
+  },
+  "app": {
+    "title": "HourWise EU",
+    "subtitle": "EU Arbeidstijden Tracker"
+  },
+  "dashboard": {
+    "previousShiftEnd": "Einde vorige dienst",
+    "currentShiftStart": "Start huidige dienst",
+    "newShiftStarted": "Dienst gestart",
+    "dailyRest": "Dagelijkse rust",
+    "workTimeRemaining": "Resterende werktijd",
+    "drivingTimeRemaining": "Resterende rijtijd",
+    "breakDuration": "Pauzeduur",
+    "startShift": "Start Dienst",
+    "endShift": "Einde Dienst",
+    "startBreak": "Start Pauze",
+    "endBreak": "Einde Pauze",
+    "poaButtonText": "BESCHIKBAARHEIDSTIJD",
+    "resumeWork": "Hervat Werk",
+    "currentStatusLabel": "Huidige status:",
+    "timerModeLabel": "Timer modus:",
+    "shiftDurationLabel": "Dienstduur:",
+    "targetLabel": "Doel"
+  },
+  "shiftSummary": {
+    "title": "Huidige Dienst",
+    "totalWork": "Totaal Werk",
+    "totalDriving": "Totaal Rijden",
+    "totalBreaks": "Totaal Pauzes",
+    "totalPOA": "Totaal Beschikbaar"
+  },
+  "menu": {
+    "instructions": "Instructies",
+    "privacyInfo": "Privacy Info",
+    "euWorkingTimeRules": "EU Regels",
+    "tachoGuide": "Tacho Gids",
+    "compliance": "Naleving",
+    "workHistory": "Werkgeschiedenis",
+    "downloadReport": "Rapport downloaden"
+  },
+  "workHistory": {
+    "title": "Werkgeschiedenis",
+    "daySummary": "Dagoverzicht",
+    "recordedShifts": "Geregistreerde diensten",
+    "totalWork": "Totaal Werk",
+    "totalBreaks": "Totaal Pauzes",
+    "totalPOA": "Totaal Beschikbaar",
+    "estimatedEarnings": "Geschatte inkomsten",
+    "ongoing": "Lopend",
+    "workTime": "Werktijd",
+    "noShifts": "Geen diensten geregistreerd voor deze datum.",
+    "noShiftsRecordedForDate": "Geen diensten geregistreerd voor deze datum.",
+    "addShift": "Dienst toevoegen",
+    "editShift": "Dienst bewerken",
+    "updateShift": "Dienst bijwerken",
+    "totalBreakTime": "Totale pauzetijd",
+    "totalPOATime": "Totale beschikbaarheidstijd",
+    "noShiftsTitle": "Rustdag"
+  },
+  "calendar": {
+    "dayDetailsTitle": "Dagdetails",
+    "timeSummaryTitle": "Tijdoverzicht",
+    "paySummaryTitle": "Betalingsoverzicht",
+    "period": "Periode",
+    "worked": "Gewerkt",
+    "breaks": "Pauzes",
+    "violations": "Overtredingen",
+    "estimatedPay": "Geschat loon",
+    "lastCompletedWeek": "Vorige week",
+    "currentWeek": "Deze week",
+    "monthToDate": "Deze maand",
+    "selectedMonthSummary": "Geselecteerde maand",
+    "lastWeekOfSelectedMonth": "Laatste week van de maand"
+  },
+  "fatigue": {
+    "title": "Vermoeidheid & Focus",
+    "fullyAlert": "Volledig alert",
+    "freshAndFocused": "Fris & gefocust",
+    "mild": "Lichte vermoeidheid",
+    "moderate": "Gemiddelde vermoeidheid",
+    "high": "Hoge vermoeidheid",
+    "critical": "Kritieke vermoeidheid",
+    "approaching13h": "Bereikt bijna 13u amplitude. Plan nu rust.",
+    "over10h": "Meer dan 10 uur gewerkt vandaag.",
+    "need45minBreak": "45 min pauze verplicht bij diensten > 9u.",
+    "need30minBreak": "30 min pauze verplicht bij diensten > 6u.",
+    "drivingExceeded10h": "Meer dan 10 uur rijtijd vandaag.",
+    "drivingOver9h": "Meer dan 9 uur rijtijd (verlenging gebruikt).",
+    "dailyRestBelow9h": "Dagelijkse rust onder het wettelijk minimum van 9u.",
+    "reducedDailyRest": "Verkorte dagelijkse rust genomen (< 11u)."
+  },
+  "complianceScorecard": {
+    "title": "Dagelijkse Naleving",
+    "outOf100": "van 100",
+    "violationsRecorded": "Overtredingen geregistreerd:",
+    "greatJob": "Goed gedaan!",
+    "noViolations": "Geen overtredingen geregistreerd voor deze dag."
+  },
+  "dailyReport": {
+    "title": "Rapport van gisteren",
+    "violationsFound": "Overtredingen gevonden",
+    "greatJob": "Goed gedaan!",
+    "noViolations": "Geen overtredingen geregistreerd voor de dienst van gisteren."
+  },
+  "day": {
+    "mon": "Ma",
+    "tue": "Di",
+    "wed": "Wo",
+    "thu": "Do",
+    "fri": "Vr",
+    "sat": "Za",
+    "sun": "Zo"
+  },
+  "safetyWarning": {
+    "title": "Veiligheidswaarschuwing",
+    "body": "Gebruik de app niet tijdens het rijden. Stop veilig voordat u wijzigingen aanbrengt.",
+    "acknowledge": "Ik begrijp het"
+  },
+  "settingsMenu": {
+    "manageSubscription": "Abonnement beheren",
+    "businessProfile": "Bedrijfsprofiel",
+    "driverSettings": "Bestuurdersinstellingen",
+    "selectLanguage": "Taal selecteren",
+    "timezone": {
+      "label": "Tijdzone"
+    },
+    "signOut": {
+      "action": "Uitloggen"
+    }
+  },
+  "driverSetup": {
+    "header": {
+      "welcomeSetup": "Welkomst configuratie",
+      "driverSettings": "Bestuurdersinstellingen"
+    },
+    "sections": {
+      "personalInformation": "Persoonlijke informatie",
+      "companyLink": "Bedrijfskoppeling",
+      "payConfiguration": "Salaris configuratie"
+    },
+    "fields": {
+      "driverNameLabel": "Naam bestuurder",
+      "basicHourlyRate": "Basis uurtarief",
+      "unpaidBreakDuration": "Onbetaalde pauzeduur (minuten)"
+    },
+    "placeholders": {
+      "enterFullName": "Voer volledige naam in",
+      "hourlyRate": "bijv. 15.00",
+      "unpaidBreak": "bijv. 45"
+    },
+    "company": {
+      "codeOptionalLabel": "Bedrijfscode (optioneel)",
+      "codePlaceholder": "Voer bedrijfscode in",
+      "helperText": "Voer de code van uw bedrijf in om lid te worden van hun vloot.",
+      "linkedToCompany": "Gekoppeld aan bedrijf"
+    },
+    "allowances": {
+      "title": "Dienstvergoedingen",
+      "addAllowance": "Vergoeding toevoegen"
+    },
+    "overtime": {
+      "title": "Overwerkregels",
+      "thresholdLabel": "Overwerkdrempel",
+      "thresholdPlaceholder": "bijv. 40",
+      "rateMultiplierLabel": "Factor",
+      "rateMultiplierPlaceholder": "bijv. 1.5",
+      "additional": {
+        "addTier": "Extra trap toevoegen"
+      }
+    },
+    "units": {
+      "overtime": {
+        "day": "per dag",
+        "week": "per week",
+        "month": "per maand"
+      },
+      "allowance": {
+        "hour": "per uur",
+        "day": "per dag",
+        "week": "per week",
+        "month": "per maand",
+        "shift": "per dienst"
+      }
+    }
+  },
+  "instructions": {
+    "title": "Hoe HourWise te gebruiken",
+    "disclaimer": {
+      "title": "Officiële richtlijnen eerst",
+      "body": "Deze app is een hulpmiddel voor naleving, maar vervangt geen officiële training of juridisch advies. Raadpleeg altijd de EU-regelgeving."
+    },
+    "initialSetup": {
+      "title": "Uw eerste stappen",
+      "step1": {
+        "title": "1. Voer uw laatste dienst in (Cruciaal!)",
+        "body": "Voor een correcte berekening van de 'Dagelijkse Rust' MOET u handmatig details van uw laatste dienst invoeren in Werkgeschiedenis."
+      },
+      "step2": {
+        "title": "2. Voltooi uw profiel",
+        "body": "Ga naar Instellingen -> Bestuurder. Uw naam is vereist voor rapporten."
+      },
+      "step3": {
+        "title": "3. Bedrijfsgegevens (Optioneel)",
+        "body": "Voor facturatie, ga naar Bedrijfsprofiel. Uw gegevens verschijnen dan op de PDF-facturen."
+      }
+    },
+    "workflow": {
+      "title": "Dagelijkse workflow",
+      "step1": {
+        "title": "1. Start & Eindig uw dienst",
+        "body": "Gebruik de hoofdbuttons. De app logt alles en berekent de totalen automatisch."
+      },
+      "step2": {
+        "title": "2. Automatische rijdetectie",
+        "body": "De app detecteert rijden op basis van snelheid en beweging en schakelt automatisch naar 'Rijden'."
+      },
+      "step3": {
+        "title": "3. Pauze nemen",
+        "body": "Druk op 'Start Pauze'. Een ononderbroken pauze van minstens 45 minuten reset uw 4,5-uurs rijtimer."
+      },
+      "step4": {
+        "title": "4. Beschikbaarheidstijd (POA)",
+        "body": "Gebruik 'POA' voor periodes waarin u beschikbaar bent maar niet werkt (bijv. wachten bij een laadperron)."
+      }
+    },
+    "keyFeatures": {
+      "title": "Belangrijkste functies",
+      "fatigue": {
+        "title": "Vermoeidheidsmonitor",
+        "body": "Real-time waarschuwingen voor onvoldoende rust, naderende pauzes en rijlimieten.",
+        "audioWarning": "De app geeft geluidssignalen voor kritieke waarschuwingen. Zet uw volume aan."
+      },
+      "history": {
+        "title": "Geschiedenis & Bewerken",
+        "body": "Via het menu kunt u eerdere diensten inzien en handmatig aanpassen of toevoegen.",
+        "bullets": [
+          "Tik op een dag voor een gedetailleerd overzicht.",
+          "Corrigeer uw rittenlijst op elk gewenst moment."
+        ]
+      },
+      "reports": {
+        "title": "Rapporten & Facturen",
+        "body": "Genereer een professionele PDF van uw werkoverzicht of een factuur voor klanten."
+      }
+    },
+    "footer": {
+      "gotIt": "Begrepen!"
+    }
+  },
+  "euRules": {
+    "title": "EU Regels & Rijtijden",
+    "closeButton": "Sluiten",
+    "accessibility": {
+      "closeRules": "Regels sluiten",
+      "closeAndReturn": "Sluiten en terugkeren"
+    },
+    "about": {
+      "title": "Over deze regels",
+      "description": "Samenvatting van de belangrijkste EU-richtlijnen voor rijtijden en rustperioden."
+    },
+    "overview": {
+      "title": "Overzicht",
+      "point1": "Houd werk, pauzes, POA en rijtijd nauwkeurig bij.",
+      "point2": "Plan pauzes en rust vroegtijdig om overtredingen te voorkomen.",
+      "point3": "Gebruik verkorte rust en rij-extensies zorgvuldig."
+    },
+    "drivingLimits": {
+      "title": "Rijtijdlimieten",
+      "daily": {
+        "label": "Dagelijkse rijtijd:",
+        "description": "9 uur (mag tweemaal per week worden verlengd naar 10 uur)."
+      },
+      "weekly": {
+        "label": "Wekelijkse rijtijd:",
+        "description": "56 uur."
+      },
+      "fortnightly": {
+        "label": "Tweewekelijkse rijtijd:",
+        "description": "90 uur."
+      },
+      "breaks": {
+        "label": "Rijonderbrekingen:",
+        "description": "Na 4,5 uur rijden, neem 45 minuten pauze."
+      },
+      "breaksSplitExample": "De 45 minuten kunnen worden gesplitst in 15 min + 30 min (in die volgorde)."
+    },
+    "restPeriods": {
+      "title": "Rustperioden",
+      "daily": {
+        "title": "Dagelijkse rust:",
+        "regular": "Normale dagelijkse rust: minimaal 11 uur.",
+        "reduced": "Verkorte dagelijkse rust: minimaal 9 uur (beperkt toegestaan).",
+        "split": "Gesplitste dagelijkse rust: totaal minimaal 12 uur (bijv. 3 + 9)."
+      },
+      "weekly": {
+        "title": "Wekelijkse rust:",
+        "regular": "Normale wekelijkse rust: minimaal 45 uur.",
+        "reduced": "Verkorte wekelijkse rust: minimaal 24 uur (compensatie vereist).",
+        "frequency": "Wekelijkse rust moet binnen de vereiste periodes worden genomen."
+      }
+    },
+    "workingTimeLimits": {
+      "title": "Werktijdlimieten",
+      "maxWeekly": {
+        "label": "Max. wekelijkse werktijd:",
+        "description": "60 uur (absolute grens)."
+      },
+      "avgWeekly": {
+        "label": "Gemiddelde wekelijkse werktijd:",
+        "description": "Gemiddeld 48 uur over de referentieperiode."
+      },
+      "nightWork": {
+        "label": "Nachtarbeid limiet:",
+        "description": "Meestal 10 uur in een periode van 24 uur."
+      }
+    },
+    "workBreaks": {
+      "title": "Werktijd pauzevoorschriften",
+      "intro": "Pauzes zijn afhankelijk van het totaal aantal gewerkte uren.",
+      "rules": {
+        "sixToNine": "Bij meer dan 6 uur werk: minimaal 30 minuten pauze.",
+        "ninePlus": "Bij meer dan 9 uur werk: minimaal 45 minuten pauze."
+      },
+      "noteDriving": "Rijonderbrekingen (4,5u regel) staan hier los van en moeten ook worden nageleefd."
+    },
+    "interaction": {
+      "title": "Hoe de app dit bijhoudt",
+      "point1": "Werk- en rijtimers lopen tijdens activiteit; POA pauzeert de werkcyclus.",
+      "point2": "Een geldige pauze kan de 4,5-uurs rijcyclus resetten."
+    }
+  },
+  "tachoGuide": {
+    "title": "Gids Handmatige Tacho-invoer",
+    "prepare": {
+      "title": "Voorbereiding",
+      "point1": "Houd uw bestuurderskaart gereed.",
+      "point2": "Zet de tachograaf in de modus voor handmatige invoer.",
+      "point3": "Controleer tijd- en tijdzone-instellingen."
+    },
+    "confirmManualEntry": {
+      "title": "Bevestig handmatige invoer",
+      "point1": "Bevestig dat u activiteiten wilt toevoegen sinds de laatste kaartuitname."
+    },
+    "enterActivities": {
+      "title": "Voer activiteiten in",
+      "point1": "Selecteer het type activiteit (rust/werk/beschikbaarheid).",
+      "point2": "Voer start- en eindtijd nauwkeurig in.",
+      "point3": "Herhaal dit voor elke ontbrekende periode.",
+      "point4": "Controleer of de volgorde klopt met de werkelijkheid."
+    },
+    "adjustTimes": {
+      "title": "Tijden aanpassen",
+      "point1": "Als tijden onjuist zijn, ga terug en corrigeer ze.",
+      "point2": "Zorg dat er geen gaten of overlappingen zijn.",
+      "point3": "Bevestig elke invoer voordat u verdergaat."
+    },
+    "confirm": {
+      "title": "Bevestigen",
+      "point1": "Controleer het overzicht op het tacho-scherm.",
+      "point2": "Accepteer om de invoer op te slaan."
+    },
+    "finalCheck": {
+      "title": "Eindcontrole",
+      "point1": "Verifieer of de tijdlijn correct is.",
+      "point2": "Begin uw dienst pas als alles klopt."
+    },
+    "closeButton": "Sluiten"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "french": "Français",
+    "spanish": "Español",
+    "italian": "Italiano",
+    "polish": "Polski",
+    "romanian": "Română",
+    "dutch": "Nederlands",
+    "portuguese": "Português",
+    "ukrainian": "Українська",
+    "hungarian": "Magyar",
+    "bulgarian": "Български",
+    "lithuanian": "Lietuvių",
+    "czech": "Čeština",
+    "slovak": "Slovenčina",
+    "latvian": "Latviešu",
+    "turkish": "Türkçe"
+  },
+  "selectLanguage": "Taal selecteren",
+  "signOut": "Uitloggen",
+  "confirmSignOut": "Weet u zeker dat u wilt uitloggen?",
+  "manageSubscription": "Abonnement beheren",
+  "validation": {
+    "invalidTimeFormat": "Voer een geldige tijd in (UU:MM)."
+  },
+  "validationError": "Validatiefout",
+  "pleaseEnterName": "Voer uw naam in.",
+  "driverSettings": "Bestuurdersinstellingen",
+  "welcomeSetup": "Configuratie",
+  "personalInformation": "Persoonlijke informatie",
+  "driverName": "Naam bestuurder",
+  "enterFullName": "Voer volledige naam in",
+  "companyLink": "Bedrijfskoppeling",
+  "linkedToCompany": "Gekoppeld aan bedrijf",
+  "companyLinkCodeOptional": "Bedrijfscode (optioneel)",
+  "enterCodeToJoinFleet": "Voer de code van uw bedrijf in om lid te worden.",
+  "payConfiguration": "Salaris configuratie",
+  "basicHourlyRate": "Basis uurtarief",
+  "unpaidBreakDuration": "Onbetaalde pauzeduur (minuten)",
+  "shiftAllowances": "Dienstvergoedingen",
+  "addAllowance": "Vergoeding toevoegen",
+  "overtimeRules": "Overwerkregels",
+  "overtimeThreshold": "Overwerkdrempel",
+  "rateMultiplier": "Factor",
+  "addAnotherTier": "Extra trap toevoegen",
+  "invalidCode": "Ongeldige code",
+  "companyCodeNotFound": "Code niet gevonden.",
+  "expiredCodeTitle": "Code verlopen",
+  "expiredCodeMessage": "Deze code is niet meer geldig.",
+  "privacyTitle": "Privacybeleid",
+  "privacySubtitle": "Uw gegevens, uw controle",
+  "privacyIntro": "Dit beleid legt uit welke gegevens HourWise verzamelt.",
+  "privacyDataCollectedTitle": "Wat we opslaan",
+  "privacyDataCollectedDesc": "Om uw uren te berekenen slaan we op:",
+  "privacyDataPoints": [
+    "Uw naam (voor rapporten)",
+    "Geregistreerde diensten (start/eind)",
+    "Totalen voor werk, pauzes en POA",
+    "Compliance scores en overtredingen",
+    "Salarisinstellingen (optioneel)"
+  ],
+  "privacyStorageTitle": "Veilige Cloudopslag",
+  "privacyStorageDesc": "Uw gegevens staan veilig in uw eigen cloud-account.",
+  "privacyControlTitle": "U heeft de controle",
+  "privacyControlDesc": "U kunt uw gegevens op elk moment inzien, bewerken of verwijderen.",
+  "privacyDisclaimerTitle": "Belangrijk",
+  "privacyDisclaimer": "Geen enkele internetverbinding is 100% veilig, maar wij doen ons uiterste best.",
+  "notification": {
+    "trackingTitle": "Rijtijd bijhouden",
+    "trackingBody": "HourWise controleert uw locatie voor rijdetectie."
+  },
+  "enableComplianceNotifications": "Schakel meldingen in voor compliance waarschuwingen.",
+  "locationPermissionRequired": "Locatietoegang is vereist voor rijdetectie.",
+  "backgroundLocationPermissionRequired": "Achtergrondlocatie is vereist voor betrouwbaar tracken.",
+  "failedToResumeShift": "Kon dienst niet hervatten van server.",
+  "startShiftError": "Starten van dienst mislukt.",
+  "endShiftError": "Beëindigen van dienst mislukt. Controleer verbinding.",
+  "cannotGoToPoaFromBreak": "Kan niet naar POA schakelen tijdens pauze.",
+  "proactiveNotificationTitle": "Terugblik laatste dienst",
+  "proactiveNotificationBody": "Een tip voor vandaag:",
+  "workTimeWarningTitle": "Werktijd waarschuwing",
+  "drivingTimeWarningTitle": "Rijtijd waarschuwing",
+  "workTime30minLeft": "Nog 30 minuten werktijd over.",
+  "workTime15minLeft": "Nog 15 minuten werktijd over.",
+  "workTime5minLeft": "Nog 5 minuten werktijd over.",
+  "workTimeLimitReached": "Werktijdlimiet bereikt.",
+  "drivingTime30minLeft": "Nog 30 minuten rijtijd over.",
+  "drivingTime15minLeft": "Nog 15 minuten rijtijd over.",
+  "drivingTime5minLeft": "Nog 5 minuten rijtijd over.",
+  "drivingTimeLimitReached": "Rijtijdlimiet bereikt.",
+  "audioShiftStarted": "Dienst gestart.",
+  "audioShiftEnded": "Dienst beëindigd.",
+  "audioBreakStarted": "Pauze gestart.",
+  "audioResumeWork": "Werk hervat.",
+  "audioPoaStarted": "POA gestart.",
+  "audioDrivingTimeReset": "Rijtijd gereset.",
+  "audioDrivingLimitReached": "Rijlimiet bereikt.",
+  "audioDriving5minLeft": "Nog 5 minuten rijtijd.",
+  "audioDriving15minLeft": "Nog 15 minuten rijtijd.",
+  "audioDriving30minLeft": "Nog 30 minuten rijtijd.",
+  "audioWork5h15": "Nog 15 minuten werktijd.",
+  "audioWork5h30": "Nog 30 minuten werktijd.",
+  "audioWork5h55": "Nog 5 minuten werktijd.",
+  "safetyWarningTitle": "Veiligheid",
+  "safetyWarningBody": "Bedien de app niet tijdens het rijden.",
+  "acknowledge": "Begrepen",
+  "auth": {
+    "title": {
+      "signIn": "Inloggen",
+      "signUp": "Account aanmaken"
+    },
+    "subtitle": {
+      "signIn": "Welkom terug!",
+      "signUp": "Begin direct met het bijhouden van uw uren."
+    },
+    "fields": {
+      "email": {
+        "label": "E-mailadres",
+        "placeholder": "uw.email@voorbeeld.nl"
+      },
+      "password": {
+        "label": "Wachtwoord",
+        "placeholder": "Voer uw wachtwoord in"
+      },
+      "driverName": {
+        "label": "Volledige naam",
+        "placeholder": "bijv. Jan de Vries"
+      },
+      "companyCode": {
+        "label": "Bedrijfscode",
+        "placeholder": "Code van uw werkgever"
+      }
+    },
+    "buttons": {
+      "signIn": "Inloggen",
+      "createAccount": "Account aanmaken"
+    },
+    "switchTo": {
+      "signUp": "Nog geen account? Registreren",
+      "signIn": "Heeft u al een account? Inloggen"
+    },
+    "accountType": {
+      "solo": {
+        "title": "Eigen rijder",
+        "subtitle": "Zelfstandig professional"
+      },
+      "fleet": {
+        "title": "Vlootchauffeur",
+        "subtitle": "Onderdeel van een bedrijf"
+      }
+    },
+    "alerts": {
+      "missingInfo": {
+        "title": "Informatie ontbreekt",
+        "body": "Vul alle verplichte velden in."
+      },
+      "companyCodeRequired": {
+        "title": "Code vereist",
+        "body": "Voer uw bedrijfscode in om verder te gaan."
+      },
+      "invalidCode": {
+        "title": "Ongeldige code",
+        "expired": "Deze code is verlopen.",
+        "notFound": "Deze code is onjuist."
+      },
+      "signUpError": {
+        "title": "Registratiefout"
+      },
+      "signUpFailed": {
+        "title": "Registratie mislukt",
+        "body": "Kon geen account aanmaken. Probeer het later opnieuw."
+      },
+      "profileCreationFailed": {
+        "title": "Profiel aanmaken mislukt",
+        "body": "Account is aangemaakt, maar profiel-setup mislukte."
+      },
+      "checkEmail": {
+        "title": "Check uw e-mail",
+        "body": "Een bevestigingslink is verzonden naar uw e-mailadres."
+      },
+      "signInMissing": {
+        "title": "Informatie ontbreekt",
+        "body": "E-mail en wachtwoord zijn verplicht."
+      },
+      "signInError": {
+        "title": "Inlogfout"
+      }
+    }
+  },
+  "paywall": {
+    "title": "HourWise Pro ontgrendelen",
+    "subtitle": "Toegang tot alle premium functies en onbeperkte rapporten.",
+    "subscribeNow": "Nu abonneren",
+    "restorePurchases": "Aankopen herstellen",
+    "loading": "Laden...",
+    "restoring": "Herstellen...",
+    "alert": {
+      "successTitle": "Succes",
+      "purchased": "Aankoop voltooid!",
+      "restored": "Aankopen hersteld!",
+      "paywallError": "Er is een fout opgetreden.",
+      "couldNotDisplay": "Kon de pagina niet laden.",
+      "restoreSuccess": "Uw aankopen zijn hersteld.",
+      "noPurchasesTitle": "Geen aankopen gevonden",
+      "noPurchasesBody": "Geen actieve abonnementen gevonden.",
+      "restoreError": "Herstellen mislukt."
+    }
+  },
+  "settings": {
+    "subscription": {
+      "openError": "Kon abonnementsbeheer niet openen.",
+      "opening": "Laden..."
+    }
+  },
+  "businessProfile": {
+    "title": "Bedrijfsprofiel",
+    "subtitle": "Voor facturen en rapporten",
+    "alerts": {
+      "profileSaved": "Profiel succesvol opgeslagen."
+    },
+    "sections": {
+      "companyDetails": "Bedrijfsgegevens",
+      "bankDetails": "Bankgegevens"
+    },
+    "fields": {
+      "legalName": {
+        "label": "Bedrijfsnaam",
+        "placeholder": "bijv. Uw Bedrijf B.V."
+      },
+      "address": {
+        "label": "Zakelijk adres",
+        "placeholder": "Volledig adres invoeren"
+      },
+      "email": {
+        "label": "E-mail contact",
+        "placeholder": "contact@bedrijf.nl"
+      },
+      "phone": {
+        "label": "Telefoonnummer",
+        "placeholder": "bijv. +31 6 12345678"
+      },
+      "taxId": {
+        "label": "BTW-nummer",
+        "placeholder": "bijv. NL123456789B01"
+      },
+      "accountName": {
+        "label": "Naam rekeninghouder",
+        "placeholder": "Naam op de bankrekening"
+      },
+      "sortCode": {
+        "label": "Bankcode / BIC",
+        "placeholder": "bijv. ABNA"
+      },
+      "accountNumber": {
+        "label": "Rekeningnummer",
+        "placeholder": "Rekeningnummer"
+      },
+      "iban": {
+        "label": "IBAN",
+        "placeholder": "bijv. NL99 ABNA 0123 4567 89"
+      }
+    }
+  },
+  "violation": {
+    "EXCEEDED_6H_WORK": {
+      "title": "Meer dan 6 uur gewerkt zonder pauze",
+      "tip": "30 min pauze is verplicht na 6 uur werk."
+    },
+    "INSUFFICIENT_BREAK_FOR_9H_WORK": {
+      "title": "Onvoldoende pauze voor >9 uur werk",
+      "tip": "Bij diensten boven 9u is totaal 45 min pauze verplicht."
+    },
+    "INSUFFICIENT_DAILY_REST": {
+      "title": "Onvoldoende dagelijkse rust",
+      "tip": "Neem minimaal 11u rust (mag 3x per week naar 9u)."
+    },
+    "REDUCED_DAILY_REST_TAKEN": {
+      "title": "Verkorte dagelijkse rust genomen",
+      "tip": "U mag dit maximaal 3x per week doen."
+    },
+    "EXCEEDED_4_5H_DRIVING": {
+      "title": "Meer dan 4,5 uur gereden",
+      "tip": "U moet 45 min pauze nemen na 4,5u rijtijd."
+    },
+    "EXCEEDED_DAILY_DRIVING_LIMIT": {
+      "title": "Dagelijkse rijlimiet overschreden",
+      "tip": "Max 9u rijden (10u mag slechts 2x per week)."
+    },
+    "USED_10H_DRIVING_EXTENSION": {
+      "title": "10-uurs verlenging gebruikt",
+      "tip": "U heeft een van uw twee wekelijkse verlengingen gebruikt."
+    },
+    "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
+      "title": "Wekelijkse rijlimiet overschreden",
+      "tip": "De maximale wekelijkse rijtijd is 56 uur."
+    },
+    "EXCEEDED_WEEKLY_WORK_LIMIT": {
+      "title": "Wekelijkse werktijdlimiet overschreden",
+      "tip": "De maximale werktijd is 60 uur per week."
+    },
+    "default": {
+      "title": "Nalevingsfout",
+      "tip": "Een regel is overtreden. Controleer uw dienstdetails."
+    }
+  },
+  "dateRangeError": "Einddatum moet na startdatum liggen.",
+  "noDataForRange": "Geen gegevens gevonden.",
+  "failedToGenerate": "Rapport genereren mislukt.",
+  "workReport": "Werkrapport",
+  "reportFrom": "Van",
+  "to": "Tot",
+  "summary": "Samenvatting",
+  "totalWorkTime": "Totale werktijd",
+  "totalBreakTime": "Totale pauzetijd",
+  "estimatedEarnings": "Geschatte inkomsten",
+  "previousWeek": "Vorige week",
+  "lastMonth": "Vorige maand",
+  "customRange": "Aangepast bereik",
+  "generateReport": "Rapport genereren"
+}

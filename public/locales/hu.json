@@ -1,0 +1,705 @@
+{
+  "locale": "hu-HU",
+  "common": {
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "close": "Bezárás",
+    "delete": "Törlés",
+    "error": "Hiba",
+    "success": "Siker",
+    "date": "Dátum",
+    "startTime": "Kezdési idő",
+    "endTime": "Befejezési idő",
+    "minutes": "perc",
+    "saving": "Mentés...",
+    "failedToSave": "Az adatok mentése sikertelen.",
+    "gotIt": "Értem!"
+  },
+  "app": {
+    "title": "HourWise EU",
+    "subtitle": "EU munkaidő-nyilvántartó"
+  },
+  "dashboard": {
+    "previousShiftEnd": "Előző műszak vége",
+    "currentShiftStart": "Jelenlegi műszak kezdete",
+    "newShiftStarted": "Műszak elindítva",
+    "dailyRest": "Napi pihenőidő",
+    "workTimeRemaining": "Hátralévő munkaidő",
+    "drivingTimeRemaining": "Hátralévő vezetési idő",
+    "breakDuration": "Pihenő időtartama",
+    "startShift": "Műszak kezdése",
+    "endShift": "Műszak befejezése",
+    "startBreak": "Pihenő kezdése",
+    "endBreak": "Pihenő vége",
+    "poaButtonText": "RENDELKEZÉSRE ÁLLÁS / VÁRAKOZÁS",
+    "resumeWork": "Munka folytatása",
+    "currentStatusLabel": "Jelenlegi állapot:",
+    "timerModeLabel": "Időzítő mód:",
+    "shiftDurationLabel": "Műszak hossza:",
+    "targetLabel": "Cél"
+  },
+  "shiftSummary": {
+    "title": "Jelenlegi műszak",
+    "totalWork": "Összes munka",
+    "totalDriving": "Összes vezetés",
+    "totalBreaks": "Összes pihenő",
+    "totalPOA": "Összes rend. állás"
+  },
+  "menu": {
+    "instructions": "Használati útmutató",
+    "privacyInfo": "Adatvédelem",
+    "euWorkingTimeRules": "EU szabályok",
+    "tachoGuide": "Tacho útmutató",
+    "compliance": "Szabálykövetés",
+    "workHistory": "Munkaelőzmények",
+    "downloadReport": "Jelentés letöltése"
+  },
+  "workHistory": {
+    "title": "Munkaelőzmények",
+    "daySummary": "Napi összefoglaló",
+    "recordedShifts": "Rögzített műszakok",
+    "totalWork": "Összes munka",
+    "totalBreaks": "Összes pihenő",
+    "totalPOA": "Összes rend. állás",
+    "estimatedEarnings": "Becsült kereset",
+    "ongoing": "Folyamatban",
+    "workTime": "Munkaidő",
+    "noShifts": "Erre a napra nincs rögzített műszak.",
+    "noShiftsRecordedForDate": "Erre a napra nincs rögzített műszak.",
+    "addShift": "Műszak hozzáadása",
+    "editShift": "Műszak szerkesztése",
+    "updateShift": "Műszak frissítése",
+    "totalBreakTime": "Összes pihenőidő",
+    "totalPOATime": "Összes rend. állási idő",
+    "noShiftsTitle": "Pihenőnap"
+  },
+  "calendar": {
+    "dayDetailsTitle": "Nap részletei",
+    "timeSummaryTitle": "Idő összefoglaló",
+    "paySummaryTitle": "Kifizetési összefoglaló",
+    "period": "Időszak",
+    "worked": "Ledolgozott",
+    "breaks": "Pihenők",
+    "violations": "Szabályszegések",
+    "estimatedPay": "Becsült bér",
+    "lastCompletedWeek": "Utolsó lezárt hét",
+    "currentWeek": "Aktuális hét",
+    "monthToDate": "Aktuális hónap",
+    "selectedMonthSummary": "Kiválasztott hónap",
+    "lastWeekOfSelectedMonth": "Hónap utolsó hete"
+  },
+  "fatigue": {
+    "title": "Fáradtság és fókusz index",
+    "fullyAlert": "Teljesen éber",
+    "freshAndFocused": "Friss és fókuszált",
+    "mild": "Enyhe fáradtság",
+    "moderate": "Közepes fáradtság",
+    "high": "Erős fáradtság",
+    "critical": "Kritikus fáradtság",
+    "approaching13h": "Közeledik a 13 órás munkaidő. Tervezzen pihenőt.",
+    "over10h": "Ma több mint 10 órát dolgozott.",
+    "need45minBreak": "9 óránál hosszabb műszakhoz 45 perc pihenő kötelező.",
+    "need30minBreak": "6 óránál hosszabb műszakhoz 30 perc pihenő kötelező.",
+    "drivingExceeded10h": "A vezetési idő ma meghaladta a 10 órát.",
+    "drivingOver9h": "9 órán felüli vezetés (hosszabbítás használatával).",
+    "dailyRestBelow9h": "A napi pihenőidő a törvényi minimum (9 óra) alatt volt.",
+    "reducedDailyRest": "Csökkentett napi pihenőidő (11 óra alatt)."
+  },
+  "complianceScorecard": {
+    "title": "Napi szabálykövetési mutató",
+    "outOf100": "a 100-ból",
+    "violationsRecorded": "Rögzített szabályszegések:",
+    "greatJob": "Szép munka!",
+    "noViolations": "Ezen a napon nem történt szabályszegés."
+  },
+  "dailyReport": {
+    "title": "Tegnapi jelentés",
+    "violationsFound": "Szabályszegések találhatók",
+    "greatJob": "Szép munka!",
+    "noViolations": "A tegnapi műszakban nem történt szabályszegés."
+  },
+  "day": {
+    "mon": "Hét",
+    "tue": "Ked",
+    "wed": "Sze",
+    "thu": "Csü",
+    "fri": "Pén",
+    "sat": "Szo",
+    "sun": "Vas"
+  },
+  "safetyWarning": {
+    "title": "Biztonsági figyelmeztetés",
+    "body": "Vezetés közben ne használja az alkalmazást. A módosítások előtt álljon meg biztonságosan.",
+    "acknowledge": "Megértettem"
+  },
+  "settingsMenu": {
+    "manageSubscription": "Előfizetés kezelése",
+    "businessProfile": "Üzleti profil",
+    "driverSettings": "Gépjárművezetői beállítások",
+    "selectLanguage": "Nyelv választása",
+    "timezone": {
+      "label": "Időzóna"
+    },
+    "signOut": {
+      "action": "Kijelentkezés"
+    }
+  },
+  "driverSetup": {
+    "header": {
+      "welcomeSetup": "Kezdeti beállítások",
+      "driverSettings": "Gépjárművezetői beállítások"
+    },
+    "sections": {
+      "personalInformation": "Személyes adatok",
+      "companyLink": "Cég összekapcsolása",
+      "payConfiguration": "Bérbeállítások"
+    },
+    "fields": {
+      "driverNameLabel": "Gépjárművezető neve",
+      "basicHourlyRate": "Alap órabér",
+      "unpaidBreakDuration": "Nem fizetett pihenőidő (perc)"
+    },
+    "placeholders": {
+      "enterFullName": "Adja meg a teljes nevet",
+      "hourlyRate": "pl. 15.00",
+      "unpaidBreak": "pl. 45"
+    },
+    "company": {
+      "codeOptionalLabel": "Céges összekapcsolási kód (opcionális)",
+      "codePlaceholder": "Adja meg a cégkódot",
+      "helperText": "Adja meg a cége által kapott kódot a flottához való csatlakozáshoz.",
+      "linkedToCompany": "Céghez kapcsolva"
+    },
+    "allowances": {
+      "title": "Műszakpótlékok",
+      "addAllowance": "Pótlék hozzáadása"
+    },
+    "overtime": {
+      "title": "Túlóra szabályok",
+      "thresholdLabel": "Túlóra küszöb",
+      "thresholdPlaceholder": "pl. 40",
+      "rateMultiplierLabel": "Szorzó",
+      "rateMultiplierPlaceholder": "pl. 1.5",
+      "additional": {
+        "addTier": "Újabb szint hozzáadása"
+      }
+    },
+    "units": {
+      "overtime": {
+        "day": "naponta",
+        "week": "hetente",
+        "month": "havonta"
+      },
+      "allowance": {
+        "hour": "óránként",
+        "day": "naponta",
+        "week": "hetente",
+        "month": "havonta",
+        "shift": "műszakonként"
+      }
+    }
+  },
+  "instructions": {
+    "title": "Az HourWise használata",
+    "disclaimer": {
+      "title": "Hivatalos iránymutatás az első",
+      "body": "Ez az alkalmazás a szabálykövetést segítő eszköz, de nem helyettesíti a hivatalos képzést vagy a jogi tanácsadást. Mindig az EU-s előírásokat és a céges szabályzatot tekintse irányadónak."
+    },
+    "initialSetup": {
+      "title": "Az első lépések",
+      "step1": {
+        "title": "1. Adja meg az utolsó műszakot (Fontos!)",
+        "body": "A 'Napi pihenőidő' helyes kiszámításához manuálisan meg KELL adnia az utolsó befejezett műszak részleteit a Munkaelőzményeknél."
+      },
+      "step2": {
+        "title": "2. Töltse ki a sofőrprofilt",
+        "body": "Beállítások -> Gépjárművezetői beállítások. A név megadása kötelező a jelentésekhez."
+      },
+      "step3": {
+        "title": "3. Üzleti adatok (Opcionális)",
+        "body": "Számlázáshoz töltse ki az Üzleti profilt. Az adatok automatikusan megjelennek a PDF számlákon."
+      }
+    },
+    "workflow": {
+      "title": "Napi munkafolyamat",
+      "step1": {
+        "title": "1. Műszak kezdése és befejezése",
+        "body": "Használja a fő gombokat. Az alkalmazás mindent naplóz és automatikusan számolja az összesített értékeket."
+      },
+      "step2": {
+        "title": "2. Automatikus vezetés-érzékelés",
+        "body": "Az app a sebesség és mozgás alapján érzékeli a vezetést, és átvált 'Vezetés' állapotba. Megálláskor visszavált 'Munka' állapotba."
+      },
+      "step3": {
+        "title": "3. Pihenő tartása",
+        "body": "Nyomja meg a 'Pihenő kezdése' gombot. Egy legalább 45 perces folyamatos pihenő lenullázza a 4,5 órás vezetési időzítőt."
+      },
+      "step4": {
+        "title": "4. Rendelkezésre állási idő (POA)",
+        "body": "Használja a 'Rendelkezésre állás' módot, amikor készenlétben van, de nem végez aktív munkát (pl. rámpára vár)."
+      }
+    },
+    "keyFeatures": {
+      "title": "Főbb funkciók",
+      "fatigue": {
+        "title": "Fáradtság és fókusz figyelő",
+        "body": "Valós idejű figyelmeztetések a kevés pihenőidőre, a közelgő szünetekre és a vezetési korlátokra.",
+        "audioWarning": "Az alkalmazás hangjelzéssel is figyelmeztet a kritikus hibákra. Győződjön meg róla, hogy a hangerő be van kapcsolva."
+      },
+      "history": {
+        "title": "Előzmények és szerkesztés",
+        "body": "A Főmenüből válassza a 'Munkaelőzmények' pontot a korábbi műszakok kezeléséhez:",
+        "bullets": [
+          "Érintse meg bármelyik napot a részletes összefoglalóért.",
+          "Bármikor manuálisan hozzáadhat vagy módosíthat műszakokat."
+        ]
+      },
+      "reports": {
+        "title": "Jelentések és számlák",
+        "body": "Készítsen professzionális PDF munkajelentést vagy ügyfélszámlát bármilyen időszakra."
+      }
+    },
+    "footer": {
+      "gotIt": "Értem!"
+    }
+  },
+  "euRules": {
+    "title": "EU szabályok és vezetési idő",
+    "closeButton": "Bezárás",
+    "accessibility": {
+      "closeRules": "Szabályok bezárása",
+      "closeAndReturn": "Bezárás és visszatérés"
+    },
+    "about": {
+      "title": "A szabályokról",
+      "description": "Ez a képernyő összefoglalja a legfontosabb EU-s vezetési és pihenőidőre vonatkozó irányelveket."
+    },
+    "overview": {
+      "title": "Áttekintés",
+      "point1": "Pontosan rögzítse a munkát, pihenőt, POA-t és vezetést.",
+      "point2": "Tervezze meg időben a szüneteket a szabályszegések elkerüléséhez.",
+      "point3": "Körültekintően használja a csökkentett pihenőket és a hosszabbításokat."
+    },
+    "drivingLimits": {
+      "title": "Vezetési idő korlátok",
+      "daily": {
+        "label": "Napi vezetési korlát:",
+        "description": "9 óra (hetente kétszer 10 órára hosszabbítható)."
+      },
+      "weekly": {
+        "label": "Heti vezetési korlát:",
+        "description": "56 óra."
+      },
+      "fortnightly": {
+        "label": "Kétheti vezetési korlát:",
+        "description": "90 óra."
+      },
+      "breaks": {
+        "label": "Vezetési szünetek:",
+        "description": "4,5 óra vezetés után 45 perc szünet kötelező."
+      },
+      "breaksSplitExample": "A 45 perc felosztható egy 15 perces és egy azt követő 30 perces részre."
+    },
+    "restPeriods": {
+      "title": "Pihenőidők",
+      "daily": {
+        "title": "Napi pihenő:",
+        "regular": "Rendszeres napi pihenő: legalább 11 óra.",
+        "reduced": "Csökkentett napi pihenő: legalább 9 óra (korlátozottan).",
+        "split": "Osztott napi pihenő: összesen legalább 12 óra (pl. 3 + 9)."
+      },
+      "weekly": {
+        "title": "Heti pihenő:",
+        "regular": "Rendszeres heti pihenő: legalább 45 óra.",
+        "reduced": "Csökkentett heti pihenő: legalább 24 óra (visszapótlás szükséges).",
+        "frequency": "A heti pihenőt a megadott gördülő időszakokon belül kell kivenni."
+      }
+    },
+    "workingTimeLimits": {
+      "title": "Munkaidő korlátok",
+      "maxWeekly": {
+        "label": "Max. heti munkaidő:",
+        "description": "60 óra (abszolút felső határ)."
+      },
+      "avgWeekly": {
+        "label": "Átlagos heti munkaidő:",
+        "description": "Átlagosan 48 óra a referencia-időszak alatt."
+      },
+      "nightWork": {
+        "label": "Éjszakai munkavégzés:",
+        "description": "Általában 10 óra bármely 24 órás időszakban."
+      }
+    },
+    "workBreaks": {
+      "title": "Munkaidő-közi szünetek",
+      "intro": "A munkaközi szünetek az összes ledolgozott órától függenek.",
+      "rules": {
+        "sixToNine": "6 órán túli munka esetén: legalább 30 perc szünet (összesen).",
+        "ninePlus": "9 órán túli munka esetén: legalább 45 perc szünet (összesen)."
+      },
+      "noteDriving": "A vezetési szünetek (4,5 órás szabály) ettől különállók, azokat is be kell tartani."
+    },
+    "interaction": {
+      "title": "Hogyan méri ezt az app",
+      "point1": "A munka- és vezetési időzítők aktivitás alatt futnak; a POA szünetelteti a munkaciklust.",
+      "point2": "Egy érvényes szünet lenullázhatja a 4,5 órás vezetési ciklust."
+    }
+  },
+  "tachoGuide": {
+    "title": "Digitális menetíró manuális rögzítési útmutató",
+    "prepare": {
+      "title": "Előkészületek",
+      "point1": "Készítse elő sofőrkártyáját.",
+      "point2": "Győződjön meg róla, hogy a menetíró manuális rögzítés módban van.",
+      "point3": "Ellenőrizze az időt és az időzónát a készüléken."
+    },
+    "confirmManualEntry": {
+      "title": "Manuális rögzítés megerősítése",
+      "point1": "Erősítse meg, hogy rögzíteni kívánja a kártya utolsó kivétele óta eltelt tevékenységeket."
+    },
+    "enterActivities": {
+      "title": "Tevékenységek megadása",
+      "point1": "Válassza ki a helyes tevékenységtípust (pihenő/munka/rendelkezésre állás).",
+      "point2": "Pontosan adja meg a kezdési és befejezési időt.",
+      "point3": "Ismételje meg minden hiányzó időszakra.",
+      "point4": "Ellenőrizze, hogy a sorrend megfelel-e a valóságnak."
+    },
+    "adjustTimes": {
+      "title": "Idők módosítása",
+      "point1": "Ha az idők hibásnak tűnnek, lépjen vissza és javítsa őket.",
+      "point2": "Ügyeljen rá, hogy ne legyenek átfedések vagy hézagok.",
+      "point3": "Minden bejegyzést erősítsen meg a továbblépés előtt."
+    },
+    "confirm": {
+      "title": "Megerősítés",
+      "point1": "Ellenőrizze az összefoglalót a menetíró kijelzőjén.",
+      "point2": "Fogadja el a manuális bejegyzések mentéséhez."
+    },
+    "finalCheck": {
+      "title": "Végső ellenőrzés",
+      "point1": "Ellenőrizze a tevékenységi idővonal helyességét.",
+      "point2": "Csak akkor kezdje el a műszakot, ha minden adat helyes."
+    },
+    "closeButton": "Bezárás"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "french": "Français",
+    "spanish": "Español",
+    "italian": "Italiano",
+    "polish": "Polski",
+    "romanian": "Română",
+    "dutch": "Nederlands",
+    "portuguese": "Português",
+    "ukrainian": "Українська",
+    "hungarian": "Magyar",
+    "bulgarian": "Български",
+    "lithuanian": "Lietuvių",
+    "czech": "Čeština",
+    "slovak": "Slovenčina",
+    "latvian": "Latviešu",
+    "turkish": "Türkçe"
+  },
+  "selectLanguage": "Nyelv választása",
+  "signOut": "Kijelentkezés",
+  "confirmSignOut": "Biztosan ki szeretne jelentkezni?",
+  "manageSubscription": "Előfizetés kezelése",
+  "validation": {
+    "invalidTimeFormat": "Kérjük, adjon meg érvényes időt ÓÓ:PP formátumban."
+  },
+  "validationError": "Validálási hiba",
+  "pleaseEnterName": "Kérjük, adja meg a nevét.",
+  "driverSettings": "Gépjárművezetői beállítások",
+  "welcomeSetup": "Kezdeti beállítások",
+  "personalInformation": "Személyes adatok",
+  "driverName": "Gépjárművezető neve",
+  "enterFullName": "Adja meg a teljes nevet",
+  "companyLink": "Cég összekapcsolása",
+  "linkedToCompany": "Céghez kapcsolva",
+  "companyLinkCodeOptional": "Céges összekapcsolási kód (opcionális)",
+  "enterCodeToJoinFleet": "Adja meg a cége által kapott kódot a csatlakozáshoz.",
+  "payConfiguration": "Bérbeállítások",
+  "basicHourlyRate": "Alap órabér",
+  "unpaidBreakDuration": "Nem fizetett pihenőidő (perc)",
+  "shiftAllowances": "Műszakpótlékok",
+  "addAllowance": "Pótlék hozzáadása",
+  "overtimeRules": "Túlóra szabályok",
+  "overtimeThreshold": "Túlóra küszöb",
+  "rateMultiplier": "Szorzó",
+  "addAnotherTier": "Újabb szint hozzáadása",
+  "invalidCode": "Érvénytelen kód",
+  "companyCodeNotFound": "Nem találtuk ezt a cégkódot.",
+  "expiredCodeTitle": "Lejárt kód",
+  "expiredCodeMessage": "Ez a cégkód lejárt. Kérjen újat.",
+  "privacyTitle": "Adatvédelmi szabályzat",
+  "privacySubtitle": "Az Ön adatai, az Ön felügyelete",
+  "privacyIntro": "Ez a szabályzat ismerteti, hogy az HourWise milyen adatokat gyűjt és hogyan kezeli azokat.",
+  "privacyDataCollectedTitle": "Amit tárolunk",
+  "privacyDataCollectedDesc": "A munkaórák kiszámításához a következőket tároljuk:",
+  "privacyDataPoints": [
+    "Az Ön neve (a jelentésekhez)",
+    "Rögzített műszakok (kezdés/vége)",
+    "Munka, pihenő és POA összesítések",
+    "Szabálykövetési pontszámok és szabályszegések",
+    "Bérbeállítások (opcionális)"
+  ],
+  "privacyStorageTitle": "Biztonságos felhőalapú tárolás",
+  "privacyStorageDesc": "Adatait az Ön saját, biztonságos felhőfiókjában tároljuk, eszközei között szinkronizálva.",
+  "privacyControlTitle": "Önnél a kontroll",
+  "privacyControlDesc": "A tárolt adatok azok, amiket Ön visz be. Bármikor megtekintheti, szerkesztheti vagy törölheti adatait.",
+  "privacyDisclaimerTitle": "Fontos",
+  "privacyDisclaimer": "Bár biztonságos rendszert használunk, az internetes adattovábbítás sosem 100%-ig biztonságos.",
+  "notification": {
+    "trackingTitle": "Vezetési idő mérése",
+    "trackingBody": "Az HourWise aktívan figyeli a tartózkodási helyét a vezetés érzékeléséhez."
+  },
+  "enableComplianceNotifications": "Kérjük, engedélyezze az értesítéseket a figyelmeztetések fogadásához.",
+  "locationPermissionRequired": "A helymeghatározási engedély szükséges a vezetés érzékeléséhez.",
+  "backgroundLocationPermissionRequired": "A háttérben történő helymeghatározás szükséges a megbízható méréshez.",
+  "failedToResumeShift": "Nem sikerült a műszak folytatása a szerverről.",
+  "startShiftError": "Nem sikerült a műszak elindítása.",
+  "endShiftError": "Nem sikerült a műszak lezárása a szerveren. Ellenőrizze a kapcsolatot.",
+  "cannotGoToPoaFromBreak": "Pihenő közben nem válthat rendelkezésre állásra.",
+  "proactiveNotificationTitle": "Az utolsó műszak áttekintése",
+  "proactiveNotificationBody": "Egy tipp mára:",
+  "workTimeWarningTitle": "Munkaidő figyelmeztetés",
+  "drivingTimeWarningTitle": "Vezetési idő figyelmeztetés",
+  "workTime30minLeft": "30 perc maradt a munkaciklusból.",
+  "workTime15minLeft": "15 perc maradt a munkaciklusból.",
+  "workTime5minLeft": "5 perc maradt a munkaciklusból.",
+  "workTimeLimitReached": "Munkaidő korlát elérve.",
+  "drivingTime30minLeft": "30 perc maradt a vezetési ciklusból.",
+  "drivingTime15minLeft": "15 perc maradt a vezetési ciklusból.",
+  "drivingTime5minLeft": "5 perc maradt a vezetési ciklusból.",
+  "drivingTimeLimitReached": "Vezetési idő korlát elérve.",
+  "audioShiftStarted": "Műszak elkezdődött.",
+  "audioShiftEnded": "Műszak befejeződött.",
+  "audioBreakStarted": "Pihenő elkezdődött.",
+  "audioResumeWork": "Munka folytatása.",
+  "audioPoaStarted": "Rendelkezésre állás elkezdődött.",
+  "audioDrivingTimeReset": "Vezetési idő visszaállítva.",
+  "audioDrivingLimitReached": "Vezetési korlát elérve.",
+  "audioDriving5minLeft": "5 perc vezetés maradt.",
+  "audioDriving15minLeft": "15 perc vezetés maradt.",
+  "audioDriving30minLeft": "30 perc vezetés maradt.",
+  "audioWork5h15": "15 perc maradt a munkaciklusból.",
+  "audioWork5h30": "30 perc maradt a munkaciklusból.",
+  "audioWork5h55": "5 perc maradt a munkaciklusból.",
+  "safetyWarningTitle": "Biztonsági figyelmeztetés",
+  "safetyWarningBody": "Vezetés közben ne használja az appot. Álljon meg biztonságosan.",
+  "acknowledge": "Elfogadom",
+  "auth": {
+    "title": {
+      "signIn": "Bejelentkezés",
+      "signUp": "Fiók létrehozása"
+    },
+    "subtitle": {
+      "signIn": "Üdvözöljük újra! Kérjük, jelentkezzen be.",
+      "signUp": "Csatlakozzon hozzánk és kezdje el mérni az óráit."
+    },
+    "fields": {
+      "email": {
+        "label": "E-mail cím",
+        "placeholder": "on.email@pelda.hu"
+      },
+      "password": {
+        "label": "Jelszó",
+        "placeholder": "Adja meg a jelszavát"
+      },
+      "driverName": {
+        "label": "Gépjárművezető teljes neve",
+        "placeholder": "pl. Kovács János"
+      },
+      "companyCode": {
+        "label": "Cégkód",
+        "placeholder": "Adja meg a munkaadója kódját"
+      }
+    },
+    "buttons": {
+      "signIn": "Bejelentkezés",
+      "createAccount": "Fiók létrehozása"
+    },
+    "switchTo": {
+      "signUp": "Nincs még fiókja? Regisztráljon",
+      "signIn": "Már van fiókja? Jelentkezzen be"
+    },
+    "accountType": {
+      "solo": {
+        "title": "Egyéni sofőr",
+        "subtitle": "Független szakember"
+      },
+      "fleet": {
+        "title": "Flottatag",
+        "subtitle": "Egy cég munkatársa"
+      }
+    },
+    "alerts": {
+      "missingInfo": {
+        "title": "Hiányzó adatok",
+        "body": "Kérjük, töltsön ki minden kötelező mezőt."
+      },
+      "companyCodeRequired": {
+        "title": "Cégkód szükséges",
+        "body": "Adja meg a cégkódot a flottatagként való folytatáshoz."
+      },
+      "invalidCode": {
+        "title": "Érvénytelen kód",
+        "expired": "Ez a cégkód lejárt. Kérjen újat.",
+        "notFound": "A megadott cégkód nem érvényes."
+      },
+      "signUpError": {
+        "title": "Regisztrációs hiba"
+      },
+      "signUpFailed": {
+        "title": "Regisztráció sikertelen",
+        "body": "Jelenleg nem tudtuk létrehozni a fiókot. Próbálja meg később."
+      },
+      "profileCreationFailed": {
+        "title": "Profil létrehozása sikertelen",
+        "body": "A fiók létrejött, de a profil beállítása nem sikerült."
+      },
+      "checkEmail": {
+        "title": "Ellenőrizze az e-mailjét",
+        "body": "Megerősítő linket küldtünk az e-mail címére. Kérjük, igazolja vissza."
+      },
+      "signInMissing": {
+        "title": "Hiányzó adatok",
+        "body": "Kérjük, adja meg az e-mail címét és a jelszavát."
+      },
+      "signInError": {
+        "title": "Bejelentkezési hiba"
+      }
+    }
+  },
+  "paywall": {
+    "title": "HourWise Pro feloldása",
+    "subtitle": "Hozzáférés az összes prémium funkcióhoz és korlátlan jelentésekhez.",
+    "subscribeNow": "Előfizetés most",
+    "restorePurchases": "Vásárlások visszaállítása",
+    "loading": "Megnyitás...",
+    "restoring": "Visszaállítás...",
+    "alert": {
+      "successTitle": "Siker",
+      "purchased": "A vásárlás sikeresen befejeződött!",
+      "restored": "A korábbi vásárlások visszaállítva!",
+      "paywallError": "Hiba történt. Kérjük, próbálja újra.",
+      "couldNotDisplay": "Nem sikerült megjeleníteni az előfizetési oldalt.",
+      "restoreSuccess": "Vásárlásai visszaállítva.",
+      "noPurchasesTitle": "Nem található vásárlás",
+      "noPurchasesBody": "Nem találtunk visszaállítható aktív előfizetést.",
+      "restoreError": "Nem sikerült a vásárlások visszaállítása."
+    }
+  },
+  "settings": {
+    "subscription": {
+      "openError": "Nem sikerült megnyitni az előfizetés-kezelő oldalt.",
+      "opening": "Megnyitás..."
+    }
+  },
+  "businessProfile": {
+    "title": "Üzleti profil",
+    "subtitle": "Számlákhoz és jelentésekhez",
+    "alerts": {
+      "profileSaved": "Az üzleti profil sikeresen mentve."
+    },
+    "sections": {
+      "companyDetails": "Cégadatok",
+      "bankDetails": "Banki adatok"
+    },
+    "fields": {
+      "legalName": {
+        "label": "Hivatalos név / Cégnév",
+        "placeholder": "pl. Saját Cég Kft."
+      },
+      "address": {
+        "label": "Üzleti cím",
+        "placeholder": "Adja meg a teljes üzleti címet"
+      },
+      "email": {
+        "label": "Kapcsolattartási e-mail",
+        "placeholder": "pl. kapcsolat@cegem.hu"
+      },
+      "phone": {
+        "label": "Kapcsolattartási telefon",
+        "placeholder": "pl. +36301234567"
+      },
+      "taxId": {
+        "label": "Adószám",
+        "placeholder": "pl. 12345678-1-42"
+      },
+      "accountName": {
+        "label": "Számlatulajdonos neve",
+        "placeholder": "A bankszámla tulajdonosának neve"
+      },
+      "sortCode": {
+        "label": "Bankkód / Swift",
+        "placeholder": "pl. 1177..."
+      },
+      "accountNumber": {
+        "label": "Számlaszám",
+        "placeholder": "pl. 11773000-00000000"
+      },
+      "iban": {
+        "label": "IBAN",
+        "placeholder": "pl. HU42 1177 ..."
+      }
+    }
+  },
+  "violation": {
+    "EXCEEDED_6H_WORK": {
+      "title": "6 órán túli munkavégzés szünet nélkül",
+      "tip": "6 óra munkavégzés után legalább 30 perc szünet kötelező."
+    },
+    "INSUFFICIENT_BREAK_FOR_9H_WORK": {
+      "title": "Kevés pihenőidő 9 órán túli munkához",
+      "tip": "9 órán felüli műszakhoz összesen legalább 45 perc pihenő kötelező."
+    },
+    "INSUFFICIENT_DAILY_REST": {
+      "title": "Kevés napi pihenőidő",
+      "tip": "Ügyeljen a legalább 11 órás napi pihenőre (ami 9 órára csökkenthető)."
+    },
+    "REDUCED_DAILY_REST_TAKEN": {
+      "title": "Csökkentett napi pihenő igénybevéve",
+      "tip": "Ne feledje, hetente legfeljebb háromszor élhet ezzel a lehetőséggel."
+    },
+    "EXCEEDED_4_5H_DRIVING": {
+      "title": "4,5 órán túli vezetés",
+      "tip": "4,5 óra folyamatos vezetés után 45 perc szünetet kell tartani."
+    },
+    "EXCEEDED_DAILY_DRIVING_LIMIT": {
+      "title": "Napi vezetési korlát túllépve",
+      "tip": "A napi vezetési idő 9 óra, ami hetente kétszer 10 órára növelhető."
+    },
+    "USED_10H_DRIVING_EXTENSION": {
+      "title": "10 órás vezetési hosszabbítás felhasználva",
+      "tip": "Ezen a héten felhasználta az egyiket a két lehetséges 10 órás hosszabbításból."
+    },
+    "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
+      "title": "Heti vezetési korlát túllépve",
+      "tip": "A maximális heti vezetési idő 56 óra."
+    },
+    "EXCEEDED_WEEKLY_WORK_LIMIT": {
+      "title": "Heti munkaidő korlát túllépve",
+      "tip": "A maximális heti munkaidő 60 óra egyetlen héten belül."
+    },
+    "default": {
+      "title": "Szabályszegés",
+      "tip": "Egy szabálykövetési előírás sérült. Ellenőrizze a műszak részleteit."
+    }
+  },
+  "dateRangeError": "A befejező dátumnak a kezdő dátum után kell lennie.",
+  "noDataForRange": "Nincs adat ebben az időszakban.",
+  "failedToGenerate": "Nem sikerült a jelentés készítése.",
+  "workReport": "Munkajelentés",
+  "reportFrom": "Ettől",
+  "to": "Eddig",
+  "summary": "Összefoglaló",
+  "totalWorkTime": "Összes munkaidő",
+  "totalBreakTime": "Összes pihenőidő",
+  "estimatedEarnings": "Becsült kereset",
+  "previousWeek": "Előző hét",
+  "lastMonth": "Előző hónap",
+  "customRange": "Egyéni időszak",
+  "generateReport": "Jelentés készítése"
+}

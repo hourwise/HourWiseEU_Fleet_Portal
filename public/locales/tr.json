@@ -1,0 +1,705 @@
+{
+  "locale": "tr-TR",
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "delete": "Sil",
+    "error": "Hata",
+    "success": "Başarılı",
+    "date": "Tarih",
+    "startTime": "Başlangıç Saati",
+    "endTime": "Bitiş Saati",
+    "minutes": "dakika",
+    "saving": "Kaydediliyor...",
+    "failedToSave": "Veriler kaydedilemedi.",
+    "gotIt": "Anladım!"
+  },
+  "app": {
+    "title": "HourWise EU",
+    "subtitle": "AB Çalışma Süresi Takibi"
+  },
+  "dashboard": {
+    "previousShiftEnd": "Önceki Vardiya Bitişi",
+    "currentShiftStart": "Mevcut Vardiya Başlangıcı",
+    "newShiftStarted": "Vardiya Başladı",
+    "dailyRest": "Günlük Dinlenme",
+    "workTimeRemaining": "Kalan Çalışma Süresi",
+    "drivingTimeRemaining": "Kalan Sürüş Süresi",
+    "breakDuration": "Mola Süresi",
+    "startShift": "Vardiyayı Başlat",
+    "endShift": "Vardiyayı Bitir",
+    "startBreak": "Molayı Başlat",
+    "endBreak": "Molayı Bitir",
+    "poaButtonText": "HAZIR BULUNMA / BEKLEME",
+    "resumeWork": "Çalışmaya Devam Et",
+    "currentStatusLabel": "Mevcut Durum:",
+    "timerModeLabel": "Zamanlayıcı Modu:",
+    "shiftDurationLabel": "Vardiya Süresi:",
+    "targetLabel": "Hedef"
+  },
+  "shiftSummary": {
+    "title": "Mevcut Vardiya",
+    "totalWork": "Toplam Çalışma",
+    "totalDriving": "Toplam Sürüş",
+    "totalBreaks": "Toplam Mola",
+    "totalPOA": "Toplam Hazır Bulunma"
+  },
+  "menu": {
+    "instructions": "Talimatlar",
+    "privacyInfo": "Gizlilik Bilgisi",
+    "euWorkingTimeRules": "AB Kuralları",
+    "tachoGuide": "Takograf Rehberi",
+    "compliance": "Uyumluluk",
+    "workHistory": "Çalışma Geçmişi",
+    "downloadReport": "Rapor İndir"
+  },
+  "workHistory": {
+    "title": "Çalışma Geçmişi",
+    "daySummary": "Günlük Özet",
+    "recordedShifts": "Kaydedilen Vardiyalar",
+    "totalWork": "Toplam Çalışma",
+    "totalBreaks": "Toplam Mola",
+    "totalPOA": "Toplam Hazır Bulunma",
+    "estimatedEarnings": "Tahmini Kazanç",
+    "ongoing": "Devam Ediyor",
+    "workTime": "Çalışma Süresi",
+    "noShifts": "Bu tarih için kayıtlı vardiya yok.",
+    "noShiftsRecordedForDate": "Bu tarih için kayıtlı vardiya yok.",
+    "addShift": "Vardiya Ekle",
+    "editShift": "Vardiyayı Düzenle",
+    "updateShift": "Vardiyayı Güncelle",
+    "totalBreakTime": "Toplam Mola Süresi",
+    "totalPOATime": "Toplam Hazır Bulunma Süresi",
+    "noShiftsTitle": "Dinlenme Günü"
+  },
+  "calendar": {
+    "dayDetailsTitle": "Gün Detayları",
+    "timeSummaryTitle": "Zaman Özeti",
+    "paySummaryTitle": "Ödeme Özeti",
+    "period": "Dönem",
+    "worked": "Çalışılan",
+    "breaks": "Molalar",
+    "violations": "İhlaller",
+    "estimatedPay": "Tahm. Ödeme",
+    "lastCompletedWeek": "Son Tamamlanan Hafta",
+    "currentWeek": "Bu Hafta",
+    "monthToDate": "Ay Başından Beri",
+    "selectedMonthSummary": "Seçilen Ay",
+    "lastWeekOfSelectedMonth": "Ayın Son Haftası"
+  },
+  "fatigue": {
+    "title": "Yorgunluk ve Odak Endeksi",
+    "fullyAlert": "Tamamen Zinde",
+    "freshAndFocused": "Dinç ve Odaklanmış",
+    "mild": "Hafif Yorgunluk",
+    "moderate": "Orta Yorgunluk",
+    "high": "Yüksek Yorgunluk",
+    "critical": "Kritik Yorgunluk",
+    "approaching13h": "13 saatlik yayılım süresine yaklaşıldı. Dinlenme planlayın.",
+    "over10h": "Bugün 10 saatin üzerinde çalışma.",
+    "need45minBreak": "9 saati aşan vardiyalar için 45 dakika mola gereklidir.",
+    "need30minBreak": "6 saati aşan vardiyalar için 30 dakika mola gereklidir.",
+    "drivingExceeded10h": "Bugün 10 saatlik sürüş süresi aşıldı.",
+    "drivingOver9h": "9 saatin üzerinde sürüş (uzatma kullanılıyor).",
+    "dailyRestBelow9h": "Günlük dinlenme yasal sınır olan 9 saatin altında kaldı.",
+    "reducedDailyRest": "Azaltılmış günlük dinlenme yapıldı (11 saatin altında)."
+  },
+  "complianceScorecard": {
+    "title": "Günlük Uyumluluk Karnesi",
+    "outOf100": "/ 100",
+    "violationsRecorded": "Kaydedilen İhlaller:",
+    "greatJob": "Harika iş!",
+    "noViolations": "Bugün için herhangi bir uyumluluk ihlali kaydedilmedi."
+  },
+  "dailyReport": {
+    "title": "Dünkü Rapor",
+    "violationsFound": "İhlaller Bulundu",
+    "greatJob": "Harika İş!",
+    "noViolations": "Dünkü vardiya için herhangi bir ihlal kaydedilmedi."
+  },
+  "day": {
+    "mon": "Pzt",
+    "tue": "Sal",
+    "wed": "Çar",
+    "thu": "Per",
+    "fri": "Cum",
+    "sat": "Cmt",
+    "sun": "Paz"
+  },
+  "safetyWarning": {
+    "title": "Güvenlik Uyarısı",
+    "body": "Sürüş sırasında uygulama ile etkileşime girmeyin. Değişiklik yapmadan önce güvenli bir şekilde durun.",
+    "acknowledge": "Anladım"
+  },
+  "settingsMenu": {
+    "manageSubscription": "Aboneliği Yönet",
+    "businessProfile": "İşletme Profili",
+    "driverSettings": "Sürücü Ayarları",
+    "selectLanguage": "Dil Seçin",
+    "timezone": {
+      "label": "Saat Dilimi"
+    },
+    "signOut": {
+      "action": "Oturumu Kapat"
+    }
+  },
+  "driverSetup": {
+    "header": {
+      "welcomeSetup": "Hoş Geldiniz",
+      "driverSettings": "Sürücü Ayarları"
+    },
+    "sections": {
+      "personalInformation": "Kişisel Bilgiler",
+      "companyLink": "Şirket Bağlantısı",
+      "payConfiguration": "Ödeme Yapılandırması"
+    },
+    "fields": {
+      "driverNameLabel": "Sürücü Adı",
+      "basicHourlyRate": "Temel saatlik ücret",
+      "unpaidBreakDuration": "Ücretsiz mola süresi (dakika)"
+    },
+    "placeholders": {
+      "enterFullName": "Tam adınızı girin",
+      "hourlyRate": "örn. 15.00",
+      "unpaidBreak": "örn. 45"
+    },
+    "company": {
+      "codeOptionalLabel": "Şirket bağlantı kodu (isteğe bağlı)",
+      "codePlaceholder": "Şirket kodunu girin",
+      "helperText": "Filolarına katılmak için şirketiniz tarafından sağlanan kodu girin.",
+      "linkedToCompany": "Şirkete bağlı"
+    },
+    "allowances": {
+      "title": "Vardiya Ödenekleri",
+      "addAllowance": "Ödenek ekle"
+    },
+    "overtime": {
+      "title": "Fazla Mesai Kuralları",
+      "thresholdLabel": "Mesai eşiği",
+      "thresholdPlaceholder": "örn. 40",
+      "rateMultiplierLabel": "Ücret çarpanı",
+      "rateMultiplierPlaceholder": "örn. 1.5",
+      "additional": {
+        "addTier": "Başka bir kademe ekle"
+      }
+    },
+    "units": {
+      "overtime": {
+        "day": "günlük",
+        "week": "haftalık",
+        "month": "aylık"
+      },
+      "allowance": {
+        "hour": "saatlik",
+        "day": "günlük",
+        "week": "haftalık",
+        "month": "aylık",
+        "shift": "vardiya başına"
+      }
+    }
+  },
+  "instructions": {
+    "title": "HourWise Nasıl Kullanılır?",
+    "disclaimer": {
+      "title": "Önce Resmi Kılavuzlar",
+      "body": "Bu uygulama uyumluluğa yardımcı olan güçlü bir araçtır ancak resmi eğitim veya hukuki tavsiye yerine geçmez. Daima AB yönetmeliklerine ve şirket politikanıza başvurun."
+    },
+    "initialSetup": {
+      "title": "İlk Adımlarınız",
+      "step1": {
+        "title": "1. Son Vardiyanızı Girin (Kritik!)",
+        "body": "Doğru 'Günlük Dinlenme' hesaplaması için, son tamamlanan vardiyanızın ayrıntılarını manuel olarak girmelisiniz. Menü -> Çalışma Geçmişi -> ilgili tarihe gidin ve vardiyayı ekleyin."
+      },
+      "step2": {
+        "title": "2. Sürücü Profilini Tamamlayın",
+        "body": "Ayarlar -> Sürücü Ayarları'na gidin. Raporlar için adınız gereklidir. Ödeme detayları fatura oluşturmak için isteğe bağlıdır."
+      },
+      "step3": {
+        "title": "3. İşletme Detaylarını Ekleyin (İsteğe Bağlı)",
+        "body": "Faturalandırma için Ayarlar -> İşletme Profili'ne gidin. Bilgileriniz PDF faturalarında otomatik olarak görünecektir."
+      }
+    },
+    "workflow": {
+      "title": "Günlük İş Akışı",
+      "step1": {
+        "title": "1. Vardiyayı Başlatın ve Bitirin",
+        "body": "Ana 'Vardiyayı Başlat' ve 'Vardiyayı Bitir' düğmelerini kullanın. Uygulama her şeyi kaydeder ve toplamları otomatik hesaplar."
+      },
+      "step2": {
+        "title": "2. Otomatik Sürüş Algılama",
+        "body": "Uygulama, hız ve harekete bağlı olarak sürüşü otomatik algılar ve durumunuzu 'Sürüş' olarak değiştirir. Durduğunuzda 'Çalışıyor' durumuna döner."
+      },
+      "step3": {
+        "title": "3. Mola Verme",
+        "body": "'Molayı Başlat' düğmesine basın. En az 45 dakikalık kesintisiz bir mola, 4.5 saatlik sürüş zamanlayıcınızı sıfırlayacaktır."
+      },
+      "step4": {
+        "title": "4. Hazır Bulunma Süresi (POA)",
+        "body": "Müsait olduğunuz ancak aktif olarak çalışmadığınız dönemler için (örn. yükleme alanı beklemek) 'Hazır Bulunma / Bekleme' seçeneğini kullanın."
+      }
+    },
+    "keyFeatures": {
+      "title": "Ana Özellikler",
+      "fatigue": {
+        "title": "Yorgunluk ve Odak Takibi",
+        "body": "Vardiyanız sırasında yetersiz günlük dinlenme, yaklaşan mola gereksinimleri ve sürüş/çalışma süresi sınırları için gerçek zamanlı uyarılar sağlar.",
+        "audioWarning": "Uygulama, kritik uyarılar için sesli uyarılar ve bildirimler sağlar. Cihaz sesinin açık olduğundan emin olun."
+      },
+      "history": {
+        "title": "Çalışma Geçmişi ve Manuel Düzenleme",
+        "body": "Geçmiş vardiyaları görüntülemek için Menü'den 'Çalışma Geçmişi'ni seçin:",
+        "bullets": [
+          "Detaylı vardiya özetini görmek için herhangi bir güne dokunun.",
+          "Kayıtlarınızı düzeltmek için geçmiş vardiyaları istediğiniz zaman manuel ekleyin veya düzenleyin."
+        ]
+      },
+      "reports": {
+        "title": "Rapor ve Fatura İndir",
+        "body": "Ana Menü'den 'Rapor İndir'i seçerek herhangi bir tarih aralığı için profesyonel bir PDF rapor veya müşteri faturası oluşturun."
+      }
+    },
+    "footer": {
+      "gotIt": "Anladım!"
+    }
+  },
+  "euRules": {
+    "title": "AB Kuralları ve Sürüş Süresi",
+    "closeButton": "Kapat",
+    "accessibility": {
+      "closeRules": "Kuralları kapat",
+      "closeAndReturn": "Kapat ve geri dön"
+    },
+    "about": {
+      "title": "Bu kurallar hakkında",
+      "description": "Bu ekran, AB sürüş süreleri ve dinlenme sürelerine ilişkin temel kılavuzu özetler. Daima resmi yönetmelikleri takip edin."
+    },
+    "overview": {
+      "title": "Genel Bakış",
+      "point1": "Çalışma, mola, hazır bulunma ve sürüşü doğru şekilde takip edin.",
+      "point2": "İhlallerden kaçınmak için mola ve dinlenmeleri erken planlayın.",
+      "point3": "Azaltılmış dinlenme ve sürüş uzatmalarını dikkatli kullanın."
+    },
+    "drivingLimits": {
+      "title": "Sürüş Süresi Sınırları",
+      "daily": {
+        "label": "Günlük sürüş sınırı:",
+        "description": "9 saat (haftada iki kez 10 saate uzatılabilir)."
+      },
+      "weekly": {
+        "label": "Haftalık sürüş sınırı:",
+        "description": "56 saat."
+      },
+      "fortnightly": {
+        "label": "İki haftalık sürüş sınırı:",
+        "description": "90 saat."
+      },
+      "breaks": {
+        "label": "Sürüş molaları:",
+        "description": "4.5 saatlik sürüşten sonra 45 dakika mola verin."
+      },
+      "breaksSplitExample": "45 dakikalık mola 15 dakika + 30 dakika (bu sırayla) şeklinde bölünebilir."
+    },
+    "restPeriods": {
+      "title": "Dinlenme Süreleri",
+      "daily": {
+        "title": "Günlük dinlenme:",
+        "regular": "Normal günlük dinlenme: en az 11 saat.",
+        "reduced": "Azaltılmış günlük dinlenme: en az 9 saat (sınırlı kullanım).",
+        "split": "Bölünmüş günlük dinlenme: toplam en az 12 saat olmalıdır (örn. 3 + 9)."
+      },
+      "weekly": {
+        "title": "Haftalık dinlenme:",
+        "regular": "Normal haftalık dinlenme: en az 45 saat.",
+        "reduced": "Azaltılmış haftalık dinlenme: en az 24 saat (telafi gerektirir).",
+        "frequency": "Haftalık dinlenme gerekli periyotlar içinde alınmalıdır."
+      }
+    },
+    "workingTimeLimits": {
+      "title": "Çalışma Süresi Sınırları",
+      "maxWeekly": {
+        "label": "Maks. haftalık çalışma süresi:",
+        "description": "60 saat (mutlak üst sınır)."
+      },
+      "avgWeekly": {
+        "label": "Ortalama haftalık çalışma süresi:",
+        "description": "Referans dönemi boyunca haftalık ortalama 48 saat."
+      },
+      "nightWork": {
+        "label": "Gece çalışması sınırı:",
+        "description": "Genellikle herhangi bir 24 saatlik dönemde 10 saat."
+      }
+    },
+    "workBreaks": {
+      "title": "Çalışma Süresi Mola Gereksinimleri",
+      "intro": "Çalışma süresi molaları, çalışılan toplam saate bağlıdır.",
+      "rules": {
+        "sixToNine": "6 saatten fazla çalışırsanız: en az 30 dakika mola verin.",
+        "ninePlus": "9 saatten fazla çalışırsanız: en az 45 dakika mola verin."
+      },
+      "noteDriving": "Sürüş molaları (4.5 saat kuralı) ayrıdır ve bunlara da uyulmalıdır."
+    },
+    "interaction": {
+      "title": "Uygulama bunu nasıl takip eder?",
+      "point1": "Siz aktifken çalışma ve sürüş zamanlayıcıları çalışır; Hazır Bulunma Süresi (POA) çalışma döngüsünü duraklatır.",
+      "point2": "Uygun bir mola, 4.5 saatlik sürüş döngünüzü sıfırlayabilir."
+    }
+  },
+  "tachoGuide": {
+    "title": "Dijital Takograf Manuel Giriş Rehberi",
+    "prepare": {
+      "title": "Hazırlık",
+      "point1": "Sürücü kartınızı hazır bulundurun.",
+      "point2": "Gerekirse takografın manuel giriş modunda olduğundan emin olun.",
+      "point3": "Ünite üzerindeki saat ve saat dilimi ayarlarını kontrol edin."
+    },
+    "confirmManualEntry": {
+      "title": "Manuel girişi onaylayın",
+      "point1": "Son kart çıkarmanızdan bu yana aktiviteleri eklemek istediğinizi onaylayın."
+    },
+    "enterActivities": {
+      "title": "Aktiviteleri girin",
+      "point1": "Doğru aktivite türünü seçin (dinlenme/çalışma/hazır bulunma).",
+      "point2": "Başlangıç ve bitiş zamanını doğru şekilde girin.",
+      "point3": "Her eksik dönem için tekrarlayın.",
+      "point4": "Sıralamanın gerçekte olanla eşleştiğini kontrol edin."
+    },
+    "adjustTimes": {
+      "title": "Zamanları ayarlayın",
+      "point1": "Zamanlar yanlış görünüyorsa geri gidip düzeltin.",
+      "point2": "Çakışma veya boşluk olmadığından emin olun.",
+      "point3": "Devam etmeden önce her girişi onaylayın."
+    },
+    "confirm": {
+      "title": "Onay",
+      "point1": "Takograf ekranındaki özeti gözden geçirin.",
+      "point2": "Manuel girişleri kaydetmek için kabul edin."
+    },
+    "finalCheck": {
+      "title": "Son kontrol",
+      "point1": "Aktivite zaman çizelgesinin doğru olduğunu doğrulayın.",
+      "point2": "Ancak her şey doğru göründüğünde vardiyanıza başlayın."
+    },
+    "closeButton": "Kapat"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "french": "Français",
+    "spanish": "Español",
+    "italian": "Italiano",
+    "polish": "Polski",
+    "romanian": "Română",
+    "dutch": "Nederlands",
+    "portuguese": "Português",
+    "ukrainian": "Українська",
+    "hungarian": "Magyar",
+    "bulgarian": "Български",
+    "lithuanian": "Lietuvių",
+    "czech": "Čeština",
+    "slovak": "Slovenčina",
+    "latvian": "Latviešu",
+    "turkish": "Türkçe"
+  },
+  "selectLanguage": "Dil Seçin",
+  "signOut": "Oturumu Kapat",
+  "confirmSignOut": "Oturumu kapatmak istediğinizden emin misiniz?",
+  "manageSubscription": "Aboneliği Yönet",
+  "validation": {
+    "invalidTimeFormat": "Lütfen SS:DD formatında geçerli bir saat girin."
+  },
+  "validationError": "Doğrulama Hatası",
+  "pleaseEnterName": "Lütfen adınızı girin.",
+  "driverSettings": "Sürücü Ayarları",
+  "welcomeSetup": "Kurulum",
+  "personalInformation": "Kişisel Bilgiler",
+  "driverName": "Sürücü Adı",
+  "enterFullName": "Tam adınızı girin",
+  "companyLink": "Şirket Bağlantısı",
+  "linkedToCompany": "Şirkete bağlı",
+  "companyLinkCodeOptional": "Şirket bağlantı kodu (isteğe bağlı)",
+  "enterCodeToJoinFleet": "Filoya katılmak için şirketiniz tarafından sağlanan kodu girin.",
+  "payConfiguration": "Ödeme Yapılandırması",
+  "basicHourlyRate": "Temel saatlik ücret",
+  "unpaidBreakDuration": "Ücretsiz mola süresi (dakika)",
+  "shiftAllowances": "Vardiya Ödenekleri",
+  "addAllowance": "Ödenek ekle",
+  "overtimeRules": "Fazla Mesai Kuralları",
+  "overtimeThreshold": "Mesai eşiği",
+  "rateMultiplier": "Ücret çarpanı",
+  "addAnotherTier": "Başka bir kademe ekle",
+  "invalidCode": "Geçersiz Kod",
+  "companyCodeNotFound": "Bu şirket kodunu bulamadık.",
+  "expiredCodeTitle": "Kodun Süresi Dolmuş",
+  "expiredCodeMessage": "Bu şirket kodunun süresi dolmuş. Lütfen yenisini isteyin.",
+  "privacyTitle": "Gizlilik Politikası",
+  "privacySubtitle": "Sizin Veriniz, Sizin Kontrolünüz",
+  "privacyIntro": "Bu politika, HourWise'ın hangi verileri topladığını ve bunların nasıl yönetildiğini açıklar.",
+  "privacyDataCollectedTitle": "Ne Saklıyoruz?",
+  "privacyDataCollectedDesc": "Çalışma saatlerinizi hesaplamak için şu bilgileri saklıyoruz:",
+  "privacyDataPoints": [
+    "Adınız (raporlar için)",
+    "Kaydedilen vardiyalar (başlangıç/bitiş saatleri)",
+    "Çalışma, mola ve Hazır Bulunma Süresi (POA) toplamları",
+    "Uyumluluk puanları ve ihlaller",
+    "Ödeme yapılandırma ayarları (isteğe bağlı)"
+  ],
+  "privacyStorageTitle": "Güvenli Bulut Depolama",
+  "privacyStorageDesc": "Verileriniz, cihazlarınız arasında senkronize edilen kendi özel, güvenli bulut hesabınızda saklanır.",
+  "privacyControlTitle": "Kontrol Sizde",
+  "privacyControlDesc": "Saklanan veriler, sizin oluşturduğunuz ve girdiğiniz verilerdir. İstediğiniz zaman uygulama üzerinden silebilirsiniz.",
+  "privacyDisclaimerTitle": "Önemli",
+  "privacyDisclaimer": "Güvenli bir sistem kullansak da, internet üzerinden hiçbir iletim yöntemi %100 güvenli değildir.",
+  "notification": {
+    "trackingTitle": "Sürüş Süresi Takip Ediliyor",
+    "trackingBody": "HourWise sürüş tespiti için konumunuzu aktif olarak izliyor."
+  },
+  "enableComplianceNotifications": "Uyumluluk uyarılarını almak için lütfen bildirimleri etkinleştirin.",
+  "locationPermissionRequired": "Sürüş algılama için konum izni gereklidir.",
+  "backgroundLocationPermissionRequired": "Güvenilir sürüş takibi için arka plan konum izni gereklidir.",
+  "failedToResumeShift": "Vardiya sunucudan geri yüklenemedi.",
+  "startShiftError": "Vardiya başlatılamadı.",
+  "endShiftError": "Vardiya sunucuda sonlandırılamadı. Lütfen bağlantınızı kontrol edin.",
+  "cannotGoToPoaFromBreak": "Moladayken Hazır Bulunma Süresi'ne (POA) geçilemez.",
+  "proactiveNotificationTitle": "Son Vardiyanızın İncelemesi",
+  "proactiveNotificationBody": "Bugün için küçük bir tavsiye:",
+  "workTimeWarningTitle": "Çalışma Süresi Uyarısı",
+  "drivingTimeWarningTitle": "Sürüş Süresi Uyarısı",
+  "workTime30minLeft": "Çalışma döngünüzde 30 dakika kaldı.",
+  "workTime15minLeft": "Çalışma döngünüzde 15 dakika kaldı.",
+  "workTime5minLeft": "Çalışma döngünüzde 5 dakika kaldı.",
+  "workTimeLimitReached": "Çalışma süresi sınırına ulaşıldı.",
+  "drivingTime30minLeft": "Sürüş döngünüzde 30 dakika kaldı.",
+  "drivingTime15minLeft": "Sürüş döngünüzde 15 dakika kaldı.",
+  "drivingTime5minLeft": "Sürüş döngünüzde 5 dakika kaldı.",
+  "drivingTimeLimitReached": "Sürüş süresi sınırına ulaşıldı.",
+  "audioShiftStarted": "Vardiya başladı.",
+  "audioShiftEnded": "Vardiya bitti.",
+  "audioBreakStarted": "Mola başladı.",
+  "audioResumeWork": "Çalışmaya devam ediliyor.",
+  "audioPoaStarted": "Hazır bulunma süresi başladı.",
+  "audioDrivingTimeReset": "Sürüş süresi sıfırlandı.",
+  "audioDrivingLimitReached": "Sürüş sınırı doldu.",
+  "audioDriving5minLeft": "5 dakikalık sürüş kaldı.",
+  "audioDriving15minLeft": "15 dakikalık sürüş kaldı.",
+  "audioDriving30minLeft": "30 dakikalık sürüş kaldı.",
+  "audioWork5h15": "Çalışma döngünüzde 15 dakika kaldı.",
+  "audioWork5h30": "Çalışma döngünüzde 30 dakika kaldı.",
+  "audioWork5h55": "Çalışma döngünüzde 5 dakika kaldı.",
+  "safetyWarningTitle": "Güvenlik Uyarısı",
+  "safetyWarningBody": "Sürüş sırasında uygulamayı kullanmayın. Güvenli bir yerde durun.",
+  "acknowledge": "Onayla",
+  "auth": {
+    "title": {
+      "signIn": "Giriş Yap",
+      "signUp": "Hesap Oluştur"
+    },
+    "subtitle": {
+      "signIn": "Tekrar hoş geldiniz! Lütfen giriş yapın.",
+      "signUp": "Bize katılın ve saatlerinizi takip etmeye başlayın."
+    },
+    "fields": {
+      "email": {
+        "label": "E-posta Adresi",
+        "placeholder": "eposta@örnek.com"
+      },
+      "password": {
+        "label": "Şifre",
+        "placeholder": "Şifrenizi girin"
+      },
+      "driverName": {
+        "label": "Sürücü Tam Adı",
+        "placeholder": "örn. Ahmet Yılmaz"
+      },
+      "companyCode": {
+        "label": "Şirket Kodu",
+        "placeholder": "Şirketinizden aldığınız kodu girin"
+      }
+    },
+    "buttons": {
+      "signIn": "Giriş Yap",
+      "createAccount": "Hesap Oluştur"
+    },
+    "switchTo": {
+      "signUp": "Hesabınız yok mu? Kaydolun",
+      "signIn": "Zaten hesabınız var mı? Giriş yapın"
+    },
+    "accountType": {
+      "solo": {
+        "title": "Bireysel Sürücü",
+        "subtitle": "Bağımsız profesyonel"
+      },
+      "fleet": {
+        "title": "Filo Üyesi",
+        "subtitle": "Bir şirketin parçası"
+      }
+    },
+    "alerts": {
+      "missingInfo": {
+        "title": "Eksik Bilgi",
+        "body": "Lütfen tüm zorunlu alanları doldurun."
+      },
+      "companyCodeRequired": {
+        "title": "Şirket Kodu Gerekli",
+        "body": "Filo üyesi olarak devam etmek için lütfen şirketinizin kodunu girin."
+      },
+      "invalidCode": {
+        "title": "Geçersiz Kod",
+        "expired": "Bu şirket kodunun süresi dolmuş.",
+        "notFound": "Girdiğiniz şirket kodu geçerli değil."
+      },
+      "signUpError": {
+        "title": "Kayıt Hatası"
+      },
+      "signUpFailed": {
+        "title": "Kayıt Başarısız",
+        "body": "Şu anda hesabınızı oluşturamadık. Lütfen daha sonra tekrar deneyin."
+      },
+      "profileCreationFailed": {
+        "title": "Profil Oluşturma Başarısız",
+        "body": "Hesabınız oluşturuldu ancak profiliniz yapılandırılamadı."
+      },
+      "checkEmail": {
+        "title": "E-postanızı Kontrol Edin",
+        "body": "E-posta adresinize bir doğrulama bağlantısı gönderildi."
+      },
+      "signInMissing": {
+        "title": "Eksik Bilgi",
+        "body": "Lütfen hem e-posta adresinizi hem de şifrenizi girin."
+      },
+      "signInError": {
+        "title": "Giriş Hatası"
+      }
+    }
+  },
+  "paywall": {
+    "title": "HourWise Pro'ya Geçin",
+    "subtitle": "Sınırsız takip ve raporlar dahil tüm premium özelliklere erişin.",
+    "subscribeNow": "Şimdi Abone Ol",
+    "restorePurchases": "Satın Alımları Geri Yükle",
+    "loading": "Açılıyor...",
+    "restoring": "Geri yükleniyor...",
+    "alert": {
+      "successTitle": "Başarılı",
+      "purchased": "Satın alma işleminiz tamamlandı!",
+      "restored": "Satın alımlarınız geri yüklendi!",
+      "paywallError": "Bir hata oluştu. Lütfen tekrar deneyin.",
+      "couldNotDisplay": "Abonelik sayfası görüntülenemedi.",
+      "restoreSuccess": "Satın alımlarınız geri yüklendi.",
+      "noPurchasesTitle": "Satın Alım Bulunamadı",
+      "noPurchasesBody": "Geri yüklenecek aktif bir abonelik bulamadık.",
+      "restoreError": "Satın alımlar geri yüklenemedi."
+    }
+  },
+  "settings": {
+    "subscription": {
+      "openError": "Abonelik yönetim sayfası açılamadı.",
+      "opening": "Açılıyor..."
+    }
+  },
+  "businessProfile": {
+    "title": "İşletme Profili",
+    "subtitle": "Faturalar ve raporlar için",
+    "alerts": {
+      "profileSaved": "İşletme profili başarıyla kaydedildi."
+    },
+    "sections": {
+      "companyDetails": "Şirket Detayları",
+      "bankDetails": "Banka Detayları"
+    },
+    "fields": {
+      "legalName": {
+        "label": "Yasal İsim / Şirket Adı",
+        "placeholder": "örn. Lojistik LTD. ŞTİ."
+      },
+      "address": {
+        "label": "İşletme Adresi",
+        "placeholder": "Tam işletme adresinizi girin"
+      },
+      "email": {
+        "label": "İletişim E-postası",
+        "placeholder": "örn. iletisim@sirketiniz.com"
+      },
+      "phone": {
+        "label": "İletişim Telefonu",
+        "placeholder": "örn. +905000000000"
+      },
+      "taxId": {
+        "label": "Vergi Numarası / Vergi Dairesi",
+        "placeholder": "örn. 1234567890"
+      },
+      "accountName": {
+        "label": "Banka Hesap Adı",
+        "placeholder": "Hesap sahibinin adı"
+      },
+      "sortCode": {
+        "label": "Şube Kodu",
+        "placeholder": "örn. 1234"
+      },
+      "accountNumber": {
+        "label": "Hesap Numarası",
+        "placeholder": "örn. 12345678"
+      },
+      "iban": {
+        "label": "IBAN",
+        "placeholder": "örn. TR00 0000 0000..."
+      }
+    }
+  },
+  "violation": {
+    "EXCEEDED_6H_WORK": {
+      "title": "Mola Vermeden 6 Saatlik Çalışma Aşıldı",
+      "tip": "6 saatlik çalışmadan sonra 30 dakikalık mola gereklidir."
+    },
+    "INSUFFICIENT_BREAK_FOR_9H_WORK": {
+      "title": "9 Saatten Fazla Çalışma İçin Yetersiz Mola",
+      "tip": "9 saati aşan vardiyalar için toplamda 45 dakikalık mola gereklidir."
+    },
+    "INSUFFICIENT_DAILY_REST": {
+      "title": "Yetersiz Günlük Dinlenme",
+      "tip": "Vardiyalar arasında en az 11 saat dinlendiğinizden emin olun (haftada 3 kez 9 saate düşürülebilir)."
+    },
+    "REDUCED_DAILY_REST_TAKEN": {
+      "title": "Azaltılmış Günlük Dinlenme Yapıldı",
+      "tip": "Azaltılmış günlük dinlenme yaptınız. Bunu haftada en fazla 3 kez yapabileceğinizi unutmayın."
+    },
+    "EXCEEDED_4_5H_DRIVING": {
+      "title": "4.5 Saatlik Sürüş Süresi Aşıldı",
+      "tip": "4.5 saatlik kesintisiz sürüşten sonra 45 dakika mola vermelisiniz."
+    },
+    "EXCEEDED_DAILY_DRIVING_LIMIT": {
+      "title": "Günlük Sürüş Sınırı Aşıldı",
+      "tip": "Günlük sürüş 9 saatle sınırlıdır, haftada sadece iki kez 10 saate uzatılabilir."
+    },
+    "USED_10H_DRIVING_EXTENSION": {
+      "title": "10 Saatlik Sürüş Uzatması Kullanıldı",
+      "tip": "Haftalık iki adet 10 saatlik sürüş uzatmanızdan birini kullandınız."
+    },
+    "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
+      "title": "Haftalık Sürüş Sınırı Aşıldı",
+      "tip": "Maksimum haftalık sürüş süresi 56 saattir."
+    },
+    "EXCEEDED_WEEKLY_WORK_LIMIT": {
+      "title": "Haftalık Çalışma Sınırı Aşıldı",
+      "tip": "Herhangi bir haftadaki maksimum çalışma süresi 60 saattir."
+    },
+    "default": {
+      "title": "Uyumluluk İhlali",
+      "tip": "Bir kural ihlal edildi. Lütfen vardiya detaylarını gözden geçirin."
+    }
+  },
+  "dateRangeError": "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.",
+  "noDataForRange": "bu dönem için veri bulunamadı.",
+  "failedToGenerate": "Rapor oluşturulamadı.",
+  "workReport": "Çalışma Raporu",
+  "reportFrom": "Başlangıç",
+  "to": "Bitiş",
+  "summary": "Özet",
+  "totalWorkTime": "Toplam Çalışma Süresi",
+  "totalBreakTime": "Toplam Mola Süresi",
+  "estimatedEarnings": "Tahmini Kazanç",
+  "previousWeek": "Önceki Hafta",
+  "lastMonth": "Geçen Ay",
+  "customRange": "Özel Aralık",
+  "generateReport": "Rapor Oluştur"
+}
