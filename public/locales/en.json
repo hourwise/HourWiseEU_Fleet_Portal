@@ -18,7 +18,8 @@
     "minutes": "minutes",
     "saving": "Saving...",
     "failedToSave": "Failed to save data.",
-    "gotIt": "Got It!"
+    "gotIt": "Got It!",
+    "logout": "Logout"
   },
   "app": {
     "title": "HourWise EU",
