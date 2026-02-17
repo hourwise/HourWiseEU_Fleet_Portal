@@ -63,7 +63,7 @@ export function BillingManager() {
     return <div className="p-6 bg-brand-card-light rounded-lg text-center">Loading billing status...</div>;
   }
 
-  const isSubscribed = company?.subscription_status === 'active' || company?.subscription_status === 'trialing';
+  const isSubscribed = company?.subscription_status === 'active';
 
   return (
     <div className="bg-brand-card-light border border-brand-border rounded-lg shadow-sm p-6">
@@ -78,7 +78,7 @@ export function BillingManager() {
       {isSubscribed ? (
         <div>
           <p className="text-lg text-slate-300">
-            Your subscription is currently <span className="font-semibold text-green-400 capitalize">{company?.subscription_status}</span>.
+            Your subscription is currently <span className="font-semibold text-green-400 capitalize">Active</span>.
           </p>
           <p className="text-slate-400 mt-2">
             To manage your subscription, view invoices, or update payment methods, please contact support.
@@ -88,7 +88,7 @@ export function BillingManager() {
       ) : (
         <div>
           <p className="text-lg text-slate-300 mb-4">
-            Activate your fleet by subscribing for just £4.99 per driver, per month.
+            Activate your fleet by subscribing for just £4.99 per driver, per month. Your account is free until you add your first driver.
           </p>
           <button
             onClick={handleSubscribeClick}
@@ -101,7 +101,7 @@ export function BillingManager() {
                 Redirecting to Checkout...
               </>
             ) : (
-              'Subscribe Now'
+              'Activate Subscription'
             )}
           </button>
         </div>
