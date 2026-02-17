@@ -2,6 +2,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@11.1.0?target=deno";
 import { corsHeaders } from "../_shared/cors.ts";
 
 // Helper to generate a random code
@@ -13,6 +14,11 @@ function generateInviteCode(length = 8) {
   }
   return result;
 }
+
+const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
+  httpClient: Stripe.createFetchHttpClient(),
+  apiVersion: "2023-10-16",
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,7 +32,6 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
-    // Use a service role client to fetch company name
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -42,7 +47,30 @@ serve(async (req) => {
     if (!companyId || !inviteEmail || !inviteFullName) {
         throw new Error("Missing required fields");
     }
+    
+    // --- Get Company and increment subscription ---
+    const { data: company, error: companyError } = await serviceClient
+      .from('companies')
+      .select('name, stripe_subscription_id')
+      .eq('id', companyId)
+      .single();
 
+    if (companyError) throw new Error("Failed to retrieve company data.");
+    if (!company.stripe_subscription_id) {
+        throw new Error("Company does not have an active subscription.");
+    }
+
+    // Retrieve the subscription to get the current quantity
+    const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
+    
+    // Increment the quantity by 1
+    const updatedSubscription = await stripe.subscriptions.update(company.stripe_subscription_id, {
+        items: [{
+            id: subscription.items.data[0].id,
+            quantity: subscription.items.data[0].quantity + 1,
+        }],
+    });
+    
     // --- Create the invite in the database ---
     const invite_code = generateInviteCode();
     const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -62,14 +90,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) throw insertError;
-
-    // --- Get Company Name for the email ---
-    const { data: company } = await serviceClient
-      .from('companies')
-      .select('name')
-      .eq('id', companyId)
-      .single();
-
+    
     // --- Send the email using Resend ---
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) throw new Error("Resend API key is not configured.");

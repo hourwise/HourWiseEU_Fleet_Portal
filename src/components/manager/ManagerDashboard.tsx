@@ -9,7 +9,8 @@ import { CompanySettings } from './CompanySettings';
 import { SupervisorManagement } from './SupervisorManagement';
 import { AlertsFeed } from './AlertsFeed';
 import { PayrollModule } from './PayrollModule';
-import { MfaSettings } from './MfaSettings'; // Import the new component
+import { MfaSettings } from './MfaSettings';
+import { BillingManager } from './BillingManager'; // Import the new billing component
 
 type Tab = 'dashboard' | 'drivers' | 'supervisors' | 'payroll' | 'reports' | 'audit' | 'settings';
 
@@ -96,6 +97,7 @@ export function ManagerDashboard() {
           {activeTab === 'audit' && <AuditTrail />}
           {activeTab === 'settings' && (
             <div className="space-y-6">
+                <BillingManager />
                 <CompanySettings />
                 <MfaSettings />
             </div>

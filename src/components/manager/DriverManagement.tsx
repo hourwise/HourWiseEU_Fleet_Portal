@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Search, UserCheck, UserX, Mail, Clock, UserPlus } from 'lucide-react';
+import { Users, Search, UserCheck, UserX, Mail, Clock, UserPlus, Trash2 } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
 
@@ -15,6 +15,7 @@ export function DriverManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -23,18 +24,19 @@ export function DriverManagement() {
   }, [profile]);
 
   const loadData = async () => {
+    if (!profile?.company_id) return;
     setLoading(true);
     try {
       const driversPromise = supabase
         .from('profiles')
         .select('*')
-        .eq('company_id', profile!.company_id!)
+        .eq('company_id', profile.company_id)
         .eq('role', 'driver');
       
       const invitesPromise = supabase
         .from('driver_invites')
         .select('*')
-        .eq('company_id', profile!.company_id!)
+        .eq('company_id', profile.company_id)
         .eq('status', 'pending');
 
       const [{ data: driversData, error: driversError }, { data: invitesData, error: invitesError }] = await Promise.all([driversPromise, invitesPromise]);
@@ -48,6 +50,30 @@ export function DriverManagement() {
       console.error('Error loading driver data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemoveDriver = async (driverId: string, driverName: string) => {
+    if (window.confirm(`Are you sure you want to remove ${driverName}? This will permanently delete their account and data.`)) {
+      setRemovingDriverId(driverId);
+      try {
+        const { error } = await supabase.functions.invoke('remove-driver', {
+          body: { driverId },
+        });
+
+        if (error) {
+          throw new Error(`Failed to remove driver: ${error.message}`);
+        }
+        
+        // Refresh the list after successful removal
+        await loadData();
+
+      } catch (error) {
+        console.error('Removal error:', error);
+        alert((error as Error).message);
+      } finally {
+        setRemovingDriverId(null);
+      }
     }
   };
 
@@ -102,7 +128,7 @@ export function DriverManagement() {
                 </div>
             ) : combinedList.map((item) => (
               <div key={item.id} className={`flex items-center justify-between p-4 border rounded-lg ${item.type === 'driver' ? 'border-gray-200' : 'border-amber-300 bg-amber-50'}`}>
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 items-center gap-4">
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
                     <p className="font-semibold text-gray-900">{item.full_name}</p>
@@ -131,6 +157,24 @@ export function DriverManagement() {
                     </div>
                   </div>
                 </div>
+                {item.type === 'driver' && (
+                  <div className="ml-4">
+                    <button
+                      onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')}
+                      disabled={removingDriverId === item.id}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-red-700 bg-red-100 rounded-lg hover:bg-red-200 disabled:bg-gray-200 disabled:text-gray-500 transition"
+                    >
+                      {removingDriverId === item.id ? (
+                        <span>Removing...</span>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          <span>Remove</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -141,7 +185,7 @@ export function DriverManagement() {
         <InviteDriverModal
           onClose={() => setShowInviteModal(false)}
           onInviteSent={() => {
-            loadData(); // Refresh the list after an invite is sent
+            loadData();
           }}
         />
       )}
