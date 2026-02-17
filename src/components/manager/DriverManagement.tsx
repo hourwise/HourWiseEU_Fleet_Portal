@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Search, UserCheck, UserX, Mail, Clock, UserPlus, Trash2 } from 'lucide-react';
+import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
+import { DriverDetailsModal } from './DriverDetailsModal'; // Import the new modal
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Invite = Database['public']['Tables']['driver_invites']['Row'];
@@ -16,6 +17,7 @@ export function DriverManagement() {
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null); // For the details modal
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -65,7 +67,6 @@ export function DriverManagement() {
           throw new Error(`Failed to remove driver: ${error.message}`);
         }
         
-        // Refresh the list after successful removal
         await loadData();
 
       } catch (error) {
@@ -129,6 +130,7 @@ export function DriverManagement() {
             ) : combinedList.map((item) => (
               <div key={item.id} className={`flex items-center justify-between p-4 border rounded-lg ${item.type === 'driver' ? 'border-gray-200' : 'border-amber-300 bg-amber-50'}`}>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+                  {/* ... Driver info columns ... */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
                     <p className="font-semibold text-gray-900">{item.full_name}</p>
@@ -158,7 +160,14 @@ export function DriverManagement() {
                   </div>
                 </div>
                 {item.type === 'driver' && (
-                  <div className="ml-4">
+                  <div className="ml-4 flex gap-2">
+                    <button
+                      onClick={() => setSelectedDriver(item as Profile)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span>Details</span>
+                    </button>
                     <button
                       onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')}
                       disabled={removingDriverId === item.id}
@@ -169,7 +178,6 @@ export function DriverManagement() {
                       ) : (
                         <>
                           <Trash2 className="w-4 h-4" />
-                          <span>Remove</span>
                         </>
                       )}
                     </button>
@@ -184,7 +192,15 @@ export function DriverManagement() {
       {showInviteModal && (
         <InviteDriverModal
           onClose={() => setShowInviteModal(false)}
-          onInviteSent={() => {
+          onInviteSent={loadData}
+        />
+      )}
+      {selectedDriver && (
+        <DriverDetailsModal
+          driver={selectedDriver}
+          onClose={() => setSelectedDriver(null)}
+          onSave={() => {
+            setSelectedDriver(null);
             loadData();
           }}
         />
