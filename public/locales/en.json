@@ -19,7 +19,20 @@
     "saving": "Saving...",
     "failedToSave": "Failed to save data.",
     "gotIt": "Got It!",
-    "logout": "Logout"
+    "logout": "Logout",
+    "openSettings": "Open Settings"
+  },
+  "permissions": {
+    "notificationsTitle": "Notifications Permission",
+    "notificationsBody": "HourWise uses notifications to send you critical compliance alerts. Please enable notifications to ensure you don't miss them.",
+    "locationTitle": "Location Permission",
+    "locationBody": "HourWise needs location access to automatically detect driving. Please enable it in your settings.",
+    "backgroundLocationTitle": "Background Location Permission",
+    "backgroundLocationBody": "For reliable tracking, please set location access to 'Allow all the time' in your settings. This is crucial for automatic driving detection even when the app is in the background.",
+    "cameraTitle": "Camera Permission",
+    "cameraBody": "HourWise needs camera access to allow you to upload photos for expenses or other documents. Please enable it in your settings.",
+    "mediaLibraryTitle": "Media Library Permission",
+    "mediaLibraryBody": "HourWise needs access to your media library to allow you to select photos for expenses or other documents. Please enable it in your settings."
   },
   "app": {
     "title": "HourWise EU",
@@ -66,6 +79,7 @@
     "tachoGuide": "Tacho Guide",
     "compliance": "Compliance",
     "workHistory": "Work History",
+    "addExpense": "Add Expense",
     "downloadReport": "Download Report"
   },
   "workHistory": {
@@ -146,6 +160,14 @@
     "title": "Safety Warning",
     "body": "Do not interact with the app while driving. Stop safely before making changes.",
     "acknowledge": "I understand"
+  },
+  "firstTimeSetup": {
+    "title": "Welcome to HourWise!",
+    "subtitle": "A few steps to get you started correctly:",
+    "step1": "Enable All Permissions: For automatic driving detection to work, please grant all permissions, especially setting Location to 'Allow all the time'.",
+    "step2": "Complete Driver Setup: Fill in your details. This is essential for reports and optional pay calculations.",
+    "step3": "Enter Your Last Shift: Go to Menu > Work History and add your last completed shift. This is crucial for correct daily rest calculation.",
+    "button": "I Understand, Let's Go!"
   },
   "settingsMenu": {
     "manageSubscription": "Manage Subscription",
@@ -239,7 +261,7 @@
       "title": "Daily Workflow",
       "step1": {
         "title": "1. Start & End Your Shift",
-        "body": "Use the main 'Start Shift' and 'End Shift' buttons. The app logs everything and calculates totals automatically."
+        "body": "Use the main 'Start Shift' and 'End Shift' buttons. At the end of a shift, a confirmation screen will show your totals and any violations."
       },
       "step2": {
         "title": "2. Automatic Driving Detection",
@@ -258,20 +280,27 @@
       "title": "Key Features",
       "fatigue": {
         "title": "Fatigue & Focus Monitor",
-        "body": "This appears during your shift, providing real-time compliance warnings for insufficient daily rest, upcoming break requirements, and driving/work time limits.",
-        "audioWarning": "The app provides audible alerts and push notifications for critical warnings. Ensure your device volume is on."
+        "body": "This appears on the main screen during your shift, providing real-time compliance warnings for insufficient daily rest, upcoming break requirements, and driving/work time limits."
+      },
+      "compliance": {
+        "title": "Compliance Heatmap",
+        "body": "Visible on the dashboard and in the menu. This calendar shows your compliance score for each day. Tap it to see a detailed monthly view and identify any days with issues."
       },
       "history": {
         "title": "Work History & Manual Edits",
-        "body": "From the Main Menu (top left), select 'Work History' to view past shifts. Here you can:",
-        "bullets": [
-          "Tap any day to see a detailed shift summary.",
-          "Manually add or edit past shifts to correct your records at any time."
-        ]
+        "body": "From the Main Menu (top left), select 'Work History' to view past shifts. Here you can tap any day to see a detailed summary, and manually add or edit past shifts to correct your records."
+      },
+      "expenses": {
+        "title": "Add & Track Expenses",
+        "body": "From the Main Menu, select 'Add Expense' to log costs like fuel or meals. You can scan receipts with your camera, and the app will try to automatically fill in the amount."
       },
       "reports": {
         "title": "Download Reports & Invoices",
         "body": "From the Main Menu, select 'Download Report' to generate a professional PDF of your work summary or a customer invoice for any date range."
+      },
+      "dailyReport": {
+        "title": "Daily Compliance Report",
+        "body": "When you open the app for the first time each day, you may see a pop-up summarizing any compliance violations from the previous day's shift."
       }
     },
     "footer": {
@@ -447,24 +476,30 @@
   "companyCodeNotFound": "We couldn't find that company code.",
   "expiredCodeTitle": "Code Expired",
   "expiredCodeMessage": "That company code has expired. Please request a new one.",
-  "privacyTitle": "Privacy Policy",
+  "privacyTitle": "Privacy & Your Data",
   "privacySubtitle": "Your Data, Your Control",
-  "privacyIntro": "This policy explains what data HourWise collects and how it's managed to provide a seamless experience. We are committed to protecting your privacy and giving you full control over your information.",
+  "privacyIntro": "We are committed to protecting your privacy. This policy explains what data HourWise collects to provide its features, how it's stored, and how you remain in control of your information.",
+  "privacyWhyTitle": "Why We Collect Data",
+  "privacyWhyDesc": "We only collect data that is essential for the app's core functionality, such as calculating your work hours, ensuring compliance with EU regulations, and generating accurate reports and invoices.",
   "privacyDataCollectedTitle": "What We Store",
-  "privacyDataCollectedDesc": "To calculate your work hours and generate reports, we store the following information:",
+  "privacyDataCollectedDesc": "To enable all features, we securely store the following information you provide:",
   "privacyDataPoints": [
     "Your name (for reports)",
-    "Your recorded shifts (start/end times)",
-    "Totals for work, breaks and POA",
-    "Compliance scores and violations (if enabled)",
-    "Pay configuration settings (optional)"
+    "Your recorded shifts (start/end times, driving, work, breaks, POA)",
+    "Location data (solely for automatic driving detection)",
+    "Compliance scores and rule violations",
+    "Expense details, including receipt images and extracted text",
+    "Pay configuration settings (optional, for pay estimates)",
+    "Business profile and bank details (optional, for invoicing)"
   ],
   "privacyStorageTitle": "Secure Cloud Storage",
-  "privacyStorageDesc": "Your data is stored in your own private, secure cloud account, synchronized across your devices. We use industry-standard encryption to protect it.",
+  "privacyStorageDesc": "Your data is stored in your own private, secure cloud account, synchronized across your devices. We use industry-standard encryption to protect it both in transit and at rest.",
   "privacyControlTitle": "You Are In Control",
-  "privacyControlDesc": "The data stored is the data you create and input. You have the ability to view, edit, and delete your work history and personal information at any time through the app.",
+  "privacyControlDesc": "The data stored is the data you create. You have the ability to view, edit, and permanently delete your work history, expenses, and personal information at any time through the app.",
+  "privacyThirdPartyTitle": "Third-Party Services",
+  "privacyThirdPartyDesc": "To provide features like receipt scanning, we may send data to third-party services. For instance, receipt images are sent to an OCR service to extract text. We do not share your data for marketing or advertising purposes.",
   "privacyDisclaimerTitle": "Important",
-  "privacyDisclaimer": "While we use a secure system, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security but are committed to protecting your data.",
+  "privacyDisclaimer": "While we use a secure, industry-standard system, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security but are fully committed to protecting your data.",
   "notification": {
     "trackingTitle": "Tracking Driving Time",
     "trackingBody": "HourWise is actively monitoring your location for driving."
@@ -720,7 +755,7 @@
   "to": "To",
   "summary": "Summary",
   "totalWorkTime": "Total Work Time",
-  "totalBreakTime": "Total Break Time",
+  "totalBreakTime": "Total BreakTime",
   "estimatedEarnings": "Estimated Earnings",
   "previousWeek": "Previous Week",
   "lastMonth": "Last Month",
