@@ -182,59 +182,23 @@
     }
   },
   "driverSetup": {
-    "header": {
-      "welcomeSetup": "Welcome Setup",
-      "driverSettings": "Driver Settings"
-    },
-    "sections": {
-      "personalInformation": "Personal Information",
-      "companyLink": "Company Link",
-      "payConfiguration": "Pay Configuration"
-    },
-    "fields": {
-      "driverNameLabel": "Driver Name",
-      "basicHourlyRate": "Basic hourly rate",
-      "unpaidBreakDuration": "Unpaid break duration (minutes)"
-    },
-    "placeholders": {
-      "enterFullName": "Enter full name",
-      "hourlyRate": "e.g. 15.00",
-      "unpaidBreak": "e.g. 45"
-    },
-    "company": {
-      "codeOptionalLabel": "Company link code (optional)",
-      "codePlaceholder": "Enter company code",
-      "helperText": "Enter the code provided by your company to join their fleet.",
-      "linkedToCompany": "Linked to company"
-    },
-    "allowances": {
-      "title": "Shift Allowances",
-      "addAllowance": "Add allowance"
-    },
-    "overtime": {
-      "title": "Overtime Rules",
-      "thresholdLabel": "Overtime threshold",
-      "thresholdPlaceholder": "e.g. 40",
-      "rateMultiplierLabel": "Rate multiplier",
-      "rateMultiplierPlaceholder": "e.g. 1.5",
-      "additional": {
-        "addTier": "Add another tier"
-      }
-    },
-    "units": {
-      "overtime": {
-        "day": "per day",
-        "week": "per week",
-        "month": "per month"
-      },
-      "allowance": {
-        "hour": "per hour",
-        "day": "per day",
-        "week": "per week",
-        "month": "per month",
-        "shift": "per shift"
-      }
-    }
+    "title": "Driver Setup",
+    "notAuthenticated": "User not authenticated. Please restart the app.",
+    "hourlyRate": "Hourly Rate",
+    "unpaidBreak": "Unpaid Break",
+    "minutes": "Minutes",
+    "overtimeThreshold": "Overtime Threshold",
+    "hours": "Hours per week",
+    "overtimeMultiplier": "Overtime Rate Multiplier",
+    "shiftAllowances": "Shift Allowances",
+    "additionalOvertime": "Additional Overtime Tiers",
+    "threshold": "Threshold (Hours)",
+    "rate": "Rate (£)",
+    "addTier": "Add Tier",
+    "skip": "Skip for Now",
+    "save": "Save & Continue",
+    "validationError": "Validation Error",
+    "pleaseEnterName": "Please enter your name."
   },
   "instructions": {
     "title": "How to Use HourWise",
