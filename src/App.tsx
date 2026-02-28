@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import React, { useCallback, useEffect, useMemo, useState, useContext, createContext } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginForm } from './components/auth/LoginForm';
@@ -6,14 +8,16 @@ import { ManagerDashboard } from './components/manager/ManagerDashboard';
 import { HomePage } from './components/public/HomePage';
 import { PrivacyPage } from './components/public/PrivacyPage';
 import { HowToPage } from './components/public/HowToPage';
+import { ContactPage } from './components/public/ContactPage'; // IMPORT THE NEW PAGE
 import { Header } from './components/public/Header';
 import { Footer } from './components/public/Footer';
 import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AlertTriangle } from 'lucide-react';
+import { PrivacyRequestPage } from './pages/PrivacyRequestPage';
 
-type Route = '/' | '/login' | '/signup' | '/privacy' | '/how-to' | '/dashboard';
+type Route = '/' | '/login' | '/signup' | '/privacy' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
 
-const PUBLIC_ROUTES: Route[] = ['/', '/privacy', '/how-to'];
+const PUBLIC_ROUTES: Route[] = ['/', '/privacy', '/how-to', '/privacy-request', '/contact'];
 const AUTH_ROUTES: Route[] = ['/login', '/signup'];
 const PROTECTED_ROUTES: Route[] = ['/dashboard'];
 
@@ -38,7 +42,7 @@ function RouterProvider({ children }: { children: React.ReactNode }) {
     return isRoute(path) ? path : '/';
   };
 
-  const [currentPath, setCurrentPath] = useState<Route>(getPath);
+  const [currentPath, setCurrentPath] = useState<Route>(getPath());
 
   useEffect(() => {
     const handlePopState = () => setCurrentPath(getPath());
@@ -67,7 +71,9 @@ function isRoute(path: string): path is Route {
     path === '/signup' ||
     path === '/privacy' ||
     path === '/how-to' ||
-    path === '/dashboard'
+    path === '/dashboard' ||
+    path === '/privacy-request' ||
+    path === '/contact'
   );
 }
 
@@ -132,14 +138,14 @@ class ErrorBoundary extends React.Component<
 
 
 function AppContent() {
-  const { user, profile, loading, isSigningUp, needsMfa, refreshSession, signOut } = useAuth(); // Changed
+  const { user, profile, loading, isSigningUp, needsMfa, refreshSession, signOut } = useAuth();
   const { currentPath, navigate } = useRouter();
 
   const isPublic = useMemo(() => PUBLIC_ROUTES.includes(currentPath), [currentPath]);
   const isAuth = useMemo(() => AUTH_ROUTES.includes(currentPath), [currentPath]);
   const isProtected = useMemo(() => PROTECTED_ROUTES.includes(currentPath), [currentPath]);
 
-  const DEBUG = false; // set false to hide
+  const DEBUG = false;
 
   const debugOverlay = !DEBUG ? null : (
     <div className="fixed bottom-3 left-3 z-50 text-xs bg-black/70 text-white px-3 py-2 rounded-lg">
@@ -175,6 +181,10 @@ function AppContent() {
     );
   }
 
+  if (currentPath === '/privacy-request') {
+      return <PrivacyRequestPage />;
+  }
+
   if (isPublic) {
     return (
       <>
@@ -182,6 +192,7 @@ function AppContent() {
           {currentPath === '/' && <HomePage />}
           {currentPath === '/privacy' && <PrivacyPage />}
           {currentPath === '/how-to' && <HowToPage />}
+          {currentPath === '/contact' && <ContactPage />}
         </PublicLayout>
         {debugOverlay}
       </>
@@ -198,7 +209,6 @@ function AppContent() {
   }
 
   if (!profile) {
-    // New logic here
     if (isSigningUp) {
       return (
         <>

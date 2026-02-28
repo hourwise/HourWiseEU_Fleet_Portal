@@ -93,7 +93,9 @@ serve(async (req) => {
     
     // --- Send the email using Resend ---
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL"); // <-- GET EMAIL FROM ENV
     if (!resendApiKey) throw new Error("Resend API key is not configured.");
+    if (!fromEmail) throw new Error("Resend from email is not configured.");
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -102,7 +104,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "invites@hourwiseeu.co.uk", // Use your verified Resend domain email
+        from: fromEmail, // <-- USE THE VARIABLE HERE
         to: inviteEmail,
         subject: `You're invited to join ${company?.name || 'a fleet'} on HourWise EU`,
         html: `
@@ -130,7 +132,7 @@ serve(async (req) => {
       status: 201,
     });
 
-  } catch (error) {
+  } catch (error) {_
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

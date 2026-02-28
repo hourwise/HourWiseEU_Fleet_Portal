@@ -28,6 +28,9 @@ export function Header() {
             <Link href="/privacy" className="text-slate-300 hover:text-brand-accent transition-colors font-medium">
               Privacy Policy
             </Link>
+            <Link href="/contact" className="text-slate-300 hover:text-brand-accent transition-colors font-medium">
+              Contact
+            </Link>
             <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-brand-border">
               <Link href="/login" className="text-slate-300 hover:text-brand-accent transition-colors font-medium">
                 Sign In
@@ -76,6 +79,13 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Privacy Policy
+              </Link>
+              <Link
+                href="/contact"
+                className="text-slate-300 hover:text-brand-accent transition-colors font-medium px-2 py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
               </Link>
               <div className="pt-4 border-t border-brand-border flex flex-col space-y-3">
                 <Link

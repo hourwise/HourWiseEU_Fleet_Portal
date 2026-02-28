@@ -79,7 +79,7 @@
     "tachoGuide": "Tacho Guide",
     "compliance": "Compliance",
     "workHistory": "Work History",
-    "addExpense": "Add Expense",
+    "addExpense": "Add Expenses",
     "downloadReport": "Download Report"
   },
   "workHistory": {
@@ -464,6 +464,31 @@
   "privacyThirdPartyDesc": "To provide features like receipt scanning, we may send data to third-party services. For instance, receipt images are sent to an OCR service to extract text. We do not share your data for marketing or advertising purposes.",
   "privacyDisclaimerTitle": "Important",
   "privacyDisclaimer": "While we use a secure, industry-standard system, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security but are fully committed to protecting your data.",
+  "privacy": {
+    "gdprRightsTitle": "Your GDPR Rights",
+    "gdprRightsDesc": "Under GDPR, you have the right to access, rectify, or erase your personal data. You can manage these rights directly in the app or submit a formal request via our online portal."
+  },
+  "account": {
+    "title": "Account Management",
+    "manageMyData": "Manage My Data",
+    "profileSection": "Profile",
+    "editName": "Edit Full Name",
+    "changeEmail": "Change Email",
+    "changePassword": "Change Password",
+    "dataSection": "Data Management",
+    "exportData": "Export My Data",
+    "manageSubscription": "Manage My Subscription",
+    "dangerZone": "Danger Zone",
+    "delete": {
+      "title": "Delete My Account",
+      "confirmTitle": "Delete Account?",
+      "confirmMessage": "This will permanently erase your shift history, compliance records, and profile. This action cannot be undone.",
+      "confirmButton": "Delete Everything",
+      "successTitle": "Account Deleted",
+      "successMessage": "Your account and all associated data have been permanently removed.",
+      "errorMessage": "We could not delete your account at this time. Please contact support."
+    }
+  },
   "notification": {
     "trackingTitle": "Tracking Driving Time",
     "trackingBody": "HourWise is actively monitoring your location for driving."

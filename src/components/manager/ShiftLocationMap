@@ -1,0 +1,39 @@
+// src/components/manager/ShiftLocationMap.tsx
+
+import React from 'react';
+
+interface ShiftLocationMapProps {
+  lat: number | null | undefined;
+  lng: number | null | undefined;
+  zoom?: number;
+}
+
+export function ShiftLocationMap({ lat, lng, zoom = 14 }: ShiftLocationMapProps) {
+  // Get the access token from environment variables
+  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+
+  // If we don't have coordinates or a token, don't render anything or show a placeholder
+  if (!lat || !lng || !accessToken) {
+    return (
+      <div className="flex items-center justify-center w-full h-40 bg-gray-200 rounded-md">
+        <p className="text-sm text-gray-500">Location not recorded</p>
+      </div>
+    );
+  }
+
+  // --- Construct the Mapbox Static Image URL ---
+  // Note: Mapbox URL format is longitude,latitude
+  const marker = `pin-s-car+4A90E2(${lng},${lat})`; // A blue pin with a car icon
+  const coordinates = `${lng},${lat}`;
+  const imageSize = '400x200'; // The size of the map image in pixels
+
+  const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${marker}/${coordinates},${zoom},0/${imageSize}@2x?access_token=${accessToken}`;
+
+  return (
+    <img
+      src={mapUrl}
+      alt={`Map centered at ${lat}, ${lng}`}
+      className="rounded-md shadow-md w-full"
+    />
+  );
+}
