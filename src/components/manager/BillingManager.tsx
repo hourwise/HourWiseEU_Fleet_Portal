@@ -11,7 +11,7 @@ export function BillingManager() {
   const { profile } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const fetchCompanySubscription = async () => {
@@ -21,7 +21,7 @@ export function BillingManager() {
       try {
         const { data, error } = await supabase
           .from('companies')
-          .select('subscription_status, stripe_customer_id, stripe_subscription_id')
+          .select('subscription_status, stripe_customer_id')
           .eq('id', profile.company_id)
           .single();
 
@@ -37,25 +37,21 @@ export function BillingManager() {
     fetchCompanySubscription();
   }, [profile]);
 
-  const handleSubscribeClick = async () => {
-    setIsSubscribing(true);
+  const handleManageSubscription = async () => {
+    setIsRedirecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-fleet-checkout');
-
-      if (error) {
-        throw new Error(`Failed to create checkout session: ${error.message}`);
-      }
+      // This function creates a Stripe Portal session and returns the URL
+      const { data, error } = await supabase.functions.invoke('create-portal-session');
+      if (error) throw new Error(`Failed to create portal session: ${error.message}`);
       
-      // Redirect to Stripe Checkout
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl;
       } else {
-        throw new Error('No checkout URL returned from the function.');
+        throw new Error('No portal URL was returned.');
       }
-
     } catch (error) {
       alert((error as Error).message);
-      setIsSubscribing(false);
+      setIsRedirecting(false);
     }
   };
 
@@ -63,7 +59,7 @@ export function BillingManager() {
     return <div className="p-6 bg-brand-card-light rounded-lg text-center">Loading billing status...</div>;
   }
 
-  const isSubscribed = company?.subscription_status === 'active';
+  const isSubscribed = company?.subscription_status === 'active' || company?.subscription_status === 'trialing';
 
   return (
     <div className="bg-brand-card-light border border-brand-border rounded-lg shadow-sm p-6">
@@ -78,32 +74,31 @@ export function BillingManager() {
       {isSubscribed ? (
         <div>
           <p className="text-lg text-slate-300">
-            Your subscription is currently <span className="font-semibold text-green-400 capitalize">Active</span>.
+            Your subscription is currently <span className="font-semibold text-green-400 capitalize">{company?.subscription_status}</span>.
           </p>
-          <p className="text-slate-400 mt-2">
-            To manage your subscription, view invoices, or update payment methods, please contact support.
-            {/* Future: Add a button here to redirect to the Stripe Customer Portal */}
+          <p className="text-slate-400 my-4">
+            To manage your subscription, view invoices, or update payment methods, use the secure Stripe customer portal.
           </p>
+          <button
+            onClick={handleManageSubscription}
+            disabled={isRedirecting}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-brand-accent text-white font-semibold rounded-lg hover:bg-brand-accent-dark transition disabled:bg-slate-500"
+          >
+            {isRedirecting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Redirecting...
+              </>
+            ) : (
+              'Manage Billing'
+            )}
+          </button>
         </div>
       ) : (
         <div>
-          <p className="text-lg text-slate-300 mb-4">
-            Activate your fleet by subscribing for just £4.99 per driver, per month. Your account is free until you add your first driver.
+          <p className="text-lg text-slate-300">
+            Your fleet is not yet subscribed. The subscription will be automatically created when you invite your first driver.
           </p>
-          <button
-            onClick={handleSubscribeClick}
-            disabled={isSubscribing}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-brand-accent text-white font-semibold rounded-lg hover:bg-brand-accent-dark transition disabled:bg-slate-500"
-          >
-            {isSubscribing ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Redirecting to Checkout...
-              </>
-            ) : (
-              'Activate Subscription'
-            )}
-          </button>
         </div>
       )}
     </div>
