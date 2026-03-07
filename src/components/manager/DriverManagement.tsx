@@ -106,9 +106,13 @@ export function DriverManagement() {
   const combinedList = useMemo(() => [
     ...drivers.map(d => ({ ...d, type: 'driver' as const, compliance: getDriverComplianceStatus(d.id, documents) })),
     ...invites.map(i => ({ ...i, type: 'invite' as const }))
-  ].filter(item =>
-    item.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  .filter(item => {
+    const name = item.full_name || ''; // Fallback to empty string
+    const email = item.email || '';
+    const query = searchQuery.toLowerCase();
+
+    return name.toLowerCase().includes(query) ||
+           email.toLowerCase().includes(query);
   ), [drivers, invites, documents, searchQuery]);
 
   return (
