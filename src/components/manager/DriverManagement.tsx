@@ -55,7 +55,6 @@ export function DriverManagement() {
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
 
-  // THIS IS THE RESTORED LOGIC
   useEffect(() => {
     if (profile?.company_id) {
       loadData();
@@ -76,6 +75,10 @@ export function DriverManagement() {
       if (invitesError) throw invitesError;
       if (documentsError) throw documentsError;
 
+      // DEBUG LOG: This will show in your browser console (F12)
+      console.log('Fetched Drivers:', driversData);
+      console.log('Fetched Invites:', invitesData);
+
       setDrivers(driversData || []);
       setInvites(invitesData || []);
       setDocuments(documentsData || []);
@@ -85,7 +88,6 @@ export function DriverManagement() {
       setLoading(false);
     }
   };
-  // END OF RESTORED LOGIC
 
   const handleRemoveDriver = async (driverId: string, driverName: string) => {
     if (window.confirm(`Are you sure you want to remove ${driverName}? This will permanently delete their account and data.`)) {
@@ -103,17 +105,19 @@ export function DriverManagement() {
     }
   };
 
-  const combinedList = useMemo(() => [
-    ...drivers.map(d => ({ ...d, type: 'driver' as const, compliance: getDriverComplianceStatus(d.id, documents) })),
-    ...invites.map(i => ({ ...i, type: 'invite' as const }))
-  .filter(item => {
-    const name = item.full_name || ''; // Fallback to empty string
-    const email = item.email || '';
-    const query = searchQuery.toLowerCase();
+  const combinedList = useMemo(() => {
+    const list = [
+      ...drivers.map(d => ({ ...d, type: 'driver' as const, compliance: getDriverComplianceStatus(d.id, documents) })),
+      ...invites.map(i => ({ ...i, type: 'invite' as const }))
+    ];
 
-    return name.toLowerCase().includes(query) ||
-           email.toLowerCase().includes(query);
-  ), [drivers, invites, documents, searchQuery]);
+    return list.filter(item => {
+      const name = item.full_name || '';
+      const email = item.email || '';
+      const query = searchQuery.toLowerCase();
+      return name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
+    });
+  }, [drivers, invites, documents, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -162,7 +166,7 @@ export function DriverManagement() {
                   {/* Name */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
-                    <p className="font-semibold text-gray-900">{item.full_name}</p>
+                    <p className="font-semibold text-gray-900">{item.full_name || 'No Name Set'}</p>
                   </div>
                   {/* Email */}
                   <div>
