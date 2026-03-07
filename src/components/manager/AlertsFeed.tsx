@@ -9,7 +9,7 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface EnrichedSession extends WorkSession {
-  profiles: Profile | null;
+  profile: { full_name: string | null } | null;
 }
 
 type AlertType = 'compliance' | 'unusual_shift';
@@ -34,51 +34,40 @@ export function AlertsFeed() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      // --- Fetch Compliance Violations ---
-      const compliancePromise = supabase
+      // 1. Fetch sessions with potential issues
+      // We'll filter them in JS to avoid complex PostgREST syntax errors
+      const { data, error } = await supabase
         .from('work_sessions')
-        .select('*, profiles(full_name)')
+        .select('*, profile:user_id(full_name)')
         .eq('company_id', profile.company_id)
-        .neq('compliance_violations', null)
         .order('start_time', { ascending: false })
-        .limit(5);
+        .limit(20);
 
-      // --- Fetch Unusual Shifts ---
-      const fifteenHoursAgo = new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString();
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      
-      const unusualShiftsPromise = supabase
-        .from('work_sessions')
-        .select('*, profiles(full_name)')
-        .eq('company_id', profile.company_id)
-        .or(`(status.eq.working,start_time.lt.${twentyFourHoursAgo}),(status.eq.ended,duration_ms.gt.${15 * 60 * 60 * 1000})`)
-        .order('start_time', { ascending: false })
-        .limit(5);
+      if (error) throw error;
 
-      // --- Resolve all promises ---
-      const [{ data: complianceData, error: complianceError }, { data: unusualData, error: unusualError }] = await Promise.all([compliancePromise, unusualShiftsPromise]);
+      const fifteenHoursMs = 15 * 60 * 60 * 1000;
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      if (complianceError) throw complianceError;
-      if (unusualError) throw unusualError;
+      const processedAlerts: Alert[] = [];
 
-      // --- Format and combine alerts ---
-      const complianceAlerts: Alert[] = (complianceData || [])
-        .filter(s => s.compliance_violations && s.compliance_violations.length > 0)
-        .map(session => ({ id: session.id, type: 'compliance', session: session as EnrichedSession }));
+      (data || []).forEach((s: any) => {
+        const session = s as EnrichedSession;
 
-      const unusualShiftAlerts: Alert[] = (unusualData || []).map(session => ({
-        id: session.id,
-        type: 'unusual_shift',
-        session: session as EnrichedSession
-      }));
+        // Check for Compliance Violations
+        if (session.compliance_violations && session.compliance_violations.length > 0) {
+          processedAlerts.push({ id: `comp-${session.id}`, type: 'compliance', session });
+        }
+        // Check for Unusual Shifts (Still running > 24h)
+        else if (session.status === 'working' && new Date(session.start_time) < twentyFourHoursAgo) {
+          processedAlerts.push({ id: `run-${session.id}`, type: 'unusual_shift', session });
+        }
+        // Check for Unusual Shifts (Finished but > 15h)
+        else if (session.status === 'ended' && session.duration_ms && session.duration_ms > fifteenHoursMs) {
+          processedAlerts.push({ id: `long-${session.id}`, type: 'unusual_shift', session });
+        }
+      });
 
-      // Combine, deduplicate, and sort
-      const allAlerts = [...complianceAlerts, ...unusualShiftAlerts];
-      const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
-      uniqueAlerts.sort((a, b) => new Date(b.session.start_time).getTime() - new Date(a.session.start_time).getTime());
-
-      setAlerts(uniqueAlerts.slice(0, 10)); // Limit to a max of 10 total alerts
-
+      setAlerts(processedAlerts.slice(0, 10));
     } catch (err) {
       console.error("Error loading alerts:", err);
     } finally {
@@ -93,15 +82,10 @@ export function AlertsFeed() {
       const detail = VIOLATION_DETAILS[firstKey] || VIOLATION_DETAILS.default;
       return { title: detail.title, Icon: AlertTriangle, color: 'text-amber-500' };
     }
-    if (alert.type === 'unusual_shift') {
-       if (alert.session.status === 'working') {
-        return { title: 'Shift still running > 24h', Icon: Clock, color: 'text-red-500' };
-      }
-      if (alert.session.duration_ms && alert.session.duration_ms > 15 * 60 * 60 * 1000) {
-        return { title: 'Shift duration > 15h', Icon: Clock, color: 'text-blue-500' };
-      }
+    if (alert.session.status === 'working') {
+      return { title: 'Shift running > 24h', Icon: Clock, color: 'text-red-500' };
     }
-    return { title: 'General Alert', Icon: Bell, color: 'text-gray-500' };
+    return { title: 'Shift duration > 15h', Icon: Clock, color: 'text-blue-500' };
   };
 
   return (
@@ -115,8 +99,8 @@ export function AlertsFeed() {
       ) : alerts.length === 0 ? (
         <div className="text-center py-8">
           <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
-          <p className="font-medium text-gray-700">No recent alerts.</p>
-          <p className="text-sm text-gray-500">Your fleet is compliant and all shift data looks normal.</p>
+          <p className="font-medium text-gray-700">All clear!</p>
+          <p className="text-sm text-gray-500">No issues detected.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -126,11 +110,9 @@ export function AlertsFeed() {
               <div key={alert.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                 <Icon className={`w-6 h-6 flex-shrink-0 mt-1 ${color}`} />
                 <div>
-                  <p className="font-semibold text-gray-800">{alert.session.profiles?.full_name || 'Unknown Driver'}</p>
+                  <p className="font-semibold text-gray-800">{alert.session.profile?.full_name || 'Unknown Driver'}</p>
                   <p className="text-sm text-gray-600">{title}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Started: {new Date(alert.session.start_time).toLocaleString()}
-                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Started: {new Date(alert.session.start_time).toLocaleString()}</p>
                 </div>
               </div>
             );
