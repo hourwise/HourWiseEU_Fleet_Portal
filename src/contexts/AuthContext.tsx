@@ -28,12 +28,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const runIdRef = useRef(0);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+    // Change .eq('user_id', userId) to .eq('id', userId)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId) // Using 'id' as the primary key reference
+      .maybeSingle();
+
     if (error) {
       console.error('Error loading profile:', error);
       setProfile(null);
     } else {
-      setProfile(data || null);
+      // If it's still null, try the user_id column as a fallback
+      if (!data) {
+        const { data: fallbackData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+        setProfile(fallbackData || null);
+      } else {
+        setProfile(data);
+      }
     }
   }, []);
 
@@ -49,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    const { data: { session }, error } = await supabase.auth.refreshSession();
+    const { data: { session }, error } } = await supabase.auth.refreshSession();
      if (error) {
       console.error('Refresh Session Error:', error.message);
       setUser(null);
