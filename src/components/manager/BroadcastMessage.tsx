@@ -57,7 +57,8 @@ export function BroadcastMessage() {
           onChange={(e) => setContent(e.target.value)}
           rows={4}
           placeholder="Type your message to all drivers here..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          style={{ backgroundColor: 'white', color: '#111827' }} // Bulletproof inline style
         />
         <button
           onClick={handleSendBroadcast}
