@@ -75,10 +75,6 @@ export function DriverManagement() {
       if (invitesError) throw invitesError;
       if (documentsError) throw documentsError;
 
-      // DEBUG LOG: This will show in your browser console (F12)
-      console.log('Fetched Drivers:', driversData);
-      console.log('Fetched Invites:', invitesData);
-
       setDrivers(driversData || []);
       setInvites(invitesData || []);
       setDocuments(documentsData || []);
@@ -147,7 +143,7 @@ export function DriverManagement() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             />
           </div>
         </div>
@@ -163,12 +159,10 @@ export function DriverManagement() {
             ) : combinedList.map((item) => (
               <div key={item.id} className={`flex items-center justify-between p-4 border rounded-lg ${item.type === 'driver' ? 'border-gray-200' : 'border-amber-300 bg-amber-50'}`}>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                  {/* Name */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
                     <p className="font-semibold text-gray-900">{item.full_name || 'No Name Set'}</p>
                   </div>
-                  {/* Email */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Email</label>
                     <div className="flex items-center gap-2">
@@ -176,7 +170,6 @@ export function DriverManagement() {
                       <p className="text-sm text-gray-700">{item.email}</p>
                     </div>
                   </div>
-                  {/* Compliance Status */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Compliance</label>
                     {item.type === 'driver' ? (
@@ -188,7 +181,6 @@ export function DriverManagement() {
                       <p className="text-sm text-gray-500">-</p>
                     )}
                   </div>
-                  {/* Account Status */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Account Status</label>
                     <div className="flex items-center gap-2">

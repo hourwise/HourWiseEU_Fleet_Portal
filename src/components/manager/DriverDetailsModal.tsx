@@ -10,100 +10,210 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type Document = Database['public']['Tables']['driver_documents']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 
-// ... (Helper functions remain the same) ...
+interface DriverDetailsModalProps {
+  driver: Profile;
+  onClose: () => void;
+  onSave: () => void;
+}
 
-// New component for the location analysis heatmap
+const useDocumentUpload = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [idNumber, setIdNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const reset = () => { setFile(null); setIdNumber(''); setExpiryDate(''); };
+  return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset };
+};
+
+const getDocumentStatus = (expiryDate: string | null | undefined) => {
+  if (!expiryDate) return { text: 'Missing Expiry', color: 'text-gray-500', Icon: AlertTriangle };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  const daysDiff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
+  if (daysDiff < 0) return { text: `Expired on ${expiry.toLocaleDateString()}`, color: 'text-red-600 font-bold', Icon: AlertTriangle };
+  if (daysDiff <= 30) return { text: `Expires in ${daysDiff} days`, color: 'text-orange-500 font-semibold', Icon: AlertTriangle };
+  return { text: `Expires on ${expiry.toLocaleDateString()}`, color: 'text-green-600', Icon: CheckCircle };
+};
+
 const LocationAnalysisMap = ({ driverId }: { driverId: string }) => {
   const [locations, setLocations] = useState<{ lat: number, lng: number }[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchLocationHistory = async () => {
       setLoading(true);
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const { data, error } = await supabase
-        .from('work_sessions')
-        .select('start_lat, start_lng')
-        .eq('user_id', driverId)
-        .gte('start_time', thirtyDaysAgo)
-        .not('start_lat', 'is', null)
-        .not('start_lng', 'is', null);
-
-      if (error) {
-        console.error("Error fetching location history:", error);
-      } else {
-        setLocations(data.map(loc => ({ lat: loc.start_lat!, lng: loc.start_lng! })));
-      }
+      const { data } = await supabase.from('work_sessions').select('start_lat, start_lng').eq('user_id', driverId).gte('start_time', thirtyDaysAgo).not('start_lat', 'is', null);
+      if (data) setLocations(data.map(loc => ({ lat: loc.start_lat!, lng: loc.start_lng! })));
       setLoading(false);
     };
-
     fetchLocationHistory();
   }, [driverId]);
-
   const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-  if (!accessToken) return <p className="text-sm text-red-500">Mapbox token not configured.</p>;
-
-  if (loading) return <div className="text-center p-8">Loading location data...</div>;
-  if (locations.length === 0) return <p className="text-sm text-gray-500">No start location data recorded in the last 30 days.</p>;
-
-  // Create markers for the Mapbox API (up to 100)
-  const markers = locations
-    .slice(0, 100)
-    .map((loc, index) => `pin-s-${index + 1}+0074D9(${loc.lng},${loc.lat})`)
-    .join(',');
-
-  const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${markers}/auto/800x400@2x?access_token=${accessToken}`;
-
-  return <img src={mapUrl} alt="Map of recent start locations" className="rounded-lg shadow-md w-full" />;
+  if (!accessToken) return null;
+  if (loading) return <div className="text-center p-4">Loading map...</div>;
+  if (locations.length === 0) return <p className="text-sm text-gray-500">No location data for heatmap.</p>;
+  const markers = locations.slice(0, 50).map((loc, i) => `pin-s-${i+1}+2563EB(${loc.lng},${loc.lat})`).join(',');
+  const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${markers}/auto/600x300@2x?access_token=${accessToken}`;
+  return <img src={mapUrl} alt="Heatmap" className="rounded-lg w-full" />;
 };
 
-
 export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsModalProps) {
-  // ... (All existing state and functions remain the same) ...
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<Partial<Profile>>(driver);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [shifts, setShifts] = useState<WorkSession[]>([]);
   const [editingShift, setEditingShift] = useState<WorkSession | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // ...
+  const licenceState = useDocumentUpload();
+  const cpcState = useDocumentUpload();
+
+  useEffect(() => {
+    fetchDocuments();
+    fetchRecentShifts();
+  }, [driver.id]);
+
+  const fetchDocuments = async () => {
+    const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id);
+    setDocuments(data || []);
+  };
+
+  const fetchRecentShifts = async () => {
+    const { data } = await supabase.from('work_sessions').select('*').eq('user_id', driver.id).order('start_time', { ascending: false }).limit(10);
+    setShifts(data || []);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value || null }));
+  };
+
+  const handleDocumentSubmit = async (state: any, type: string) => {
+    if (!state.file || !state.idNumber || !state.expiryDate) return alert("Please fill all document fields.");
+    setIsUploading(true);
+    const filePath = `${driver.company_id}/${driver.id}/${type}_${Date.now()}`;
+    try {
+      await supabase.storage.from('driver-documents').upload(filePath, state.file);
+      await supabase.from('driver_documents').insert({ user_id: driver.id, company_id: driver.company_id!, document_type: type, storage_path: filePath, id_number: state.idNumber, expiry_date: state.expiryDate, uploaded_by: user?.id });
+      state.reset();
+      fetchDocuments();
+    } finally { setIsUploading(false); }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await supabase.from('profiles').update(formData).eq('id', driver.id);
+    if (!error) onSave();
+    setIsSaving(false);
+  };
+
+  const renderInput = (label: string, name: keyof Profile, type = "text") => (
+    <div>
+      <label className="text-xs font-medium text-gray-500 block mb-1">{label}</label>
+      <input type={type} name={name} value={(formData[name] as string) || ''} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-lg text-sm" />
+    </div>
+  );
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-          {/* ... Modal Header ... */}
-
-          <div className="p-6 space-y-6 overflow-y-auto">
-            {/* ... Compliance, Documents, and Recent Shifts sections ... */}
-
-            {/* NEW: Location Analysis Section */}
-            <div className="border-b pb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Location Analysis (Last 30 Days)
-              </h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 mb-4">This map shows a "heatmap" of the driver's shift start locations over the past 30 days. Clusters of pins indicate frequent start points.</p>
-                <LocationAnalysisMap driverId={driver.id} />
-              </div>
-            </div>
-
-            {/* ... Payroll & Personal Information section ... */}
+      <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center p-6 border-b">
+            <h2 className="text-2xl font-bold text-gray-900">Driver Details: {driver.full_name}</h2>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100"><X /></button>
           </div>
 
-          <div className="flex justify-end items-center p-6 border-t bg-gray-50">
-            {/* ... Save Changes button ... */}
+          <div className="p-6 space-y-8 overflow-y-auto">
+            {/* 1. Personal & Payroll */}
+            <section>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Profile & Payroll</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {renderInput("Full Name", "full_name")}
+                {renderInput("Payroll Number", "payroll_number")}
+                {renderInput("Phone", "phone_number")}
+                {renderInput("Date of Birth", "date_of_birth", "date")}
+                {renderInput("NI Number", "national_insurance_number")}
+                {renderInput("Emergency Contact", "emergency_contact_name")}
+              </div>
+              <div className="mt-4">
+                <label className="text-xs font-medium text-gray-500 block mb-1">Full Address</label>
+                <textarea name="full_address" value={formData.full_address || ''} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+            </section>
+
+            {/* 2. Compliance Status */}
+            <section>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Compliance Documents</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
+                  <p className="font-bold text-sm">Upload HGV Licence</p>
+                  <input type="text" placeholder="Licence No" value={licenceState.idNumber} onChange={e => licenceState.setIdNumber(e.target.value)} className="w-full p-2 border rounded text-sm" />
+                  <input type="date" value={licenceState.expiryDate} onChange={e => licenceState.setExpiryDate(e.target.value)} className="w-full p-2 border rounded text-sm" />
+                  <input type="file" onChange={e => licenceState.setFile(e.target.files?.[0] || null)} className="text-xs" />
+                  <button onClick={() => handleDocumentSubmit(licenceState, 'HGV_Licence')} className="w-full py-2 bg-blue-600 text-white rounded text-sm font-bold">Upload</button>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
+                  <p className="font-bold text-sm">Upload CPC/Tacho</p>
+                  <input type="text" placeholder="Card No" value={cpcState.idNumber} onChange={e => cpcState.setIdNumber(e.target.value)} className="w-full p-2 border rounded text-sm" />
+                  <input type="date" value={cpcState.expiryDate} onChange={e => cpcState.setExpiryDate(e.target.value)} className="w-full p-2 border rounded text-sm" />
+                  <input type="file" onChange={e => cpcState.setFile(e.target.files?.[0] || null)} className="text-xs" />
+                  <button onClick={() => handleDocumentSubmit(cpcState, 'CPC_Tacho')} className="w-full py-2 bg-blue-600 text-white rounded text-sm font-bold">Upload</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {documents.map(doc => {
+                  const status = getDocumentStatus(doc.expiry_date);
+                  return (
+                    <div key={doc.id} className="flex justify-between items-center p-3 border rounded-lg bg-white">
+                      <div className="flex items-center gap-3">
+                        <Paperclip className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-bold">{doc.document_type} ({doc.id_number})</p>
+                          <p className={`text-xs flex items-center gap-1 ${status.color}`}><status.Icon size={12}/> {status.text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 3. Recent Shifts */}
+            <section>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Recent Shifts</h3>
+              <div className="space-y-2">
+                {shifts.map(s => (
+                  <div key={s.id} className="flex justify-between items-center p-3 border rounded-lg bg-white">
+                    <div>
+                      <p className="text-sm font-bold">{new Date(s.start_time).toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">Duration: {s.duration_ms ? (s.duration_ms / 3600000).toFixed(2) : '?'} hrs</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingShift(s)} className="p-2 hover:bg-gray-100 rounded border"><Edit size={14}/></button>
+                      {s.start_lat && <a href={`https://www.google.com/maps?q=${s.start_lat},${s.start_lng}`} target="_blank" className="p-2 hover:bg-gray-100 rounded border text-blue-600"><MapPin size={14}/></a>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 4. Heatmap */}
+            <section>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2 flex items-center gap-2"><MapPin size={18}/> Start Location Clusters</h3>
+              <div className="bg-gray-100 rounded-xl overflow-hidden"><LocationAnalysisMap driverId={driver.id} /></div>
+            </section>
+          </div>
+
+          <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+            <button onClick={onClose} className="px-6 py-2 border rounded-lg font-bold">Cancel</button>
+            <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2">
+              <Save size={18}/> {isSaving ? 'Saving...' : 'Save All Changes'}
+            </button>
           </div>
         </div>
       </div>
 
       {editingShift && (
-        <ShiftEditModal
-          shift={editingShift}
-          onClose={() => setEditingShift(null)}
-          onSave={() => {
-            setEditingShift(null);
-            // You might want to refresh shifts here: fetchRecentShifts();
-          }}
-        />
+        <ShiftEditModal shift={editingShift} onClose={() => setEditingShift(null)} onSave={() => { setEditingShift(null); fetchRecentShifts(); }} />
       )}
     </>
   );
