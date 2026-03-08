@@ -222,17 +222,26 @@ function AppContent() {
         <div className="min-h-screen bg-gradient-to-br from-brand-dark to-brand-card flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6 text-center">
             <AlertTriangle className="w-16 h-16 mx-auto text-orange-500" />
-            <h2 className="text-2xl font-bold text-gray-800">Incomplete State Detected</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Profile Not Found</h2>
             <p className="text-gray-600">
-              The application has detected a logged-in user without a profile. This can occur
-              after an interrupted sign-up. To resolve this, please sign out and begin again.
+              We found your account, but couldn't load your profile details. This might be a temporary connection issue.
             </p>
-            <button
-              onClick={() => signOut()}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              Sign Out and Start Over
-            </button>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => refreshSession()}
+                className="w-full flex justify-center py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Retry Loading Profile
+              </button>
+
+              <button
+                onClick={() => signOut()}
+                className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Sign Out and Start Over
+              </button>
+            </div>
           </div>
         </div>
         {debugOverlay}
