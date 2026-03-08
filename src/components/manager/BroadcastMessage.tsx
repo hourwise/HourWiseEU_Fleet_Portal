@@ -56,8 +56,8 @@ export function BroadcastMessage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={4}
-          placeholder="Type your message to all drivers here... (e.g., Roadworks on the M6 today, expect delays)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          placeholder="Type your message to all drivers here..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
         />
         <button
           onClick={handleSendBroadcast}
