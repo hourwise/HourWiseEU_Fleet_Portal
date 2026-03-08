@@ -22,21 +22,31 @@ export function AlertsFeed() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      // This is a simple query that will not fail.
-      // It fetches recent sessions created by any user visible to the manager.
-      const { data, error } = await supabase
+      // Step 1: Get the IDs of all drivers in the current manager's company.
+      const { data: drivers, error: driversError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('company_id', profile.company_id);
+
+      if (driversError) throw driversError;
+      const driverIds = drivers.map(d => d.id);
+
+      // Step 2: Fetch recent work sessions for ONLY those drivers.
+      // This correctly uses the user_id column and avoids the crash.
+      const { data: sessions, error: sessionsError } = await supabase
         .from('work_sessions')
         .select('*')
+        .in('user_id', driverIds)
         .order('created_at', { ascending: false })
-        .limit(50); // Fetch a larger batch to filter in JS
+        .limit(50);
 
-      if (error) throw error;
+      if (sessionsError) throw sessionsError;
 
-      // Post-filter in JS to find issues, avoiding the DB error
+      // Step 3: Process the sessions to find alerts (same logic as before).
       const fifteenHoursMs = 15 * 60 * 60 * 1000;
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      const processedAlerts = (data || []).filter(session => {
+      const processedAlerts = (sessions || []).filter(session => {
         const hasViolations = session.compliance_violations && session.compliance_violations.length > 0;
         const isStuckRunning = session.status === 'working' && new Date(session.start_time) < twentyFourHoursAgo;
         const isTooLong = session.status === 'ended' && session.duration_ms && session.duration_ms > fifteenHoursMs;
@@ -47,8 +57,7 @@ export function AlertsFeed() {
 
     } catch (err) {
       console.error("Error loading alerts:", err);
-      // We will set alerts to empty array on failure to prevent crash
-      setAlerts([]);
+      setAlerts([]); // Set to empty on error to prevent a crash
     } finally {
       setLoading(false);
     }
@@ -66,11 +75,12 @@ export function AlertsFeed() {
         <div className="text-center py-8">
           <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
           <p className="font-medium text-gray-700">All clear!</p>
+          <p className="text-sm text-gray-500">No issues detected.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {alerts.map((alert) => (
-             <div key={alert.id} className="p-4 bg-gray-50 rounded-lg">
+             <div key={alert.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="font-semibold text-gray-800">Alert for Shift on {new Date(alert.start_time).toLocaleDateString()}</p>
                 <p className="text-sm text-gray-600">Issue detected that may require review.</p>
              </div>
