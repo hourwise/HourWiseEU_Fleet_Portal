@@ -103,8 +103,8 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
     setIsSaving(true);
     const { error } = await supabase.from('profiles').update(formData).eq('id', driver.id);
     if (!error) {
-      onSave(); // This calls the function passed from the parent to refresh data
-      onClose(); // This explicitly closes the modal
+      onSave();
+      onClose();
     }
     setIsSaving(false);
   };
@@ -112,7 +112,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
   const renderInput = (label: string, name: keyof Profile, type = "text") => (
     <div>
       <label className="text-xs font-medium text-gray-500 block mb-1">{label}</label>
-      <input type={type} name={name} value={(formData[name] as string) || ''} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+      <input type={type} name={name} value={(formData[name] as string) || ''} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" style={{ color: '#111827' }} />
     </div>
   );
 
@@ -138,7 +138,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               </div>
               <div className="mt-4">
                 <label className="text-xs font-medium text-gray-500 block mb-1">Full Address</label>
-                <textarea name="full_address" value={formData.full_address || ''} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                <textarea name="full_address" value={formData.full_address || ''} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" style={{ color: '#111827' }} />
               </div>
             </section>
 
@@ -147,15 +147,15 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
                   <p className="font-bold text-sm text-gray-700">Upload HGV Licence</p>
-                  <input type="text" placeholder="Licence No" value={licenceState.idNumber} onChange={e => licenceState.setIdNumber(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm bg-white text-gray-900 outline-none" />
-                  <input type="date" value={licenceState.expiryDate} onChange={e => licenceState.setExpiryDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm bg-white text-gray-900 outline-none" />
+                  <input type="text" placeholder="Licence No" value={licenceState.idNumber} onChange={e => licenceState.setIdNumber(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm" style={{ color: '#111827' }} />
+                  <input type="date" value={licenceState.expiryDate} onChange={e => licenceState.setExpiryDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm" style={{ color: '#111827' }} />
                   <input type="file" onChange={e => licenceState.setFile(e.target.files?.[0] || null)} className="text-xs text-gray-600" />
                   <button onClick={() => handleDocumentSubmit(licenceState, 'HGV_Licence')} className="w-full py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 transition">Upload</button>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
                   <p className="font-bold text-sm text-gray-700">Upload CPC/Tacho</p>
-                  <input type="text" placeholder="Card No" value={cpcState.idNumber} onChange={e => cpcState.setIdNumber(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm bg-white text-gray-900 outline-none" />
-                  <input type="date" value={cpcState.expiryDate} onChange={e => cpcState.setExpiryDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm bg-white text-gray-900 outline-none" />
+                  <input type="text" placeholder="Card No" value={cpcState.idNumber} onChange={e => cpcState.setIdNumber(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm" style={{ color: '#111827' }} />
+                  <input type="date" value={cpcState.expiryDate} onChange={e => cpcState.setExpiryDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded text-sm" style={{ color: '#111827' }} />
                   <input type="file" onChange={e => cpcState.setFile(e.target.files?.[0] || null)} className="text-xs text-gray-600" />
                   <button onClick={() => handleDocumentSubmit(cpcState, 'CPC_Tacho')} className="w-full py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 transition">Upload</button>
                 </div>

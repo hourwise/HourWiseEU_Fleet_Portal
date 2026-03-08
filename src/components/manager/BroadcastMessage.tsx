@@ -37,7 +37,7 @@ export function BroadcastMessage() {
 
       setSuccess(true);
       setContent('');
-      setTimeout(() => setSuccess(false), 3000); // Reset success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to send broadcast.');
     } finally {
@@ -58,7 +58,7 @@ export function BroadcastMessage() {
           rows={4}
           placeholder="Type your message to all drivers here..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          style={{ backgroundColor: 'white', color: '#111827' }} // Bulletproof inline style
+          style={{ color: '#111827' }}
         />
         <button
           onClick={handleSendBroadcast}
