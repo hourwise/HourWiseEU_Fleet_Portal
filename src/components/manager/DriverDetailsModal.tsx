@@ -102,7 +102,10 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
   const handleSave = async () => {
     setIsSaving(true);
     const { error } = await supabase.from('profiles').update(formData).eq('id', driver.id);
-    if (!error) onSave();
+    if (!error) {
+      onSave(); // This calls the function passed from the parent to refresh data
+      onClose(); // This explicitly closes the modal
+    }
     setIsSaving(false);
   };
 
@@ -123,7 +126,6 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
           </div>
 
           <div className="p-6 space-y-8 overflow-y-auto">
-            {/* 1. Personal & Payroll */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Profile & Payroll</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -140,7 +142,6 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               </div>
             </section>
 
-            {/* 2. Compliance Status */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Compliance Documents</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -159,44 +160,14 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
                   <button onClick={() => handleDocumentSubmit(cpcState, 'CPC_Tacho')} className="w-full py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 transition">Upload</button>
                 </div>
               </div>
-              <div className="space-y-2">
-                {documents.map(doc => {
-                  const status = getDocumentStatus(doc.expiry_date);
-                  return (
-                    <div key={doc.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-white">
-                      <div className="flex items-center gap-3">
-                        <Paperclip className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-bold text-gray-800">{doc.document_type} ({doc.id_number})</p>
-                          <p className={`text-xs flex items-center gap-1 ${status.color}`}><status.Icon size={12}/> {status.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <div className="space-y-2">{documents.map(doc => { const status = getDocumentStatus(doc.expiry_date); return (<div key={doc.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-white"><div className="flex items-center gap-3"><Paperclip className="w-4 h-4 text-gray-400" /><div><p className="text-sm font-bold text-gray-800">{doc.document_type} ({doc.id_number})</p><p className={`text-xs flex items-center gap-1 ${status.color}`}><status.Icon size={12}/> {status.text}</p></div></div></div>);})}</div>
             </section>
 
-            {/* 3. Recent Shifts */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Recent Shifts</h3>
-              <div className="space-y-2">
-                {shifts.length > 0 ? shifts.map(s => (
-                  <div key={s.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-white">
-                    <div>
-                      <p className="text-sm font-bold text-gray-800">{new Date(s.start_time).toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">Duration: {s.duration_ms ? (s.duration_ms / 3600000).toFixed(2) : '?'} hrs</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingShift(s)} className="p-2 hover:bg-gray-100 rounded border border-gray-200 text-gray-600 transition"><Edit size={14}/></button>
-                      {s.start_lat && <a href={`https://www.google.com/maps?q=${s.start_lat},${s.start_lng}`} target="_blank" className="p-2 hover:bg-gray-100 rounded border border-gray-200 text-blue-600 transition"><MapPin size={14}/></a>}
-                    </div>
-                  </div>
-                )) : <p className="text-sm text-gray-500 italic">No recent shifts recorded.</p>}
-              </div>
+              <div className="space-y-2">{shifts.length > 0 ? shifts.map(s => (<div key={s.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-white"><div><p className="text-sm font-bold text-gray-800">{new Date(s.start_time).toLocaleString()}</p><p className="text-xs text-gray-500">Duration: {s.duration_ms ? (s.duration_ms / 3600000).toFixed(2) : '?'} hrs</p></div><div className="flex gap-2"><button onClick={() => setEditingShift(s)} className="p-2 hover:bg-gray-100 rounded border border-gray-200 text-gray-600 transition"><Edit size={14}/></button>{s.start_lat && <a href={`https://www.google.com/maps?q=${s.start_lat},${s.start_lng}`} target="_blank" className="p-2 hover:bg-gray-100 rounded border border-gray-200 text-blue-600 transition"><MapPin size={14}/></a>}</div></div>)) : <p className="text-sm text-gray-500 italic">No recent shifts recorded.</p>}</div>
             </section>
 
-            {/* 4. Heatmap */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><MapPin size={18}/> Start Location Clusters</h3>
               <div className="bg-gray-100 rounded-xl overflow-hidden border border-gray-200"><LocationAnalysisMap driverId={driver.id} /></div>
