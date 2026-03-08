@@ -28,28 +28,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const runIdRef = useRef(0);
 
   const loadProfile = useCallback(async (userId: string) => {
-    // Change .eq('user_id', userId) to .eq('id', userId)
+    // This looks for the user in BOTH potential columns
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId) // Using 'id' as the primary key reference
+      .or(`id.eq.${userId},user_id.eq.${userId}`)
       .maybeSingle();
 
     if (error) {
       console.error('Error loading profile:', error);
       setProfile(null);
     } else {
-      // If it's still null, try the user_id column as a fallback
-      if (!data) {
-        const { data: fallbackData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-        setProfile(fallbackData || null);
-      } else {
-        setProfile(data);
-      }
+      // Safety check: if we found it via user_id but the 'id' is different,
+      // it's still a valid profile for this user.
+      setProfile(data || null);
     }
   }, []);
 
@@ -148,31 +140,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: 'driver' | 'manager',
       companyName?: string
     ) => {
-      setIsSigningUp(true); // New
+      setIsSigningUp(true);
       try {
         const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
         if (authError) throw authError;
         if (!authData.user) throw new Error('User creation failed');
 
+        const userId = authData.user.id; // This is the ID we MUST use
+
         let companyId: string | null = null;
         if (role === 'manager' && companyName) {
           const { data: company, error: companyError } = await supabase
             .from('companies')
-            .insert({ name: companyName, created_by: authData.user.id })
+            .insert({ name: companyName, created_by: userId }) // Use correct ID
             .select()
             .single();
           if (companyError) throw companyError;
           companyId = company.id;
         }
 
+        // THE CRITICAL FIX: Explicitly set BOTH 'id' and 'user_id'
         const { error: profileError } = await supabase.from('profiles').insert({
-          user_id: authData.user.id,
+          id: userId,        // Force Primary Key to match Auth
+          user_id: userId,   // Force reference column to match Auth
           email,
           role,
           company_id: companyId,
           full_name: fullName,
           account_type: 'fleet',
         });
+
         if (profileError) throw profileError;
 
         await refreshSession();
@@ -182,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Sign Up Error:', (error as Error).message);
         return { error: error as Error };
       } finally {
-        setIsSigningUp(false); // New
+        setIsSigningUp(false);
       }
     },
     [refreshSession]

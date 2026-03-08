@@ -32,6 +32,7 @@ export function SupervisorManagement() {
         .select('*')
         .eq('company_id', profile!.company_id!)
         .eq('role', 'manager')
+        .neq('id', profile!.id) // <--- ADD THIS: "Not Equal" to my ID
         .order('created_at', { ascending: false });
 
       if (error) throw error;
