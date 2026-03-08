@@ -11,12 +11,17 @@ export function BroadcastMessage() {
   const [success, setSuccess] = useState(false);
 
   const handleSendBroadcast = async () => {
+    // --- DEBUG LOGS from Gemini ---
+    console.log("Attempting to send broadcast...");
+    console.log("Current Profile Auth ID:", profile?.id);
+    console.log("Company ID being sent:", profile?.company_id);
+
     if (!content.trim()) {
-      setError('Message cannot be empty.');
+      setError("Message content cannot be empty.");
       return;
     }
-    if (!profile?.company_id) {
-      setError('Could not identify your company.');
+    if (!profile?.id || !profile?.company_id) {
+      setError("User profile or Company ID not loaded. Please refresh and try again.");
       return;
     }
 
@@ -48,8 +53,10 @@ export function BroadcastMessage() {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
-        <MessageSquare className="w-6 h-6 text-gray-700" />
-        <h3 className="text-lg font-bold text-gray-900">Send Fleet Broadcast</h3>
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-gray-600" />
+          Send Fleet Broadcast
+        </h3>
       </div>
       <div className="space-y-3">
         <textarea
@@ -57,8 +64,7 @@ export function BroadcastMessage() {
           onChange={(e) => setContent(e.target.value)}
           rows={4}
           placeholder="Type your message to all drivers here..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          style={{ color: '#111827' }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
         />
         <button
           onClick={handleSendBroadcast}
