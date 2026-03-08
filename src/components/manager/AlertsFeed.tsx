@@ -6,17 +6,12 @@ import { VIOLATION_DETAILS } from '../../lib/compliance';
 import type { Database } from '../../lib/database.types';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
-type Profile = Database['public']['Tables']['profiles']['Row'];
-
-interface EnrichedSession extends WorkSession {
-  profile: { full_name: string | null } | null;
-}
 
 type AlertType = 'compliance' | 'unusual_shift';
 interface Alert {
   id: string;
   type: AlertType;
-  session: EnrichedSession;
+  session: WorkSession;
 }
 
 export function AlertsFeed() {
@@ -34,14 +29,13 @@ export function AlertsFeed() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      // 1. Fetch sessions with potential issues
-      // We'll filter them in JS to avoid complex PostgREST syntax errors
+      // 1. Fetch sessions with potential issues without complex joins
       const { data, error } = await supabase
         .from('work_sessions')
-        .select('*, profile:user_id(full_name)')
+        .select('*')
         .eq('company_id', profile.company_id)
         .order('start_time', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       if (error) throw error;
 
@@ -50,19 +44,12 @@ export function AlertsFeed() {
 
       const processedAlerts: Alert[] = [];
 
-      (data || []).forEach((s: any) => {
-        const session = s as EnrichedSession;
-
-        // Check for Compliance Violations
+      (data || []).forEach((session) => {
         if (session.compliance_violations && session.compliance_violations.length > 0) {
           processedAlerts.push({ id: `comp-${session.id}`, type: 'compliance', session });
-        }
-        // Check for Unusual Shifts (Still running > 24h)
-        else if (session.status === 'working' && new Date(session.start_time) < twentyFourHoursAgo) {
+        } else if (session.status === 'working' && new Date(session.start_time) < twentyFourHoursAgo) {
           processedAlerts.push({ id: `run-${session.id}`, type: 'unusual_shift', session });
-        }
-        // Check for Unusual Shifts (Finished but > 15h)
-        else if (session.status === 'ended' && session.duration_ms && session.duration_ms > fifteenHoursMs) {
+        } else if (session.status === 'ended' && session.duration_ms && session.duration_ms > fifteenHoursMs) {
           processedAlerts.push({ id: `long-${session.id}`, type: 'unusual_shift', session });
         }
       });
@@ -110,7 +97,7 @@ export function AlertsFeed() {
               <div key={alert.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                 <Icon className={`w-6 h-6 flex-shrink-0 mt-1 ${color}`} />
                 <div>
-                  <p className="font-semibold text-gray-800">{alert.session.profile?.full_name || 'Unknown Driver'}</p>
+                  <p className="font-semibold text-gray-800">Alert for Shift {new Date(alert.session.start_time).toLocaleDateString()}</p>
                   <p className="text-sm text-gray-600">{title}</p>
                   <p className="text-xs text-gray-400 mt-1">Started: {new Date(alert.session.start_time).toLocaleString()}</p>
                 </div>
