@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    const { data: { session }, error } } = await supabase.auth.refreshSession();
+    const { data: { session }, error } = await supabase.auth.refreshSession();
      if (error) {
       console.error('Refresh Session Error:', error.message);
       setUser(null);
@@ -163,15 +163,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error: profileError } = await supabase.from('profiles').insert({
           id: userId,        // Force Primary Key to match Auth
           user_id: userId,   // Force reference column to match Auth
-          email,
+          email: email.toLowerCase().trim(), // Clean the data
           role,
           company_id: companyId,
           full_name: fullName,
           account_type: 'fleet',
+          is_active: true // Ensure they are active by default
         });
 
         if (profileError) throw profileError;
 
+        // ADD A TINY DELAY to let the DB trigger finish
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Manually refresh to get the NEW profile into the app state
+        await loadProfile(userId);
         await refreshSession();
 
         return { error: null };
@@ -182,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsSigningUp(false);
       }
     },
-    [refreshSession]
+    [loadProfile, refreshSession]
   );
 
   const signOut = useCallback(async () => {
