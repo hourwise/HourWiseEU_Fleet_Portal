@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck } from 'lucide-react';
 import { ComplianceScoreboard } from './ComplianceScoreboard';
 import { DriverManagement } from './DriverManagement';
 import { ReportsModule } from './ReportsModule';
@@ -13,8 +13,9 @@ import { MfaSettings } from './MfaSettings';
 import { BillingManager } from './BillingManager';
 import { ExpenseApproval } from './ExpenseApproval';
 import { BroadcastMessage } from './BroadcastMessage';
+import { VehicleChecksModule } from './VehicleChecksModule';
 
-type Tab = 'dashboard' | 'drivers' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'drivers' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
@@ -23,6 +24,7 @@ export function ManagerDashboard() {
   const tabs = [
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'drivers' as Tab, label: 'Drivers', icon: Users },
+    { id: 'vehicle_checks' as Tab, label: 'Vehicle Checks', icon: ShieldCheck },
     { id: 'supervisors' as Tab, label: 'Supervisors', icon: Shield },
     { id: 'payroll' as Tab, label: 'Payroll', icon: DollarSign },
     { id: 'expenses' as Tab, label: 'Expenses', icon: Receipt },
@@ -61,7 +63,6 @@ export function ManagerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-brand-card rounded-xl shadow-sm mb-6 border border-brand-border">
-          {/* THIS IS THE RESTORED TABS SECTION */}
           <div className="flex overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -96,6 +97,7 @@ export function ManagerDashboard() {
             </div>
           )}
           {activeTab === 'drivers' && <DriverManagement />}
+          {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
           {activeTab === 'supervisors' && <SupervisorManagement />}
           {activeTab === 'payroll' && <PayrollModule />}
           {activeTab === 'expenses' && <ExpenseApproval />}
