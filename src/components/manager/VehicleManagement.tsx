@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Tool, CheckCircle, X, Info } from 'lucide-react';
+import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info } from 'lucide-react';
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 
 interface Vehicle {
@@ -190,7 +190,7 @@ export function VehicleManagement() {
 
               <button className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100 transition group">
                 <div className="flex items-center gap-3">
-                  <Tool className="text-blue-600" size={20} />
+                  <Wrench className="text-blue-600" size={20} />
                   <div className="text-left">
                     <p className="text-sm font-bold text-slate-800">Log Repair/PMI</p>
                     <p className="text-xs text-slate-500">Record work and upload sheet</p>

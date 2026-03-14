@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { FileText, Tool, CheckCircle, Download, Plus } from 'lucide-react';
+import { FileText, Wrench, CheckCircle, Download, Plus } from 'lucide-react';
 
 interface MaintenanceLog {
   id: string;
@@ -57,7 +57,7 @@ export function MaintenanceAuditTrail({ vehicleId }: { vehicleId: string }) {
       <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
         {logs.length === 0 ? (
           <div className="p-8 text-center text-slate-400">
-            <Tool className="w-12 h-12 mx-auto mb-2 opacity-10" />
+            <Wrench className="w-12 h-12 mx-auto mb-2 opacity-10" />
             <p className="text-sm">No maintenance records found.</p>
           </div>
         ) : (
