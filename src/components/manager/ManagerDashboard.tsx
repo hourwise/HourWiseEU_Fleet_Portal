@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck } from 'lucide-react';
 import { ComplianceScoreboard } from './ComplianceScoreboard';
 import { DriverManagement } from './DriverManagement';
 import { ReportsModule } from './ReportsModule';
@@ -14,8 +14,10 @@ import { BillingManager } from './BillingManager';
 import { ExpenseApproval } from './ExpenseApproval';
 import { BroadcastMessage } from './BroadcastMessage';
 import { VehicleChecksModule } from './VehicleChecksModule';
+import { VehicleManagement } from './VehicleManagement';
+import { VehicleComplianceSnapshot } from './VehicleComplianceSnapshot';
 
-type Tab = 'dashboard' | 'drivers' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'drivers' | 'fleet' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
@@ -24,7 +26,8 @@ export function ManagerDashboard() {
   const tabs = [
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'drivers' as Tab, label: 'Drivers', icon: Users },
-    { id: 'vehicle_checks' as Tab, label: 'Vehicle Checks', icon: ShieldCheck },
+    { id: 'fleet' as Tab, label: 'Fleet', icon: Truck },
+    { id: 'vehicle_checks' as Tab, label: 'Safety Checks', icon: ShieldCheck },
     { id: 'supervisors' as Tab, label: 'Supervisors', icon: Shield },
     { id: 'payroll' as Tab, label: 'Payroll', icon: DollarSign },
     { id: 'expenses' as Tab, label: 'Expenses', icon: Receipt },
@@ -89,7 +92,10 @@ export function ManagerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <ComplianceScoreboard />
-                <AlertsFeed />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <AlertsFeed title="Driver Infringements" />
+                  <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
+                </div>
               </div>
               <div className="lg:col-span-1 space-y-6">
                 <BroadcastMessage />
@@ -97,6 +103,7 @@ export function ManagerDashboard() {
             </div>
           )}
           {activeTab === 'drivers' && <DriverManagement />}
+          {activeTab === 'fleet' && <VehicleManagement />}
           {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
           {activeTab === 'supervisors' && <SupervisorManagement />}
           {activeTab === 'payroll' && <PayrollModule />}
