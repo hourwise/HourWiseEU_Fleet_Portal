@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle, RefreshCw, Link as LinkIcon } from 'lucide-react';
+import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle, RefreshCw, Link as LinkIcon, UserMinus } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
 import { DriverDetailsModal } from './DriverDetailsModal';
@@ -74,7 +74,7 @@ export function DriverManagement() {
         .eq('company_id', profile.company_id)
         .neq('role', 'manager');
 
-      // 2. Fetch ALL invites (Pending and Accepted) to check for "Ghost Drivers"
+      // 2. Fetch ALL invites associated with this company
       const { data: invitesData, error: invitesError } = await supabase
         .from('driver_invites')
         .select('*')
@@ -120,8 +120,17 @@ export function DriverManagement() {
     }
   };
 
+  const handleClearInvite = async (inviteId: string) => {
+    if (window.confirm('Delete this broken invite? This will not delete the driver\'s account, but will clear the record from your portal.')) {
+      const { error } = await supabase.from('driver_invites').delete().eq('id', inviteId);
+      if (!error) loadData();
+    }
+  };
+
   const combinedList = useMemo(() => {
-    const activeDriverIds = new Set(drivers.map(d => d.id));
+    // Create a lookup of emails and IDs currently in the fleet
+    const activeEmails = new Set(drivers.map(d => d.email?.toLowerCase()));
+    const activeIds = new Set(drivers.map(d => d.id));
 
     const list = [
       // Current Active Drivers
@@ -131,13 +140,22 @@ export function DriverManagement() {
         compliance: getDriverComplianceStatus(d.id, documents)
       })),
 
-      // Pending or "Ghost" Invites
+      // Pending or "Lost" Invites
       ...invites
-        .filter(i => i.status === 'pending' || (i.status === 'accepted' && i.accepted_by_user_id && !activeDriverIds.has(i.accepted_by_user_id)))
+        .filter(i => {
+          if (i.status === 'pending') return true;
+          if (i.status === 'accepted') {
+            // It's a ghost if the email isn't in our fleet OR the linked ID isn't in our fleet
+            const emailInFleet = activeEmails.has(i.email?.toLowerCase());
+            const idInFleet = i.accepted_by_user_id ? activeIds.has(i.accepted_by_user_id) : false;
+            return !emailInFleet && !idInFleet;
+          }
+          return false;
+        })
         .map(i => ({
           ...i,
           type: 'invite' as const,
-          isGhost: i.status === 'accepted' // True if they accepted but aren't in the drivers list
+          isGhost: i.status === 'accepted'
         }))
     ];
 
@@ -156,7 +174,7 @@ export function DriverManagement() {
           <Users className="w-8 h-8 text-blue-600" />
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Driver Management</h2>
-            <p className="text-gray-600">{drivers.length} active drivers, {invites.filter(i => i.status === 'pending').length} pending invites</p>
+            <p className="text-gray-600">{drivers.length} active drivers, {invites.filter(i => i.status === 'pending').length} pending</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -202,7 +220,7 @@ export function DriverManagement() {
                 <div className="text-center py-12">
                     <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No drivers or invites found</h3>
-                    <p className="text-gray-600">Click "Invite Driver" to get started.</p>
+                    <p className="text-gray-600">Invite drivers or click the refresh icon.</p>
                 </div>
             ) : combinedList.map((item) => {
               const isInvite = item.type === 'invite';
@@ -233,7 +251,9 @@ export function DriverManagement() {
                           <span>{(item as any).compliance.text}</span>
                         </div>
                       ) : (
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">Pending Setup</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
+                          {isGhost ? 'Link Mismatch' : 'Pending Setup'}
+                        </p>
                       )}
                     </div>
                     <div>
@@ -242,12 +262,9 @@ export function DriverManagement() {
                         {!isInvite ? (
                           <><UserCheck className="w-4 h-4 text-green-500" /><p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Active</p></>
                         ) : isGhost ? (
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2 text-red-600">
-                              <LinkIcon className="w-4 h-4" />
-                              <p className="text-[10px] font-black uppercase">Connection Broken</p>
-                            </div>
-                            <p className="text-[9px] text-slate-500 font-medium leading-tight mt-0.5">Invite accepted but profile link failed.</p>
+                          <div className="flex items-center gap-2 text-red-600">
+                            <LinkIcon className="w-4 h-4" />
+                            <p className="text-[10px] font-black uppercase tracking-tighter">Connection Broken</p>
                           </div>
                         ) : (
                           <><Clock className="w-4 h-4 text-amber-500" /><p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Invite Sent</p></>
@@ -267,13 +284,21 @@ export function DriverManagement() {
                     </div>
                   )}
                   {isGhost && (
-                    <button
-                      onClick={() => handleRemoveDriver(item.id, item.email)}
-                      className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-100"
-                      title="Clear Broken Invite"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="ml-4 flex gap-2">
+                      <div className="group relative">
+                        <Info className="w-5 h-5 text-slate-400 cursor-help" />
+                        <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900 text-white text-[9px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          Invite accepted with email mismatch. Update the driver's company_id in Supabase to fix.
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleClearInvite(item.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-100"
+                        title="Clear Broken Invite"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   )}
                 </div>
               );
