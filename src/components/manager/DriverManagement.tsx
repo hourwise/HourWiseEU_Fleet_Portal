@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
 import { DriverDetailsModal } from './DriverDetailsModal';
@@ -67,19 +67,20 @@ export function DriverManagement() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      // More inclusive query: get ANYONE in this company who isn't a manager
+      // 1. Fetch Drivers already in the company
       const { data: driversData, error: driversError } = await supabase
         .from('profiles')
         .select('*')
         .eq('company_id', profile.company_id)
         .neq('role', 'manager');
 
+      // 2. Fetch ALL invites (Pending and Accepted) to check for "Ghost Drivers"
       const { data: invitesData, error: invitesError } = await supabase
         .from('driver_invites')
         .select('*')
-        .eq('company_id', profile.company_id)
-        .eq('status', 'pending');
+        .eq('company_id', profile.company_id);
 
+      // 3. Fetch all documents for compliance checks
       const { data: documentsData, error: documentsError } = await supabase
         .from('driver_documents')
         .select('*')
@@ -120,13 +121,28 @@ export function DriverManagement() {
   };
 
   const combinedList = useMemo(() => {
+    const activeDriverIds = new Set(drivers.map(d => d.id));
+
     const list = [
-      ...drivers.map(d => ({ ...d, type: 'driver' as const, compliance: getDriverComplianceStatus(d.id, documents) })),
-      ...invites.map(i => ({ ...i, type: 'invite' as const }))
+      // Current Active Drivers
+      ...drivers.map(d => ({
+        ...d,
+        type: 'driver' as const,
+        compliance: getDriverComplianceStatus(d.id, documents)
+      })),
+
+      // Pending or "Ghost" Invites
+      ...invites
+        .filter(i => i.status === 'pending' || (i.status === 'accepted' && i.accepted_by_user_id && !activeDriverIds.has(i.accepted_by_user_id)))
+        .map(i => ({
+          ...i,
+          type: 'invite' as const,
+          isGhost: i.status === 'accepted' // True if they accepted but aren't in the drivers list
+        }))
     ];
 
     return list.filter(item => {
-      const name = item.full_name || '';
+      const name = (item as any).full_name || '';
       const email = item.email || '';
       const query = searchQuery.toLowerCase();
       return name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
@@ -140,7 +156,7 @@ export function DriverManagement() {
           <Users className="w-8 h-8 text-blue-600" />
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Driver Management</h2>
-            <p className="text-gray-600">{drivers.length} active drivers, {invites.length} pending invites</p>
+            <p className="text-gray-600">{drivers.length} active drivers, {invites.filter(i => i.status === 'pending').length} pending invites</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -186,57 +202,82 @@ export function DriverManagement() {
                 <div className="text-center py-12">
                     <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No drivers or invites found</h3>
-                    <p className="text-gray-600">Click "Invite Driver" to get started or refresh the list.</p>
+                    <p className="text-gray-600">Click "Invite Driver" to get started.</p>
                 </div>
-            ) : combinedList.map((item) => (
-              <div key={item.id} className={`flex items-center justify-between p-4 border rounded-xl transition ${item.type === 'driver' ? 'border-gray-200 hover:border-blue-300 bg-white shadow-sm' : 'border-amber-200 bg-amber-50/50'}`}>
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
-                    <p className="font-bold text-slate-900">{item.full_name || 'Incomplete Setup'}</p>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-slate-400" />
-                      <p className="text-sm text-slate-600 font-medium">{item.email}</p>
+            ) : combinedList.map((item) => {
+              const isInvite = item.type === 'invite';
+              const isGhost = isInvite && (item as any).isGhost;
+
+              return (
+                <div key={item.id} className={`flex items-center justify-between p-4 border rounded-xl transition ${
+                  !isInvite ? 'border-gray-200 hover:border-blue-300 bg-white shadow-sm' :
+                  isGhost ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50'
+                }`}>
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
+                      <p className="font-bold text-slate-900">{(item as any).full_name || 'Incomplete Setup'}</p>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Compliance</label>
-                    {item.type === 'driver' ? (
-                      <div className={`flex items-center gap-2 font-black text-[10px] uppercase ${item.compliance.color}`}>
-                        <item.compliance.Icon className="w-4 h-4" />
-                        <span>{item.compliance.text}</span>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        <p className="text-sm text-slate-600 font-medium">{item.email}</p>
                       </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 font-medium">-</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
-                    <div className="flex items-center gap-2">
-                      {item.type === 'driver' ? (
-                        <><UserCheck className="w-4 h-4 text-green-500" /><p className="text-[10px] font-black text-green-700 uppercase">Active</p></>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Compliance</label>
+                      {!isInvite ? (
+                        <div className={`flex items-center gap-2 font-black text-[10px] uppercase ${(item as any).compliance.color}`}>
+                          {(item as any).compliance.Icon && <(item as any).compliance.Icon className="w-4 h-4" />}
+                          <span>{(item as any).compliance.text}</span>
+                        </div>
                       ) : (
-                        <><Clock className="w-4 h-4 text-amber-500" /><p className="text-[10px] font-black text-amber-700 uppercase tracking-tighter">Invite Pending</p></>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">Pending Setup</p>
                       )}
                     </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                      <div className="flex items-center gap-2">
+                        {!isInvite ? (
+                          <><UserCheck className="w-4 h-4 text-green-500" /><p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Active</p></>
+                        ) : isGhost ? (
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2 text-red-600">
+                              <LinkIcon className="w-4 h-4" />
+                              <p className="text-[10px] font-black uppercase">Connection Broken</p>
+                            </div>
+                            <p className="text-[9px] text-slate-500 font-medium leading-tight mt-0.5">Invite accepted but profile link failed.</p>
+                          </div>
+                        ) : (
+                          <><Clock className="w-4 h-4 text-amber-500" /><p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Invite Sent</p></>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  {!isInvite && (
+                    <div className="ml-4 flex gap-2">
+                      <button onClick={() => setSelectedDriver(item as Profile)} className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition tracking-widest">
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Details</span>
+                      </button>
+                      <button onClick={() => handleRemoveDriver(item.id, (item as any).full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 transition border border-red-100">
+                        {removingDriverId === item.id ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+                  {isGhost && (
+                    <button
+                      onClick={() => handleRemoveDriver(item.id, item.email)}
+                      className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-100"
+                      title="Clear Broken Invite"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
-                {item.type === 'driver' && (
-                  <div className="ml-4 flex gap-2">
-                    <button onClick={() => setSelectedDriver(item as Profile)} className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition tracking-widest">
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Details</span>
-                    </button>
-                    <button onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 transition border border-red-100">
-                      {removingDriverId === item.id ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
