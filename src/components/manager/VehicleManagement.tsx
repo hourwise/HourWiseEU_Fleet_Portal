@@ -98,32 +98,32 @@ export function VehicleManagement() {
                   <p className="text-slate-500 font-medium uppercase">{selectedVehicle.make} {selectedVehicle.model} • {selectedVehicle.vehicle_type}</p>
                 </div>
                 {selectedVehicle.is_vor ? (
-                  <span className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-black flex items-center gap-2">
+                  <span className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-black flex items-center gap-2 border border-red-200">
                     <AlertTriangle size={18} /> VOR
                   </span>
                 ) : (
-                  <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-black">ACTIVE</span>
+                  <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-black border border-green-200">ACTIVE</span>
                 )}
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Odometer</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Odometer</p>
                   <div className="flex items-center gap-2 text-slate-900 font-bold">
                     <Gauge size={16} className="text-blue-600" />
                     {selectedVehicle.current_odometer.toLocaleString()} km
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Year</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Year</p>
                   <p className="text-slate-900 font-bold">{selectedVehicle.year || 'N/A'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase">VIN</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">VIN</p>
                   <p className="text-slate-900 font-mono text-xs">{selectedVehicle.vin_number || 'N/A'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Added</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Added</p>
                   <p className="text-slate-900 font-bold">{new Date(selectedVehicle.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
@@ -131,8 +131,8 @@ export function VehicleManagement() {
 
             {/* Compliance Matrix */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <Shield size={20} className="text-blue-600" /> Compliance Dates
+              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-wide text-sm">
+                <Shield size={18} className="text-blue-600" /> Compliance Board
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
@@ -175,7 +175,7 @@ export function VehicleManagement() {
           <div className="space-y-6">
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-              <h3 className="font-bold text-slate-900 mb-2">Maintenance Actions</h3>
+              <h3 className="font-bold text-slate-900 mb-2 uppercase tracking-wide text-sm">Maintenance Actions</h3>
 
               <button className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100 transition group">
                 <div className="flex items-center gap-3">
@@ -208,10 +208,10 @@ export function VehicleManagement() {
                       .eq('id', selectedVehicle.id);
                     if (!error) loadVehicles();
                   }}
-                  className={`w-full py-3 rounded-lg font-bold transition ${
+                  className={`w-full py-3 rounded-lg font-bold transition shadow-sm ${
                     selectedVehicle.is_vor
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-red-600 text-white hover:bg-red-700'
+                      ? 'bg-green-600 text-white hover:bg-green-700 shadow-green-200'
+                      : 'bg-red-600 text-white hover:bg-red-700 shadow-red-200'
                   }`}
                 >
                   {selectedVehicle.is_vor ? 'Return to Service (Safe)' : 'Mark as VOR'}
@@ -220,12 +220,12 @@ export function VehicleManagement() {
             </div>
 
             {/* Status Notes */}
-            <div className="bg-slate-900 rounded-xl p-6 text-white space-y-3">
+            <div className="bg-slate-900 rounded-xl p-6 text-white space-y-3 shadow-xl">
               <div className="flex items-center gap-2 text-amber-400">
                 <Info size={18} />
-                <h4 className="font-bold text-sm uppercase">Status Notes</h4>
+                <h4 className="font-bold text-sm uppercase tracking-widest">Status Notes</h4>
               </div>
-              <p className="text-slate-300 text-sm italic">
+              <p className="text-slate-300 text-sm italic leading-relaxed">
                 {selectedVehicle.status_notes || 'No active alerts or notes for this vehicle.'}
               </p>
             </div>
@@ -406,7 +406,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <Truck className="text-blue-600" /> Add New Fleet Vehicle
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition"><X /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition" type="button"><X /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[80vh]">
@@ -420,7 +420,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                   required
                   type="text"
                   placeholder="E.G. AB12 CDE"
-                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 uppercase font-mono font-bold"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 uppercase font-mono font-bold text-slate-900 bg-white"
                   value={formData.reg_number}
                   onChange={e => setFormData({...formData, reg_number: e.target.value})}
                 />
@@ -428,17 +428,17 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Make *</label>
-                  <input required type="text" placeholder="Scania" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})} />
+                  <input required type="text" placeholder="Scania" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Model</label>
-                  <input type="text" placeholder="R450" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                  <input type="text" placeholder="R450" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Vehicle Type *</label>
                 <select
-                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white text-slate-900"
                   value={formData.vehicle_type}
                   onChange={e => setFormData({...formData, vehicle_type: e.target.value})}
                 >
@@ -450,7 +450,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">VIN Number</label>
-                <input type="text" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono" value={formData.vin_number} onChange={e => setFormData({...formData, vin_number: e.target.value})} />
+                <input type="text" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono text-slate-900 bg-white" value={formData.vin_number} onChange={e => setFormData({...formData, vin_number: e.target.value})} />
               </div>
             </div>
 
@@ -460,19 +460,19 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">MOT Due</label>
-                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
+                  <input type="date" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Next PMI</label>
-                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
+                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tacho Cal Due</label>
-                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
+                  <input type="date" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Initial Odo</label>
-                  <input type="number" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={formData.current_odometer} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
+                  <input type="number" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.current_odometer} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
                 </div>
               </div>
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
@@ -486,7 +486,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
 
           <div className="mt-8 flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-4 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50">
+            <button type="submit" disabled={loading} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-200">
               {loading ? 'Adding...' : 'Register Vehicle'}
             </button>
           </div>
