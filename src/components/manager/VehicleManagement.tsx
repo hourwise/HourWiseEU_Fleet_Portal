@@ -363,6 +363,7 @@ export function VehicleManagement() {
 function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     reg_number: '',
     make: '',
@@ -380,20 +381,37 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+
+    if (!profile?.company_id) {
+      setError('Company ID not found. Please refresh and try again.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('vehicles')
         .insert({
           ...formData,
-          company_id: profile!.company_id,
-          reg_number: formData.reg_number.toUpperCase().trim()
+          company_id: profile.company_id,
+          reg_number: formData.reg_number.toUpperCase().trim(),
+          vin_number: formData.vin_number.trim() || null,
+          mot_due_date: formData.mot_due_date || null,
+          pmi_due_date: formData.pmi_due_date || null,
+          tacho_calibration_due: formData.tacho_calibration_due || null,
+          insurance_expiry: formData.insurance_expiry || null
         });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
       onSuccess();
-    } catch (error) {
-      console.error('Error adding vehicle:', error);
-      alert('Error adding vehicle. Make sure the Registration is unique.');
+    } catch (err: any) {
+      console.error('Error adding vehicle:', err);
+      if (err.code === '23505') {
+        setError('A vehicle with this registration number already exists.');
+      } else {
+        setError(err.message || 'An unexpected error occurred while adding the vehicle.');
+      }
     } finally {
       setLoading(false);
     }
@@ -404,41 +422,48 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <Truck className="text-blue-600" /> Add New Fleet Vehicle
+            <Truck className="text-blue-600" /> Add New Fleet Asset
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition" type="button"><X /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[80vh]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-shake">
+              <AlertTriangle className="text-red-600 shrink-0" size={20} />
+              <p className="text-sm text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Identity */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest border-b pb-1">Vehicle Identity</h3>
+            <div className="space-y-5">
+              <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] border-b border-blue-50 pb-2">Vehicle Identity</h3>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Registration Number *</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Registration Number *</label>
                 <input
                   required
                   type="text"
                   placeholder="E.G. AB12 CDE"
-                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 uppercase font-mono font-bold text-slate-900 bg-white"
+                  className="w-full p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none uppercase font-mono font-bold text-slate-900 bg-white transition-all shadow-sm"
                   value={formData.reg_number}
                   onChange={e => setFormData({...formData, reg_number: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Make *</label>
-                  <input required type="text" placeholder="Scania" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Make *</label>
+                  <input required type="text" placeholder="Scania" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Model</label>
-                  <input type="text" placeholder="R450" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Model</label>
+                  <input type="text" placeholder="R450" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Vehicle Type *</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Vehicle Type *</label>
                 <select
-                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white text-slate-900"
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 transition-all shadow-sm appearance-none cursor-pointer"
                   value={formData.vehicle_type}
                   onChange={e => setFormData({...formData, vehicle_type: e.target.value})}
                 >
@@ -449,45 +474,45 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">VIN Number</label>
-                <input type="text" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono text-slate-900 bg-white" value={formData.vin_number} onChange={e => setFormData({...formData, vin_number: e.target.value})} />
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">VIN Number</label>
+                <input type="text" placeholder="Optional" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-slate-900 bg-white transition-all shadow-sm" value={formData.vin_number} onChange={e => setFormData({...formData, vin_number: e.target.value})} />
               </div>
             </div>
 
             {/* Compliance */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-amber-600 uppercase tracking-widest border-b pb-1">Compliance Dates</h3>
+            <div className="space-y-5">
+              <h3 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] border-b border-amber-50 pb-2">Compliance & Safety</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">MOT Due</label>
-                  <input type="date" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">MOT Due</label>
+                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Next PMI</label>
-                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Next PMI</label>
+                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tacho Cal Due</label>
-                  <input type="date" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Tacho Due</label>
+                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Initial Odo</label>
-                  <input type="number" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white" value={formData.current_odometer} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Current Odo</label>
+                  <input type="number" placeholder="0" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.current_odometer || ''} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
                 </div>
               </div>
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
-                <Shield className="text-blue-600 mt-1" size={16} />
-                <p className="text-[10px] text-blue-700 font-medium">
-                  Setting these dates will enable automatic reminders and the traffic-light compliance board.
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3">
+                <Shield className="text-slate-400 mt-0.5 shrink-0" size={16} />
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                  Compliance dates enable the dashboard Traffic Light system. Overdue items will be flagged as RED.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-4 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-200">
-              {loading ? 'Adding...' : 'Register Vehicle'}
+          <div className="mt-10 flex gap-4">
+            <button type="button" onClick={onClose} className="flex-1 py-4 border border-slate-200 rounded-xl font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-xs">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-200 uppercase tracking-widest text-xs">
+              {loading ? 'Adding Asset...' : 'Register Vehicle'}
             </button>
           </div>
         </form>

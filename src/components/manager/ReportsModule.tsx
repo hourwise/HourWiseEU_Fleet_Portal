@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Download, Calendar, Filter, PieChart, DollarSign, Zap } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, PieChart, DollarSign, Zap, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { EfficiencyReport } from './reports/EfficiencyReport';
 
@@ -9,7 +9,7 @@ type DriverLog = Database['public']['Tables']['driver_logs']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
-type ReportType = 'payroll' | 'infractions' | 'driving' | 'efficiency';
+type ReportType = 'payroll' | 'efficiency' | 'vehicle_checks' | 'infractions' | 'driving';
 
 // --- Helper Sub-components ---
 
@@ -26,7 +26,7 @@ function FilterSection({ drivers, selectedDriver, setSelectedDriver, startDate, 
           <select
             value={selectedDriver}
             onChange={(e) => setSelectedDriver(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-900"
           >
             <option value="all">All Drivers</option>
             {drivers.map((driver: any) => (
@@ -36,11 +36,11 @@ function FilterSection({ drivers, selectedDriver, setSelectedDriver, startDate, 
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg"/>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg"/>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
         </div>
       </div>
     </div>
@@ -93,6 +93,70 @@ function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading,
   );
 }
 
+function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+  const [checks, setChecks] = useState<any[]>([]);
+
+  useEffect(() => { loadChecks(); }, [selectedDriver, startDate, endDate]);
+
+  const loadChecks = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from('vehicle_checks').select('*, profiles:driver_id(full_name)').gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59');
+      if (selectedDriver !== 'all') query = query.eq('driver_id', selectedDriver);
+      const { data, error } = await query;
+      if (error) throw error;
+      setChecks(data || []);
+    } catch (error) { console.error('Error loading checks:', error); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center"><h3 className="text-lg font-bold text-gray-900">Vehicle Inspection Report</h3></div>
+      {loading ? <div className="text-center py-12">Loading...</div> : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b-2 border-gray-200">
+                <th className="py-3 px-4">Date/Time</th>
+                <th className="py-3 px-4">Inspector</th>
+                <th className="py-3 px-4">Vehicle</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Defects</th>
+              </tr>
+            </thead>
+            <tbody>
+              {checks.map((check, idx) => (
+                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-3 px-4 text-sm">{new Date(check.created_at).toLocaleString()}</td>
+                  <td className="py-3 px-4 font-medium">{check.profiles.full_name}</td>
+                  <td className="py-3 px-4">
+                    <span className="font-bold">{check.reg_number}</span>
+                    <span className="text-xs text-gray-500 ml-2">({check.vehicle_type})</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {check.check_status === 'pass' ? (
+                      <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-fit">
+                        <CheckCircle size={12} /> PASS
+                      </span>
+                    ) : (
+                      <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-fit">
+                        <AlertTriangle size={12} /> DEFECT
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600 italic">
+                    {check.defect_details || 'None reported'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InfractionsReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
   return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">Infraction summary module ready.</div>;
 }
@@ -119,23 +183,59 @@ export function ReportsModule() {
     setDrivers(data || []);
   };
 
+  const reportTabs: { id: ReportType; label: string; icon: any }[] = [
+    { id: 'payroll', label: 'Payroll', icon: DollarSign },
+    { id: 'efficiency', label: 'Efficiency', icon: Zap },
+    { id: 'vehicle_checks', label: 'Vehicle Checks', icon: ShieldCheck },
+    { id: 'infractions', label: 'Infractions', icon: AlertTriangle },
+    { id: 'driving', label: 'Driving', icon: PieChart },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3"><FileText className="w-8 h-8 text-blue-600" /><h2 className="text-2xl font-bold text-gray-900">Reports</h2></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FileText className="w-8 h-8 text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-900">Fleet Reporting</h2>
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+        >
+          <Download size={16} /> Export PDF / Print
+        </button>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="flex border-b">
-          {(['payroll', 'efficiency', 'infractions', 'driving'] as ReportType[]).map((type) => (
-            <button key={type} onClick={() => setActiveReport(type)} className={`px-6 py-4 font-medium transition ${activeReport === type ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}>
-              {type.charAt(0).toUpperCase() + type.slice(1)} Report
-            </button>
-          ))}
+        <div className="flex border-b overflow-x-auto bg-slate-50">
+          {reportTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveReport(tab.id)}
+                className={`px-6 py-4 font-bold text-sm transition flex items-center gap-2 whitespace-nowrap ${
+                  activeReport === tab.id
+                    ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
         <div className="p-6">
           <FilterSection drivers={drivers} selectedDriver={selectedDriver} setSelectedDriver={setSelectedDriver} startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate} />
-          {activeReport === 'payroll' && <PayrollReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
-          {activeReport === 'efficiency' && <EfficiencyReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
-          {activeReport === 'infractions' && <InfractionsReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
-          {activeReport === 'driving' && <DrivingAnalysisReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+
+          <div className="bg-white border rounded-xl p-6 shadow-sm min-h-[400px]">
+            {activeReport === 'payroll' && <PayrollReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+            {activeReport === 'efficiency' && <EfficiencyReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+            {activeReport === 'vehicle_checks' && <VehicleChecksReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+            {activeReport === 'infractions' && <InfractionsReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+            {activeReport === 'driving' && <DrivingAnalysisReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+          </div>
         </div>
       </div>
     </div>

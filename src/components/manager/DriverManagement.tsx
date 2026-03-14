@@ -21,8 +21,13 @@ const getDriverComplianceStatus = (driverId: string, allDocuments: Document[]) =
 
   for (const doc of driverDocs) {
     if (!doc.expiry_date) {
-      return { level: 'red', text: 'Missing Expiry', Icon: AlertTriangle, color: 'text-red-600' };
+      // If we have a document but no expiry date, we flag it as an issue
+      if (mostUrgentStatus.level !== 'red') {
+        mostUrgentStatus = { level: 'amber', daysDiff: 999 };
+      }
+      continue;
     }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const expiry = new Date(doc.expiry_date);
@@ -38,7 +43,12 @@ const getDriverComplianceStatus = (driverId: string, allDocuments: Document[]) =
   }
 
   if (mostUrgentStatus.level === 'amber') {
-    return { level: 'amber', text: `Expires in ${mostUrgentStatus.daysDiff} days`, Icon: AlertTriangle, color: 'text-amber-600' };
+    return {
+      level: 'amber',
+      text: mostUrgentStatus.daysDiff === 999 ? 'Check Expiry' : `Expires in ${mostUrgentStatus.daysDiff} days`,
+      Icon: AlertTriangle,
+      color: 'text-amber-600'
+    };
   }
 
   return { level: 'green', text: 'Compliant', Icon: CheckCircle, color: 'text-green-600' };
@@ -127,14 +137,14 @@ export function DriverManagement() {
         </div>
         <button
           onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold"
         >
           <UserPlus className="w-5 h-5" />
           Invite Driver
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -148,7 +158,12 @@ export function DriverManagement() {
           </div>
         </div>
 
-        {loading ? <div className="text-center py-12">Loading...</div> : (
+        {loading ? (
+          <div className="text-center py-12 flex flex-col items-center gap-3">
+            <Clock className="animate-spin text-blue-600" />
+            <p className="text-slate-500 font-medium">Syncing driver roster...</p>
+          </div>
+        ) : (
           <div className="space-y-3">
             {combinedList.length === 0 ? (
                 <div className="text-center py-12">
@@ -157,49 +172,49 @@ export function DriverManagement() {
                     <p className="text-gray-600">Click "Invite Driver" to get started.</p>
                 </div>
             ) : combinedList.map((item) => (
-              <div key={item.id} className={`flex items-center justify-between p-4 border rounded-lg ${item.type === 'driver' ? 'border-gray-200' : 'border-amber-300 bg-amber-50'}`}>
+              <div key={item.id} className={`flex items-center justify-between p-4 border rounded-xl transition ${item.type === 'driver' ? 'border-gray-200 hover:border-blue-300 bg-white shadow-sm' : 'border-amber-200 bg-amber-50/50'}`}>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
                   <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
-                    <p className="font-semibold text-gray-900">{item.full_name || 'No Name Set'}</p>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
+                    <p className="font-bold text-slate-900">{item.full_name || 'No Name Set'}</p>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Email</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
                     <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <p className="text-sm text-gray-700">{item.email}</p>
+                      <Mail className="w-4 h-4 text-slate-400" />
+                      <p className="text-sm text-slate-600 font-medium">{item.email}</p>
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Compliance</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Compliance</label>
                     {item.type === 'driver' ? (
-                      <div className={`flex items-center gap-2 font-medium text-sm ${item.compliance.color}`}>
+                      <div className={`flex items-center gap-2 font-black text-[10px] uppercase ${item.compliance.color}`}>
                         <item.compliance.Icon className="w-4 h-4" />
                         <span>{item.compliance.text}</span>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">-</p>
+                      <p className="text-xs text-slate-400 font-medium">-</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Account Status</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
                     <div className="flex items-center gap-2">
                       {item.type === 'driver' ? (
-                        <><UserCheck className="w-4 h-4 text-green-500" /><p className="text-sm font-medium text-green-700">Active</p></>
+                        <><UserCheck className="w-4 h-4 text-green-500" /><p className="text-[10px] font-black text-green-700 uppercase">Active</p></>
                       ) : (
-                        <><Clock className="w-4 h-4 text-amber-500" /><p className="text-sm font-medium text-amber-700">Invite Pending</p></>
+                        <><Clock className="w-4 h-4 text-amber-500" /><p className="text-[10px] font-black text-amber-700 uppercase tracking-tighter">Invite Pending</p></>
                       )}
                     </div>
                   </div>
                 </div>
                 {item.type === 'driver' && (
                   <div className="ml-4 flex gap-2">
-                    <button onClick={() => setSelectedDriver(item as Profile)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                      <Edit className="w-4 h-4" />
+                    <button onClick={() => setSelectedDriver(item as Profile)} className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition tracking-widest">
+                      <Edit className="w-3.5 h-3.5" />
                       <span>Details</span>
                     </button>
-                    <button onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="flex items-center gap-2 px-3 py-2 text-sm text-red-700 bg-red-100 rounded-lg hover:bg-red-200 disabled:bg-gray-200 disabled:text-gray-500 transition">
-                      {removingDriverId === item.id ? <span>Removing...</span> : <Trash2 className="w-4 h-4" />}
+                    <button onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 transition border border-red-100">
+                      {removingDriverId === item.id ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     </button>
                   </div>
                 )}
