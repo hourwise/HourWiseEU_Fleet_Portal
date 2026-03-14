@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
 import { DriverDetailsModal } from './DriverDetailsModal';
@@ -10,7 +10,6 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type Invite = Database['public']['Tables']['driver_invites']['Row'];
 type Document = Database['public']['Tables']['driver_documents']['Row'];
 
-// Helper to determine the overall compliance status for a driver
 const getDriverComplianceStatus = (driverId: string, allDocuments: Document[]) => {
   const driverDocs = allDocuments.filter(doc => doc.user_id === driverId);
   if (driverDocs.length === 0) {
@@ -21,7 +20,6 @@ const getDriverComplianceStatus = (driverId: string, allDocuments: Document[]) =
 
   for (const doc of driverDocs) {
     if (!doc.expiry_date) {
-      // If we have a document but no expiry date, we flag it as an issue
       if (mostUrgentStatus.level !== 'red') {
         mostUrgentStatus = { level: 'amber', daysDiff: 999 };
       }
@@ -65,21 +63,27 @@ export function DriverManagement() {
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadData();
-    }
-  }, [profile]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const driversPromise = supabase.from('profiles').select('*').eq('company_id', profile.company_id).eq('role', 'driver');
-      const invitesPromise = supabase.from('driver_invites').select('*').eq('company_id', profile.company_id).eq('status', 'pending');
-      const documentsPromise = supabase.from('driver_documents').select('*').eq('company_id', profile.company_id);
+      // More inclusive query: get ANYONE in this company who isn't a manager
+      const { data: driversData, error: driversError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .neq('role', 'manager');
 
-      const [{ data: driversData, error: driversError }, { data: invitesData, error: invitesError }, { data: documentsData, error: documentsError }] = await Promise.all([driversPromise, invitesPromise, documentsPromise]);
+      const { data: invitesData, error: invitesError } = await supabase
+        .from('driver_invites')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .eq('status', 'pending');
+
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('driver_documents')
+        .select('*')
+        .eq('company_id', profile.company_id);
 
       if (driversError) throw driversError;
       if (invitesError) throw invitesError;
@@ -93,7 +97,11 @@ export function DriverManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleRemoveDriver = async (driverId: string, driverName: string) => {
     if (window.confirm(`Are you sure you want to remove ${driverName}? This will permanently delete their account and data.`)) {
@@ -135,13 +143,22 @@ export function DriverManagement() {
             <p className="text-gray-600">{drivers.length} active drivers, {invites.length} pending invites</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold"
-        >
-          <UserPlus className="w-5 h-5" />
-          Invite Driver
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => loadData()}
+            className="p-2 text-slate-400 hover:text-blue-600 transition"
+            title="Refresh List"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold"
+          >
+            <UserPlus className="w-5 h-5" />
+            Invite Driver
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
@@ -153,12 +170,12 @@ export function DriverManagement() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white font-medium"
             />
           </div>
         </div>
 
-        {loading ? (
+        {loading && combinedList.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center gap-3">
             <Clock className="animate-spin text-blue-600" />
             <p className="text-slate-500 font-medium">Syncing driver roster...</p>
@@ -169,14 +186,14 @@ export function DriverManagement() {
                 <div className="text-center py-12">
                     <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No drivers or invites found</h3>
-                    <p className="text-gray-600">Click "Invite Driver" to get started.</p>
+                    <p className="text-gray-600">Click "Invite Driver" to get started or refresh the list.</p>
                 </div>
             ) : combinedList.map((item) => (
               <div key={item.id} className={`flex items-center justify-between p-4 border rounded-xl transition ${item.type === 'driver' ? 'border-gray-200 hover:border-blue-300 bg-white shadow-sm' : 'border-amber-200 bg-amber-50/50'}`}>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
-                    <p className="font-bold text-slate-900">{item.full_name || 'No Name Set'}</p>
+                    <p className="font-bold text-slate-900">{item.full_name || 'Incomplete Setup'}</p>
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
