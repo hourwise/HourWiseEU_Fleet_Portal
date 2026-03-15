@@ -20,7 +20,8 @@
     "failedToSave": "Failed to save data.",
     "gotIt": "Got It!",
     "logout": "Logout",
-    "openSettings": "Open Settings"
+    "openSettings": "Open Settings",
+    "retry": "Retry"
   },
   "permissions": {
     "notificationsTitle": "Notifications Permission",
@@ -82,6 +83,7 @@
     "vehicleDetails": "Vehicle Details",
     "registration": "Registration",
     "vehicleMake": "Vehicle Make (Optional)",
+    "odometer": "Odometer Reading",
     "internalChecks": "Internal Checks",
     "externalChecks": "External Checks",
     "defectReporting": "Defect Reporting",
@@ -305,12 +307,12 @@
     "initialSetup": {
       "title": "Your First Steps",
       "step1": {
-        "title": "1. Enter Your Last Shift (Crucial!)",
-        "body": "For correct 'Daily Rest' calculation, you MUST manually enter details of your last completed shift. Go to Menu -> Work History -> tap the correct date and add the shift."
+        "title": "1. Complete Your Driver Profile",
+        "body": "For Solo drivers, you MUST set up your pay configuration (rates, breaks, overtime) during first-time setup to enable accurate pay estimates and reporting."
       },
       "step2": {
-        "title": "2. Complete Your Driver Profile",
-        "body": "Go to Settings (gear icon) -> Driver Setup. Your name is required for reports. Pay details are optional for generating invoices."
+        "title": "2. Enter Your Last Shift (Crucial!)",
+        "body": "For correct 'Daily Rest' calculation, you MUST manually enter details of your last completed shift. Go to Menu -> Work History -> tap the correct date and add the shift."
       },
       "step3": {
         "title": "3. Add Business Details (Optional)",
@@ -323,16 +325,20 @@
         "title": "1. Start & End Your Shift",
         "body": "Use the main 'Start Shift' and 'End Shift' buttons. At the end of a shift, a confirmation screen will show your totals and any violations."
       },
+      "step5": {
+        "title": "2. Daily Vehicle Safety Check",
+        "body": "Complete your walkaround check using the 'Check Vehicle' button at the top of the dashboard. This is mandatory for fleet drivers and includes reporting defects and odometer readings. You can update your report or record a vehicle swap mid-shift if needed."
+      },
       "step2": {
-        "title": "2. Automatic Driving Detection",
+        "title": "3. Automatic Driving Detection",
         "body": "The app automatically detects driving based on speed and motion, switching your status to 'Driving'. When you stop, it reverts to 'Working'."
       },
       "step3": {
-        "title": "3. Taking a Break",
+        "title": "4. Taking a Break",
         "body": "Press 'Start Break' to pause your work timers. The app tracks the total break duration. A continuous break of at least 45 minutes will reset your 4.5-hour driving timer."
       },
       "step4": {
-        "title": "4. Period of Availability (POA)",
+        "title": "5. Period of Availability (POA)",
         "body": "Use 'POA / Waiting Time' for periods when you are available but not actively working (e.g., waiting for a loading bay). This time is tracked separately from work and breaks."
       }
     },
@@ -341,6 +347,10 @@
       "fatigue": {
         "title": "Fatigue & Focus Monitor",
         "body": "This appears on the main screen during your shift, providing real-time compliance warnings for insufficient daily rest, upcoming break requirements, and driving/work time limits."
+      },
+      "messaging": {
+        "title": "Updates & Alerts",
+        "body": "Receive important system announcements and fleet-wide broadcasts from your manager directly in the app. Use the 'Messages' screen to view unread and archived alerts."
       },
       "compliance": {
         "title": "Compliance Heatmap",
@@ -356,7 +366,7 @@
       },
       "reports": {
         "title": "Download Reports & Invoices",
-        "body": "From the Main Menu, select 'Download Report' to generate a professional PDF of your work summary or a customer invoice for any date range."
+        "body": "Generate professional PDF reports for Work Compliance, Customer Invoices, or your history of Daily Vehicle Safety Checks."
       },
       "dailyReport": {
         "title": "Daily Compliance Report",
@@ -491,7 +501,7 @@
     "german": "Deutsch",
     "french": "Français",
     "spanish": "Español",
-    "italian": "Italiano",
+    "italic": "Italiano",
     "polish": "Polski",
     "romanian": "Română",
     "dutch": "Nederlands",
@@ -507,7 +517,7 @@
   },
   "selectLanguage": "Select Language",
   "signOut": "Sign Out",
-  "confirmSignOut": "Are you sure you want to sign out?",
+  "confirmSignOut": "Are you sure you want sign out?",
   "manageSubscription": "Manage Subscription",
   "validation": {
     "invalidTimeFormat": "Please enter a valid time in HH:MM format."
