@@ -159,8 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           companyId = company.id;
         }
 
-        // THE CRITICAL FIX: Explicitly set BOTH 'id' and 'user_id'
-        const { error: profileError } = await supabase.from('profiles').insert({
+        // Use upsert to handle cases where a partial profile might exist
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: userId,        // Force Primary Key to match Auth
           user_id: userId,   // Force reference column to match Auth
           email: email.toLowerCase().trim(), // Clean the data
@@ -169,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: fullName,
           account_type: 'fleet',
           is_active: true // Ensure they are active by default
+        }, {
+          onConflict: 'id'
         });
 
         if (profileError) throw profileError;
