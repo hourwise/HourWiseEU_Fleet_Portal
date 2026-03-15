@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  isSigningUp: boolean; // New
+  isSigningUp: boolean;
   needsMfa: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, fullName: string, role: 'driver' | 'manager', companyName?: string) => Promise<{ error: Error | null }>;
@@ -23,12 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSigningUp, setIsSigningUp] = useState(false); // New
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [needsMfa, setNeedsMfa] = useState(false);
   const runIdRef = useRef(0);
 
   const loadProfile = useCallback(async (userId: string) => {
-    // This looks for the user in BOTH potential columns
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -39,8 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error loading profile:', error);
       setProfile(null);
     } else {
-      // Safety check: if we found it via user_id but the 'id' is different,
-      // it's still a valid profile for this user.
       setProfile(data || null);
     }
   }, []);
@@ -146,39 +143,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (authError) throw authError;
         if (!authData.user) throw new Error('User creation failed');
 
-        const userId = authData.user.id; // This is the ID we MUST use
+        const userId = authData.user.id;
 
         let companyId: string | null = null;
         if (role === 'manager' && companyName) {
           const { data: company, error: companyError } = await supabase
             .from('companies')
-            .insert({ name: companyName, created_by: userId }) // Use correct ID
+            .insert({
+              name: companyName,
+              created_by: userId,
+              require_vehicle_checklist: false // Explicitly set default
+            })
             .select()
             .single();
           if (companyError) throw companyError;
           companyId = company.id;
         }
 
-        // Use upsert to handle cases where a partial profile might exist
         const { error: profileError } = await supabase.from('profiles').upsert({
-          id: userId,        // Force Primary Key to match Auth
-          user_id: userId,   // Force reference column to match Auth
-          email: email.toLowerCase().trim(), // Clean the data
+          id: userId,
+          user_id: userId,
+          email: email.toLowerCase().trim(),
           role,
           company_id: companyId,
           full_name: fullName,
-          account_type: 'fleet',
-          is_active: true // Ensure they are active by default
+          account_type: role === 'manager' ? 'fleet' : 'solo', // Auto-set for managers
+          is_active: true
         }, {
           onConflict: 'id'
         });
 
         if (profileError) throw profileError;
 
-        // ADD A TINY DELAY to let the DB trigger finish
         await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Manually refresh to get the NEW profile into the app state
         await loadProfile(userId);
         await refreshSession();
 
