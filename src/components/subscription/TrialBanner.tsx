@@ -1,6 +1,7 @@
 import { Clock, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { getTrialDaysRemaining } from '../../lib/subscription';
+import { useTranslation } from 'react-i18next';
 
 interface TrialBannerProps {
   trialEndsAt: string;
@@ -8,6 +9,7 @@ interface TrialBannerProps {
 }
 
 export function TrialBanner({ trialEndsAt, onSubscribe }: TrialBannerProps) {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
   const daysRemaining = getTrialDaysRemaining(trialEndsAt);
 
@@ -36,16 +38,16 @@ export function TrialBanner({ trialEndsAt, onSubscribe }: TrialBannerProps) {
             <p className="font-semibold">
               {isUrgent ? (
                 <>
-                  {daysRemaining === 1 ? 'Last day' : `${daysRemaining} days left`} in your free trial!
+                  {daysRemaining === 1 ? t('subscription.banner.lastDay') : t('subscription.banner.daysLeft', { count: daysRemaining })}{t('subscription.banner.trialSuffix')}
                 </>
               ) : (
                 <>
-                  Your free trial ends in {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
+                  {t('subscription.banner.endsIn', { count: daysRemaining })}
                 </>
               )}
             </p>
             <p className="text-sm opacity-90">
-              Subscribe now for just £9.99/month to keep using all features
+              {t('subscription.banner.cta')}
             </p>
           </div>
         </div>
@@ -55,7 +57,7 @@ export function TrialBanner({ trialEndsAt, onSubscribe }: TrialBannerProps) {
             onClick={onSubscribe}
             className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap"
           >
-            Subscribe Now
+            {t('subscription.banner.subscribeNow')}
           </button>
           <button
             onClick={() => setDismissed(true)}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck, Activity } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // Import
+import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck, Activity, GraduationCap } from 'lucide-react';
 import { ComplianceScoreboard } from './ComplianceScoreboard';
 import { DriverManagement } from './DriverManagement';
 import { ReportsModule } from './ReportsModule';
@@ -18,25 +19,29 @@ import { VehicleManagement } from './VehicleManagement';
 import { VehicleComplianceSnapshot } from './VehicleComplianceSnapshot';
 import { DriverComplianceSnapshot } from './DriverComplianceSnapshot';
 import { ComplianceSnapshot } from './ComplianceSnapshot';
+import { TachoTrainingModule } from './TachoTrainingModule';
+import { UserProfileSettings } from './UserProfileSettings';
 
-type Tab = 'dashboard' | 'drivers' | 'compliance' | 'fleet' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
+  const { t } = useTranslation(); // Use hook
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   const tabs = [
-    { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'drivers' as Tab, label: 'Drivers', icon: Users },
-    { id: 'compliance' as Tab, label: 'Compliance', icon: Activity },
-    { id: 'fleet' as Tab, label: 'Fleet', icon: Truck },
-    { id: 'vehicle_checks' as Tab, label: 'Safety Checks', icon: ShieldCheck },
-    { id: 'supervisors' as Tab, label: 'Supervisors', icon: Shield },
-    { id: 'payroll' as Tab, label: 'Payroll', icon: DollarSign },
-    { id: 'expenses' as Tab, label: 'Expenses', icon: Receipt },
-    { id: 'reports' as Tab, label: 'Reports', icon: FileText },
-    { id: 'audit' as Tab, label: 'Audit Trail', icon: AlertTriangle },
-    { id: 'settings' as Tab, label: 'Settings', icon: Settings },
+    { id: 'dashboard' as Tab, label: t('navigation.dashboard'), icon: LayoutDashboard },
+    { id: 'drivers' as Tab, label: t('navigation.drivers'), icon: Users },
+    { id: 'compliance' as Tab, label: t('navigation.compliance'), icon: Activity },
+    { id: 'training' as Tab, label: t('navigation.training'), icon: GraduationCap },
+    { id: 'fleet' as Tab, label: t('navigation.fleet'), icon: Truck },
+    { id: 'vehicle_checks' as Tab, label: t('navigation.safetyChecks'), icon: ShieldCheck },
+    { id: 'supervisors' as Tab, label: t('navigation.supervisors'), icon: Shield },
+    { id: 'payroll' as Tab, label: t('navigation.payroll'), icon: DollarSign },
+    { id: 'expenses' as Tab, label: t('navigation.expenses'), icon: Receipt },
+    { id: 'reports' as Tab, label: t('navigation.reports'), icon: FileText },
+    { id: 'audit' as Tab, label: t('navigation.auditTrail'), icon: AlertTriangle },
+    { id: 'settings' as Tab, label: t('navigation.settings'), icon: Settings },
   ];
 
   return (
@@ -49,18 +54,18 @@ export function ManagerDashboard() {
                 <span className="text-white font-bold text-xl">H</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">HourWise EU</h1>
-                <p className="text-xs text-slate-400">Fleet Manager Portal</p>
+                <h1 className="text-xl font-bold text-white">{t('app.name')}</h1>
+                <p className="text-xs text-slate-400">{t('dashboard.manager.title')}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-white">{profile?.full_name}</p>
-                <p className="text-xs text-slate-400">Fleet Manager</p>
+                <p className="text-xs text-slate-400">{t('navigation.dashboard')}</p>
               </div>
               <button onClick={signOut} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:bg-brand-dark rounded-lg transition">
                 <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline">{t('navigation.signOut')}</span>
               </button>
             </div>
           </div>
@@ -93,35 +98,40 @@ export function ManagerDashboard() {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              {/* TOP ROW: GLOBAL SNAPSHOTS */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <ComplianceSnapshot onAction={() => setActiveTab('compliance')} />
                 <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
                 <DriverComplianceSnapshot onAction={() => setActiveTab('drivers')} />
               </div>
 
-              {/* SECOND ROW: MESSAGING & ALERTS */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  <AlertsFeed title="Real-Time Driver Infringements" />
+                  <AlertsFeed title={t('dashboard.manager.alerts.title')} />
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                   <BroadcastMessage />
-
-                  {/* QUICK STATS / HELP CARD */}
                   <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl shadow-blue-900/20">
-                    <h4 className="font-black uppercase tracking-widest text-xs mb-4 opacity-80">Audit Readiness</h4>
+                    <div className="flex items-center gap-2 mb-4">
+                      <GraduationCap className="text-blue-200" size={20} />
+                      <h4 className="font-black uppercase tracking-widest text-xs opacity-80">{t('dashboard.manager.alerts.trainingMode')}</h4>
+                    </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Weekly PMI Completion</span>
-                        <span className="font-bold">100%</span>
+                        <span className="text-sm font-medium">{t('dashboard.manager.alerts.discrepancy')}</span>
+                        <span className="font-bold text-amber-300">2 Alerts</span>
                       </div>
                       <div className="w-full bg-white/20 rounded-full h-1.5">
-                        <div className="bg-white h-1.5 rounded-full" style={{ width: '100%' }}></div>
+                        <div className="bg-amber-400 h-1.5 rounded-full" style={{ width: '60%' }}></div>
                       </div>
                       <p className="text-[10px] leading-relaxed opacity-70">
-                        Your fleet data is currently being synced for DVSA audit standards. All maintenance logs are verified.
+                        Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
                       </p>
+                      <button
+                        onClick={() => setActiveTab('training')}
+                        className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition"
+                      >
+                        Open Training Center
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -131,6 +141,7 @@ export function ManagerDashboard() {
 
           {activeTab === 'drivers' && <DriverManagement />}
           {activeTab === 'compliance' && <ComplianceScoreboard />}
+          {activeTab === 'training' && <TachoTrainingModule />}
           {activeTab === 'fleet' && <VehicleManagement />}
           {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
           {activeTab === 'supervisors' && <SupervisorManagement />}
@@ -140,6 +151,7 @@ export function ManagerDashboard() {
           {activeTab === 'audit' && <AuditTrail />}
           {activeTab === 'settings' && (
             <div className="space-y-6">
+                <UserProfileSettings />
                 <BillingManager />
                 <CompanySettings />
                 <MfaSettings />

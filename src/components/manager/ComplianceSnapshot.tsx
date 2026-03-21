@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 import { Activity, TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const getScoreColor = (score: number) => {
   if (score >= 90) return 'text-green-500';
@@ -11,6 +12,7 @@ const getScoreColor = (score: number) => {
 
 export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id, 7);
 
   const stats = React.useMemo(() => {
@@ -30,16 +32,16 @@ export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
       <div className="p-4 border-b border-brand-border flex items-center justify-between">
         <h3 className="font-bold text-white flex items-center gap-2">
           <Activity className="w-5 h-5 text-brand-accent" />
-          Fleet Compliance Score
+          {t('dashboard.manager.snapshots.compliance')}
         </h3>
         <button onClick={onAction} className="text-xs font-bold text-brand-accent hover:underline">
-          View All
+          {t('dashboard.manager.snapshots.viewAll')}
         </button>
       </div>
 
       <div className="p-6 flex items-center justify-between">
         <div className="space-y-1">
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Average Score</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('dashboard.manager.snapshots.avgScore')}</p>
           <div className="flex items-baseline gap-2">
             <span className={`text-4xl font-black ${getScoreColor(stats.avgScore)}`}>{stats.avgScore}%</span>
             <TrendingUp size={16} className="text-green-500" />
@@ -47,7 +49,7 @@ export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
         </div>
 
         <div className="text-right space-y-1">
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">7-Day Infringements</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('dashboard.manager.snapshots.sevenDayInfringements')}</p>
           <div className="flex items-center justify-end gap-2 text-red-500 font-black text-2xl">
             <AlertTriangle size={20} />
             {stats.totalViolations}
@@ -59,7 +61,7 @@ export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
         onClick={onAction}
         className="w-full p-3 text-[10px] font-black text-slate-400 hover:text-white hover:bg-brand-dark/50 border-t border-brand-border transition uppercase tracking-[0.2em] flex items-center justify-center gap-2"
       >
-        Open Compliance Board <ChevronRight size={12} />
+        {t('dashboard.manager.snapshots.openBoard')} <ChevronRight size={12} />
       </button>
     </div>
   );

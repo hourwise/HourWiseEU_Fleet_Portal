@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { AlertTriangle, Bell, CheckCircle, Clock } from 'lucide-react';
-import { VIOLATION_DETAILS } from '../../lib/compliance';
+import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 
 export function AlertsFeed() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +23,6 @@ export function AlertsFeed() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      // Step 1: Get the IDs of all drivers in the current manager's company.
       const { data: drivers, error: driversError } = await supabase
         .from('profiles')
         .select('id')
@@ -31,8 +31,6 @@ export function AlertsFeed() {
       if (driversError) throw driversError;
       const driverIds = drivers.map(d => d.id);
 
-      // Step 2: Fetch recent work sessions for ONLY those drivers.
-      // This correctly uses the user_id column and avoids the crash.
       const { data: sessions, error: sessionsError } = await supabase
         .from('work_sessions')
         .select('*')
@@ -42,7 +40,6 @@ export function AlertsFeed() {
 
       if (sessionsError) throw sessionsError;
 
-      // Step 3: Process the sessions to find alerts (same logic as before).
       const fifteenHoursMs = 15 * 60 * 60 * 1000;
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -57,7 +54,7 @@ export function AlertsFeed() {
 
     } catch (err) {
       console.error("Error loading alerts:", err);
-      setAlerts([]); // Set to empty on error to prevent a crash
+      setAlerts([]);
     } finally {
       setLoading(false);
     }
@@ -67,22 +64,22 @@ export function AlertsFeed() {
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
         <Bell className="w-6 h-6 text-gray-700" />
-        <h3 className="text-lg font-bold text-gray-900">Actionable Alerts</h3>
+        <h3 className="text-lg font-bold text-gray-900">{t('dashboard.manager.alerts.title')}</h3>
       </div>
       {loading ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="text-center py-8">{t('common.loading')}</div>
       ) : alerts.length === 0 ? (
         <div className="text-center py-8">
           <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
-          <p className="font-medium text-gray-700">All clear!</p>
-          <p className="text-sm text-gray-500">No issues detected.</p>
+          <p className="font-medium text-gray-700">{t('dashboard.manager.alerts.allClear')}</p>
+          <p className="text-sm text-gray-500">{t('dashboard.manager.alerts.noIssues')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {alerts.map((alert) => (
              <div key={alert.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="font-semibold text-gray-800">Alert for Shift on {new Date(alert.start_time).toLocaleDateString()}</p>
-                <p className="text-sm text-gray-600">Issue detected that may require review.</p>
+                <p className="font-semibold text-gray-800">{t('dashboard.manager.alerts.shiftAlert', { date: new Date(alert.start_time).toLocaleDateString() })}</p>
+                <p className="text-sm text-gray-600">{t('dashboard.manager.alerts.issueDetected')}</p>
              </div>
           ))}
         </div>

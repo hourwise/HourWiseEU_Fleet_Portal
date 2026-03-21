@@ -1,8 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
-import { VIOLATION_DETAILS } from '../../lib/compliance';
-import { Activity, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react'; // Changed: Added Users
+import { Activity, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const getScoreColor = (score: number): { text: string; bg: string; } => {
   if (score >= 90) return { text: 'text-green-700', bg: 'bg-green-500' };
@@ -12,6 +12,7 @@ const getScoreColor = (score: number): { text: string; bg: string; } => {
 
 export function ComplianceScoreboard() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id, 7); // Fetch data for the last 7 days
 
   const overallStats = React.useMemo(() => {
@@ -42,8 +43,8 @@ export function ComplianceScoreboard() {
       <div className="flex items-center gap-3">
         <Activity className="w-8 h-8 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Compliance Scoreboard</h2>
-          <p className="text-gray-600">Driver compliance summary for the last 7 days.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('compliance.title')}</h2>
+          <p className="text-gray-600">{t('compliance.subtitle')}</p>
         </div>
       </div>
       
@@ -54,40 +55,40 @@ export function ComplianceScoreboard() {
                 <TrendingUp className="w-8 h-8 text-blue-600" />
                 <span className={`text-3xl font-bold ${getScoreColor(overallStats.avgScore).text}`}>{overallStats.avgScore}%</span>
             </div>
-            <p className="font-medium text-gray-800">Fleet Average Score</p>
+            <p className="font-medium text-gray-800">{t('compliance.stats.avgScore')}</p>
           </div>
            <div className="bg-white rounded-xl p-6 border">
             <div className="flex items-center justify-between mb-2">
                 <AlertTriangle className="w-8 h-8 text-red-600" />
                 <span className="text-3xl font-bold text-red-800">{overallStats.totalViolations}</span>
             </div>
-            <p className="font-medium text-gray-800">Total Infringements</p>
+            <p className="font-medium text-gray-800">{t('compliance.stats.totalInfringements')}</p>
           </div>
           <div className="bg-white rounded-xl p-6 border">
             <div className="flex items-center justify-between mb-2">
                 <Users className="w-8 h-8 text-amber-600" />
                 <span className="text-3xl font-bold text-amber-800">{overallStats.driversInViolation}</span>
             </div>
-            <p className="font-medium text-gray-800">Drivers with Violations</p>
+            <p className="font-medium text-gray-800">{t('compliance.stats.driversInViolation')}</p>
           </div>
       </div>
 
       {/* Driver List */}
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Driver Compliance Details</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('compliance.details.title')}</h3>
         {complianceSummary.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No active drivers with recent data</h3>
-            <p className="text-gray-600">Invite drivers to see their compliance scores here.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('compliance.details.noDrivers')}</h3>
+            <p className="text-gray-600">{t('compliance.details.noDriversSubtitle')}</p>
           </div>
         ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="border-b bg-gray-50">
-                <th className="p-4 font-semibold">Driver</th>
-                <th className="p-4 font-semibold">Compliance Score</th>
-                <th className="p-4 font-semibold">Infringements (Last 7 Days)</th>
+                <th className="p-4 font-semibold">{t('compliance.details.headers.driver')}</th>
+                <th className="p-4 font-semibold">{t('compliance.details.headers.score')}</th>
+                <th className="p-4 font-semibold">{t('compliance.details.headers.infringements')}</th>
               </tr>
             </thead>
             <tbody>

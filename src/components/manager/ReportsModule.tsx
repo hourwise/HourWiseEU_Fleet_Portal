@@ -4,42 +4,42 @@ import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, Calendar, Filter, PieChart, DollarSign, Zap, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { EfficiencyReport } from './reports/EfficiencyReport';
-
-type DriverLog = Database['public']['Tables']['driver_logs']['Row'];
-type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
-type Profile = Database['public']['Tables']['profiles']['Row'];
+import { useTranslation } from 'react-i18next';
 
 type ReportType = 'payroll' | 'efficiency' | 'vehicle_checks' | 'infractions' | 'driving';
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 
 // --- Helper Sub-components ---
 
 function FilterSection({ drivers, selectedDriver, setSelectedDriver, startDate, setStartDate, endDate, setEndDate }: any) {
+  const { t } = useTranslation();
   return (
     <div className="bg-gray-50 rounded-lg p-4 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-5 h-5 text-gray-600" />
-        <h3 className="font-semibold text-gray-900">Filters</h3>
+        <h3 className="font-semibold text-gray-900">{t('reports.filters.title')}</h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Driver</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.driver')}</label>
           <select
             value={selectedDriver}
             onChange={(e) => setSelectedDriver(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-900"
           >
-            <option value="all">All Drivers</option>
+            <option value="all">{t('reports.filters.allDrivers')}</option>
             {drivers.map((driver: any) => (
               <option key={driver.id} value={driver.id}>{driver.full_name || driver.email}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.startDate')}</label>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.endDate')}</label>
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
         </div>
       </div>
@@ -48,6 +48,7 @@ function FilterSection({ drivers, selectedDriver, setSelectedDriver, startDate, 
 }
 
 function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<(WorkSession & { profile: Profile })[]>([]);
 
   useEffect(() => { loadPayrollData(); }, [selectedDriver, startDate, endDate]);
@@ -78,11 +79,16 @@ function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading,
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center"><h3 className="text-lg font-bold text-gray-900">Payroll Summary</h3></div>
-      {loading ? <div className="text-center py-12">Loading...</div> : (
+      <div className="flex justify-between items-center"><h3 className="text-lg font-bold text-gray-900">{t('reports.payroll.title')}</h3></div>
+      {loading ? <div className="text-center py-12">{t('common.loading')}</div> : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="border-b-2 border-gray-200"><th className="text-left py-3 px-4">Driver</th><th className="text-right py-3 px-4">Work Hours</th><th className="text-right py-3 px-4">Break Hours</th><th className="text-right py-3 px-4">Sessions</th></tr></thead>
+            <thead><tr className="border-b-2 border-gray-200">
+              <th className="text-left py-3 px-4">{t('reports.payroll.headers.driver')}</th>
+              <th className="text-right py-3 px-4">{t('reports.payroll.headers.workHours')}</th>
+              <th className="text-right py-3 px-4">{t('reports.payroll.headers.breakHours')}</th>
+              <th className="text-right py-3 px-4">{t('reports.payroll.headers.sessions')}</th>
+            </tr></thead>
             <tbody>{payrollSummary.map((row, idx) => (
               <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50"><td className="py-3 px-4 font-medium">{row.name}</td><td className="py-3 px-4 text-right">{row.totalHours.toFixed(2)}</td><td className="py-3 px-4 text-right">{row.totalBreakHours.toFixed(2)}</td><td className="py-3 px-4 text-right">{row.sessions}</td></tr>
             ))}</tbody>
@@ -94,6 +100,7 @@ function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading,
 }
 
 function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+  const { t } = useTranslation();
   const [checks, setChecks] = useState<any[]>([]);
 
   useEffect(() => { loadChecks(); }, [selectedDriver, startDate, endDate]);
@@ -111,17 +118,17 @@ function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, lo
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center"><h3 className="text-lg font-bold text-gray-900">Vehicle Inspection Report</h3></div>
-      {loading ? <div className="text-center py-12">Loading...</div> : (
+      <div className="flex justify-between items-center"><h3 className="text-lg font-bold text-gray-900">{t('reports.vehicleChecks.title')}</h3></div>
+      {loading ? <div className="text-center py-12">{t('common.loading')}</div> : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b-2 border-gray-200">
-                <th className="py-3 px-4">Date/Time</th>
-                <th className="py-3 px-4">Inspector</th>
-                <th className="py-3 px-4">Vehicle</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Defects</th>
+                <th className="py-3 px-4">{t('reports.vehicleChecks.headers.dateTime')}</th>
+                <th className="py-3 px-4">{t('reports.vehicleChecks.headers.inspector')}</th>
+                <th className="py-3 px-4">{t('reports.vehicleChecks.headers.vehicle')}</th>
+                <th className="py-3 px-4">{t('reports.vehicleChecks.headers.status')}</th>
+                <th className="py-3 px-4">{t('reports.vehicleChecks.headers.defects')}</th>
               </tr>
             </thead>
             <tbody>
@@ -136,16 +143,16 @@ function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, lo
                   <td className="py-3 px-4">
                     {check.check_status === 'pass' ? (
                       <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-fit">
-                        <CheckCircle size={12} /> PASS
+                        <CheckCircle size={12} /> {t('reports.vehicleChecks.status.pass')}
                       </span>
                     ) : (
                       <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-fit">
-                        <AlertTriangle size={12} /> DEFECT
+                        <AlertTriangle size={12} /> {t('reports.vehicleChecks.status.defect')}
                       </span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 italic">
-                    {check.defect_details || 'None reported'}
+                    {check.defect_details || t('reports.vehicleChecks.noneReported')}
                   </td>
                 </tr>
               ))}
@@ -158,16 +165,19 @@ function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, lo
 }
 
 function InfractionsReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
-  return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">Infraction summary module ready.</div>;
+  const { t } = useTranslation();
+  return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">{t('reports.infractions.moduleReady')}</div>;
 }
 
 function DrivingAnalysisReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
-  return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">Driving behavior analysis module ready.</div>;
+  const { t } = useTranslation();
+  return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">{t('reports.driving.moduleReady')}</div>;
 }
 
 // --- Main Module ---
 
 export function ReportsModule() {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [activeReport, setActiveReport] = useState<ReportType>('payroll');
   const [drivers, setDrivers] = useState<Profile[]>([]);
@@ -184,11 +194,11 @@ export function ReportsModule() {
   };
 
   const reportTabs: { id: ReportType; label: string; icon: any }[] = [
-    { id: 'payroll', label: 'Payroll', icon: DollarSign },
-    { id: 'efficiency', label: 'Efficiency', icon: Zap },
-    { id: 'vehicle_checks', label: 'Vehicle Checks', icon: ShieldCheck },
-    { id: 'infractions', label: 'Infractions', icon: AlertTriangle },
-    { id: 'driving', label: 'Driving', icon: PieChart },
+    { id: 'payroll', label: t('reports.tabs.payroll'), icon: DollarSign },
+    { id: 'efficiency', label: t('reports.tabs.efficiency'), icon: Zap },
+    { id: 'vehicle_checks', label: t('reports.tabs.vehicleChecks'), icon: ShieldCheck },
+    { id: 'infractions', label: t('reports.tabs.infractions'), icon: AlertTriangle },
+    { id: 'driving', label: t('reports.tabs.driving'), icon: PieChart },
   ];
 
   return (
@@ -196,13 +206,13 @@ export function ReportsModule() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <FileText className="w-8 h-8 text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Fleet Reporting</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h2>
         </div>
         <button
           onClick={() => window.print()}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
         >
-          <Download size={16} /> Export PDF / Print
+          <Download size={16} /> {t('reports.exportPdf')}
         </button>
       </div>
 

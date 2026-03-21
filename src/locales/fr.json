@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "La gestion de flotte intelligente, simplifiée",
+    "description": "Gestion de flotte intelligente et suivi de la conformité pour les entreprises de transport européennes. Restez conforme, restez efficace."
+  },
+  "navigation": {
+    "home": "Accueil",
+    "howTo": "Guide d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "contact": "Contact",
+    "privacyRequest": "Demandes de données (RGPD)",
+    "signIn": "Se connecter",
+    "getStarted": "Démarrer",
+    "dashboard": "Tableau de bord",
+    "drivers": "Chauffeurs",
+    "compliance": "Conformité",
+    "training": "Formation",
+    "fleet": "Flotte",
+    "safetyChecks": "Contrôles de sécurité",
+    "supervisors": "Superviseurs",
+    "payroll": "Paie",
+    "expenses": "Frais",
+    "reports": "Rapports",
+    "auditTrail": "Piste d'audit",
+    "settings": "Paramètres",
+    "signOut": "Déconnexion"
+  },
+  "footer": {
+    "company": "Entreprise",
+    "account": "Compte",
+    "createAccount": "Créer un compte",
+    "allRightsReserved": "Tous droits réservés."
+  },
+  "auth": {
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "createAccount": "Créer un compte gestionnaire de flotte",
+    "managerSignup": "Inscription gestionnaire",
+    "companyName": "Nom de l'entreprise",
+    "fullName": "Nom complet",
+    "alreadyHaveAccount": "Vous avez déjà un compte ? Connectez-vous",
+    "signInSubtitle": "Connectez-vous à votre tableau de bord",
+    "forgotPasswordSubtitle": "Réinitialisez votre mot de passe",
+    "magicLinkSubtitle": "Recevoir un lien magique pour se connecter",
+    "magicLink": "Connexion par lien magique",
+    "sendMagicLink": "Envoyer le lien magique",
+    "sendResetLink": "Envoyer le lien de réinitialisation",
+    "backToSignIn": "Retour à la connexion",
+    "newToApp": "Nouveau sur HourWise ?",
+    "createCompanyAccountSubtitle": "Créez votre compte entreprise",
+    "billingNotice": "Finalisez la facturation sur le site web après l'inscription",
+    "codeNotice": "Vous recevrez un code d'entreprise à partager avec vos chauffeurs",
+    "creatingAccount": "Création du compte...",
+    "createFleetAccount": "Créer un compte flotte",
+    "messages": {
+      "resetSent": "Un lien de réinitialisation a été envoyé à votre e-mail.",
+      "magicLinkSent": "Consultez vos e-mails pour le lien de connexion."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Portail Gestionnaire de Flotte",
+      "welcome": "Bon retour, {{name}}",
+      "snapshots": {
+        "compliance": "Score de conformité de la flotte",
+        "vehicle": "Alertes conformité véhicules",
+        "driver": "Alertes qualification chauffeurs",
+        "viewAll": "Voir tout",
+        "avgScore": "Score moyen",
+        "sevenDayInfringements": "Infractions (7 jours)",
+        "openBoard": "Ouvrir le tableau de conformité",
+        "urgent": "{{count}} URGENT",
+        "noVehicleAlerts": "Aucune alerte véhicule urgente.",
+        "viewFleetList": "Voir la liste complète",
+        "noDriverAlerts": "Tous les documents chauffeurs sont à jour.",
+        "manageDocs": "Gérer les documents",
+        "alerts": "{{count}} ALERTES",
+        "alertSingle": "1 ALERTE"
+      },
+      "alerts": {
+        "title": "Alertes nécessitant une action",
+        "urgent": "URGENT",
+        "trainingMode": "Mode formation actif",
+        "discrepancy": "Écart de données détecté",
+        "allClear": "Tout est en règle !",
+        "noIssues": "Aucun problème détecté.",
+        "shiftAlert": "Alerte pour le service du {{date}}",
+        "issueDetected": "Problème détecté nécessitant une révision."
+      },
+      "auditReadiness": {
+        "title": "Prêt pour l'audit",
+        "status": "Les données de votre flotte sont synchronisées selon les normes d'audit réglementaires."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Gestion de la flotte",
+    "totalAssets": "{{count}} Véhicules au total",
+    "addVehicle": "Ajouter un véhicule",
+    "backToList": "Retour à la liste",
+    "vehicleDetails": "Détails du véhicule",
+    "complianceBoard": "Tableau de conformité",
+    "maintenanceActions": "Actions de maintenance",
+    "statusNotes": "Notes d'état",
+    "noNotes": "Aucune alerte ou note active pour ce véhicule.",
+    "markVor": "Marquer comme immobilisé (VOR)",
+    "returnToService": "Remettre en service (Sûr)",
+    "maintenanceCalled": "Maintenance demandée",
+    "bookedWithGarage": "Marquer comme réservé au garage",
+    "logRepair": "Enregistrer réparation/PMI",
+    "recordWork": "Enregistrer l'intervention et le rapport",
+    "noVehicles": "Aucun véhicule enregistré pour le moment.",
+    "addFirst": "Ajoutez votre premier véhicule",
+    "status": {
+      "vor": "VOR / Hors service",
+      "active": "Actif",
+      "critical": "Échéance critique (14j)",
+      "operational": "Opérationnel",
+      "requiresAttention": "Nécessite une attention immédiate",
+      "compliancePending": "Inspections en attente",
+      "ready": "Prêt pour affectation",
+      "overdue": "EN RETARD",
+      "expiresIn": "dans {{days}} jours"
+    },
+    "labels": {
+      "regType": "Détails du véhicule",
+      "status": "État",
+      "motDue": "Échéance CT",
+      "pmiDue": "Échéance PMI",
+      "tachoCal": "Calib. Tacho",
+      "odometer": "Odomètre",
+      "year": "Année",
+      "vin": "VIN",
+      "added": "Ajouté",
+      "actions": "Actions"
+    },
+    "modal": {
+      "title": "Ajouter un nouveau véhicule",
+      "identity": "Identité du véhicule",
+      "compliance": "Conformité et Sécurité",
+      "regNumber": "Immatriculation *",
+      "make": "Marque *",
+      "model": "Modèle",
+      "type": "Type de véhicule *",
+      "vinNumber": "Numéro VIN",
+      "initialOdo": "Kilométrage initial (km)",
+      "currentOdo": "Kilométrage actuel (km)",
+      "motDue": "Date échéance CT",
+      "pmiDue": "Prochaine date PMI",
+      "tachoDue": "Échéance étalonnage tacho",
+      "insuranceExpiry": "Expiration assurance",
+      "footnote": "Les dates de conformité activent le système de 'feu tricolore'. Les éléments en retard seront signalés en ROUGE.",
+      "register": "Enregistrer le véhicule",
+      "adding": "Ajout en cours...",
+      "errors": {
+        "companyId": "ID entreprise introuvable. Veuillez rafraîchir la page.",
+        "duplicate": "Un véhicule avec cette immatriculation existe déjà.",
+        "generic": "Une erreur inattendue est survenue lors de l'ajout."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Tableau de conformité",
+    "subtitle": "Résumé de la conformité des chauffeurs (7 derniers jours).",
+    "stats": {
+      "avgScore": "Score moyen de la flotte",
+      "totalInfringements": "Total des infractions",
+      "driversInViolation": "Chauffeurs en infraction"
+    },
+    "details": {
+      "title": "Détails de conformité par chauffeur",
+      "noDrivers": "Aucun chauffeur actif avec des données récentes",
+      "noDriversSubtitle": "Invitez des chauffeurs pour voir leurs scores ici.",
+      "headers": {
+        "driver": "Chauffeur",
+        "score": "Score de conformité",
+        "infringements": "Infractions (7 derniers jours)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Historique de maintenance",
+    "logWork": "Enregistrer intervention",
+    "noRecords": "Aucun dossier de maintenance officiel trouvé.",
+    "complianceRequired": "Conformité réglementaire requise",
+    "labels": {
+      "date": "DATE",
+      "odo": "ODO",
+      "cost": "COÛT",
+      "eventType": "Type d'événement",
+      "completedAt": "Date d'achèvement",
+      "provider": "Prestataire / Garage",
+      "description": "Description des travaux",
+      "evidence": "Preuve légale (Feuille PMI/Certificat CT)"
+    },
+    "modal": {
+      "title": "Enregistrer une maintenance",
+      "providerPlaceholder": "ex: Atelier Scania",
+      "descriptionPlaceholder": "ex: Inspection périodique effectuée. Nouvelles plaquettes de frein avant installées.",
+      "confirm": "Confirmer l'intervention",
+      "saving": "Enregistrement..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Entretien)",
+      "repair": "Réparation défaut",
+      "mot": "Contrôle technique",
+      "tacho": "Étalonnage Tacho",
+      "other": "Autre"
+    }
+  },
+  "training": {
+    "title": "Formation et Sync Tacho",
+    "subtitle": "Comparez les données tacho légales avec l'activité déclarée",
+    "import": {
+      "title": "Importer des données tacho",
+      "selectDriver": "Sélectionner un chauffeur",
+      "selectPlaceholder": "Choisir un chauffeur...",
+      "uploadLabel": "Charger .CSV depuis Tachomaster",
+      "browse": "Parcourir les fichiers",
+      "runButton": "Lancer la vérification d'écarts",
+      "analyzing": "Analyse..."
+    },
+    "suggestion": {
+      "title": "Suggestion de formation",
+      "description": "Si un chauffeur présente des erreurs fréquentes de changement de mode, l'application lui proposera automatiquement le guide 'Bonnes pratiques Tacho'."
+    },
+    "analysis": {
+      "title": "Résultats de l'analyse",
+      "conflictsFound": "{{count}} Conflits détectés",
+      "noData": "Aucune donnée analysée.",
+      "noDataSubtitle": "Sélectionnez un chauffeur et chargez un fichier pour commencer.",
+      "tacho": "Tacho",
+      "app": "App",
+      "priorities": {
+        "high": "Priorité Haute",
+        "low": "Priorité Basse"
+      },
+      "activities": {
+        "driving": "Conduite",
+        "break": "Pause",
+        "work": "Travail",
+        "rest": "Repos"
+      },
+      "insightTitle": "Aperçu formation",
+      "assignButton": "Assigner une formation de rappel"
+    }
+  },
+  "payroll": {
+    "title": "Résumé de la paie",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "exportPayroll": "Exporter Paie CSV",
+    "exportExpenses": "Exporter Frais CSV",
+    "headers": {
+      "driver": "Chauffeur",
+      "hours": "Total Heures (Normal/Sup)",
+      "grossPay": "Salaire Brut (frais inclus)"
+    },
+    "labels": {
+      "wages": "Salaires",
+      "expenses": "Frais",
+      "normal": "Normal",
+      "overtime": "Sup",
+      "payrollNumber": "Numéro de paie",
+      "grossPayAmount": "Salaire Brut (€)",
+      "wagesAmount": "Montant Salaire (€)"
+    },
+    "noData": "Aucune donnée de paie pour cette période.",
+    "loading": "Chargement des données..."
+  },
+  "vehicleChecklist": {
+    "title": "Contrôle de sécurité quotidien",
+    "success": {
+      "title": "Checklist soumise",
+      "message": "Le contrôle de sécurité quotidien a été enregistré."
+    },
+    "manager": {
+      "title": "Contrôles de sécurité véhicules",
+      "subtitle": "Consultez les inspections et les défauts signalés",
+      "searchPlaceholder": "Rechercher chauffeur ou immat...",
+      "noChecks": "Aucun contrôle trouvé",
+      "selectCheck": "Sélectionnez un contrôle pour voir les détails",
+      "selectCheckSubtitle": "Les inspections quotidiennes apparaîtront ici",
+      "printExport": "Imprimer / Exporter",
+      "details": {
+        "vehicleType": "TYPE DE VÉHICULE",
+        "vehicleMake": "MARQUE",
+        "odometer": "ODOMÈTRE",
+        "status": "ÉTAT",
+        "timeRecorded": "HEURE D'ENREGISTREMENT",
+        "defectsTitle": "DÉFAUTS SIGNALÉS / ACTIONS PRISES",
+        "noDefects": "Aucun détail supplémentaire fourni."
+      },
+      "status": {
+        "pass": "VALIDE",
+        "fail": "ÉCHEC",
+        "defect": "DÉFAUT"
+      }
+    },
+    "sections": {
+      "internal": "CONTRÔLES INTERNES",
+      "external": "CONTRÔLES EXTERNES",
+      "vehicleDetails": "Détails du véhicule",
+      "defects": "SIGNALEMENT DÉFAUTS / ACTIONS PRISES"
+    },
+    "items": {
+      "mirrors": "Rétroviseurs et vitres",
+      "mirrorsHint": "Vérifiez fissures/autocollants ; assurez-vous que les rétros sont réglés.",
+      "wipers": "Essuie-glaces et lave-glace",
+      "wipersHint": "Vérifiez le fonctionnement et les niveaux.",
+      "front_view": "Vue avant",
+      "front_viewHint": "Visibilité totale par le pare-brise.",
+      "warning_lamps": "Témoins d'alerte",
+      "warning_lampsHint": "Vérifiez que les témoins du tableau de bord fonctionnent.",
+      "steering": "Direction",
+      "steeringHint": "Mouvement fluide et fonctionnement correct.",
+      "horn": "Avertisseur sonore",
+      "hornHint": "Testez pour un son clair et fonctionnel.",
+      "brakes_air": "Freins et pression d'air",
+      "brakes_airHint": "Vérifiez le freinage et la montée en pression.",
+      "height_marker": "Indicateur de hauteur",
+      "height_markerHint": "Indicateur de hauteur correct affiché.",
+      "seatbelts": "Ceintures de sécurité",
+      "seatbeltsHint": "Vérifiez que toutes les ceintures fonctionnent.",
+      "lights_ind": "Feux et clignotants",
+      "lights_indHint": "Tous les feux/indicateurs fonctionnent.",
+      "leaks": "Fuites carburant/huile",
+      "leaksHint": "Vérifiez l'absence de liquide au sol ou sur le châssis.",
+      "battery": "Fixation batterie",
+      "batteryHint": "Vérifiez que la batterie est fixée et en bon état.",
+      "adblue": "Liquide AdBlue",
+      "adblueHint": "Niveau d'AdBlue suffisant.",
+      "smoke": "Fumée d'échappement excessive",
+      "smokeHint": "Vérifiez l'absence d'émissions de fumée noire.",
+      "body_wings": "Fixation carrosserie/ailes",
+      "body_wingsHint": "Assurez-vous qu'aucune pièce n'est desserrée.",
+      "spray": "Dispositifs anti-projections",
+      "sprayHint": "Fixés solidement et conformes.",
+      "tyres_wheels": "Pneus et fixation des roues",
+      "tyres_wheelsHint": "Écrous serrés. Profil et pression conformes.",
+      "brake_line": "Conduites de frein",
+      "brake_lineHint": "Vérifiez l'absence de dommages ou fuites d'air.",
+      "electrical": "Connexions électriques",
+      "electricalHint": "Tests individuels pour toutes les connexions.",
+      "coupling": "Sécurité d'attelage",
+      "couplingHint": "Vérifiez que le véhicule est bien attelé à la charge.",
+      "load_security": "Sécurité du chargement",
+      "load_securityHint": "Poids réparti et chargement arrimé.",
+      "number_plate": "Plaque d'immatriculation",
+      "number_plateHint": "Fixée et parfaitement lisible.",
+      "reflectors": "Catadioptres et feux",
+      "reflectorsHint": "Solidement fixés et visibles.",
+      "markers": "Marquages",
+      "markersHint": "Tous les marquages obligatoires fixés solidement."
+    },
+    "labels": {
+      "regNumber": "N° IMMATRICULATION",
+      "vehicleType": "TYPE DE VÉHICULE",
+      "vehicleMake": "MARQUE (OPTIONNEL)",
+      "hint": "Conseil",
+      "submitting": "Envoi...",
+      "submit": "Soumettre la checklist",
+      "defectPlaceholder": "Décrivez le défaut et toute mesure prise..."
+    },
+    "errors": {
+      "incomplete": "Veuillez compléter les 24 points de contrôle avant l'envoi.",
+      "missingReg": "L'immatriculation du véhicule est obligatoire."
+    }
+  },
+  "infractions": {
+    "title": "Rapports d'infraction",
+    "subtitle": "Suivez et analysez les problèmes de conformité",
+    "export": "Exporter CSV",
+    "filterAll": "Tout ({{count}})",
+    "filterViolations": "Violations ({{count}})",
+    "filterWarnings": "Avertissements ({{count}})",
+    "noInfractions": "Aucune infraction trouvée",
+    "noInfractionsSubtitle": "Votre flotte maintient une excellente conformité",
+    "issue": "Problème de conformité",
+    "activity": "Activité : {{type}}",
+    "labels": {
+      "driver": "Chauffeur",
+      "dateTime": "Date et heure",
+      "location": "Lieu",
+      "duration": "Durée",
+      "notes": "Notes :",
+      "notRecorded": "Non enregistré",
+      "ongoing": "En cours",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Date",
+      "driver": "Chauffeur",
+      "activity": "Activité",
+      "status": "État",
+      "infractionType": "Type d'infraction",
+      "duration": "Durée (min)",
+      "locationStart": "Lieu de départ",
+      "notes": "Notes"
+    }
+  },
+  "audit": {
+    "title": "Export Piste d'audit",
+    "subtitle": "Générez des rapports pour les audits réglementaires",
+    "filtersTitle": "Filtres du rapport",
+    "labels": {
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "driver": "Chauffeur",
+      "allDrivers": "Tous les chauffeurs"
+    },
+    "trailCard": {
+      "title": "Piste d'audit complète",
+      "subtitle": "Tous les journaux chauffeurs détaillés",
+      "item1": "Journaux d'activité chauffeurs",
+      "item2": "Horodatages et durées",
+      "item3": "Données de localisation",
+      "item4": "Informations véhicules",
+      "button": "Télécharger la piste d'audit",
+      "generating": "Génération..."
+    },
+    "summaryCard": {
+      "title": "Résumé de conformité",
+      "subtitle": "Métriques de conformité agrégées",
+      "item1": "Taux de conformité par chauffeur",
+      "item2": "Nombre de violations et avertissements",
+      "item3": "Résumé total d'activité",
+      "item4": "Vue rapide pour l'audit",
+      "button": "Télécharger le résumé"
+    },
+    "footerNotice": "Prêt pour l'audit : Ces rapports sont formatés pour la conformité réglementaire et peuvent être soumis aux autorités.",
+    "csvHeaders": {
+      "date": "Date",
+      "driverName": "Nom chauffeur",
+      "license": "Numéro de permis",
+      "activity": "Type d'activité",
+      "start": "Heure début",
+      "end": "Heure fin",
+      "duration": "Durée (min)",
+      "status": "État",
+      "infraction": "Type d'infraction",
+      "vehicle": "ID Véhicule",
+      "locationStart": "Lieu début",
+      "locationEnd": "Lieu fin",
+      "notes": "Notes",
+      "totalLogs": "Total journaux",
+      "violations": "Violations",
+      "warnings": "Avertissements",
+      "complianceRate": "Taux de conformité"
+    },
+    "ongoing": "En cours",
+    "none": "Aucun",
+    "unknown": "Inconnu"
+  },
+  "expensesManager": {
+    "title": "Approbation des frais",
+    "subtitle": "{{count}} frais en attente de révision.",
+    "loading": "Chargement des frais...",
+    "allClear": "Tout est à jour !",
+    "noPending": "Aucun frais en attente de révision.",
+    "headers": {
+      "driver": "Chauffeur",
+      "date": "Date",
+      "amount": "Montant",
+      "description": "Description",
+      "receipt": "Justificatif",
+      "actions": "Actions"
+    },
+    "viewReceipt": "Voir",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "errors": {
+      "actionFailed": "Échec lors de l'{{action}} du frais.",
+      "noPath": "Chemin du justificatif introuvable.",
+      "downloadFailed": "Échec du téléchargement."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Gestion des superviseurs",
+    "subtitle": "{{count}} superviseurs au total",
+    "notice": "Note : Les superviseurs s'inscrivent avec votre code entreprise. Gérez ici leur état et profil.",
+    "searchPlaceholder": "Rechercher par nom ou e-mail...",
+    "filters": {
+      "all": "Tout",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "noSupervisors": "Aucun superviseur trouvé",
+    "labels": {
+      "supervisor": "Superviseur",
+      "email": "E-mail",
+      "status": "État",
+      "phone": "Téléphone",
+      "name": "Nom complet",
+      "emailReadOnly": "E-mail (Lecture seule)"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "modal": {
+      "title": "Détails superviseur",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "errors": {
+        "updateFailed": "Échec de la mise à jour."
+      },
+      "editTitle": "Modifier les détails"
+    }
+  },
+  "driverDetails": {
+    "title": "Dossier chauffeur : {{name}}",
+    "sections": {
+      "profile": "Profil & Paie",
+      "compliance": "Qualifications professionnelles",
+      "activity": "Services récents",
+      "locations": "Zones de départ"
+    },
+    "labels": {
+      "fullName": "Nom complet",
+      "payrollNo": "N° de paie",
+      "niNumber": "N° Sécurité Sociale",
+      "dob": "Date de naissance",
+      "phone": "Téléphone",
+      "emergencyName": "Contact urgence",
+      "emergencyPhone": "Tél. urgence",
+      "status": "État",
+      "address": "Adresse",
+      "licence": "Permis (Recto)",
+      "licenceNo": "Numéro de permis",
+      "entitlements": "Catégories (ex: C, C+E)",
+      "dvlaCode": "Code de vérification",
+      "cpc": "FIMO/FCO (CQC)",
+      "cpcNo": "Numéro de carte CQC",
+      "qualStart": "Date début qualification",
+      "qualExpiry": "Expiration qualification",
+      "tacho": "Carte chronotachygraphe",
+      "tachoNo": "Numéro de carte tacho",
+      "cardExpiry": "Expiration carte",
+      "duration": "Durée : {{hours}} h",
+      "noShifts": "Aucun service récent enregistré.",
+      "loadingMap": "Chargement carte...",
+      "noMapData": "Aucune donnée de localisation.",
+      "ref": "RÉF : {{ref}}"
+    },
+    "status": {
+      "active": "ACTIF",
+      "inactive": "INACTIF (VOR)",
+      "missingExpiry": "Date manquante",
+      "expired": "Expiré le {{date}}",
+      "expiresIn": "Expire dans {{days}} jours",
+      "expiresOn": "Expire le {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Charger Permis",
+      "uploadCpc": "Charger CQC",
+      "uploadTacho": "Charger Carte Tacho",
+      "commit": "Valider",
+      "saving": "Enregistrement..."
+    },
+    "errors": {
+      "fillAll": "Veuillez remplir tous les champs.",
+      "uploadError": "Erreur : {{message}}",
+      "updateFailed": "Échec de la mise à jour."
+    }
+  },
+  "shiftEdit": {
+    "title": "Modifier manuellement le service",
+    "labels": {
+      "start": "Heure de début (Lecture seule)",
+      "end": "Heure de fin",
+      "reason": "Motif du changement (Requis)",
+      "reasonPlaceholder": "ex: Le chauffeur a confirmé que son téléphone était éteint à cette heure."
+    },
+    "errors": {
+      "endRequired": "L'heure de fin est requise.",
+      "reasonRequired": "Un motif est requis pour la piste d'audit.",
+      "invalidEnd": "La fin doit être après le début.",
+      "updateFailed": "Échec de la mise à jour."
+    },
+    "buttons": {
+      "save": "Enregistrer et Recalculer",
+      "saving": "Enregistrement..."
+    },
+    "auditNotePrefix": "(Modifié par le Gestionnaire) "
+  },
+  "settings": {
+    "company": {
+      "title": "Identité de l'entreprise",
+      "subscriptionActive": "ABONNEMENT ACTIF",
+      "inactive": "INACTIF",
+      "nameLabel": "Nom de l'entreprise",
+      "refIdLabel": "ID de référence interne",
+      "authCodeLabel": "Code d'autorisation entreprise",
+      "authCodeFootnote": "Donnez ce code aux nouveaux chauffeurs et superviseurs pour les lier à votre flotte.",
+      "complianceTitle": "Application de la conformité",
+      "complianceSubtitle": "Appliquez des normes de sécurité élevées.",
+      "mandatoryChecks": "Contrôles véhicules obligatoires",
+      "mandatoryChecksSubtitle": "Bloquer les services sans contrôle préalable.",
+      "mandatoryChecksFootnote": "Si activé, les chauffeurs doivent effectuer leur tour du véhicule avant de pointer.",
+      "usageMetrics": "Métriques d'utilisation",
+      "usageMetricsSubtitle": "Les données de kilométrage et d'inspection sont capturées automatiquement.",
+      "dataStatus": "État des données",
+      "activeMonitoring": "Surveillance active activée",
+      "fleetRegistered": "FLOTTE ENREGISTRÉE LE : {{date}}",
+      "errors": {
+        "updateFailed": "Échec de la mise à jour du nom.",
+        "settingUpdateFailed": "Échec de la mise à jour du paramètre : {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Mon profil",
+      "success": "Profil mis à jour",
+      "nameLabel": "Nom complet",
+      "emailLabel": "Adresse e-mail (Login)",
+      "phoneLabel": "Téléphone",
+      "updateButton": "Mettre à jour mes détails",
+      "updating": "Enregistrement...",
+      "securityTitle": "Sécurité & Mot de passe",
+      "securitySubtitle": "Besoin de changer de mot de passe ou d'activer la double authentification ?",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "resetSent": "Lien de réinitialisation envoyé par e-mail."
+    },
+    "mfa": {
+      "title": "Authentification Multi-Facteurs (MFA)",
+      "subtitle": "Ajoutez une couche de sécurité supplémentaire avec un code via une application d'authentification.",
+      "enabled": "La MFA est actuellement activée.",
+      "step1": "1. Scannez ce QR code avec votre application (ex: Google Authenticator).",
+      "step2": "2. Entrez le code à 6 chiffres pour terminer la configuration.",
+      "placeholder": "123456",
+      "verifyButton": "Vérifier & Activer",
+      "verifying": "Vérification...",
+      "enableButton": "Activer la MFA",
+      "starting": "Démarrage...",
+      "disableButton": "Désactiver",
+      "disabling": "Désactivation...",
+      "confirmDisable": "Voulez-vous vraiment désactiver la MFA ?",
+      "successEnabled": "MFA activée avec succès !",
+      "successDisabled": "MFA désactivée."
+    }
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "loading": "Chargement...",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "refresh": "Rafraîchir",
+    "viewAll": "Voir tout",
+    "success": "Succès",
+    "error": "Erreur",
+    "lastUpdated": "Mis à jour le : {{date}}",
+    "details": "Détails",
+    "syncing": "Synchronisation...",
+    "search": "Rechercher par nom ou e-mail...",
+    "confirmDelete": "Voulez-vous vraiment supprimer {{name}} ? Cela effacera définitivement son compte et ses données.",
+    "selectFile": "Choisir un fichier"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil introuvable",
+      "message": "Nous avons trouvé votre compte, mais impossible de charger les détails de votre profil.",
+      "retry": "Réessayer",
+      "signOut": "Se déconnecter et recommencer"
+    }
+  },
+  "howTo": {
+    "title": "Comment utiliser HourWise EU",
+    "subtitle": "Tout ce que vous devez savoir pour démarrer la gestion de votre flotte",
+    "sections": {
+      "gettingStarted": {
+        "title": "Démarrage",
+        "step1": {
+          "title": "Étape 1 : Créer votre compte",
+          "description": "Commencez par créer un compte gestionnaire. Vous devrez fournir les informations de l'entreprise et choisir un mot de passe sécurisé."
+        },
+        "step2": {
+          "title": "Étape 2 : Ajouter vos chauffeurs",
+          "description": "Naviguez vers la section Gestion des chauffeurs. Chaque chauffeur recevra des identifiants pour se connecter.",
+          "list": [
+            "Entrez le nom et l'e-mail du chauffeur",
+            "Le système génère des identifiants sécurisés",
+            "Le chauffeur reçoit un e-mail avec les instructions"
+          ]
+        },
+        "step3": {
+          "title": "Étape 3 : Suivre les heures quotidiennes",
+          "description": "Les chauffeurs soumettent leurs heures. Le système calcule automatiquement les cumuls et alerte sur les limites réglementaires.",
+          "list": [
+            "Saisie des heures de conduite quotidiennes",
+            "Calcul en temps réel des totaux hebdomadaires",
+            "Alertes automatiques à l'approche des limites"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Pour les gestionnaires",
+        "compliance": {
+          "title": "Suivi de la conformité",
+          "description": "Visualisez l'état de conformité de toute votre flotte. Le tableau de bord montre quels chauffeurs nécessitent une attention."
+        },
+        "violations": {
+          "title": "Gestion des infractions",
+          "description": "En cas de dépassement, le système enregistre une infraction. Consultez les détails pour vos audits."
+        },
+        "audit": {
+          "title": "Piste d'audit",
+          "description": "Chaque action est enregistrée. Cela garantit une responsabilité totale et répond aux exigences réglementaires."
+        }
+      },
+      "drivers": {
+        "title": "Pour les chauffeurs",
+        "workflow": {
+          "title": "Flux quotidien",
+          "step1": {
+            "title": "Connectez-vous à votre tableau de bord",
+            "description": "Utilisez les identifiants fournis par votre gestionnaire"
+          },
+          "step2": {
+            "title": "Soumettez vos heures de conduite",
+            "description": "Entrez le total d'heures conduites pour la journée"
+          },
+          "step3": {
+            "title": "Vérifiez votre état de conformité",
+            "description": "Visualisez vos totaux hebdomadaires et bimensuels"
+          },
+          "step4": {
+            "title": "Attention aux avertissements",
+            "description": "Le système vous alerte à l'approche des limites d'heures"
+          }
+        }
+      },
+      "regulations": {
+        "title": "Comprendre les règlements UE",
+        "limits": {
+          "title": "Limites clés",
+          "weekly": "Limite hebdomadaire :",
+          "weeklyValue": "Maximum 56 heures de conduite par semaine",
+          "fortnightly": "Limite bimensuelle :",
+          "fortnightlyValue": "Maximum 90 heures sur deux semaines consécutives",
+          "footnote": "HourWise EU surveille automatiquement ces limites."
+        }
+      },
+      "help": {
+        "title": "Besoin d'aide ?",
+        "subtitle": "Contactez notre support pour une assistance personnalisée",
+        "emailLabel": "E-mail :"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "sections": {
+      "intro": {
+        "title": "1. Introduction",
+        "p1": "HourWise EU fournit une plateforme pour aider les entreprises de transport à assurer leur conformité.",
+        "p2": "En utilisant nos services, vous acceptez la collecte de données conformément à cette politique."
+      },
+      "collect": {
+        "title": "2. Données collectées",
+        "managers": {
+          "title": "2.1 Fournies par les gestionnaires",
+          "items": [
+            "Infos compte : Nom, entreprise, e-mail.",
+            "Dossiers chauffeurs : Matricule, date de naissance, adresse, contact urgence.",
+            "Détails conformité : Permis, numéros FIMO/FCO, dates d'expiration."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Fournies par les chauffeurs (via l'App)",
+          "items": [
+            "Données profil : Nom et e-mail.",
+            "Sessions de travail : Horodatages travail, pause, repos.",
+            "Frais : Montant, description, images des justificatifs."
+          ]
+        },
+        "app": {
+          "title": "2.3 Autorisations de l'App",
+          "description": "L'App demande les autorisations suivantes :",
+          "items": [
+            "Appareil photo : Pour charger permis et frais.",
+            "Localisation : Nous capturons les coordonnées GPS UNIQUEMENT au début et à la fin du service pour l'audit. Pas de suivi en continu."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Utilisation des données",
+        "items": [
+          "Suivi conformité : Gestion des heures et validité des documents.",
+          "Gestion de la paie : Calcul du brut et rapports comptables.",
+          "Gestion des frais : Traitement des justificatifs pour remboursement.",
+          "Pistes d'audit : Registres légaux pour la conformité."
+        ]
+      },
+      "security": {
+        "title": "4. Sécurité et Stockage",
+        "p1": "Toutes les données sont protégées. Les documents sont stockés dans des espaces privés et chiffrés."
+      },
+      "retention": {
+        "title": "5. Rétention des données",
+        "p1": "Les données de paie et de travail sont conservées entre 3 et 6 ans selon la juridiction."
+      },
+      "rights": {
+        "title": "6. Vos droits (RGPD)",
+        "p1": "Vous avez le droit d'accéder, rectifier ou supprimer vos données."
+      },
+      "contact": {
+        "title": "7. Nous contacter",
+        "team": "Équipe Confidentialité HourWise EU",
+        "emailLabel": "E-mail :"
+      }
+    }
+  },
+  "terms": {
+    "title": "Conditions d'utilisation",
+    "sections": {
+      "agreement": {
+        "title": "1. Accord",
+        "p1": "En utilisant HourWise EU, vous acceptez ces conditions."
+      },
+      "license": {
+        "title": "2. Licence",
+        "p1": "Une licence d'utilisation est accordée pour un usage professionnel.",
+        "items": [
+          "Ne pas copier le contenu ;",
+          "Ne pas tenter d'ingénierie inverse ;",
+          "Ne pas supprimer les droits d'auteur."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Précision des données",
+        "p1": "HourWise fournit des outils, mais :",
+        "items": [
+          "Responsabilité : Les gestionnaires et chauffeurs doivent vérifier la précision des logs.",
+          "Conformité : L'utilisation ne garantit pas la conformité automatique auprès des autorités.",
+          "Erreurs : Nous ne sommes pas responsables des erreurs de saisie."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Abonnements",
+        "p1": "L'accès aux fonctions pro nécessite un abonnement via Stripe.",
+        "solo": {
+          "title": "4.1 Plan Chauffeur Solo",
+          "p1": "Facturé mensuellement via l'application mobile."
+        },
+        "fleet": {
+          "title": "4.2 Plan Gestion de Flotte",
+          "p1": "Les entreprises sont facturées selon le nombre de chauffeurs actifs."
+        },
+        "general": {
+          "title": "4.3 Termes généraux",
+          "items": [
+            "Les frais sont non remboursables.",
+            "Un défaut de paiement peut suspendre l'accès."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Responsabilité",
+        "p1": "Le service est fourni 'tel quel'. Nous ne sommes pas responsables des dommages indirects."
+      },
+      "law": {
+        "title": "6. Loi applicable",
+        "p1": "Ces conditions sont régies par les lois du Royaume-Uni (ou juridiction locale applicable)."
+      },
+      "changes": {
+        "title": "7. Modifications",
+        "p1": "Nous nous réservons le droit de modifier ces termes avec un préavis de 30 jours."
+      },
+      "contact": {
+        "title": "8. Contact",
+        "team": "Équipe Juridique HourWise EU",
+        "emailLabel": "E-mail :"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Nous sommes là pour aider. Choisissez le meilleur moyen de nous contacter.",
+    "general": {
+      "title": "Questions générales",
+      "description": "Pour toute question générale ou partenariat."
+    },
+    "technical": {
+      "title": "Support technique",
+      "description": "Si vous rencontrez des problèmes techniques avec l'application."
+    },
+    "cta": "Envoyer un e-mail"
+  },
+  "privacyRequest": {
+    "title": "Demande de données et confidentialité",
+    "form": {
+      "labels": {
+        "fullName": "Nom complet",
+        "email": "Adresse e-mail vérifiée",
+        "requestType": "Type de demande",
+        "additionalInfo": "Informations complémentaires"
+      },
+      "placeholders": {
+        "fullName": "Comme indiqué dans l'App",
+        "email": "votre.email@exemple.fr",
+        "details": "Optionnel : Détails sur votre demande"
+      },
+      "requestTypes": {
+        "download": "Copie de mes données (Accès)",
+        "deletion": "Suppression de mon compte et des données (Oubli)"
+      },
+      "cta": "Générer l'e-mail de confidentialité",
+      "notices": {
+        "fleet": "Avis chauffeurs : Si votre compte est géré par une entreprise, contactez d'abord votre gestionnaire.",
+        "security": "Pour votre sécurité, envoyez cette demande depuis votre e-mail enregistré. Délai de traitement de 30 jours."
+      },
+      "success": {
+        "title": "Demande prête",
+        "message": "Votre messagerie a été ouverte. Cliquez sur **'Envoyer'** pour soumettre à notre équipe.",
+        "submitAnother": "Soumettre une autre demande"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Gestion des chauffeurs",
+    "activeDrivers": "chauffeurs actifs",
+    "pendingInvites": "invitations en attente",
+    "inviteDriver": "Inviter un chauffeur",
+    "labels": {
+      "name": "Nom",
+      "email": "E-mail",
+      "compliance": "Conformité",
+      "status": "État"
+    },
+    "status": {
+      "active": "Actif",
+      "inviteSent": "Invitation envoyée",
+      "noDocuments": "Aucun document",
+      "expired": "Document expiré",
+      "compliant": "Conforme",
+      "checkExpiry": "Vérifier expiration",
+      "expiresIn": "Expire dans {{days}} jours",
+      "lost": "Lien rompu",
+      "linkMismatch": "Erreur d'association"
+    },
+    "lostInviteNotice": "Invitation acceptée mais échec du lien profil. Mettez à jour le company_id dans Supabase.",
+    "noDrivers": "Aucun chauffeur trouvé",
+    "incompleteSetup": "Configuration incomplète"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Inviter un nouveau chauffeur",
+      "fullName": "Nom complet *",
+      "email": "Adresse e-mail *",
+      "payConfig": "Configuration de la paie",
+      "hourlyRate": "Taux horaire (€)",
+      "unpaidBreak": "Pause non payée (min)",
+      "allowances": "Indemnités",
+      "allowanceAmount": "Montant (€)",
+      "unit": "Unité",
+      "units": {
+        "hour": "Par heure",
+        "day": "Par jour",
+        "week": "Par semaine",
+        "month": "Par mois",
+        "shift": "Par service",
+        "daily": "Quotidien",
+        "weekly": "Hebdomadaire",
+        "monthly": "Mensuel"
+      },
+      "addAllowance": "Ajouter indemnité",
+      "overtime": "Heures sup",
+      "otThreshold": "Seuil heures sup (h)",
+      "otUnit": "Unité sup",
+      "otMultiplier": "Coefficient heures sup",
+      "additionalTiers": "Paliers additionnels",
+      "afterHours": "Après (h)",
+      "newMultiplier": "Nouveau coefficient",
+      "addOtTier": "Ajouter un palier",
+      "submit": "Envoyer l'invitation",
+      "submitting": "Envoi..."
+    },
+    "errors": {
+      "noCompany": "Vous n'êtes associé à aucune entreprise.",
+      "generic": "Une erreur inconnue est survenue."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Essai terminé",
+      "unlockAccess": "Débloquer l'accès complet",
+      "expiredSubtitle": "Abonnez-vous pour continuer à utiliser HourWise",
+      "accessSubtitle": "Accès illimité à toutes les fonctions",
+      "features": {
+        "invoicing": "Génération de factures",
+        "invoicingDesc": "Factures pro pour vos clients",
+        "expenses": "Suivi des frais",
+        "expensesDesc": "Surveillez vos dépenses pro",
+        "compliance": "Conformité des heures",
+        "complianceDesc": "Respectez les règlements UE",
+        "reports": "Rapports fiscaux",
+        "reportsDesc": "Export pour votre comptabilité"
+      },
+      "perMonth": "/mois",
+      "cancelAnytime": "Sans engagement. Annulez quand vous voulez.",
+      "subscribeNow": "S'abonner maintenant",
+      "cancelSettings": "Annulation facile via les paramètres de compte",
+      "securePayment": "Paiement sécurisé via Apple/Google",
+      "instantAccess": "Accès immédiat après abonnement"
+    },
+    "manager": {
+      "fleetMember": "Membre de flotte",
+      "partOf": "Vous faites partie de {{company}}",
+      "fleetAccess": "Accès complet fourni par l'entreprise",
+      "soloTitle": "Abonnement Chauffeur Solo",
+      "manageDesc": "Gérer votre abonnement",
+      "status": {
+        "active": "Actif",
+        "trial": "Essai",
+        "inactive": "Inactif"
+      },
+      "trialPeriod": "Période d'essai",
+      "trialDays": "{{count}} jours restants",
+      "trialEnded": "Votre essai est terminé",
+      "activeSub": "Abonnement actif",
+      "renewsOn": "Renouvellement le {{date}}",
+      "noActiveSub": "Aucun abonnement actif",
+      "subscribeAccess": "S'abonner pour l'accès complet",
+      "planLabel": "Forfait",
+      "soloPlan": "Chauffeur Solo",
+      "priceLabel": "Prix",
+      "priceValue": "9,99 €/mois",
+      "paymentLabel": "Moyen de paiement",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Non configuré",
+      "manageButton": "Gérer l'abonnement",
+      "resubscribe": "Se réabonner",
+      "subscribeNow": "S'abonner maintenant",
+      "manageAlert": "Pour gérer l'abonnement, visitez les paramètres de votre appareil.",
+      "demoAlert": "Le flux d'achat In-App sera déclenché ici."
+    },
+    "banner": {
+      "daysLeft": "{{count}} jours restants",
+      "lastDay": "Dernier jour",
+      "trialSuffix": " d'essai gratuit !",
+      "endsIn": "Votre essai gratuit se termine dans {{count}} jours",
+      "cta": "Abonnez-vous pour 9,99 €/mois",
+      "subscribeNow": "S'abonner maintenant"
+    }
+  },
+  "reports": {
+    "title": "Rapports de flotte",
+    "exportPdf": "Exporter PDF / Imprimer",
+    "tabs": {
+      "payroll": "Paie",
+      "efficiency": "Efficacité",
+      "vehicleChecks": "Contrôles",
+      "infractions": "Infractions",
+      "driving": "Conduite"
+    },
+    "filters": {
+      "title": "Filtres",
+      "driver": "Chauffeur",
+      "allDrivers": "Tous les chauffeurs",
+      "startDate": "Date de début",
+      "endDate": "Date de fin"
+    },
+    "payroll": {
+      "title": "Résumé de la paie",
+      "headers": {
+        "driver": "Chauffeur",
+        "workHours": "Heures de travail",
+        "breakHours": "Heures de pause",
+        "sessions": "Sessions"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Rapport d'inspection",
+      "headers": {
+        "dateTime": "Date/Heure",
+        "inspector": "Inspecteur",
+        "vehicle": "Véhicule",
+        "status": "État",
+        "defects": "Défauts"
+      },
+      "status": {
+        "pass": "VALIDE",
+        "defect": "DÉFAUT"
+      },
+      "noneReported": "Aucun signalé"
+    },
+    "infractions": {
+      "moduleReady": "Module résumé infractions prêt."
+    },
+    "driving": {
+      "moduleReady": "Module analyse conduite prêt."
+    }
+  },
+  "broadcast": {
+    "title": "Envoyer un message à la flotte",
+    "placeholder": "Tapez votre message ici...",
+    "button": "Envoyer à tous",
+    "sending": "Envoi...",
+    "success": "Message envoyé avec succès !",
+    "errors": {
+      "empty": "Le message ne peut pas être vide.",
+      "notLoaded": "Profil ou ID entreprise non chargés.",
+      "failed": "Échec de l'envoi."
+    }
+  },
+  "mfa": {
+    "title": "Authentification Multi-Facteurs (MFA)",
+    "subtitle": "Sécurisez votre compte avec un code via une application dédiée.",
+    "enabled": "La MFA est activée.",
+    "disableButton": "Désactiver",
+    "disabling": "Désactivation...",
+    "step1": "1. Scannez le QR code.",
+    "step2": "2. Entrez le code à 6 chiffres.",
+    "placeholder": "123456",
+    "verifyButton": "Vérifier & Activer",
+    "verifying": "Vérification...",
+    "enableButton": "Activer la MFA",
+    "starting": "Démarrage...",
+    "confirmDisable": "Voulez-vous désactiver la MFA ?",
+    "successEnabled": "MFA activée !",
+    "successDisabled": "MFA désactivée."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Gestion des superviseurs",
+      "count": "{{count}} superviseurs au total",
+      "notice": "Note : Les superviseurs rejoignent via votre code entreprise.",
+      "searchPlaceholder": "Rechercher...",
+      "noSupervisors": "Aucun superviseur trouvé",
+      "labels": {
+        "supervisor": "Superviseur",
+        "email": "E-mail",
+        "status": "État",
+        "edit": "Modifier"
+      }
+    },
+    "modal": {
+      "title": "Détails superviseur",
+      "nameLabel": "Nom complet",
+      "emailLabel": "E-mail (Lecture seule)",
+      "phoneLabel": "Téléphone",
+      "saveButton": "Enregistrer",
+      "errorUpdate": "Échec de la mise à jour."
+    }
+  },
+  "location": {
+    "notRecorded": "Lieu non enregistré",
+    "mapAlt": "Carte centrée sur {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Alertes conformité flotte",
+    "urgent": "{{count}} URGENT",
+    "noAlerts": "Aucune alerte urgente.",
+    "offRoad": "Véhicule hors service (VOR)",
+    "dueOverdue": "{{type}} EN RETARD",
+    "dueInDays": "{{type}} à prévoir dans {{days}} jours",
+    "viewFullList": "Voir la liste complète"
+  }
+}

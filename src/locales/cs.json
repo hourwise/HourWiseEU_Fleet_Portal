@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Inteligentní správa vozového parku jednoduše",
+    "description": "Inteligentní správa vozového parku a sledování shody pro evropské dopravní společnosti. Zůstaňte v souladu s předpisy a efektivní."
+  },
+  "navigation": {
+    "home": "Domů",
+    "howTo": "Návod",
+    "privacy": "Ochrana soukromí",
+    "terms": "Podmínky služby",
+    "contact": "Kontakt",
+    "privacyRequest": "Žádosti o údaje (GDPR)",
+    "signIn": "Přihlásit se",
+    "getStarted": "Začít",
+    "dashboard": "Nástěnka",
+    "drivers": "Řidiči",
+    "compliance": "Shoda",
+    "training": "Školení",
+    "fleet": "Vozový park",
+    "safetyChecks": "Bezpečnostní kontroly",
+    "supervisors": "Vedoucí",
+    "payroll": "Mzdy",
+    "expenses": "Výdaje",
+    "reports": "Reporty",
+    "auditTrail": "Auditní záznam",
+    "settings": "Nastavení",
+    "signOut": "Odhlásit se"
+  },
+  "footer": {
+    "company": "Společnost",
+    "account": "Účet",
+    "createAccount": "Vytvořit účet",
+    "allRightsReserved": "Všechna práva vyhrazena."
+  },
+  "auth": {
+    "login": "Přihlásit se",
+    "signup": "Registrovat se",
+    "email": "E-mail",
+    "password": "Heslo",
+    "forgotPassword": "Zapomněli jste heslo?",
+    "createAccount": "Vytvořit účet správce vozového parku",
+    "managerSignup": "Registrace správce",
+    "companyName": "Název společnosti",
+    "fullName": "Celé jméno",
+    "alreadyHaveAccount": "Již máte účet? Přihlaste se",
+    "signInSubtitle": "Přihlaste se do svého ovládacího panelu",
+    "forgotPasswordSubtitle": "Obnovit heslo",
+    "magicLinkSubtitle": "Získat odkaz pro přihlášení na e-mail",
+    "magicLink": "Přihlásit se přes Magic Link",
+    "sendMagicLink": "Odeslat Magic Link",
+    "sendResetLink": "Odeslat odkaz pro obnovu",
+    "backToSignIn": "Zpět na přihlášení",
+    "newToApp": "Nový v HourWise?",
+    "createCompanyAccountSubtitle": "Vytvořte si firemní účet",
+    "billingNotice": "Fakturační údaje doplňte po registraci na webu",
+    "codeNotice": "Obdržíte firemní kód, který nasdílíte svým řidičům",
+    "creatingAccount": "Vytváření účtu...",
+    "createFleetAccount": "Vytvořit účet vozového parku",
+    "messages": {
+      "resetSent": "Odkaz pro obnovení hesla byl odeslán na váš e-mail.",
+      "magicLinkSent": "Zkontrolujte si e-mail pro přihlašovací odkaz."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Portál správce vozového parku",
+      "welcome": "Vítejte zpět, {{name}}",
+      "snapshots": {
+        "compliance": "Skóre shody vozového parku",
+        "vehicle": "Upozornění na stav vozidel",
+        "driver": "Upozornění na kvalifikaci řidičů",
+        "viewAll": "Zobrazit vše",
+        "avgScore": "Průměrné skóre",
+        "sevenDayInfringements": "Porušení (7 dní)",
+        "openBoard": "Otevřít panel shody",
+        "urgent": "{{count}} URGENTNÍ",
+        "noVehicleAlerts": "Žádná naléhavá upozornění na vozidla.",
+        "viewFleetList": "Zobrazit celý vozový park",
+        "noDriverAlerts": "Všechny dokumenty řidičů jsou aktuální.",
+        "manageDocs": "Spravovat dokumenty řidičů",
+        "alerts": "{{count}} UPOZORNĚNÍ",
+        "alertSingle": "1 UPOZORNĚNÍ"
+      },
+      "alerts": {
+        "title": "Akční upozornění",
+        "urgent": "URGENTNÍ",
+        "trainingMode": "Tréninkový režim aktivní",
+        "discrepancy": "Zjištěn nesoulad v datech",
+        "allClear": "Vše v pořádku!",
+        "noIssues": "Nezjištěny žádné problémy.",
+        "shiftAlert": "Upozornění na směnu dne {{date}}",
+        "issueDetected": "Zjištěn problém, který může vyžadovat kontrolu."
+      },
+      "auditReadiness": {
+        "title": "Připravenost na audit",
+        "status": "Data vašeho vozového parku jsou synchronizována podle standardů pro úřední audit."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Správa vozového parku",
+    "totalAssets": "Celkem vozidel: {{count}}",
+    "addVehicle": "Přidat vozidlo",
+    "backToList": "Zpět na seznam",
+    "vehicleDetails": "Detaily vozidla",
+    "complianceBoard": "Panel shody",
+    "maintenanceActions": "Údržba",
+    "statusNotes": "Poznámky ke stavu",
+    "noNotes": "Žádná aktivní upozornění pro toto vozidlo.",
+    "markVor": "Označit jako mimo provoz (VOR)",
+    "returnToService": "Vrátit do provozu (Bezpečné)",
+    "maintenanceCalled": "Údržba nahlášena",
+    "bookedWithGarage": "Objednáno do servisu",
+    "logRepair": "Zaznamenat opravu/PMI",
+    "recordWork": "Zapsat práci a nahrát protokol",
+    "noVehicles": "Zatím nemáte registrovaná žádná vozidla.",
+    "addFirst": "Přidejte své první vozidlo",
+    "status": {
+      "vor": "VOR / Mimo provoz",
+      "active": "Aktivní",
+      "critical": "Kritický termín (14d)",
+      "operational": "Provozuschopné",
+      "requiresAttention": "Vyžaduje okamžitou pozornost",
+      "compliancePending": "Čeká na kontrolu shody",
+      "ready": "Připraveno k přiřazení",
+      "overdue": "PO TERMÍNU",
+      "expiresIn": "za {{days}} dní"
+    },
+    "labels": {
+      "regType": "Detaily vozidla",
+      "status": "Stav",
+      "motDue": "Termín STK",
+      "pmiDue": "Termín PMI/Servisu",
+      "tachoCal": "Kalib. tacho",
+      "odometer": "Stav tachometru",
+      "year": "Rok",
+      "vin": "VIN",
+      "added": "Přidáno",
+      "actions": "Akce"
+    },
+    "modal": {
+      "title": "Přidat nové vozidlo",
+      "identity": "Identita vozidla",
+      "compliance": "Shoda a bezpečnost",
+      "regNumber": "Registrační značka (SPZ) *",
+      "make": "Značka *",
+      "model": "Model",
+      "type": "Typ vozidla *",
+      "vinNumber": "Číslo VIN",
+      "initialOdo": "Počáteční stav (km)",
+      "currentOdo": "Aktuální stav (km)",
+      "motDue": "Datum příští STK",
+      "pmiDue": "Datum příští PMI",
+      "tachoDue": "Kalibrace tachografu",
+      "insuranceExpiry": "Expirace pojištění",
+      "footnote": "Termíny aktivují systém 'Semafor'. Položky po termínu budou ČERVENÉ.",
+      "register": "Registrovat vozidlo",
+      "adding": "Přidávání vozidla...",
+      "errors": {
+        "companyId": "ID společnosti nenalezeno. Obnovte stránku.",
+        "duplicate": "Vozidlo s touto RZ již existuje.",
+        "generic": "Při přidávání vozidla došlo k neočekávané chybě."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Přehled shody",
+    "subtitle": "Souhrn shody řidičů za posledních 7 dní.",
+    "stats": {
+      "avgScore": "Průměrné skóre parku",
+      "totalInfringements": "Celkem porušení",
+      "driversInViolation": "Řidiči s porušením"
+    },
+    "details": {
+      "title": "Detaily shody řidičů",
+      "noDrivers": "Žádní aktivní řidiči s nedávnými daty",
+      "noDriversSubtitle": "Pozvěte řidiče, abyste zde viděli jejich výsledky.",
+      "headers": {
+        "driver": "Řidič",
+        "score": "Skóre shody",
+        "infringements": "Porušení (Posledních 7 dní)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Auditní záznam údržby",
+    "logWork": "Zaznamenat práci",
+    "noRecords": "Nenalezeny žádné oficiální záznamy o údržbě.",
+    "complianceRequired": "Vyžadována zákonná shoda",
+    "labels": {
+      "date": "DATUM",
+      "odo": "ODO (KM)",
+      "cost": "CENA",
+      "eventType": "Typ události",
+      "completedAt": "Datum dokončení",
+      "provider": "Poskytovatel / Servis",
+      "description": "Popis práce",
+      "evidence": "Doklad (Protokol PMI/STK)"
+    },
+    "modal": {
+      "title": "Zapsat údržbu",
+      "providerPlaceholder": "např. Servis Scania",
+      "descriptionPlaceholder": "např. Provedena 6týdenní prohlídka. Nové brzdové destičky na přední nápravě.",
+      "confirm": "Potvrdit práci",
+      "saving": "Ukládání..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Prohlídka)",
+      "repair": "Oprava závady",
+      "mot": "STK / Kontrola",
+      "tacho": "Kalibrace tachografu",
+      "other": "Jiné"
+    }
+  },
+  "training": {
+    "title": "Školení a Tacho synchronizace",
+    "subtitle": "Porovnání zákonných dat z tachografu s aktivitou v aplikaci",
+    "import": {
+      "title": "Importovat data z tachografu",
+      "selectDriver": "Vybrat řidiče",
+      "selectPlaceholder": "Vyberte řidiče...",
+      "uploadLabel": "Nahrát .CSV z Tachomasteru",
+      "browse": "Procházet soubory",
+      "runButton": "Spustit kontrolu nesouladu",
+      "analyzing": "Analyzuje se..."
+    },
+    "suggestion": {
+      "title": "Návrh na školení",
+      "description": "Pokud řidič vykazuje časté chyby v přepínání režimů, aplikace mu při další směně automaticky zobrazí příručku 'Správná praxe s tachografem'."
+    },
+    "analysis": {
+      "title": "Výsledky analýzy",
+      "conflictsFound": "Počet zjištěných konfliktů: {{count}}",
+      "noData": "Žádná data k analýze.",
+      "noDataSubtitle": "Vyberte řidiče a nahrajte soubor pro začátek.",
+      "tacho": "Tachograf",
+      "app": "Aplikace",
+      "priorities": {
+        "high": "Vysoká priorita",
+        "low": "Nízká priorita"
+      },
+      "activities": {
+        "driving": "Jízda",
+        "break": "Přestávka",
+        "work": "Práce",
+        "rest": "Odpočinek"
+      },
+      "insightTitle": "Školicí poznatek",
+      "assignButton": "Přiřadit přeškolovací kurz"
+    }
+  },
+  "payroll": {
+    "title": "Souhrn mezd",
+    "startDate": "Datum začátku",
+    "endDate": "Datum konce",
+    "exportPayroll": "Exportovat mzdy (CSV)",
+    "exportExpenses": "Exportovat výdaje (CSV)",
+    "headers": {
+      "driver": "Řidič",
+      "hours": "Celkem hodin (Základ/Přesčas)",
+      "grossPay": "Hrubá mzda (vč. výdajů)"
+    },
+    "labels": {
+      "wages": "Mzdy",
+      "expenses": "Výdaje",
+      "normal": "Základ",
+      "overtime": "Přesčas",
+      "payrollNumber": "Osobní číslo",
+      "grossPayAmount": "Hrubá mzda (Kč)",
+      "wagesAmount": "Mzdový základ (Kč)"
+    },
+    "noData": "Pro toto období nebyla nalezena žádná mzdová data.",
+    "loading": "Načítání mzdových dat..."
+  },
+  "vehicleChecklist": {
+    "title": "Denní bezpečnostní kontrola vozidla",
+    "success": {
+      "title": "Kontrolní seznam odeslán",
+      "message": "Bezpečnostní kontrola vozidla byla úspěšně zaznamenána."
+    },
+    "manager": {
+      "title": "Bezpečnostní kontroly vozidel",
+      "subtitle": "Přehled denních inspekcí a nahlášených závad",
+      "searchPlaceholder": "Hledat řidiče nebo RZ...",
+      "noChecks": "Nenalezeny žádné kontroly",
+      "selectCheck": "Vyberte kontrolu pro zobrazení detailů",
+      "selectCheckSubtitle": "Zde se zobrazí denní kontroly vozidel od vašich řidičů",
+      "printExport": "Tisk / Export",
+      "details": {
+        "vehicleType": "TYP VOZIDLA",
+        "vehicleMake": "ZNAČKA VOZIDLA",
+        "odometer": "STAV TACHOMETRU",
+        "status": "STAV",
+        "timeRecorded": "ČAS ZÁZNAMU",
+        "defectsTitle": "NAHLÁŠENÉ ZÁVADY / OPATŘENÍ",
+        "noDefects": "Nebyly poskytnuty žádné další podrobnosti."
+      },
+      "status": {
+        "pass": "VYHOVUJE",
+        "fail": "NEVYHOVUJE",
+        "defect": "ZÁVADA"
+      }
+    },
+    "sections": {
+      "internal": "VNITŘNÍ KONTROLA",
+      "external": "VNEJŠÍ KONTROLA",
+      "vehicleDetails": "Detaily vozidla",
+      "defects": "HLÁŠENÍ PORUCH / OPATŘENÍ"
+    },
+    "items": {
+      "mirrors": "Zrcátka a skla",
+      "mirrorsHint": "Zkontrolujte praskliny/nálepky; ujistěte se, že zrcátka jsou seřízena.",
+      "wipers": "Stěrače a ostřikovače",
+      "wipersHint": "Zkontrolujte funkčnost a hladinu kapaliny.",
+      "front_view": "Výhled vpřed",
+      "front_viewHint": "Plná viditelnost přes čelní sklo.",
+      "warning_lamps": "Výstražné kontrolky",
+      "warning_lampsHint": "Ujistěte se, že kontrolky vozidla fungují správně.",
+      "steering": "Řízení",
+      "steeringHint": "Plynulý pohyb a správná funkce.",
+      "horn": "Klaxon",
+      "hornHint": "Otestujte jasný a funkční zvuk.",
+      "brakes_air": "Brzdy a tlak vzduchu",
+      "brakes_airHint": "Zkontrolujte funkci brzd a nárůst tlaku vzduchu.",
+      "height_marker": "Označení výšky",
+      "height_markerHint": "Zobrazeno správné označení výšky.",
+      "seatbelts": "Bezpečnostní pásy",
+      "seatbeltsHint": "Zkontrolujte funkčnost všech pásů.",
+      "lights_ind": "Světla a blinkry",
+      "lights_indHint": "Všechna světla a blinkry fungují správně.",
+      "leaks": "Úniky paliva/oleje",
+      "leaksHint": "Zkontrolujte kapaliny na zemi nebo podvozku.",
+      "battery": "Upevnění baterie",
+      "batteryHint": "Zkontrolujte upevnění a stav baterie.",
+      "adblue": "Kapalina AdBlue",
+      "adblueHint": "Dostatečná hladina močoviny.",
+      "smoke": "Nadměrný kouř z výfuku",
+      "smokeHint": "Zkontrolujte emise hustého kouře.",
+      "body_wings": "Karoserie a blatníky",
+      "body_wingsHint": "Ujistěte se, že žádné části nejsou uvolněné.",
+      "spray": "Lapače nečistot (Spray Suppression)",
+      "sprayHint": "Pevně namontované a v souladu s předpisy.",
+      "tyres_wheels": "Pneumatiky a upevnění kol",
+      "tyres_wheelsHint": "Šrouby/matice dotažené. Dezén a tlak v normě.",
+      "brake_line": "Brzdové vedení",
+      "brake_lineHint": "Zkontrolujte poškození nebo únik vzduchu.",
+      "electrical": "Elektrická připojení",
+      "electricalHint": "Individuální testy všech připojení.",
+      "coupling": "Bezpečnost spojovacího zařízení",
+      "couplingHint": "Zkontrolujte, zda je vozidlo bezpečně připojeno k nákladu.",
+      "load_security": "Zabezpečení nákladu",
+      "load_securityHint": "Hmotnost rovnoměrně rozložená a náklad zajištěn.",
+      "number_plate": "Registrační značka",
+      "number_plateHint": "Pevně uchycená a plně viditelná.",
+      "reflectors": "Odrazky a světla",
+      "reflectorsHint": "Pevně uchycené a viditelné.",
+      "markers": "Značení",
+      "markersHint": "Všechna požadovaná značení pevně uchycená."
+    },
+    "labels": {
+      "regNumber": "RZ (SPZ)",
+      "vehicleType": "TYP VOZIDLA",
+      "vehicleMake": "ZNAČKA (VOLITELNÉ)",
+      "hint": "Tip",
+      "submitting": "Odesílá se...",
+      "submit": "Odeslat kontrolu",
+      "defectPlaceholder": "Popište závadu a provedená bezprostřední opatření..."
+    },
+    "errors": {
+      "incomplete": "Před odesláním dokončete všech 24 kontrol.",
+      "missingReg": "RZ vozidla je povinný údaj."
+    }
+  },
+  "infractions": {
+    "title": "Hlášení o porušení",
+    "subtitle": "Sledování a analýza problémů se shodou",
+    "export": "Exportovat CSV",
+    "filterAll": "Vše ({{count}})",
+    "filterViolations": "Porušení ({{count}})",
+    "filterWarnings": "Varování ({{count}})",
+    "noInfractions": "Nebyla nalezena žádná porušení",
+    "noInfractionsSubtitle": "Váš vozový park udržuje vynikající soulad s předpisy",
+    "issue": "Problém se shodou",
+    "activity": "Aktivita: {{type}}",
+    "labels": {
+      "driver": "Řidič",
+      "dateTime": "Datum a čas",
+      "location": "Lokalita",
+      "duration": "Trvání",
+      "notes": "Poznámky:",
+      "notRecorded": "Nezaznamenáno",
+      "ongoing": "Probíhá",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Datum",
+      "driver": "Řidič",
+      "activity": "Aktivita",
+      "status": "Stav",
+      "infractionType": "Typ porušení",
+      "duration": "Trvání (min)",
+      "locationStart": "Lokalita začátku",
+      "notes": "Poznámky"
+    }
+  },
+  "audit": {
+    "title": "Export auditního záznamu",
+    "subtitle": "Generování zpráv pro regulační audity",
+    "filtersTitle": "Filtry zpráv",
+    "labels": {
+      "startDate": "Datum začátku",
+      "endDate": "Datum konce",
+      "driver": "Řidič",
+      "allDrivers": "Všichni řidiči"
+    },
+    "trailCard": {
+      "title": "Kompletní auditní záznam",
+      "subtitle": "Všechny deníky řidičů s úplnými detaily",
+      "item1": "Záznamy o aktivitě řidiče",
+      "item2": "Časová razítka a trvání",
+      "item3": "Údaje o lokalitě",
+      "item4": "Informace o vozidle",
+      "button": "Stáhnout auditní záznam",
+      "generating": "Generuje se..."
+    },
+    "summaryCard": {
+      "title": "Souhrn shody",
+      "subtitle": "Agregované metriky shody",
+      "item1": "Míra shody na řidiče",
+      "item2": "Počet porušení a varování",
+      "item3": "Souhrn celkové aktivity",
+      "item4": "Rychlý přehled pro audit",
+      "button": "Stáhnout souhrn"
+    },
+    "footerNotice": "Audit Ready: Tyto zprávy jsou formátovány pro regulační shodu a mohou být předloženy úřadům.",
+    "csvHeaders": {
+      "date": "Datum",
+      "driverName": "Jméno řidiče",
+      "license": "Číslo řidičského průkazu",
+      "activity": "Typ aktivity",
+      "start": "Čas začátku",
+      "end": "Čas konce",
+      "duration": "Trvání (min)",
+      "status": "Stav",
+      "infraction": "Typ porušení",
+      "vehicle": "ID vozidla",
+      "locationStart": "Lokalita začátku",
+      "locationEnd": "Lokalita konce",
+      "notes": "Poznámky",
+      "totalLogs": "Celkem záznamů",
+      "violations": "Porušení",
+      "warnings": "Varování",
+      "complianceRate": "Míra shody"
+    },
+    "ongoing": "Probíhá",
+    "none": "Žádné",
+    "unknown": "Neznámé"
+  },
+  "expensesManager": {
+    "title": "Schvalování výdajů",
+    "subtitle": "{{count}} čekajících výdajů vyžaduje vaši kontrolu.",
+    "loading": "Načítání čekajících výdajů...",
+    "allClear": "Vše hotovo!",
+    "noPending": "Nejsou žádné čekající výdaje ke kontrole.",
+    "headers": {
+      "driver": "Řidič",
+      "date": "Datum",
+      "amount": "Částka",
+      "description": "Popis",
+      "receipt": "Doklad",
+      "actions": "Akce"
+    },
+    "viewReceipt": "Zobrazit",
+    "approve": "Schválit",
+    "reject": "Odmítnout",
+    "errors": {
+      "actionFailed": "Nepodařilo se provést akci {{action}} u tohoto výdaje.",
+      "noPath": "Cesta k dokladu nebyla nalezena.",
+      "downloadFailed": "Nepodařilo se stáhnout doklad."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Správa vedoucích",
+    "subtitle": "Celkem vedoucích: {{count}}",
+    "notice": "Poznámka: Vedoucí se připojují pomocí firemního kódu. Tato sekce umožňuje spravovat jejich stav a profil.",
+    "searchPlaceholder": "Hledat podle jména nebo e-mailu...",
+    "filters": {
+      "all": "Všichni",
+      "active": "Aktivní",
+      "inactive": "Neaktivní"
+    },
+    "noSupervisors": "Nebyli nalezeni žádní vedoucí",
+    "labels": {
+      "supervisor": "Vedoucí",
+      "email": "E-mail",
+      "status": "Stav",
+      "phone": "Telefonní číslo",
+      "name": "Celé jméno",
+      "emailReadOnly": "E-mail (pouze pro čtení)"
+    },
+    "status": {
+      "active": "Aktivní",
+      "inactive": "Neaktivní"
+    },
+    "modal": {
+      "title": "Detail vedoucího",
+      "save": "Uložit změny",
+      "cancel": "Zrušit",
+      "errors": {
+        "updateFailed": "Nepodařilo se aktualizovat údaje vedoucího."
+      },
+      "editTitle": "Upravit detaily"
+    }
+  },
+  "driverDetails": {
+    "title": "Karta řidiče: {{name}}",
+    "sections": {
+      "profile": "Profil a mzdy",
+      "compliance": "Profesní kvalifikace",
+      "activity": "Nedávné záznamy směn",
+      "locations": "Shluky startovacích lokalit"
+    },
+    "labels": {
+      "fullName": "Celé jméno",
+      "payrollNo": "Osobní číslo",
+      "niNumber": "DIČ / Rodné číslo",
+      "dob": "Datum narození",
+      "phone": "Kontaktní telefon",
+      "emergencyName": "Nouzový kontakt - jméno",
+      "emergencyPhone": "Nouzový kontakt - telefon",
+      "status": "Stav",
+      "address": "Bydliště",
+      "licence": "Řidičský průkaz (Přední strana)",
+      "licenceNo": "Číslo řidičského průkazu",
+      "entitlements": "Oprávnění (např. C, C+E)",
+      "dvlaCode": "Ověřovací kód (je-li relevantní)",
+      "cpc": "Profesní průkaz (Průkaz profesní způsobilosti)",
+      "cpcNo": "Číslo profesního průkazu",
+      "qualStart": "Začátek platnosti kvalifikace",
+      "qualExpiry": "Konec platnosti kvalifikace",
+      "tacho": "Digitální karta řidiče",
+      "tachoNo": "Číslo tacho karty",
+      "cardExpiry": "Platnost karty",
+      "duration": "Trvání: {{hours}} hod.",
+      "noShifts": "Žádné nedávné směny.",
+      "loadingMap": "Načítá se mapa...",
+      "noMapData": "Žádná data o poloze pro mapu.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "AKTIVNÍ",
+      "inactive": "NEAKTIVNÍ (VOR)",
+      "missingExpiry": "Chybí datum expirace",
+      "expired": "Expirovalo {{date}}",
+      "expiresIn": "Expiruje za {{days}} dní",
+      "expiresOn": "Expiruje {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Nahrát ŘP",
+      "uploadCpc": "Nahrát PP",
+      "uploadTacho": "Nahrát Tacho kartu",
+      "commit": "Potvrdit změny",
+      "saving": "Ukládání..."
+    },
+    "errors": {
+      "fillAll": "Vyplňte všechna pole dokumentů.",
+      "uploadError": "Chyba: {{message}}",
+      "updateFailed": "Nepodařilo se aktualizovat údaje řidiče."
+    }
+  },
+  "shiftEdit": {
+    "title": "Manuálně upravit směnu",
+    "labels": {
+      "start": "Čas začátku (pouze pro čtení)",
+      "end": "Čas konce",
+      "reason": "Důvod změny (povinné)",
+      "reasonPlaceholder": "např. Řidič potvrdil, že se mu v tuto dobu vybil telefon."
+    },
+    "errors": {
+      "endRequired": "Čas konce je povinný.",
+      "reasonRequired": "Poznámka pro audit vysvětlující změnu je povinná.",
+      "invalidEnd": "Čas konce musí být po čase začátku.",
+      "updateFailed": "Nepodařilo se aktualizovat směnu."
+    },
+    "buttons": {
+      "save": "Uložit a přepočítat",
+      "saving": "Ukládání..."
+    },
+    "auditNotePrefix": "(Upraveno správcem) "
+  },
+  "settings": {
+    "company": {
+      "title": "Identita společnosti",
+      "subscriptionActive": "PŘEDPLATNÉ AKTIVNÍ",
+      "inactive": "NEAKTIVNÍ",
+      "nameLabel": "Název společnosti",
+      "refIdLabel": "Interní referenční ID",
+      "authCodeLabel": "Firemní autorizační kód",
+      "authCodeFootnote": "Tento kód dejte novým řidičům a vedoucím, aby se propojili s vaším vozovým parkem.",
+      "complianceTitle": "Vymáhání shody",
+      "complianceSubtitle": "Prosazování vysokých bezpečnostních standardů.",
+      "mandatoryChecks": "Povinné kontroly vozidel",
+      "mandatoryChecksSubtitle": "Zablokovat řidičům spuštění směny bez kontroly.",
+      "mandatoryChecksFootnote": "Pokud je tato možnost zapnuta, řidiči musí provést obhlídku před zápisem hodin.",
+      "usageMetrics": "Metriky využití parku",
+      "usageMetricsSubtitle": "Údaje o najetých kilometrech a inspekcích se zaznamenávají automaticky. Podívejte se na reporty v sekci **Bezpečnostní kontroly**.",
+      "dataStatus": "Stav údajů",
+      "activeMonitoring": "Aktivní monitorování zapnuto",
+      "fleetRegistered": "VOZOVÝ PARK REGISTROVÁN: {{date}}",
+      "errors": {
+        "updateFailed": "Nepodařilo se aktualizovat název společnosti.",
+        "settingUpdateFailed": "Nepodařilo se aktualizovat nastavení: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Můj profil",
+      "success": "Profil aktualizován",
+      "nameLabel": "Celé jméno",
+      "emailLabel": "E-mailová adresa (přihlašovací)",
+      "phoneLabel": "Kontaktní telefon",
+      "updateButton": "Aktualizovat údaje",
+      "updating": "Ukládání...",
+      "securityTitle": "Zabezpečení a heslo",
+      "securitySubtitle": "Potřebujete si změnit heslo nebo zapnout MFA?",
+      "resetPassword": "Obnovit heslo",
+      "resetSent": "Odkaz na obnovu hesla byl odeslán na váš e-mail."
+    },
+    "mfa": {
+      "title": "Vícefaktorové ověření (MFA)",
+      "subtitle": "Přidejte ke svému účtu další vrstvu zabezpečení vyžadováním kódu z autentizační aplikace v telefonu.",
+      "enabled": "MFA je momentálně zapnuto.",
+      "step1": "1. Naskenujte tento QR kód pomocí autentizační aplikace (např. Google Authenticator).",
+      "step2": "2. Zadejte 6místný kód z aplikace níže pro ověření a dokončení nastavení.",
+      "placeholder": "123456",
+      "verifyButton": "Ověřit a zapnout",
+      "verifying": "Ověřuje se...",
+      "enableButton": "Zapnout MFA",
+      "starting": "Spouští se...",
+      "disableButton": "Vypnout",
+      "disabling": "Vypíná se...",
+      "confirmDisable": "Opravdu chcete vypnout vícefaktorové ověření?",
+      "successEnabled": "Vícefaktorové ověření bylo úspěšně zapnuto!",
+      "successDisabled": "Vícefaktorové ověření bylo vypnuto."
+    }
+  },
+  "common": {
+    "save": "Uložit změny",
+    "cancel": "Zrušit",
+    "loading": "Načítá se...",
+    "edit": "Upravit",
+    "delete": "Smazat",
+    "refresh": "Obnovit seznam",
+    "viewAll": "Zobrazit vše",
+    "success": "Úspěch",
+    "error": "Chyba",
+    "lastUpdated": "Poslední aktualizace: {{date}}",
+    "details": "Detaily",
+    "syncing": "Synchronizuje se seznam...",
+    "search": "Hledat podle jména nebo e-mailu...",
+    "confirmDelete": "Opravdu chcete odstranit uživatele {{name}}? Tímto se natrvalo smaže jeho účet a data.",
+    "selectFile": "Vybrat soubor"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil nenalezen",
+      "message": "Váš účet jsme našli, ale nepodařilo se načíst detaily profilu. Zkuste připojení znovu.",
+      "retry": "Zkusit znovu",
+      "signOut": "Odhlásit se a začít znovu"
+    }
+  },
+  "howTo": {
+    "title": "Jak používat HourWise EU",
+    "subtitle": "Vše, co potřebujete vědět, abyste mohli začít spravovat vozový park",
+    "sections": {
+      "gettingStarted": {
+        "title": "Začínáme",
+        "step1": {
+          "title": "Krok 1: Vytvořte si účet",
+          "description": "Začněte vytvořením účtu správce vozového parku. Budete muset zadat informace o společnosti a zvolit si bezpečné heslo."
+        },
+        "step2": {
+          "title": "Krok 2: Přidejte své řidiče",
+          "description": "Po přihlášení přejděte do sekce Správa řidičů. Každý řidič dostane přihlašovací údaje k přihlášení a odesílání odpracovaných hodin.",
+          "list": [
+            "Zadejte jméno a e-mailovou adresu řidiče",
+            "Systém vygeneruje bezpečné přihlašovací údaje",
+            "Řidič obdrží uvítací e-mail s pokyny"
+          ]
+        },
+        "step3": {
+          "title": "Krok 3: Sledujte denní hodiny",
+          "description": "Řidiči se přihlásí do svého přehledu, aby odeslali denní hodiny. Systém automaticky sleduje jejich kumulativní hodiny a upozorňuje na limity.",
+          "list": [
+            "Řidiči zadávají denní hodiny jízdy",
+            "Výpočet týdenních a dvoutýdenních součtů v reálném čase",
+            "Automatická upozornění při blížících se limitech"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Pro správce vozového parku",
+        "compliance": {
+          "title": "Monitorování shody",
+          "description": "Sledujte stav shody celého parku v reálném čase. Panel ukazuje, kteří řidiči jsou v normě a kteří vyžadují pozornost."
+        },
+        "violations": {
+          "title": "Správa porušení",
+          "description": "Když řidič překročí regulační limity, systém automaticky zaznamená přestupek. Prohlédněte si všechna porušení pro účely auditu."
+        },
+        "audit": {
+          "title": "Auditní záznam",
+          "description": "Každá akce v systému je zaznamenána. Tento komplexní protokol zajišťuje plnou odpovědnost a splňuje regulační požadavky."
+        }
+      },
+      "drivers": {
+        "title": "Pro řidiče",
+        "workflow": {
+          "title": "Denní pracovní postup",
+          "step1": {
+            "title": "Přihlaste se do svého přehledu",
+            "description": "Použijte údaje poskytnuté správcem"
+          },
+          "step2": {
+            "title": "Odešlete své hodiny jízdy",
+            "description": "Zadejte celkový počet odjetých hodin za den"
+          },
+          "step3": {
+            "title": "Zkontrolujte svůj stav shody",
+            "description": "Prohlédněte si své týdenní a dvoutýdenní součty hodin"
+          },
+          "step4": {
+            "title": "Věnujte pozornost upozorněním",
+            "description": "Systém vás upozorní, když se blížíte k limitům hodin"
+          }
+        }
+      },
+      "regulations": {
+        "title": "Pochopení předpisů EU",
+        "limits": {
+          "title": "Klíčové limity",
+          "weekly": "Týdenní limit:",
+          "weeklyValue": "Maximálně 56 hodin jízdy týdně",
+          "fortnightly": "Dvoutýdenní limit:",
+          "fortnightlyValue": "Maximálně 90 hodin během jakýchkoli dvou po sobě jdoucích týdnů",
+          "footnote": "HourWise EU automaticky monitoruje oba limity."
+        }
+      },
+      "help": {
+        "title": "Potřebujete další pomoc?",
+        "subtitle": "Kontaktujte náš tým podpory pro osobní asistenci",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Zásady ochrany soukromí",
+    "sections": {
+      "intro": {
+        "title": "1. Úvod",
+        "p1": "HourWise EU poskytuje platformu pro správu vozového parku pro dopravní podniky k zajištění shody. Tyto zásady vysvětlují, jak chráníme vaše údaje.",
+        "p2": "Používáním našich služeb souhlasíte se shromažďováním informací v souladu s těmito zásadami."
+      },
+      "collect": {
+        "title": "2. Jaké informace shromažďujeme",
+        "managers": {
+          "title": "2.1 Informace poskytované správci",
+          "items": [
+            "Údaje o účtu: Jméno, název společnosti a e-mail.",
+            "Záznamy o řidičích: Osobní číslo, datum narození, adresa, nouzové kontakty.",
+            "Podrobnosti o shodě: Řidičský průkaz, čísla profesních průkazů a data expirace."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Informace poskytované řidiči (přes aplikaci)",
+          "items": [
+            "Profilové údaje: Jméno a e-mail.",
+            "Pracovní relace: Časová razítka pro práci, přestávku a odpočinek.",
+            "Záznamy o výdajích: Částka, popis a obrázky dokladů."
+          ]
+        },
+        "app": {
+          "title": "2.3 Povolení aplikace a data",
+          "description": "Pro klíčové funkce aplikace vyžaduje:",
+          "items": [
+            "Přístup k fotoaparátu: Pro nahrávání dokladů a průkazů.",
+            "Údaje o poloze: GPS souřadnice zaznamenáváme POUZE při startu a konci směny pro účely auditu. Žádné kontinuální sledování na pozadí."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Jak používáme vaše informace",
+        "items": [
+          "Sledování shody: Správa hodin a platnosti dokumentů.",
+          "Mzdová agenda: Výpočet hrubé mzdy pro účetnictví.",
+          "Správa výdajů: Zpracování dokladů pro proplacení.",
+          "Auditní záznamy: Uchovávání zákonných záznamů pro shodu s předpisy."
+        ]
+      },
+      "security": {
+        "title": "4. Zabezpečení a ukládání dat",
+        "p1": "Všechna data jsou chráněna pomocí Row Level Security (RLS). Dokumenty jsou uloženy v šifrovaných soukromých úložištích."
+      },
+      "retention": {
+        "title": "5. Uchovávání údajů",
+        "p1": "Podle zákonů se mzdová data a relace uchovávají minimálně 3 až 6 let (podle jurisdikce) pro účely auditu."
+      },
+      "rights": {
+        "title": "6. Vaše práva (GDPR)",
+        "p1": "Máte právo na přístup, opravu nebo vymazání svých údajů."
+      },
+      "contact": {
+        "title": "7. Kontaktujte nás",
+        "team": "Tým pro soukromí HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Podmínky služby",
+    "sections": {
+      "agreement": {
+        "title": "1. Souhlas s podmínkami",
+        "p1": "Přístupem k platformě HourWise EU souhlasíte s těmito podmínkami."
+      },
+      "license": {
+        "title": "2. Licence k používání",
+        "p1": "Uděluje se povolení k dočasnému používání platformy pro obchodní účely. Toto je udělení licence, nikoli převod vlastnictví.",
+        "items": [
+          "Upravovat nebo kopírovat materiály;",
+          "Pokoušet se o zpětné inženýrství softwaru;",
+          "Odstraňovat autorská práva z materiálů."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Přesnost údajů a shoda",
+        "p1": "HourWise EU poskytuje nástroje, avšak:",
+        "items": [
+          "Odpovědnost uživatele: Uživatelé jsou výhradně odpovědní za ověření přesnosti záznamů.",
+          "Právní shoda: Používání služby nezaručuje automatickou právní shodu u úřadů.",
+          "Chyby při zadávání: Nezodpovídáme za chyby způsobené nesprávným zadáním údajů uživatelem."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Předplatné a fakturace",
+        "p1": "Přístup k profesionálním funkcím vyžaduje placené předplatné přes Stripe.",
+        "solo": {
+          "title": "4.1 Plán Solo řidič",
+          "p1": "Fakturováno měsíčně přímo přes mobilní aplikaci."
+        },
+        "fleet": {
+          "title": "4.2 Plán Správa vozového parku",
+          "p1": "Společnosti jsou fakturovány na základě počtu aktivních řidičů."
+        },
+        "general": {
+          "title": "4.3 Všeobecné platební podmínky",
+          "items": [
+            "Poplatky jsou nevratné, pokud to nevyžaduje zákon.",
+            "Neudržování platné platební metody může vést k pozastavení přístupu."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Omezení odpovědnosti",
+        "p1": "Služba je poskytována 'tak, jak je'. Nezodpovídáme za nepřímé škody nebo ztrátu dat."
+      },
+      "law": {
+        "title": "6. Rozhodné právo",
+        "p1": "Tyto podmínky se řídí zákony Spojeného království (nebo relevantní místní jurisdikcí)."
+      },
+      "changes": {
+        "title": "7. Změny podmínek",
+        "p1": "Vyhrazujeme si právo upravit tyto podmínky s 30denním upozorněním."
+      },
+      "contact": {
+        "title": "8. Kontaktní informace",
+        "team": "Právní tým HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Kontaktujte nás",
+    "subtitle": "Jsme tu, abychom vám pomohli. Vyberte si způsob kontaktu.",
+    "general": {
+      "title": "Obecné dotazy",
+      "description": "Pro dotazy ohledně partnerství nebo informací kontaktujte náš tým."
+    },
+    "technical": {
+      "title": "Technická podpora",
+      "description": "Pokud máte technické problémy s aplikací, kontaktujte náš tým podpory."
+    },
+    "cta": "Odeslat e-mail"
+  },
+  "privacyRequest": {
+    "title": "Žádost o údaje a soukromí",
+    "form": {
+      "labels": {
+        "fullName": "Celé jméno",
+        "email": "Ověřená e-mailová adresa",
+        "requestType": "Typ žádosti",
+        "additionalInfo": "Doplňující informace"
+      },
+      "placeholders": {
+        "fullName": "Tak, jak je v aplikaci",
+        "email": "vas.email@priklad.cz",
+        "details": "Volitelné: Detaily k vaší žádosti"
+      },
+      "requestTypes": {
+        "download": "Požádat o kopii mých údajů (Přístup)",
+        "deletion": "Smazat můj účet a všechna data (Vymazání)"
+      },
+      "cta": "Generovat e-mail o soukromí",
+      "notices": {
+        "fleet": "Upozornění pro firemní řidiče: Nejdříve kontaktujte svého správce parku pro zpracování mzdy.",
+        "security": "Z bezpečnostních důvodů vyžadujeme odeslání žádosti z registrovaného e-mailu. Žádost zpracujeme do 30 dnů."
+      },
+      "success": {
+        "title": "Žádost připravena",
+        "message": "Váš e-mailový klient byl otevřen. Klikněte na **'Odeslat'** v e-mailové aplikaci.",
+        "submitAnother": "Odeslat další žádost"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Správa řidičů",
+    "activeDrivers": "aktivní řidiči",
+    "pendingInvites": "čekající pozvánky",
+    "inviteDriver": "Pozvat řidiče",
+    "labels": {
+      "name": "Jméno",
+      "email": "E-mail",
+      "compliance": "Shoda",
+      "status": "Stav"
+    },
+    "status": {
+      "active": "Aktivní",
+      "inviteSent": "Pozvánka odeslána",
+      "noDocuments": "Žádné dokumenty",
+      "expired": "Dokument expiroval",
+      "compliant": "V souladu",
+      "checkExpiry": "Kontrola expirace",
+      "expiresIn": "Expiruje za {{days}} dní",
+      "lost": "Spojení přerušeno",
+      "linkMismatch": "Nesoulad propojení"
+    },
+    "lostInviteNotice": "Pozvánka byla přijata, ale propojení profilu selhalo. Upravte company_id v Supabase.",
+    "noDrivers": "Nebyli nalezeni řidiči ani pozvánky",
+    "incompleteSetup": "Neúplné nastavení"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Pozvat nového řidiče",
+      "fullName": "Celé jméno *",
+      "email": "E-mailová adresa *",
+      "payConfig": "Konfigurace mzdy",
+      "hourlyRate": "Hodinová sazba (Kč)",
+      "unpaidBreak": "Neplacená přestávka (min)",
+      "allowances": "Příplatky",
+      "allowanceAmount": "Částka (Kč)",
+      "unit": "Jednotka",
+      "units": {
+        "hour": "Za hodinu",
+        "day": "Za den",
+        "week": "Za týden",
+        "month": "Za měsíc",
+        "shift": "Za směnu",
+        "daily": "Denně",
+        "weekly": "Týdně",
+        "monthly": "Měsíčně"
+      },
+      "addAllowance": "Přidat příplatek",
+      "overtime": " přesčasy",
+      "otThreshold": "Hranice přesčasů (hod.)",
+      "otUnit": "Jednotka přesčasu",
+      "otMultiplier": "Koeficient přesčasu",
+      "additionalTiers": "Další úrovně",
+      "afterHours": "Po (hod.)",
+      "newMultiplier": "Nový koeficient",
+      "addOtTier": "Přidat úroveň přesčasů",
+      "submit": "Odeslat pozvánku",
+      "submitting": "Odesílá se..."
+    },
+    "errors": {
+      "noCompany": "Nejste přiřazeni k žádné společnosti.",
+      "generic": "Vyskytla se neznámá chyba."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Zkušební doba skončila",
+      "unlockAccess": "Odemknout plný přístup",
+      "expiredSubtitle": "Předplaťte si HourWise pro pokračování",
+      "accessSubtitle": "Získejte neomezený přístup ke všem funkcím",
+      "features": {
+        "invoicing": "Generování faktur",
+        "invoicingDesc": "Profesionální faktury pro klienty",
+        "expenses": "Sledování výdajů",
+        "expensesDesc": "Sledujte firemní výdaje",
+        "compliance": "Shoda hodin",
+        "complianceDesc": "Dodržujte nařízení o jízdě",
+        "reports": "Daňové reporty",
+        "reportsDesc": "Exporty pro účetnictví"
+      },
+      "perMonth": "/měsíc",
+      "cancelAnytime": "Zrušte kdykoli. Bez závazků.",
+      "subscribeNow": "Předplatit nyní",
+      "cancelSettings": "Zrušení kdykoli v nastavení účtu",
+      "securePayment": "Bezpečná platba přes Apple/Google",
+      "instantAccess": "Okamžitý přístup po předplacení"
+    },
+    "manager": {
+      "fleetMember": "Člen parku",
+      "partOf": "Jste součástí {{company}}",
+      "fleetAccess": "Plný přístup zajišťuje společnost",
+      "soloTitle": "Předplatné Solo řidič",
+      "manageDesc": "Spravovat předplatné",
+      "status": {
+        "active": "Aktivní",
+        "trial": "Zkušební doba",
+        "inactive": "Neaktivní"
+      },
+      "trialPeriod": "Zkušební doba",
+      "trialDays": "Zbývá {{count}} dní zkušební doby",
+      "trialEnded": "Zkušební doba skončila",
+      "activeSub": "Aktivní předplatné",
+      "renewsOn": "Obnoví se dne {{date}}",
+      "noActiveSub": "Žádné aktivní předplatné",
+      "subscribeAccess": "Předplaťte si pro plný přístup",
+      "planLabel": "Plán",
+      "soloPlan": "Solo řidič",
+      "priceLabel": "Cena",
+      "priceValue": "249 Kč / měsíc",
+      "paymentLabel": "Platební metoda",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Nenastaveno",
+      "manageButton": "Spravovat předplatné",
+      "resubscribe": "Obnovit předplatné",
+      "subscribeNow": "Předplatit nyní",
+      "manageAlert": "Pro správu předplatného navštivte nastavení zařízení.",
+      "demoAlert": "Zde by se spustil nákup v aplikaci."
+    },
+    "banner": {
+      "daysLeft": "Zbývá {{count}} dní",
+      "lastDay": "Poslední den",
+      "trialSuffix": " bezplatné zkušební doby!",
+      "endsIn": "Zkušební doba končí za {{count}} dní",
+      "cta": "Předplaťte si nyní jen za 249 Kč / měsíc",
+      "subscribeNow": "Předplatit nyní"
+    }
+  },
+  "reports": {
+    "title": "Firemní reporty",
+    "exportPdf": "Exportovat PDF / Tisk",
+    "tabs": {
+      "payroll": "Mzdy",
+      "efficiency": "Efektivita",
+      "vehicleChecks": "Kontroly",
+      "infractions": "Porušení",
+      "driving": "Jízda"
+    },
+    "filters": {
+      "title": "Filtry",
+      "driver": "Řidič",
+      "allDrivers": "Všichni řidiči",
+      "startDate": "Datum začátku",
+      "endDate": "Datum konce"
+    },
+    "payroll": {
+      "title": "Souhrn mezd",
+      "headers": {
+        "driver": "Řidič",
+        "workHours": "Pracovní hodiny",
+        "breakHours": "Přestávky",
+        "sessions": "Relace"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Report inspekcí vozidel",
+      "headers": {
+        "dateTime": "Datum/Čas",
+        "inspector": "Inspektor",
+        "vehicle": "Vozidlo",
+        "status": "Stav",
+        "defects": "Závady"
+      },
+      "status": {
+        "pass": "OK",
+        "defect": "ZÁVADA"
+      },
+      "noneReported": "Žádné nahlášené"
+    },
+    "infractions": {
+      "moduleReady": "Modul porušení připraven."
+    },
+    "driving": {
+      "moduleReady": "Modul analýzy jízdy připraven."
+    }
+  },
+  "broadcast": {
+    "title": "Odeslat hromadnou zprávu",
+    "placeholder": "Napište zprávu všem řidičům...",
+    "button": "Odeslat všem řidičům",
+    "sending": "Odesílá se...",
+    "success": "Hromadná zpráva byla úspěšně odeslána!",
+    "errors": {
+      "empty": "Obsah zprávy nemůže být prázdný.",
+      "notLoaded": "Profil nebo firemní ID nebylo načteno.",
+      "failed": "Odesílání zprávy selhalo."
+    }
+  },
+  "mfa": {
+    "title": "Vícefaktorové ověření (MFA)",
+    "subtitle": "Zvyšte zabezpečení účtu vyžadováním kódu z aplikace.",
+    "enabled": "MFA je zapnuto.",
+    "disableButton": "Vypnout",
+    "disabling": "Vypíná se...",
+    "step1": "1. Naskenujte QR kód aplikací.",
+    "step2": "2. Zadejte 6místný kód.",
+    "placeholder": "123456",
+    "verifyButton": "Ověřit a zapnout",
+    "verifying": "Ověřuje se...",
+    "enableButton": "Zapnout MFA",
+    "starting": "Spouští se...",
+    "confirmDisable": "Opravdu chcete vypnout MFA?",
+    "successEnabled": "MFA bylo úspěšně zapnuto!",
+    "successDisabled": "MFA bylo vypnuto."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Správa vedoucích",
+      "count": "Celkem vedoucích: {{count}}",
+      "notice": "Poznámka: Připojují se pomocí firemního kódu.",
+      "searchPlaceholder": "Hledat...",
+      "noSupervisors": "Nebyli nalezeni žádní vedoucí",
+      "labels": {
+        "supervisor": "Vedoucí",
+        "email": "E-mail",
+        "status": "Stav",
+        "edit": "Upravit detaily"
+      }
+    },
+    "modal": {
+      "title": "Detail vedoucího",
+      "nameLabel": "Celé jméno",
+      "emailLabel": "E-mail (pouze pro čtení)",
+      "phoneLabel": "Telefonní číslo",
+      "saveButton": "Uložit změny",
+      "errorUpdate": "Nepodařilo se aktualizovat údaje."
+    }
+  },
+  "location": {
+    "notRecorded": "Lokalita nezaznamenána",
+    "mapAlt": "Mapa vycentrovaná na {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Upozornění vozového parku",
+    "urgent": "{{count}} URGENTNÍ",
+    "noAlerts": "Žádná naléhavá upozornění.",
+    "offRoad": "Vozidlo mimo provoz (VOR)",
+    "dueOverdue": "Termín {{type}} PO TERMÍNU",
+    "dueInDays": "Termín {{type}} za {{days}} dní",
+    "viewFullList": "Zobrazit celý vozový park"
+  }
+}

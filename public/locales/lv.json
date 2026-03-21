@@ -1,19 +1,54 @@
 {
   "locale": "lv-LV",
+  "reportType": "Pārskata veids",
+  "invoice": "Rēķins",
+  "dateRange": "Datumu diapazons",
   "common": {
     "save": "Saglabāt",
     "cancel": "Atcelt",
     "close": "Aizvērt",
     "delete": "Dzēst",
+    "remove": "Noņemt",
+    "upload": "Augšupielādēt",
     "error": "Kļūda",
-    "success": "Gatavs",
+    "success": "Veiksmīgi",
     "date": "Datums",
     "startTime": "Sākuma laiks",
     "endTime": "Beigu laiks",
     "minutes": "minūtes",
     "saving": "Saglabā...",
     "failedToSave": "Neizdevās saglabāt datus.",
-    "gotIt": "Sapratu!"
+    "gotIt": "Sapratu!",
+    "logout": "Izrakstīties",
+    "openSettings": "Atvērt iestatījumus",
+    "retry": "Mēģināt vēlreiz"
+  },
+  "permissions": {
+    "notificationsTitle": "Paziņojumu atļauja",
+    "notificationsBody": "HourWise izmanto paziņojumus, lai nosūtītu jums kritiskus brīdinājumus par atbilstību noteikumiem. Lūdzu, iespējojiet paziņojumus, lai tos nepalaistu garām.",
+    "locationTitle": "Atrašanās vietas atļauja",
+    "locationBody": "HourWise ir nepieciešama piekļuve atrašanās vietai, lai automātiski noteiktu braukšanu. Lūdzu, iespējojiet to iestatījumos.",
+    "backgroundLocationTitle": "Atrašanās vieta fonā",
+    "backgroundLocationBody": "Uzticamai izsekošanai, lūdzu, iestatiet atrašanās vietas piekļuvi uz 'Atļaut visu laiku'. Tas ir būtiski automātiskai braukšanas noteikšanai, pat ja lietotne darbojas fonā.",
+    "cameraTitle": "Kameras atļauja",
+    "cameraBody": "HourWise ir nepieciešama piekļuve kamerai, lai jūs varētu augšupielādēt izdevumu vai citu dokumentu fotoattēlus.",
+    "mediaLibraryTitle": "Mediju bibliotēkas atļauja",
+    "mediaLibraryBody": "HourWise ir nepieciešama piekļuve jūsu mediju bibliotēkai, lai jūs varētu izvēlēties fotoattēlus izdevumiem vai citiem dokumentiem.",
+    "title": "Pēdējais solis",
+    "body": "HourWise ir nepieciešamas atrašanās vietas un paziņojumu atļaujas, lai tā darbotos pareizi. Jūsu atrašanās vieta tiek izmantota tikai, lai automātiski noteiktu braukšanu.",
+    "button": "Piešķirt atļaujas",
+    "deniedTitle": "Nepieciešamas atļaujas",
+    "deniedBody": "Jūs esat neatgriezeniski noraidījis būtiskas atļaujas. Lūdzu, dodieties uz ierīces iestatījumiem, lai iespējotu atrašanās vietu (Atļaut visu laiku) un paziņojumus."
+  },
+  "messages": {
+    "title": "Ziņojumi",
+    "notificationTitle": "Jauns ziņojums no autoparka",
+    "systemNotificationTitle": "Sistēmas paziņojums",
+    "newMessageBodyFallback": "Jums ir jauns ziņojums.",
+    "noMessages": "Vēl nav ziņojumu.",
+    "unread": "Nelasīti",
+    "read": "Lasīti",
+    "noUnread": "Viss izlasīts! Nav nelasītu ziņojumu."
   },
   "app": {
     "title": "HourWise EU",
@@ -27,23 +62,155 @@
     "workTimeRemaining": "Atlikušais darba laiks",
     "drivingTimeRemaining": "Atlikušais braukšanas laiks",
     "breakDuration": "Pārtraukuma ilgums",
+    "poaDuration": "Pieejamības laiks (POA)",
     "startShift": "Sākt maiņu",
     "endShift": "Beigt maiņu",
     "startBreak": "Sākt pārtraukumu",
     "endBreak": "Beigt pārtraukumu",
-    "poaButtonText": "GATAVĪBAS LAIKS",
+    "poaButtonText": "PIEEJAMĪBA / GAIDĪŠANA",
     "resumeWork": "Atsākt darbu",
     "currentStatusLabel": "Pašreizējais statuss:",
     "timerModeLabel": "Taimera režīms:",
     "shiftDurationLabel": "Maiņas ilgums:",
-    "targetLabel": "Mērķis"
+    "targetLabel": "Mērķis",
+    "checkVehicle": "Pārbaudīt TP",
+    "checkOk": "Pārbaude OK",
+    "checklistRequired": "Nepieciešama kontrolkarte",
+    "fleetChecklistNotice": "Autoparka vadītājiem pirms maiņas sākšanas jāveic transportlīdzekļa drošības pārbaude.",
+    "complianceDue": "Termiņš: {{type}}",
+    "daysLeft": "Atlikušas dienas"
+  },
+  "vehicleChecklist": {
+    "title": "Ikdienas drošības pārbaude",
+    "updateTitle": "Atjaunināt pārbaudi",
+    "vehicleDetails": "Transportlīdzekļa dati",
+    "registration": "Reģistrācijas numurs",
+    "vehicleMake": "Marka (izvēles)",
+    "odometer": "Odometra rādījums",
+    "internalChecks": "Iekšējās pārbaudes",
+    "externalChecks": "Ārējās pārbaudes",
+    "defectReporting": "Ziņošana par defektiem",
+    "defectPlaceholder": "Aprakstiet bojājumu un veiktās darbības...",
+    "submitReport": "Iesniegt ziņojumu",
+    "updateReport": "Atjaunināt ziņojumu",
+    "currentShiftVehicles": "Maiņas transportlīdzekļi",
+    "swapVehicle": "Mainīt transportlīdzekli",
+    "newVehicleTitle": "Jauns transportlīdzeklis",
+    "newVehicleMessage": "Tiks sākta jauna pārbaude citam transportlīdzeklim. Turpināt?",
+    "startNew": "Sākt jaunu",
+    "success": "Veiksmīgi",
+    "checkRecorded": "Pārbaude reģistrēta.",
+    "error": "Kļūda",
+    "failedToSave": "Neizdevās saglabāt.",
+    "missingReg": "Ievadiet numurzīmi.",
+    "incomplete": "Atbildiet uz visiem punktiem.",
+    "missingDefectDetails": "Aprakstiet problēmu.",
+    "hintLabel": "Padoms",
+    "items": {
+      "mirrors": "Spoguļi un stikli",
+      "mirrorsHint": "Pārbaudiet plaisas/uzlīmes; pārliecinieties, ka spoguļi ir noregulēti.",
+      "wipers": "Logu tīrītāji un mazgātāji",
+      "wipersHint": "Pārbaudiet darbību un šķidruma līmeni.",
+      "front_view": "Skats uz priekšu",
+      "front_viewHint": "Pilna redzamība caur priekšējo stiklu.",
+      "warning_lamps": "Brīdinājuma lampas",
+      "warning_lampsHint": "Pārliecinieties, ka brīdinājuma gaismas darbojas pareizi.",
+      "steering": "Stūres mehānisms",
+      "steeringHint": "Vienmērīga kustība un pareiza darbība.",
+      "horn": "Signāltaure",
+      "hornHint": "Pārbaudiet, vai skaņa ir skaidra un darbojas.",
+      "brakes_air": "Bremzes un gaisa spiediens",
+      "brakes_airHint": "Pārbaudiet bremžu funkciju un gaisa spiediena uzkrāšanos.",
+      "height_marker": "Augstuma zīme",
+      "height_markerHint": "Redzama pareiza augstuma zīme.",
+      "seatbelts": "Drošības jostas",
+      "seatbeltsHint": "Pārbaudiet, vai visas jostas darbojas pareizi.",
+      "lights_ind": "Gaismas un pagriezieni",
+      "lights_indHint": "Visas gaismas un pagriezienu rādītāji darbojas.",
+      "leaks": "Degvielas/eļļas noplūdes",
+      "leaksHint": "Pārbaudiet, vai nav šķidrumu uz zemes vai šasijas.",
+      "battery": "Akumulatora drošība",
+      "batteryHint": "Pārbaudiet, vai akumulators ir nostiprināts un labā stāvoklī.",
+      "adblue": "AdBlue šķidrums",
+      "adblueHint": "Pietiekams izplūdes gāzu šķidruma līmenis.",
+      "smoke": "Pārmērīgi izplūdes dūmi",
+      "smokeHint": "Pārbaudiet, vai nav smagu dūmu emisiju.",
+      "body_wings": "Virsbūves/dubļusargu drošība",
+      "body_wingsHint": "Pārliecinieties, ka detaļas nav vaļīgas.",
+      "spray": "Pretpūsmotāji",
+      "sprayHint": "Nostiprināti un atbilst likumdošanai.",
+      "tyres_wheels": "Riepas un riteņu stiprinājumi",
+      "tyres_wheelsHint": "Uzgriežņi/skrūves pievilktas. Protektors un spiediens normā.",
+      "brake_line": "Bremžu maģistrāles",
+      "brake_lineHint": "Pārbaudiet bojājumus vai gaisa noplūdes.",
+      "electrical": "Elektriskie savienojumi",
+      "electricalHint": "Individuālas pārbaudes visiem savienojumiem.",
+      "coupling": "Sakabes drošība",
+      "couplingHint": "Pārbaudiet, vai TP ir droši pievienots kravai.",
+      "load_security": "Kravas drošība",
+      "load_securityHint": "Svars vienmērīgi sadalīts un krava nostiprināta.",
+      "number_plate": "Numurzīme",
+      "number_plateHint": "Nostiprināta un pilnībā redzama.",
+      "reflectors": "Atstarotāji un gaismas",
+      "reflectorsHint": "Droši nostiprināti un redzami.",
+      "markers": "Marķējumi",
+      "markersHint": "Visi nepieciešamie marķējumi ir droši nostiprināti."
+    }
+  },
+  "vehicleManagement": {
+    "title": "Transportlīdzekļu pārvaldība",
+    "sections": {
+      "identity": "TP identitāte",
+      "compliance": "Atbilstība un drošība"
+    },
+    "fields": {
+      "registration": {
+        "label": "Reģistrācijas numurs *",
+        "placeholder": "PIEM. AB 1234"
+      },
+      "make": {
+        "label": "Marka",
+        "placeholder": "Scania"
+      },
+      "model": {
+        "label": "Modelis",
+        "placeholder": "R450"
+      },
+      "type": "TP tips",
+      "odometer": {
+        "label": "Pašreizējais odometrs",
+        "unit": "KM"
+      },
+      "motDate": "Tehniskās apskates datums",
+      "pmiDate": "Nākamā apkope (PMI)",
+      "tachoDate": "Tahogrāfa kalibrēšana",
+      "lolerDate": "Pacēlāja pārbaude (LOLER)",
+      "insuranceDate": "Apdrošināšanas termiņš"
+    },
+    "complianceNotice": "Atbilstības datumi iespējo paneļa 'luksofora' sistēmu. Nokavētie punkti tiks atzīmēti.",
+    "saveButton": "Saglabāt TP datus",
+    "selectDate": "Izvēlēties datumu",
+    "alerts": {
+      "regRequired": "Reģistrācijas numurs ir obligāts",
+      "saveSuccess": "TP dati saglabāti veiksmīgi",
+      "duplicateReg": "Šis reģistrācijas numurs jau ir reģistrēts.",
+      "saveError": "Neizdevās saglabāt TP datus"
+    }
   },
   "shiftSummary": {
     "title": "Pašreizējā maiņa",
     "totalWork": "Darbs kopā",
     "totalDriving": "Braukšana kopā",
     "totalBreaks": "Pārtraukumi kopā",
-    "totalPOA": "Gatavība kopā"
+    "totalPOA": "Pieejamība kopā"
+  },
+  "endShiftConfirmation": {
+    "title": "Maiņas beigu apstiprinājums",
+    "shiftSummary": "Gala maiņas kopsavilkums",
+    "violationsFound": "Atrasti pārkāpumi",
+    "greatJob": "Lielisks darbs!",
+    "noViolations": "Šajā maiņā pārkāpumi netiks reģistrēti.",
+    "confirmEnd": "Apstiprināt un beigt maiņu"
   },
   "menu": {
     "instructions": "Instrukcijas",
@@ -52,70 +219,75 @@
     "tachoGuide": "Taho ceļvedis",
     "compliance": "Atbilstība",
     "workHistory": "Darba vēsture",
-    "downloadReport": "Lejupielādēt atskaiti"
+    "addExpense": "Pievienot izdevumus",
+    "downloadReport": "Lejupielādēt pārskatu"
   },
   "workHistory": {
     "title": "Darba vēsture",
     "daySummary": "Dienas kopsavilkums",
     "recordedShifts": "Reģistrētās maiņas",
     "totalWork": "Darbs kopā",
+    "totalDriving": "Braukšana kopā",
     "totalBreaks": "Pārtraukumi kopā",
-    "totalPOA": "Gatavība kopā",
-    "estimatedEarnings": "Aprēķinātā peļņa",
-    "ongoing": "Turpinās",
+    "totalPOA": "Pieejamība kopā",
+    "estimatedEarnings": "Aplēstā peļņa",
+    "ongoing": "Notiekoša",
     "workTime": "Darba laiks",
-    "noShifts": "Šajā datumā nav reģistrētu maiņu.",
-    "noShiftsRecordedForDate": "Šajā datumā nav reģistrētu maiņu.",
+    "noShifts": "Šajā datumā maiņas nav reģistrētas.",
+    "noShiftsRecordedForDate": "Šajā datumā maiņas nav reģistrētas.",
     "addShift": "Pievienot maiņu",
     "editShift": "Labot maiņu",
     "updateShift": "Atjaunināt maiņu",
-    "totalBreakTime": "Kopējais pārtraukumu laiks",
-    "totalPOATime": "Kopējais gatavības laiks",
+    "totalBreakTime": "Pārtraukumu laiks kopā",
+    "totalPOATime": "Pieejamības laiks kopā",
     "noShiftsTitle": "Brīvdiena"
   },
   "calendar": {
-    "dayDetailsTitle": "Dienas informācija",
+    "dayDetailsTitle": "Dienas dati",
     "timeSummaryTitle": "Laika kopsavilkums",
     "paySummaryTitle": "Samaksas kopsavilkums",
     "period": "Periods",
     "worked": "Nostrādāts",
     "breaks": "Pārtraukumi",
     "violations": "Pārkāpumi",
-    "estimatedPay": "Aprēķ. alga",
-    "lastCompletedWeek": "Pēdējā pabeigtā nedēļa",
-    "currentWeek": "Šī nedēļa",
+    "estimatedPay": "Apr. alga",
+    "lastCompletedWeek": "Iepriekšējā pabeigtā nedēļa",
+    "currentWeek": "Pašreizējā nedēļa",
     "monthToDate": "Mēnesis līdz šim",
     "selectedMonthSummary": "Izvēlētais mēnesis",
-    "lastWeekOfSelectedMonth": "Mēneša pēdējā nedēļa"
+    "lastWeekOfSelectedMonth": "Mēneša pēdējā nedēļa",
+    "complianceReminders": "Atbilstības atgādinājumi",
+    "renewalDue": "{{type}} termiņa beigas"
   },
   "fatigue": {
     "title": "Noguruma un fokusa indekss",
     "fullyAlert": "Pilnībā modrs",
-    "freshAndFocused": "Spēcīgs un koncentrējies",
+    "freshAndFocused": "Spēka pilns un koncentrējies",
     "mild": "Viegls nogurums",
     "moderate": "Mērens nogurums",
     "high": "Liels nogurums",
     "critical": "Kritisks nogurums",
-    "approaching13h": "Tuvojas 13h darba cikls. Plānojiet atpūtu.",
-    "over10h": "Šodien nostrādātas vairāk nekā 10 stundas.",
-    "need45minBreak": "Maiņām virs 9h nepieciešams 45 min pārtraukums.",
-    "need30minBreak": "Maiņām virs 6h nepieciešams 30 min pārtraukums.",
-    "drivingExceeded10h": "Šodien pārsniegtas 10 braukšanas stundas.",
-    "drivingOver9h": "Braukšana virs 9h (izmantojot pagarinājumu).",
-    "dailyRestBelow9h": "Dienas atpūta bija mazāka par minimumu (9h).",
-    "reducedDailyRest": "Izmantota saīsinātā dienas atpūta (zem 11h)."
+    "approaching13h": "Tuvojaties 13 stundu darba ciklam. Plānojiet atpūtu.",
+    "over10h": "Vairāk nekā 10 stundas darba šodien.",
+    "need45minBreak": "Maiņām virs 9h nepieciešams 45 minūšu pārtraukums.",
+    "need30minBreak": "Maiņām virs 6h nepieciešams 30 minūšu pārtraukums.",
+    "drivingExceeded10h": "Šodien pārsniegtas 10 stundas braukšanas.",
+    "drivingOver9h": "Braukšana virs 9 stundām (izmantojot pagarinājumu).",
+    "dailyRestBelow9h": "Dienas atpūta bija mazāka par likumā noteiktajām 9 stundām.",
+    "reducedDailyRest": "Izmantota saīsinātā dienas atpūta (zem 11 stundām).",
+    "workTimeExceeded": "Darba laika limits pārsniegts par {{time}}."
   },
   "complianceScorecard": {
-    "title": "Dienas atbilstības rādītāji",
+    "title": "Dienas atbilstības karte",
     "outOf100": "no 100",
     "violationsRecorded": "Reģistrētie pārkāpumi:",
     "greatJob": "Lielisks darbs!",
-    "noViolations": "Šajā dienā nav reģistrēti atbilstības pārkāpumi."
+    "noViolations": "Šajā dienā atbilstības pārkāpumi netika reģistrēti."
   },
   "dailyReport": {
-    "title": "Vakardienas atskaite",
+    "title": "Vakardienas pārskats",
     "violationsFound": "Atrasti pārkāpumi",
-    "greatJob": "Labs darbs!",
+    "greatJob": "Lieliski!",
     "noViolations": "Vakardienas maiņā pārkāpumi nav reģistrēti."
   },
   "day": {
@@ -129,134 +301,139 @@
   },
   "safetyWarning": {
     "title": "Drošības brīdinājums",
-    "body": "Neizmantojiet lietotni braukšanas laikā. Pirms veicat izmaiņas, droši apstājieties.",
+    "body": "Nedarbojieties ar lietotni braukšanas laikā. Pirms izmaiņu veikšanas apstājieties drošā vietā.",
     "acknowledge": "Sapratu"
+  },
+  "firstTimeSetup": {
+    "title": "Laipni lūdzam HourWise!",
+    "subtitle": "Daži soļi, lai sāktu pareizi:",
+    "step1_new": "Vispirms iestatiet savu vadītāja profilu un samaksas datus.",
+    "step2_new": "Pēc tam pievienojiet savu pēdējo pabeigto maiņu, lai pareizi aprēķinātu dienas atpūtu.",
+    "step3_new": "Tad mēs lūgsim nepieciešamās atļaujas precīzai izsekošanai.",
+    "step4_new": "Beigās varat sākt izsekot savas maiņas un peļņu.",
+    "button": "Sapratu, aiziet!"
   },
   "settingsMenu": {
     "manageSubscription": "Pārvaldīt abonementu",
-    "businessProfile": "Uzņēmuma profils",
+    "businessProfile": "Biznesa profils",
     "driverSettings": "Vadītāja iestatījumi",
-    "selectLanguage": "Mainīt valodu",
+    "selectLanguage": "Izvēlēties valodu",
+    "vehicleManagement": "TP pārvaldība",
     "timezone": {
-      "label": "Laika zona"
+      "label": "Laika josla"
     },
     "signOut": {
       "action": "Izrakstīties"
     }
   },
   "driverSetup": {
-    "header": {
-      "welcomeSetup": "Sākotnējā iestatīšana",
-      "driverSettings": "Vadītāja iestatījumi"
-    },
-    "sections": {
-      "personalInformation": "Personīgā informācija",
-      "companyLink": "Saite ar uzņēmumu",
-      "payConfiguration": "Atalgojuma iestatījumi"
-    },
-    "fields": {
-      "driverNameLabel": "Vadītāja vārds, uzvārds",
-      "basicHourlyRate": "Pamata stundas likme",
-      "unpaidBreakDuration": "Neapmaksātā pārtraukuma ilgums (minūtes)"
-    },
-    "placeholders": {
-      "enterFullName": "Ievadiet pilnu vārdu",
-      "hourlyRate": "piem., 15.00",
-      "unpaidBreak": "piem., 45"
-    },
-    "company": {
-      "codeOptionalLabel": "Uzņēmuma saites kods (neobligāts)",
-      "codePlaceholder": "Ievadiet uzņēmuma kodu",
-      "helperText": "Ievadiet uzņēmuma piešķirto kodu, lai pievienotos autoparkam.",
-      "linkedToCompany": "Piesaistīts uzņēmumam"
-    },
-    "allowances": {
-      "title": "Maiņas piemaksas",
-      "addAllowance": "Pievienot piemaksu"
-    },
-    "overtime": {
-      "title": "Virsstundu noteikumi",
-      "thresholdLabel": "Virsstundu slieksnis",
-      "thresholdPlaceholder": "piem., 40",
-      "rateMultiplierLabel": "Likmes reizinātājs",
-      "rateMultiplierPlaceholder": "piem., 1.5",
-      "additional": {
-        "addTier": "Pievienot vēl vienu līmeni"
-      }
-    },
-    "units": {
-      "overtime": {
-        "day": "dienā",
-        "week": "nedēļā",
-        "month": "mēnesī"
-      },
-      "allowance": {
-        "hour": "stundā",
-        "day": "dienā",
-        "week": "nedēļā",
-        "month": "mēnesī",
-        "shift": "maiņā"
-      }
-    }
+    "title": "Vadītāja iestatīšana",
+    "notAuthenticated": "Lietotājs nav identificēts. Lūdzu, restartējiet lietotni.",
+    "hourlyRate": "Stundas likme",
+    "unpaidBreak": "Neapmaksāts pārtraukums",
+    "minutes": "Minūtes",
+    "overtimeThreshold": "Virsstundu slieksnis",
+    "hours": "Stundas nedēļā",
+    "overtimeMultiplier": "Virsstundu koeficients",
+    "shiftAllowances": "Maiņas piemaksas",
+    "additionalOvertime": "Papildu virsstundu līmeņi",
+    "threshold": "Slieksnis (stundas)",
+    "rate": "Likme (€)",
+    "addTier": "Pievienot līmeni",
+    "skip": "Izlaist pašlaik",
+    "save": "Saglabāt un turpināt",
+    "validationError": "Validācijas kļūda",
+    "pleaseEnterName": "Lūdzu, ievadiet savu vārdu."
   },
   "instructions": {
     "title": "Kā lietot HourWise",
     "disclaimer": {
-      "title": "Oficiālās vadlīnijas ir prioritāte",
-      "body": "Šī lietotne ir palīgs noteikumu ievērošanai, taču tā neaizstāj oficiālu apmācību vai juridisku padomu. Vienmēr ievērojiet ES regulas un uzņēmuma politiku."
+      "title": "Oficiālās vadlīnijas vispirms",
+      "body": "Šī lietotne ir rīks atbilstības veicināšanai, taču tā neaizstāj oficiālu apmācību vai juridisku padomu. Vienmēr ievērojiet ES noteikumus un savas kompānijas politiku."
     },
     "initialSetup": {
-      "title": "Pirmie soļi",
+      "title": "Jūsu pirmie soļi",
       "step1": {
-        "title": "1. Ievadiet pēdējo maiņu (Svarīgi!)",
-        "body": "Pareizai 'Dienas atpūtas' aprēķināšanai JUMS manuāli jāievada pēdējās pabeigtās maiņas dati sadaļā Darba vēsture."
+        "title": "1. Aizpildiet vadītāja profilu",
+        "body": "Solo vadītājiem sākotnējās iestatīšanas laikā OBLIGĀTI jāiestata samaksas konfigurācija, lai iespējotu precīzas peļņas aplēses."
       },
       "step2": {
-        "title": "2. Aizpildiet vadītāja profilu",
-        "body": "Dodieties uz Iestatījumi -> Vadītāja iestatījumi. Vārds ir nepieciešams atskaitēm."
+        "title": "2. Ievadiet pēdējo maiņu (SVARĪGI!)",
+        "body": "Pareizai 'Dienas atpūtas' aprēķināšanai OBLIGĀTI manuāli jāievada dati par pēdējo pabeigto maiņu."
       },
       "step3": {
-        "title": "3. Pievienojiet uzņēmuma datus (neobligāti)",
-        "body": "Rēķinu sagatavošanai dodieties uz Uzņēmuma profilu. Dati automātiski parādīsies PDF rēķinos."
+        "title": "3. Pievienojiet biznesa datus (izvēles)",
+        "body": "Rēķinu sagatavošanai dodieties uz Iestatījumi -> Biznesa profils. Dati automātiski parādīsies PDF rēķinos."
       }
     },
     "workflow": {
-      "title": "Ikdienas darba gaita",
+      "title": "Ikdienas gaita",
       "step1": {
-        "title": "1. Sākt un beigt maiņu",
-        "body": "Izmantojiet galvenās pogas. Lietotne visu reģistrē un automātiski aprēķina kopsummas."
+        "title": "1. Sāciet un beidziet maiņu",
+        "body": "Izmantojiet galvenās pogas. Maiņas beigās apstiprinājuma ekrāns rādīs kopsummas un pārkāpumus."
+      },
+      "step5": {
+        "title": "2. Ikdienas TP drošības pārbaude",
+        "body": "Veiciet pārbaudi, izmantojot pogu 'Pārbaudīt TP'. Tas ir obligāti autoparka vadītājiem."
       },
       "step2": {
-        "title": "2. Automātiska braukšanas noteikšana",
-        "body": "Lietotne nosaka braukšanu pēc ātruma un kustības, pārslēdzot statusu uz 'Braukšana'. Apstājoties, tas atgriežas pie 'Darba'."
+        "title": "3. Automātiska braukšanas noteikšana",
+        "body": "Lietotne nosaka kustību un pārslēdz statusu uz 'Braukšana'. Apstājoties statuss atgriežas uz 'Darbs'."
       },
       "step3": {
-        "title": "3. Pārtraukuma izmantošana",
-        "body": "Nospiediet 'Sākt pārtraukumu'. Nepārtraukts pārtraukums vismaz 45 minūtes atiestata jūsu 4,5 stundu braukšanas taimeri."
+        "title": "4. Pārtraukuma izmantošana",
+        "body": "Nospiediet 'Sākt pārtraukumu'. Nepārtraukts vismaz 45 minūšu pārtraukums atiestatīs 4,5 stundu braukšanas taimeri."
       },
       "step4": {
-        "title": "4. Gatavības laiks (POA)",
-        "body": "Izmantojiet 'Gatavības laiks', kad esat pieejams, bet neveicat aktīvu darbu (piem., gaidot iekraušanu)."
+        "title": "5. Pieejamības laiks (POA)",
+        "body": "Izmantojiet 'Pieejamība / Gaidīšana' periodos, kad esat pieejams, bet aktīvi nestrādājat (piem., gaidot rampu)."
       }
     },
     "keyFeatures": {
       "title": "Galvenās funkcijas",
       "fatigue": {
-        "title": "Noguruma un fokusa monitors",
-        "body": "Reāllaika brīdinājumi par nepietiekamu atpūtu, gaidāmajiem pārtraukumiem un braukšanas limitiem.",
-        "audioWarning": "Lietotne sniedz skaņas signālus kritiskajiem brīdinājumiem. Pārliecinieties, vai skaņa ir ieslēgta."
+        "title": "Noguruma monitors",
+        "body": "Redzams galvenajā ekrānā, sniedz reāllaika brīdinājumus par atpūtu un braukšanas limitiem."
+      },
+      "messaging": {
+        "title": "Atjauninājumi un ziņojumi",
+        "body": "Saņemiet sistēmas paziņojumus un ziņas no sava vadītāja tieši lietotnē."
+      },
+      "compliance": {
+        "title": "Atbilstības kalendārs",
+        "body": "Rāda jūsu dienas atbilstības rādītāju. Pieskarieties, lai redzētu mēneša detaļas."
       },
       "history": {
-        "title": "Darba vēsture un labošana",
-        "body": "Izvēlnē atlasiet 'Darba vēsture', lai skatītu pagātnes maiņas:",
-        "bullets": [
-          "Pieskarieties dienai, lai redzētu detalizētu kopsavilkumu.",
-          "Manuāli pievienojiet vai labojiet maiņas jebkurā laikā."
-        ]
+        "title": "Vēsture un manuāli labojumi",
+        "body": "Skatiet iepriekšējās maiņas un manuāli pievienojiet vai labojiet ierakstus."
+      },
+      "expenses": {
+        "title": "Izdevumu izsekošana",
+        "body": "Reģistrējiet degvielas vai maltīšu izmaksas. Skenējiet čekus – lietotne pati aizpildīs summu."
       },
       "reports": {
-        "title": "Lejupielādēt atskaites un rēķinus",
-        "body": "Ģenerējiet profesionālu PDF darba kopsavilkumu vai rēķinu par jebkuru laika posmu."
+        "title": "Pārskatu lejupielāde",
+        "body": "Ģenerējiet PDF pārskatus atbilstībai, rēķinus klientiem vai TP pārbaužu žurnālus."
+      },
+      "dailyReport": {
+        "title": "Dienas atbilstības ziņojums",
+        "body": "Katru rītu redzēsiet logu ar vakardienas maiņas pārkāpumu kopsavilkumu."
+      },
+      "qualifications": {
+        "title": "Profesionālā kvalifikācija",
+        "body": "Pārvaldiet vadītāja apliecības, 95. koda un tacho kartes datus ar brīdinājumiem par termiņiem."
+      },
+      "vehicles": {
+        "title": "TP pārvaldība",
+        "body": "Sekojiet svarīgiem datumiem: TA, servisiem, tacho pārbaudēm ar brīdinājuma sistēmu."
+      },
+      "safetyChecks": {
+        "title": "Digitālās kontrolkartes",
+        "body": "Veiciet pilnas pārbaudes un uzturiet digitālu visu defektu un inspekciju žurnālu."
+      },
+      "invoicing": {
+        "title": "Rēķinu sagatavošana",
+        "body": "Iestatiet biznesa profilu, lai ģenerētu profesionālus PDF rēķinus ar visiem rekvizītiem."
       }
     },
     "footer": {
@@ -272,58 +449,58 @@
     },
     "about": {
       "title": "Par šiem noteikumiem",
-      "description": "Šeit apkopotas galvenās ES vadlīnijas par braukšanas un atpūtas laikiem."
+      "description": "Šeit ir apkopoti galvenie ES braukšanas un atpūtas laika noteikumi. Vienmēr ievērojiet oficiālos tiesību aktus."
     },
     "overview": {
       "title": "Pārskats",
-      "point1": "Precīzi uzskaitiet darbu, pārtraukumus, gatavību un braukšanu.",
+      "point1": "Precīzi sekojiet darbam, pārtraukumiem, POA un braukšanai.",
       "point2": "Plānojiet pārtraukumus laicīgi, lai izvairītos no pārkāpumiem.",
-      "point3": "Uzmanīgi izmantojiet saīsināto atpūtu un pagarinājumus."
+      "point3": "Saīsināto atpūtu un braukšanas pagarinājumus izmantojiet uzmanīgi."
     },
     "drivingLimits": {
-      "title": "Braukšanas laika ierobežojumi",
+      "title": "Braukšanas ierobežojumi",
       "daily": {
         "label": "Dienas braukšanas limits:",
-        "description": "9 stundas (var pagarināt līdz 10 stundām divreiz nedēļā)."
+        "description": "9 stundas (var pagarināt līdz 10h divas reizes nedēļā)."
       },
       "weekly": {
         "label": "Nedēļas braukšanas limits:",
         "description": "56 stundas."
       },
       "fortnightly": {
-        "label": "Divu nedēļu braukšanas limits:",
+        "label": "Divu nedēļu limits:",
         "description": "90 stundas."
       },
       "breaks": {
         "label": "Braukšanas pārtraukumi:",
-        "description": "Pēc 4,5 stundu braukšanas jāņem 45 minūšu pārtraukums."
+        "description": "Pēc 4,5h braukšanas ņemiet 45 minūšu pārtraukumu."
       },
-      "breaksSplitExample": "45 minūtes var sadalīt 15 minūtēs + 30 minūtēs (tieši šādā secībā)."
+      "breaksSplitExample": "45 minūtes var sadalīt 15 min + 30 min (tikai šādā secībā)."
     },
     "restPeriods": {
       "title": "Atpūtas periodi",
       "daily": {
         "title": "Dienas atpūta:",
-        "regular": "Regulārā dienas atpūta: vismaz 11 stundas.",
-        "reduced": "Saīsinātā dienas atpūta: vismaz 9 stundas (ierobežota lietošana).",
-        "split": "Sadalītā dienas atpūta: kopā vismaz 12 stundas (piem., 3 + 9)."
+        "regular": "Normāla atpūta: vismaz 11 stundas.",
+        "reduced": "Saīsinātā atpūta: vismaz 9 stundas (ierobežota lietošana).",
+        "split": "Sadalītā atpūta: kopā vismaz 12 stundas (piem., 3 + 9)."
       },
       "weekly": {
         "title": "Nedēļas atpūta:",
-        "regular": "Regulārā nedēļas atpūta: vismaz 45 stundas.",
+        "regular": "Normāla nedēļas atpūta: vismaz 45 stundas.",
         "reduced": "Saīsinātā nedēļas atpūta: vismaz 24 stundas (nepieciešama kompensācija).",
-        "frequency": "Nedēļas atpūta jāizmanto noteiktos periodos."
+        "frequency": "Nedēļas atpūta jāsāk ne vēlāk kā pēc sešiem 24h periodiem."
       }
     },
     "workingTimeLimits": {
       "title": "Darba laika ierobežojumi",
       "maxWeekly": {
-        "label": "Maksimālais darba laiks nedēļā:",
-        "description": "60 stundas (absolūtais maksimums)."
+        "label": "Maks. nedēļas darba laiks:",
+        "description": "60 stundas (stingrs limits)."
       },
       "avgWeekly": {
-        "label": "Vidējais darba laiks nedēļā:",
-        "description": "Vidēji 48 stundas atskaites periodā."
+        "label": "Vidējais nedēļas laiks:",
+        "description": "Vidēji 48 stundas uzskaites periodā."
       },
       "nightWork": {
         "label": "Nakts darba limits:",
@@ -331,18 +508,18 @@
       }
     },
     "workBreaks": {
-      "title": "Darba laika pārtraukumu prasības",
+      "title": "Darba pārtraukumu prasības",
       "intro": "Darba pārtraukumi ir atkarīgi no kopējā nostrādāto stundu skaita.",
       "rules": {
-        "sixToNine": "Ja strādājat virs 6h: vismaz 30 min pārtraukums.",
-        "ninePlus": "Ja strādājat virs 9h: vismaz 45 min pārtraukums."
+        "sixToNine": "Ja strādājat virs 6h: ņemiet vismaz 30 min pārtraukumu.",
+        "ninePlus": "Ja strādājat virs 9h: ņemiet vismaz 45 min pārtraukumu."
       },
       "noteDriving": "Braukšanas pārtraukumi (4,5h noteikums) ir atsevišķi un arī jāievēro."
     },
     "interaction": {
       "title": "Kā lietotne to uzskaita",
       "point1": "Darba un braukšanas taimeri darbojas aktivitātes laikā; POA aptur darba ciklu.",
-      "point2": "Atbilstošs pārtraukums var atiestatīt 4,5h braukšanas ciklu."
+      "point2": "Atbilstošs pārtraukums var atiestatīt jūsu 4,5h braukšanas ciklu."
     }
   },
   "tachoGuide": {
@@ -350,34 +527,34 @@
     "prepare": {
       "title": "Sagatavojieties",
       "point1": "Sagatavojiet vadītāja karti.",
-      "point2": "Pārliecinieties, vai tahogrāfs ir manuālās ievades režīmā.",
-      "point3": "Pārbaudiet laika un laika zonas iestatījumus ierīcē."
+      "point2": "Pārliecinieties, ka tahogrāfs ir manuālās ievades režīmā.",
+      "point3": "Pārbaudiet laiku un laika joslas iestatījumus."
     },
     "confirmManualEntry": {
-      "title": "Apstiprināt manuālo ievadi",
+      "title": "Apstipriniet manuālo ievadi",
       "point1": "Apstipriniet, ka vēlaties pievienot darbības kopš pēdējās kartes izņemšanas."
     },
     "enterActivities": {
-      "title": "Ievadīt darbības",
-      "point1": "Izvēlieties pareizo darbības veidu (atpūta/darbs/gatavība).",
+      "title": "Ievadiet darbības",
+      "point1": "Izvēlieties pareizo darbības veidu (atpūta/darbs/pieejamība).",
       "point2": "Precīzi ievadiet sākuma un beigu laiku.",
       "point3": "Atkārtojiet katram trūkstošajam periodam.",
-      "point4": "Pārbaudiet, vai secība atbilst tam, kas notika realitātē."
+      "point4": "Pārbaudiet, vai secība atbilst realitātei."
     },
     "adjustTimes": {
-      "title": "Pielāgot laikus",
-      "point1": "Ja laiki ir nepareizi, dodieties atpakaļ un labojiet.",
+      "title": "Koriģējiet laikus",
+      "point1": "Ja laiki ir kļūdaini, atgriezieties un izlabojiet.",
       "point2": "Pārliecinieties, ka nav pārklāšanās vai spraugu.",
       "point3": "Apstipriniet katru ierakstu pirms turpināšanas."
     },
     "confirm": {
-      "title": "Apstiprināt",
+      "title": "Apstiprinājums",
       "point1": "Pārskatiet kopsavilkumu tahogrāfa ekrānā.",
-      "point2": "Apstipriniet, lai saglabātu manuālos ierakstus."
+      "point2": "Apstipriniet, lai saglabātu ierakstus."
     },
     "finalCheck": {
-      "title": "Nobeiguma pārbaude",
-      "point1": "Pārbaudiet darbību hronoloģiju.",
+      "title": "Gala pārbaude",
+      "point1": "Pārbaudiet, vai hronoloģija ir pareiza.",
       "point2": "Sāciet maiņu tikai tad, kad viss ir pareizi."
     },
     "closeButton": "Aizvērt"
@@ -387,7 +564,7 @@
     "german": "Deutsch",
     "french": "Français",
     "spanish": "Español",
-    "italian": "Italiano",
+    "italic": "Italiano",
     "polish": "Polski",
     "romanian": "Română",
     "dutch": "Nederlands",
@@ -401,93 +578,129 @@
     "latvian": "Latviešu",
     "turkish": "Türkçe"
   },
-  "selectLanguage": "Mainīt valodu",
+  "selectLanguage": "Izvēlēties valodu",
   "signOut": "Izrakstīties",
   "confirmSignOut": "Vai tiešām vēlaties izrakstīties?",
   "manageSubscription": "Pārvaldīt abonementu",
   "validation": {
-    "invalidTimeFormat": "Lūdzu, ievadiet pareizu laiku HH:MM formātā."
+    "invalidTimeFormat": "Ievadiet derīgu laiku HH:MM formātā."
   },
   "validationError": "Validācijas kļūda",
   "pleaseEnterName": "Lūdzu, ievadiet savu vārdu.",
   "driverSettings": "Vadītāja iestatījumi",
-  "welcomeSetup": "Sākotnējā iestatīšana",
+  "welcomeSetup": "Sākuma iestatīšana",
   "personalInformation": "Personīgā informācija",
   "driverName": "Vadītāja vārds",
   "enterFullName": "Ievadiet pilnu vārdu",
   "companyLink": "Saite ar uzņēmumu",
-  "linkedToCompany": "Piesaistīts uzņēmumam",
-  "companyLinkCodeOptional": "Uzņēmuma saites kods (neobligāts)",
-  "enterCodeToJoinFleet": "Ievadiet uzņēmuma piešķirto kodu, lai pievienotos.",
-  "payConfiguration": "Atalgojuma iestatījumi",
-  "basicHourlyRate": "Pamata stundas likme",
-  "unpaidBreakDuration": "Neapmaksātā pārtraukuma ilgums (minūtes)",
+  "linkedToCompany": "Saistīts ar uzņēmumu",
+  "companyLinkCodeOptional": "Uzņēmuma kods (izvēles)",
+  "enterCodeToJoinFleet": "Ievadiet kodu, ko saņēmāt no uzņēmuma, lai pievienotos to autoparkam.",
+  "payConfiguration": "Samaksas konfigurācija",
+  "basicHourlyRate": "Bāzes stundas likme",
+  "unpaidBreakDuration": "Neapmaksātā pārtraukuma ilgums (minūtēs)",
   "shiftAllowances": "Maiņas piemaksas",
   "addAllowance": "Pievienot piemaksu",
   "overtimeRules": "Virsstundu noteikumi",
   "overtimeThreshold": "Virsstundu slieksnis",
-  "rateMultiplier": "Likmes reizinātājs",
-  "addAnotherTier": "Pievienot vēl vienu līmeni",
+  "rateMultiplier": "Likmes koeficients",
+  "addAnotherTier": "Pievienot citu līmeni",
   "invalidCode": "Nederīgs kods",
-  "companyCodeNotFound": "Uzņēmuma kods nav atrasts.",
+  "companyCodeNotFound": "Mēs nevarējām atrast šādu uzņēmuma kodu.",
   "expiredCodeTitle": "Kods beidzies",
-  "expiredCodeMessage": "Šis kods ir beidzies. Pieprasiet jaunu kodu.",
-  "privacyTitle": "Privātuma politika",
+  "expiredCodeMessage": "Šis uzņēmuma kods vairs nav derīgs. Pieprasiet jaunu.",
+  "privacyTitle": "Privātums un jūsu dati",
   "privacySubtitle": "Jūsu dati, jūsu kontrole",
-  "privacyIntro": "Šī politika paskaidro, kādus datus HourWise vāc un kā tie tiek pārvaldīti.",
+  "privacyIntro": "Mēs esam apņēmušies aizsargāt jūsu privātumu. Šī politika paskaidro, kādus datus HourWise apkopo funkciju nodrošināšanai.",
+  "privacyWhyTitle": "Kāpēc mēs vācam datus",
+  "privacyWhyDesc": "Mēs vācam tikai nepieciešamos datus: darba stundu aprēķinam, ES atbilstībai un pārskatiem.",
   "privacyDataCollectedTitle": "Ko mēs glabājam",
-  "privacyDataCollectedDesc": "Lai aprēķinātu darba stundas, mēs glabājam:",
+  "privacyDataCollectedDesc": "Lai iespējotu funkcijas, mēs droši glabājam šo jūsu sniegto informāciju:",
   "privacyDataPoints": [
-    "Vārdu (atskaitēm)",
-    "Reģistrētās maiņas (sākums/beigas)",
-    "Darba, pārtraukumu un POA kopsummas",
-    "Atbilstības rādītājus un pārkāpumus",
-    "Atalgojuma iestatījumus (neobligāti)"
+    "Jūsu vārds (pārskatiem)",
+    "Reģistrētās maiņas (laiks, braukšana, darbs, pārtraukumi, POA)",
+    "Atrašanās vietas dati (tikai automātiskai braukšanas noteikšanai)",
+    "Atbilstības rādītāji un pārkāpumi",
+    "Izdevumu informācija un čeku fotoattēli",
+    "Samaksas iestatījumi (izvēles)",
+    "Biznesa profils un bankas rekvizīti (izvēles)"
   ],
   "privacyStorageTitle": "Droša mākoņkrātuve",
-  "privacyStorageDesc": "Dati tiek glabāti jūsu privātajā, drošajā mākoņa kontā un sinhronizēti ierīcēs.",
-  "privacyControlTitle": "Jūs kontrolējat datus",
-  "privacyControlDesc": "Glabātie dati ir jūsu ievadītie dati. Jūs varat tos skatīt, labot un dzēst jebkurā laikā.",
+  "privacyStorageDesc": "Jūsu dati tiek glabāti personīgajā mākoņa kontā, izmantojot nozares standarta šifrēšanu.",
+  "privacyControlTitle": "Jūs visu kontrolējat",
+  "privacyControlDesc": "Jūs jebkurā laikā varat apskatīt, labot vai neatgriezeniski dzēst savu vēsturi un personīgo informāciju.",
+  "privacyThirdPartyTitle": "Trešo pušu pakalpojumi",
+  "privacyThirdPartyDesc": "Čeku skenēšanai izmantojam OCR pakalpojumus. Mēs nepārdodam jūsu datus mārketingam.",
+  "privacyThirdPartyDesc_new": "Čeku fotoattēli tiek apstrādāti ārējā dienestā teksta ieguvei. Mēs nepārdodam jūsu datus.",
   "privacyDisclaimerTitle": "Svarīgi",
-  "privacyDisclaimer": "Neviena interneta pārraides metode nav 100% droša, taču mēs darām visu, lai aizsargātu jūsu datus.",
-  "notification": {
-    "trackingTitle": "Braukšanas laika uzskaite",
-    "trackingBody": "HourWise uzrauga jūsu atrašanās vietu braukšanas noteikšanai."
+  "privacyDisclaimer": "Lai gan izmantojam drošas sistēmas, neviena datu pārraide internetā nav 100% droša. Mēs darām visu iespējamo, lai jūs aizsargātu.",
+  "privacy": {
+    "gdprRightsTitle": "Jūsu VDAR tiesības",
+    "gdprRightsDesc": "Saskaņā ar VDAR jums ir tiesības piekļūt, labot vai dzēst savus datus tieši lietotnē."
   },
-  "enableComplianceNotifications": "Lūdzu, iespējojiet paziņojumus atbilstības brīdinājumiem.",
+  "account": {
+    "title": "Konta pārvaldība",
+    "manageMyData": "Pārvaldīt datus",
+    "profileSection": "Profils",
+    "editName": "Mainīt vārdu",
+    "changeEmail": "Mainīt e-pastu",
+    "changePassword": "Mainīt paroli",
+    "dataSection": "Datu pārvaldība",
+    "exportData": "Eksportēt datus",
+    "manageSubscription": "Pārvaldīt abonementu",
+    "dangerZone": "Bīstamā zona",
+    "delete": {
+      "title": "Dzēst kontu",
+      "confirmTitle": "Dzēst?",
+      "confirmMessage": "Tas neatgriezeniski dzēsīs maiņas, atbilstības ierakstus un profilu. Darbība nav atceļama.",
+      "confirmButton": "Dzēst visu",
+      "successTitle": "Konts dzēsts",
+      "successMessage": "Jūsu konts un visi dati ir veiksmīgi noņemti.",
+      "errorMessage": "Pašlaik kontu neizdevās dzēst. Sazinieties ar atbalstu."
+    }
+  },
+  "notification": {
+    "trackingTitle": "Izseko braukšanas laiku",
+    "trackingBody": "HourWise uzrauga jūsu atrašanās vietu braukšanai.",
+    "shiftStartedTitle": "Maiņa sākta",
+    "shiftStartedBody": "Jūsu darba maiņa ir oficiāli sākusies.",
+    "shiftEndedTitle": "Maiņa beigta",
+    "shiftEndedBody": "Jūsu darba maiņa ir veiksmīgi pabeigta."
+  },
+  "enableComplianceNotifications": "Iespējojiet paziņojumus atbilstības brīdinājumiem.",
   "locationPermissionRequired": "Braukšanas noteikšanai nepieciešama atrašanās vietas atļauja.",
-  "backgroundLocationPermissionRequired": "Uzticamai izsekošanai nepieciešama piekļuve atrašanās vietai fonā.",
-  "failedToResumeShift": "Neizdevās atsākt maiņu no servera.",
+  "backgroundLocationPermissionRequired": "Uzticamai izsekošanai nepieciešama atrašanās vietas atļauja fonā.",
+  "failedToResumeShift": "Neizdevās atjaunot maiņu no servera.",
   "startShiftError": "Neizdevās sākt maiņu.",
-  "endShiftError": "Neizdevās pabeigt maiņu serverī. Pārbaudiet savienojumu.",
-  "cannotGoToPoaFromBreak": "Nevar pārslēgties uz POA pārtraukuma laikā.",
+  "endShiftError": "Neizdevās beigt maiņu serverī. Pārbaudiet savienojumu.",
+  "cannotGoToPoaFromBreak": "Pārtraukuma laikā nevar pārslēgties uz POA.",
   "proactiveNotificationTitle": "Pēdējās maiņas pārskats",
-  "proactiveNotificationBody": "Ieteikums šodienai:",
+  "proactiveNotificationBody": "Padoms šodienai:",
   "workTimeWarningTitle": "Darba laika brīdinājums",
   "drivingTimeWarningTitle": "Braukšanas laika brīdinājums",
-  "workTime30minLeft": "Darba ciklā atlikušas 30 minūtes.",
-  "workTime15minLeft": "Darba ciklā atlikušas 15 minūtes.",
-  "workTime5minLeft": "Darba ciklā atlikušas 5 minūtes.",
+  "workTime30minLeft": "Atlikušas 30 minūtes darba ciklā.",
+  "workTime15minLeft": "Atlikušas 15 minūtes darba ciklā.",
+  "workTime5minLeft": "Atlikušas 5 minūtes darba ciklā.",
   "workTimeLimitReached": "Darba laika limits sasniegts.",
-  "drivingTime30minLeft": "Braukšanas ciklā atlikušas 30 minūtes.",
-  "drivingTime15minLeft": "Braukšanas ciklā atlikušas 15 minūtes.",
-  "drivingTime5minLeft": "Braukšanas ciklā atlikušas 5 minūtes.",
+  "drivingTime30minLeft": "Atlikušas 30 minūtes braukšanas.",
+  "drivingTime15minLeft": "Atlikušas 15 minūtes braukšanas.",
+  "drivingTime5minLeft": "Atlikušas 5 minūtes braukšanas.",
   "drivingTimeLimitReached": "Braukšanas laika limits sasniegts.",
   "audioShiftStarted": "Maiņa sākta.",
-  "audioShiftEnded": "Maiņa pabeigta.",
+  "audioShiftEnded": "Maiņa beigta.",
   "audioBreakStarted": "Pārtraukums sākts.",
-  "audioResumeWork": "Darbs atsākts.",
-  "audioPoaStarted": "POA sākts.",
+  "audioResumeWork": "Atgriežas darbā.",
+  "audioPoaStarted": "P. O. A. sākts.",
   "audioDrivingTimeReset": "Braukšanas laiks atiestatīts.",
   "audioDrivingLimitReached": "Braukšanas limits sasniegts.",
-  "audioDriving5minLeft": "Atlikušas 5 minūtes braukšanas.",
-  "audioDriving15minLeft": "Atlikušas 15 minūtes braukšanas.",
-  "audioDriving30minLeft": "Atlikušas 30 minūtes braukšanas.",
-  "audioWork5h15": "Darba ciklā atlikušas 15 minūtes.",
-  "audioWork5h30": "Darba ciklā atlikušas 30 minūtes.",
-  "audioWork5h55": "Darba ciklā atlikušas 5 minūtes.",
+  "audioDriving5minLeft": "Atlikušas piecas minūtes braukšanas.",
+  "audioDriving15minLeft": "Atlikušas piecpadsmit minūtes braukšanas.",
+  "audioDriving30minLeft": "Atlikušas trīsdesmit minūtes braukšanas.",
+  "audioWork5h15": "Atlikušas piecpadsmit minūtes darba ciklā.",
+  "audioWork5h30": "Atlikušas trīsdesmit minūtes darba ciklā.",
+  "audioWork5h55": "Atlikušas piecas minūtes darba ciklā.",
   "safetyWarningTitle": "Drošības brīdinājums",
-  "safetyWarningBody": "Nelietojiet lietotni braukšanas laikā.",
+  "safetyWarningBody": "Nekādā gadījumā nelietojiet lietotni braucot. Apstājieties izmaiņām.",
   "acknowledge": "Apstiprināt",
   "auth": {
     "title": {
@@ -495,25 +708,25 @@
       "signUp": "Izveidot kontu"
     },
     "subtitle": {
-      "signIn": "Laipni lūdzam atpakaļ!",
-      "signUp": "Pievienojieties un sāciet uzskaitīt stundas."
+      "signIn": "Sveicināti atpakaļ! Pierakstieties.",
+      "signUp": "Pievienojieties mums un sekojiet savām stundām."
     },
     "fields": {
       "email": {
         "label": "E-pasta adrese",
-        "placeholder": "jusu.epasts@piemērs.lv"
+        "placeholder": "vārds@piemērs.lv"
       },
       "password": {
         "label": "Parole",
         "placeholder": "Ievadiet paroli"
       },
       "driverName": {
-        "label": "Vadītāja vārds, uzvārds",
+        "label": "Vadītāja vārds un uzvārds",
         "placeholder": "piem., Jānis Bērziņš"
       },
       "companyCode": {
         "label": "Uzņēmuma kods",
-        "placeholder": "Ievadiet kodu no sava darba devēja"
+        "placeholder": "Ievadiet kodu no sava uzņēmuma"
       }
     },
     "buttons": {
@@ -530,8 +743,8 @@
         "subtitle": "Neatkarīgs profesionālis"
       },
       "fleet": {
-        "title": "Autoparka dalībnieks",
-        "subtitle": "Daļa no uzņēmuma"
+        "title": "Autoparka biedrs",
+        "subtitle": "Uzņēmuma darbinieks"
       }
     },
     "alerts": {
@@ -540,32 +753,32 @@
         "body": "Lūdzu, aizpildiet visus obligātos laukus."
       },
       "companyCodeRequired": {
-        "title": "Nepieciešams uzņēmuma kods",
-        "body": "Lūdzu, ievadiet kodu, lai turpinātu kā flotes biedrs."
+        "title": "Nepieciešams kods",
+        "body": "Ievadiet kodu, lai turpinātu kā biedrs."
       },
       "invalidCode": {
         "title": "Nederīgs kods",
-        "expired": "Šis uzņēmuma kods ir beidzies.",
-        "notFound": "Ievadītais kods nav derīgs."
+        "expired": "Šis kods vairs nedarbojas.",
+        "notFound": "Ievadītais kods nav pareizs."
       },
       "signUpError": {
         "title": "Reģistrācijas kļūda"
       },
       "signUpFailed": {
         "title": "Reģistrācija neizdevās",
-        "body": "Mēs šobrīd nevarējām izveidot jūsu kontu."
+        "body": "Mēs šobrīd nevaram izveidot kontu."
       },
       "profileCreationFailed": {
-        "title": "Profila izveide neizdevās",
-        "body": "Konts izveidots, bet neizdevās uzstādīt profilu."
+        "title": "Neizdevās izveidot profilu",
+        "body": "Konts izveidots, bet profila setup neizdevās. Sazinieties ar atbalstu."
       },
       "checkEmail": {
         "title": "Pārbaudiet e-pastu",
-        "body": "Apstiprinājuma saite nosūtīta uz jūsu e-pastu."
+        "body": "Apstiprinājuma saite ir nosūtīta uz jūsu adresi."
       },
       "signInMissing": {
-        "title": "Trūkst informācijas",
-        "body": "Ievadiet gan e-pastu, gan paroli."
+        "title": "Trūkst datu",
+        "body": "Ievadiet e-pastu un paroli."
       },
       "signInError": {
         "title": "Pierakstīšanās kļūda"
@@ -573,115 +786,145 @@
     }
   },
   "paywall": {
-    "title": "Atbloķēt HourWise Pro",
-    "subtitle": "Piekļūstiet visām funkcijām un neierobežotām atskaitēm.",
+    "title": "Atbloķējiet HourWise Pro",
+    "subtitle": "Iegūstiet visas funkcijas, neierobežotu izsekošanu un pārskatus.",
     "subscribeNow": "Abonēt tagad",
     "restorePurchases": "Atjaunot pirkumus",
-    "loading": "Atver...",
-    "restoring": "Atjauno...",
+    "loading": "Atver…",
+    "restoring": "Atjauno…",
     "alert": {
-      "successTitle": "Gatavs",
+      "successTitle": "Veiksmīgi",
       "purchased": "Pirkums pabeigts!",
       "restored": "Pirkumi atjaunoti!",
-      "paywallError": "Notika kļūda. Mēģiniet vēlreiz.",
+      "paywallError": "Radās kļūda. Mēģiniet vēlreiz.",
       "couldNotDisplay": "Neizdevās parādīt abonēšanas lapu.",
-      "restoreSuccess": "Jūsu pirkumi ir atjaunoti.",
+      "restoreSuccess": "Jūsu pirkumi veiksmīgi atjaunoti.",
       "noPurchasesTitle": "Pirkumi nav atrasti",
-      "noPurchasesBody": "Mēs nevarējām atrast aktīvus abonementus.",
+      "noPurchasesBody": "Mēs neatradām aktīvus abonementus.",
       "restoreError": "Neizdevās atjaunot pirkumus."
     }
   },
   "settings": {
     "subscription": {
-      "openError": "Neizdevās atvērt abonementu pārvaldību.",
-      "opening": "Atver..."
+      "openError": "Neizdevās atvērt pārvaldības lapu.",
+      "opening": "Atver…"
     }
   },
   "businessProfile": {
-    "title": "Uzņēmuma profils",
-    "subtitle": "Rēķiniem un atskaitēm",
+    "title": "Biznesa profils",
+    "subtitle": "Rēķiniem un pārskatiem",
     "alerts": {
-      "profileSaved": "Uzņēmuma profils saglabāts."
+      "profileSaved": "Biznesa profils veiksmīgi saglabāts."
     },
     "sections": {
       "companyDetails": "Uzņēmuma dati",
-      "bankDetails": "Bankas dati"
+      "bankDetails": "Bankas rekvizīti",
+      "companyLogo": "Uzņēmuma logotips",
+      "clients": "Klientu pārvaldība"
     },
     "fields": {
       "legalName": {
-        "label": "Juridiskais / uzņēmuma nosaukums",
-        "placeholder": "piem., SIA Mans Uzņēmums"
+        "label": "Nosaukums / Vārds, uzvārds",
+        "placeholder": "piem., SIA „Transports”"
       },
       "address": {
-        "label": "Uzņēmuma adrese",
+        "label": "Biznesa adrese",
         "placeholder": "Ievadiet pilnu adresi"
       },
       "email": {
-        "label": "Kontakta e-pasts",
-        "placeholder": "piem., kontakts@uznemums.lv"
+        "label": "Kontaktpersonas e-pasts",
+        "placeholder": "piem., info@uznemums.lv"
       },
       "phone": {
-        "label": "Kontakttālrunis",
+        "label": "Telefons",
         "placeholder": "piem., +371 20000000"
       },
       "taxId": {
-        "label": "PVN / Reģ. Nr.",
+        "label": "Reģ. / PVN Nr.",
         "placeholder": "piem., LV40000000000"
+      },
+      "vatNumber": {
+        "label": "PVN maksātāja numurs",
+        "placeholder": "piem., LV40000000000"
+      },
+      "paymentTerms": {
+        "label": "Maksāšanas noteikumi",
+        "placeholder": "piem., apmaksa 30 dienu laikā"
       },
       "accountName": {
         "label": "Konta īpašnieks",
-        "placeholder": "Vārds vai uzņēmuma nosaukums"
+        "placeholder": "Vārds vai uzņēmums"
       },
       "sortCode": {
-        "label": "Bankas kods (SWIFT)",
-        "placeholder": "piem., HABA LV 22"
+        "label": "Bankas kods",
+        "placeholder": "piem., UNLALV22"
       },
       "accountNumber": {
         "label": "Konta numurs",
-        "placeholder": "Ievadiet konta numuru"
+        "placeholder": "Konta numurs"
       },
       "iban": {
         "label": "IBAN",
-        "placeholder": "piem., LV29 HABA ..."
+        "placeholder": "piem., LV00 UNLA 0000 0000 0000"
+      }
+    },
+    "clients": {
+      "title": "Klienti",
+      "addClient": "Pievienot klientu",
+      "editClient": "Labot klientu",
+      "noClients": "Klienti vēl nav pievienoti.",
+      "deleteConfirm": "Vai tiešām vēlaties dzēst šo klientu?",
+      "fields": {
+        "name": "Klienta nosaukums",
+        "address": "Klienta adrese",
+        "email": "Klienta e-pasts"
       }
     }
   },
   "violation": {
     "EXCEEDED_6H_WORK": {
       "title": "Pārsniegtas 6h darba bez pārtraukuma",
-      "tip": "Pēc 6 nostrādātām stundām nepieciešams 30 min pārtraukums."
+      "tip": "Pēc 6h darba obligāts 30 min pārtraukums. Plānojiet laicīgi."
     },
     "INSUFFICIENT_BREAK_FOR_9H_WORK": {
-      "title": "Nepietiekams pārtraukums maiņai virs 9h",
-      "tip": "Maiņām virs 9 stundām nepieciešams kopā 45 min pārtraukums."
+      "title": "Nepietiekams pārtraukums strādājot >9h",
+      "tip": "Maiņām virs 9h nepieciešamas kopā 45 min pārtraukumu."
     },
     "INSUFFICIENT_DAILY_REST": {
       "title": "Nepietiekama dienas atpūta",
-      "tip": "Ievērojiet vismaz 11h atpūtu (var saīsināt līdz 9h)."
+      "tip": "Nodrošiniet vismaz 11h atpūtu (var saīsināt līdz 9h 3 reizes nedēļā)."
     },
     "REDUCED_DAILY_REST_TAKEN": {
       "title": "Izmantota saīsinātā dienas atpūta",
-      "tip": "To drīkst darīt tikai trīs reizes nedēļā."
+      "tip": "Jūs izmantojāt saīsināto atpūtu. Tas atļauts 3 reizes starp nedēļas atpūtām."
     },
     "EXCEEDED_4_5H_DRIVING": {
       "title": "Pārsniegtas 4,5h braukšanas",
-      "tip": "Pēc 4,5 stundu braukšanas jāņem 45 minūšu pārtraukums."
+      "tip": "Jums jāņem 45 min pārtraukums pēc 4,5h nepārtrauktas braukšanas."
     },
     "EXCEEDED_DAILY_DRIVING_LIMIT": {
-      "title": "Pārsniegts dienas braukšanas limits",
-      "tip": "Limits ir 9h, pagarinājums līdz 10h atļauts 2x nedēļā."
+      "title": "Dienas braukšanas limits pārsniegts",
+      "tip": "Braukšana ierobežota līdz 9h (pagarināšana līdz 10h tikai 2 reizes nedēļā)."
     },
     "USED_10H_DRIVING_EXTENSION": {
       "title": "Izmantots 10h braukšanas pagarinājums",
-      "tip": "Jūs izmantojāt vienu no diviem nedēļas pagarinājumiem."
+      "tip": "Jūs izmantojāt vienu no diviem nedēļas 10h braukšanas pagarinājumiem."
     },
     "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
-      "title": "Pārsniegts nedēļas braukšanas limits",
-      "tip": "Maksimālais braukšanas laiks nedēļā ir 56 stundas."
+      "title": "Nedēļas braukšanas limits pārsniegts",
+      "tip": "Maksimālais nedēļas braukšanas laiks ir 56 stundas."
     },
     "EXCEEDED_WEEKLY_WORK_LIMIT": {
-      "title": "Pārsniegts nedēļas darba limits",
-      "tip": "Maksimālais darba laiks nedēļā ir 60 stundas."
+      "title": "Nedēļas darba limits pārsniegts",
+      "tip": "Maksimālais nedēļas darba laiks ir 60 stundas."
+    },
+    "WORK_TIME_LIMIT_EXCEEDED": {
+      "title": "Darba laika limits pārsniegts",
+      "tip": "Jūs pārsniedzāt darba ciklu. Reģistrēts {{time}} pārsniegums."
+    },
+    "FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED": {
+      "title": "Divu nedēļu braukšanas limits pārsniegts",
+      "tip": "Maksimālais braukšanas laiks jebkurās divās nedēļās pēc kārtas ir 90 stundas."
     },
     "default": {
       "title": "Atbilstības pārkāpums",
@@ -689,17 +932,30 @@
     }
   },
   "dateRangeError": "Beigu datumam jābūt pēc sākuma datuma.",
-  "noDataForRange": "Dati šajā periodā nav atrasti.",
-  "failedToGenerate": "Neizdevās ģenerēt atskaiti.",
-  "workReport": "Darba atskaite",
+  "noDataForRange": "Šajā periodā dati nav atrasti.",
+  "failedToGenerate": "Neizdevās ģenerēt pārskatu.",
+  "workReport": "Darba pārskats",
   "reportFrom": "No",
   "to": "Līdz",
   "summary": "Kopsavilkums",
-  "totalWorkTime": "Kopējais darba laiks",
-  "totalBreakTime": "Kopējais pārtraukumu laiks",
-  "estimatedEarnings": "Aprēķinātā peļņa",
+  "totalWorkTime": "Darba laiks kopā",
+  "totalBreakTime": "Pārtraukumu laiks kopā",
+  "estimatedEarnings": "Aplēstā peļņa",
   "previousWeek": "Iepriekšējā nedēļa",
   "lastMonth": "Pagājušais mēnesis",
-  "customRange": "Izvēlēts periods",
-  "generateReport": "Ģenerēt atskaiti"
+  "customRange": "Izvēlētais diapazons",
+  "generateReport": "Ģenerēt pārskatu",
+  "alerts": {
+    "lowRestWarning": "Brīdinājums: Mazāk par 9h atpūtas kopš pēdējās maiņas.",
+    "spreadTitle": "Maiņas laika brīdinājums",
+    "spread30m": "Likušas 30 minūtes līdz 13 stundu maiņas limita sasniegšanai."
+  },
+  "invoiceGeneration": {
+    "title": "Ģenerēt rēķinu",
+    "selectClient": "Izvēlēties klientu",
+    "description": "Rēķina apraksts",
+    "includeExpenses": "Iekļaut izdevumus",
+    "vatRate": "PVN likme (%)",
+    "noVat": "Bez PVN"
+  }
 }

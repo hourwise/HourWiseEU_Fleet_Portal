@@ -3,10 +3,12 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Shield, Search, UserCheck, UserX, Mail, Edit, X, Save, Clock } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
+import { useTranslation } from 'react-i18next';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export function SupervisorManagement() {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [supervisors, setSupervisors] = useState<Profile[]>([]);
   const [filteredSupervisors, setFilteredSupervisors] = useState<Profile[]>([]);
@@ -86,15 +88,15 @@ export function SupervisorManagement() {
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-blue-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Supervisor Management</h2>
-            <p className="text-gray-600">{supervisors.length} total supervisors</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('supervisor.management.title')}</h2>
+            <p className="text-gray-600">{t('supervisor.management.count', { count: supervisors.length })}</p>
           </div>
         </div>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-700 font-medium">
-          Note: Supervisors join using your company auth code. This section allows you to manage their status and profile details.
+          {t('supervisor.management.notice')}
         </p>
       </div>
 
@@ -106,7 +108,7 @@ export function SupervisorManagement() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or email..."
+              placeholder={t('supervisor.management.searchPlaceholder')}
               className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             />
           </div>
@@ -122,7 +124,7 @@ export function SupervisorManagement() {
                     : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                {filter}
+                {t('supervisorsManager.filters.' + filter)}
               </button>
             ))}
           </div>
@@ -132,7 +134,7 @@ export function SupervisorManagement() {
           {filteredSupervisors.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No supervisors found</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('supervisor.management.noSupervisors')}</h3>
             </div>
           ) : (
             filteredSupervisors.map((supervisor) => (
@@ -142,22 +144,22 @@ export function SupervisorManagement() {
               >
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Supervisor</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('supervisor.management.labels.supervisor')}</label>
                     <p className="font-bold text-slate-900">{supervisor.full_name}</p>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('supervisor.management.labels.email')}</label>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-slate-400" />
                       <p className="text-sm text-slate-600 font-medium">{supervisor.email}</p>
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('supervisor.management.labels.status')}</label>
                     <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
                       supervisor.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
-                      {supervisor.is_active ? 'Active' : 'Inactive'}
+                      {supervisor.is_active ? t('supervisorsManager.status.active') : t('supervisorsManager.status.inactive')}
                     </span>
                   </div>
                 </div>
@@ -166,7 +168,7 @@ export function SupervisorManagement() {
                   <button
                     onClick={() => setSelectedSupervisor(supervisor)}
                     className="p-2 text-slate-400 hover:text-blue-600 bg-slate-50 rounded-lg transition border border-transparent hover:border-blue-100"
-                    title="Edit Details"
+                    title={t('supervisor.management.labels.edit')}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -179,7 +181,7 @@ export function SupervisorManagement() {
                     }`}
                   >
                     {supervisor.is_active ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                    <span>{supervisor.is_active ? 'Active' : 'Inactive'}</span>
+                    <span>{supervisor.is_active ? t('supervisorsManager.status.active') : t('supervisorsManager.status.inactive')}</span>
                   </button>
                 </div>
               </div>
@@ -203,6 +205,7 @@ export function SupervisorManagement() {
 }
 
 function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: Profile, onClose: () => void, onSave: () => void }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     full_name: supervisor.full_name,
     phone_number: supervisor.phone_number || '',
@@ -226,7 +229,7 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
       onSave();
     } catch (error) {
       console.error('Error updating supervisor:', error);
-      alert('Failed to update supervisor details.');
+      alert(t('supervisor.modal.errorUpdate'));
     } finally {
       setLoading(false);
     }
@@ -237,14 +240,14 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <Shield className="text-blue-600" size={20} /> Supervisor Details
+            <Shield className="text-blue-600" size={20} /> {t('supervisor.modal.title')}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition"><X /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Full Name</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('supervisor.modal.nameLabel')}</label>
             <input
               required
               type="text"
@@ -254,7 +257,7 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Email (Read-only)</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('supervisor.modal.emailLabel')}</label>
             <input
               type="email"
               disabled
@@ -263,7 +266,7 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Phone Number</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('supervisor.modal.phoneLabel')}</label>
             <input
               type="tel"
               className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white font-bold"
@@ -273,14 +276,14 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
           </div>
 
           <div className="pt-4 flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-3 border border-slate-200 rounded-xl font-black text-slate-400 hover:bg-slate-50 transition uppercase tracking-widest text-[10px]">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-3 border border-slate-200 rounded-xl font-black text-slate-400 hover:bg-slate-50 transition uppercase tracking-widest text-[10px]">{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-200 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
             >
               {loading ? <Clock className="animate-spin w-4 h-4" /> : <Save size={16} />}
-              <span>Save Changes</span>
+              <span>{t('supervisor.modal.saveButton')}</span>
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import { Lock, Sparkles, Receipt, TrendingUp, FileText, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface PaywallScreenProps {
   trialEndsAt?: string | null;
@@ -6,6 +7,7 @@ interface PaywallScreenProps {
 }
 
 export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) {
+  const { t } = useTranslation();
   const isTrialExpired = trialEndsAt && new Date(trialEndsAt) < new Date();
 
   return (
@@ -16,12 +18,12 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
             <Lock className="w-10 h-10 text-blue-600" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-3">
-            {isTrialExpired ? 'Trial Expired' : 'Unlock Full Access'}
+            {isTrialExpired ? t('subscription.paywall.trialExpired') : t('subscription.paywall.unlockAccess')}
           </h1>
           <p className="text-blue-100 text-lg">
             {isTrialExpired
-              ? 'Subscribe to continue using HourWise'
-              : 'Get unlimited access to all features'}
+              ? t('subscription.paywall.expiredSubtitle')
+              : t('subscription.paywall.accessSubtitle')}
           </p>
         </div>
 
@@ -33,8 +35,8 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
                   <Receipt className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Invoice Generation</h3>
-                  <p className="text-sm text-gray-600">Professional invoices for your clients</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('subscription.paywall.features.invoicing')}</h3>
+                  <p className="text-sm text-gray-600">{t('subscription.paywall.features.invoicingDesc')}</p>
                 </div>
               </div>
             </div>
@@ -45,8 +47,8 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
                   <TrendingUp className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Expense Tracking</h3>
-                  <p className="text-sm text-gray-600">Monitor all your business expenses</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('subscription.paywall.features.expenses')}</h3>
+                  <p className="text-sm text-gray-600">{t('subscription.paywall.features.expensesDesc')}</p>
                 </div>
               </div>
             </div>
@@ -57,8 +59,8 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
                   <Calendar className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Hours Compliance</h3>
-                  <p className="text-sm text-gray-600">Stay compliant with UK regulations</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('subscription.paywall.features.compliance')}</h3>
+                  <p className="text-sm text-gray-600">{t('subscription.paywall.features.complianceDesc')}</p>
                 </div>
               </div>
             </div>
@@ -69,8 +71,8 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Tax Reports</h3>
-                  <p className="text-sm text-gray-600">Export reports for self-assessment</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('subscription.paywall.features.reports')}</h3>
+                  <p className="text-sm text-gray-600">{t('subscription.paywall.features.reportsDesc')}</p>
                 </div>
               </div>
             </div>
@@ -80,16 +82,16 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
             <div className="flex items-center justify-center gap-2 mb-3">
               <Sparkles className="w-6 h-6" />
               <span className="text-2xl font-bold">£9.99</span>
-              <span className="text-blue-200">/month</span>
+              <span className="text-blue-200">{t('subscription.paywall.perMonth')}</span>
             </div>
             <p className="text-blue-100 mb-6">
-              Cancel anytime. No long-term commitment.
+              {t('subscription.paywall.cancelAnytime')}
             </p>
             <button
               onClick={onSubscribe}
               className="w-full bg-white text-blue-600 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition shadow-lg"
             >
-              Subscribe Now
+              {t('subscription.paywall.subscribeNow')}
             </button>
           </div>
 
@@ -98,19 +100,19 @@ export function PaywallScreen({ trialEndsAt, onSubscribe }: PaywallScreenProps) 
               <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
-              <p>Cancel anytime from your account settings</p>
+              <p>{t('subscription.paywall.cancelSettings')}</p>
             </div>
             <div className="flex items-center gap-3 text-sm text-gray-600">
               <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
-              <p>Secure payment via Apple/Google</p>
+              <p>{t('subscription.paywall.securePayment')}</p>
             </div>
             <div className="flex items-center gap-3 text-sm text-gray-600">
               <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
-              <p>Instant access after subscription</p>
+              <p>{t('subscription.paywall.instantAccess')}</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Intelligens flottakezelés egyszerűen",
+    "description": "Intelligens flottakezelés és megfelelőség-követés európai szállítmányozási cégeknek. Maradjon szabálykövető és hatékony."
+  },
+  "navigation": {
+    "home": "Kezdőlap",
+    "howTo": "Hogyan működik",
+    "privacy": "Adatvédelem",
+    "terms": "Felhasználási feltételek",
+    "contact": "Kapcsolat",
+    "privacyRequest": "Adatigénylés (GDPR)",
+    "signIn": "Bejelentkezés",
+    "getStarted": "Regisztráció",
+    "dashboard": "Vezérlőpult",
+    "drivers": "Gépjárművezetők",
+    "compliance": "Megfelelőség",
+    "training": "Oktatás",
+    "fleet": "Flotta",
+    "safetyChecks": "Biztonsági ellenőrzések",
+    "supervisors": "Felügyelők",
+    "payroll": "Bérszámfejtés",
+    "expenses": "Kiadások",
+    "reports": "Jelentések",
+    "auditTrail": "Ellenőrzési napló",
+    "settings": "Beállítások",
+    "signOut": "Kijelentkezés"
+  },
+  "footer": {
+    "company": "Vállalat",
+    "account": "Fiók",
+    "createAccount": "Fiók létrehozása",
+    "allRightsReserved": "Minden jog fenntartva."
+  },
+  "auth": {
+    "login": "Bejelentkezés",
+    "signup": "Regisztráció",
+    "email": "E-mail cím",
+    "password": "Jelszó",
+    "forgotPassword": "Elfelejtette a jelszavát?",
+    "createAccount": "Flottakezelői fiók létrehozása",
+    "managerSignup": "Menedzser regisztráció",
+    "companyName": "Cégnév",
+    "fullName": "Teljes név",
+    "alreadyHaveAccount": "Már van fiókja? Jelentkezzen be",
+    "signInSubtitle": "Jelentkezzen be a flottakezelő panelbe",
+    "forgotPasswordSubtitle": "Jelszó visszaállítása",
+    "magicLinkSubtitle": "Kérjen belépési linket e-mailben",
+    "magicLink": "Belépés Magic Linkkel",
+    "sendMagicLink": "Link küldése",
+    "sendResetLink": "Visszaállító link küldése",
+    "backToSignIn": "Vissza a bejelentkezéshez",
+    "newToApp": "Új az HourWise rendszerében?",
+    "createCompanyAccountSubtitle": "Hozza létre cégfiókját",
+    "billingNotice": "A regisztráció után fejezze be a számlázási adatok megadását a weboldalon",
+    "codeNotice": "Kapni fog egy cégkódot, amelyet megoszthat a sofőrjeivel",
+    "creatingAccount": "Fiók létrehozása...",
+    "createFleetAccount": "Flottafiók létrehozása",
+    "messages": {
+      "resetSent": "A jelszóvisszaállító linket elküldtük az e-mail címére.",
+      "magicLinkSent": "Ellenőrizze e-mailjeit a belépési linkért."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Flottakezelői Portál",
+      "welcome": "Üdvözöljük újra, {{name}}",
+      "snapshots": {
+        "compliance": "Flotta megfelelőségi pontszám",
+        "vehicle": "Jármű megfelelőségi riasztások",
+        "driver": "Sofőr képesítési figyelmeztetések",
+        "viewAll": "Összes megtekintése",
+        "avgScore": "Átlagpontszám",
+        "sevenDayInfringements": "Szabályszegések (7 nap)",
+        "openBoard": "Megfelelőségi panel megnyitása",
+        "urgent": "{{count}} SÜRGŐS",
+        "noVehicleAlerts": "Nincs sürgős járműriasztás.",
+        "viewFleetList": "Teljes flottalista megtekintése",
+        "noDriverAlerts": "Minden sofőr dokumentuma naprakész.",
+        "manageDocs": "Dokumentumok kezelése",
+        "alerts": "{{count}} RIASZTÁS",
+        "alertSingle": "1 RIASZTÁS"
+      },
+      "alerts": {
+        "title": "Teendőt igénylő riasztások",
+        "urgent": "SÜRGŐS",
+        "trainingMode": "Oktatási mód aktív",
+        "discrepancy": "Adateltérés észlelhető",
+        "allClear": "Minden rendben!",
+        "noIssues": "Nem észleltünk problémát.",
+        "shiftAlert": "Riasztás a {{date}} műszakhoz",
+        "issueDetected": "Problémát észleltünk, amely felülvizsgálatot igényel."
+      },
+      "auditReadiness": {
+        "title": "Audit-kész állapot",
+        "status": "A flotta adatai a hatósági audit szabványoknak megfelelően szinkronizálva vannak."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Flottakezelés",
+    "totalAssets": "Összesen {{count}} jármű",
+    "addVehicle": "Jármű hozzáadása",
+    "backToList": "Vissza a listához",
+    "vehicleDetails": "Jármű adatai",
+    "complianceBoard": "Megfelelőségi tábla",
+    "maintenanceActions": "Karbantartási műveletek",
+    "statusNotes": "Állapot megjegyzések",
+    "noNotes": "Nincs aktív riasztás vagy megjegyzés ehhez a járműhöz.",
+    "markVor": "Kijelölés üzemen kívülinek (VOR)",
+    "returnToService": "Visszaállítás forgalomba (Biztonságos)",
+    "maintenanceCalled": "Karbantartás igényelve",
+    "bookedWithGarage": "Szervizidőpont lefoglalva",
+    "logRepair": "Javítás/PMI rögzítése",
+    "recordWork": "Munka rögzítése és adatlap feltöltése",
+    "noVehicles": "Még nincsenek regisztrált járművek a flottában.",
+    "addFirst": "Adja hozzá az első járművét",
+    "status": {
+      "vor": "VOR / Üzemen kívül",
+      "active": "Aktív",
+      "critical": "Kritikus határidő (14n)",
+      "operational": "Üzemképes",
+      "requiresAttention": "Azonnali figyelmet igényel",
+      "compliancePending": "Megfelelőségi vizsgára vár",
+      "ready": "Kiosztásra kész",
+      "overdue": "LEJÁRT",
+      "expiresIn": "{{days}} nap múlva"
+    },
+    "labels": {
+      "regType": "Jármű adatai",
+      "status": "Állapot",
+      "motDue": "Műszaki vizsga lejárata",
+      "pmiDue": "Időszakos vizsga (PMI)",
+      "tachoCal": "Tachográf kalibrálás",
+      "odometer": "Kilométeróra állása",
+      "year": "Évjárat",
+      "vin": "Alvázszám (VIN)",
+      "added": "Hozzáadva",
+      "actions": "Műveletek"
+    },
+    "modal": {
+      "title": "Új jármű hozzáadása",
+      "identity": "Jármű azonosítása",
+      "compliance": "Megfelelőség és Biztonság",
+      "regNumber": "Rendszám *",
+      "make": "Márka *",
+      "model": "Típus",
+      "type": "Járműkategória *",
+      "vinNumber": "Alvázszám (VIN)",
+      "initialOdo": "Kezdő kilométerállás (km)",
+      "currentOdo": "Jelenlegi kilométerállás (km)",
+      "motDue": "Következő műszaki vizsga",
+      "pmiDue": "Következő időszakos vizsgálat",
+      "tachoDue": "Tachográf kalibrálás határideje",
+      "insuranceExpiry": "Biztosítás lejárata",
+      "footnote": "A határidők aktiválják a „közlekedési lámpa” rendszert. A lejárt tételek PIROS jelzést kapnak.",
+      "register": "Jármű regisztrálása",
+      "adding": "Jármű hozzáadása...",
+      "errors": {
+        "companyId": "Cégazonosító nem található. Frissítse az oldalt.",
+        "duplicate": "Ezzel a rendszámmal már létezik jármű.",
+        "generic": "Váratlan hiba történt a jármű hozzáadásakor."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Megfelelőségi eredményjelző",
+    "subtitle": "A sofőrök szabálykövetésének összefoglalója (utolsó 7 nap).",
+    "stats": {
+      "avgScore": "Flotta átlagpontszáma",
+      "totalInfringements": "Összes szabályszegés",
+      "driversInViolation": "Szabályszegő sofőrök"
+    },
+    "details": {
+      "title": "Sofőr megfelelőségi részletek",
+      "noDrivers": "Nincsenek aktív sofőrök friss adatokkal",
+      "noDriversSubtitle": "Hívjon meg sofőröket, hogy lássa az eredményeiket.",
+      "headers": {
+        "driver": "Sofőr",
+        "score": "Megfelelőségi pontszám",
+        "infringements": "Szabályszegések (utolsó 7 nap)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Karbantartási napló",
+    "logWork": "Munka rögzítése",
+    "noRecords": "Nem találhatók hivatalos karbantartási bejegyzések.",
+    "complianceRequired": "Hatóságilag előírt megfelelőség",
+    "labels": {
+      "date": "DÁTUM",
+      "odo": "KM ÁLLÁS",
+      "cost": "KÖLTSÉG",
+      "eventType": "Esemény típusa",
+      "completedAt": "Befejezés dátuma",
+      "provider": "Szolgáltató / Szerviz",
+      "description": "Munka leírása",
+      "evidence": "Hivatalos bizonylat (PMI adatlap/Műszaki tanúsítvány)"
+    },
+    "modal": {
+      "title": "Karbantartás rögzítése",
+      "providerPlaceholder": "pl. Scania Szakszerviz",
+      "descriptionPlaceholder": "pl. 6 hetes időszakos vizsgálat elvégezve. Új fékbetétek az első tengelyen.",
+      "confirm": "Munka megerősítése",
+      "saving": "Mentés..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Időszakos vizsgálat)",
+      "repair": "Hiba javítása",
+      "mot": "Műszaki vizsga",
+      "tacho": "Tachográf kalibrálás",
+      "other": "Egyéb"
+    }
+  },
+  "training": {
+    "title": "Oktatás és Tachográf szinkron",
+    "subtitle": "Hivatalos tachográf adatok összevetése az alkalmazásbeli aktivitással",
+    "import": {
+      "title": "Tachográf adatok importálása",
+      "selectDriver": "Sofőr kiválasztása",
+      "selectPlaceholder": "Válasszon sofőrt...",
+      "uploadLabel": ".CSV feltöltése (pl. Tachomaster)",
+      "browse": "Fájlok tallózása",
+      "runButton": "Eltérések ellenőrzése",
+      "analyzing": "Elemzés folyamatban..."
+    },
+    "suggestion": {
+      "title": "Oktatási javaslat",
+      "description": "Ha a sofőr gyakran vét üzemmód-váltási hibát, az alkalmazás a következő műszak indításakor automatikusan felajánlja a „Tachográf helyes használata” útmutatót."
+    },
+    "analysis": {
+      "title": "Elemzési eredmények",
+      "conflictsFound": "{{count}} Ütközés található",
+      "noData": "Nincsenek elemzett adatok.",
+      "noDataSubtitle": "Válasszon egy sofőrt és töltsön fel egy fájlt a kezdéshez.",
+      "tacho": "Tachográf",
+      "app": "App",
+      "priorities": {
+        "high": "Magas prioritás",
+        "low": "Alacsony prioritás"
+      },
+      "activities": {
+        "driving": "Vezetés",
+        "break": "Szünet",
+        "work": "Egyéb munka",
+        "rest": "Pihenő"
+      },
+      "insightTitle": "Oktatási megfigyelés",
+      "assignButton": "Ismétlődő oktatás kijelölése"
+    }
+  },
+  "payroll": {
+    "title": "Bérszámfejtési összesítő",
+    "startDate": "Kezdő dátum",
+    "endDate": "Záró dátum",
+    "exportPayroll": "Béradatok exportálása (CSV)",
+    "exportExpenses": "Kiadások exportálása (CSV)",
+    "headers": {
+      "driver": "Sofőr",
+      "hours": "Összes óra (Alap/Túlóra)",
+      "grossPay": "Bruttó járandóság (költségekkel)"
+    },
+    "labels": {
+      "wages": "Munkabér",
+      "expenses": "Kiadások",
+      "normal": "Normál",
+      "overtime": "Túlóra",
+      "payrollNumber": "Dolgozói azonosító",
+      "grossPayAmount": "Bruttó összeg (Ft)",
+      "wagesAmount": "Bér összege (Ft)"
+    },
+    "noData": "Nem találhatók béradatok erre az időszakra.",
+    "loading": "Béradatok betöltése..."
+  },
+  "vehicleChecklist": {
+    "title": "Napi járműbiztonsági ellenőrzés",
+    "success": {
+      "title": "Ellenőrzőlista beküldve",
+      "message": "A napi biztonsági ellenőrzés sikeresen rögzítve."
+    },
+    "manager": {
+      "title": "Járműbiztonsági ellenőrzések",
+      "subtitle": "Napi szemlék és jelentett hibák áttekintése",
+      "searchPlaceholder": "Keresés sofőrre vagy rendszámra...",
+      "noChecks": "Nem található ellenőrzés",
+      "selectCheck": "Válasszon egyet a részletekhez",
+      "selectCheckSubtitle": "A sofőrök napi szemléi itt fognak megjelenni",
+      "printExport": "Nyomtatás / Exportálás",
+      "details": {
+        "vehicleType": "JÁRMŰKATEGÓRIA",
+        "vehicleMake": "MÁRKA",
+        "odometer": "KM ÁLLÁS",
+        "status": "ÁLLAPOT",
+        "timeRecorded": "RÖGZÍTÉS IDEJE",
+        "defectsTitle": "JELENTETT HIBÁK / MEGTETT INTÉZKEDÉSEK",
+        "noDefects": "Nincs további megadott részlet."
+      },
+      "status": {
+        "pass": "MEGFELELT",
+        "fail": "NEM FELELT MEG",
+        "defect": "HIBÁS"
+      }
+    },
+    "sections": {
+      "internal": "BELSŐ ELLENŐRZÉSEK",
+      "external": "KÜLSŐ ELLENŐRZÉSEK",
+      "vehicleDetails": "Jármű adatai",
+      "defects": "HIBAJELENTÉS / INTÉZKEDÉSEK"
+    },
+    "items": {
+      "mirrors": "Tükrök és üvegek",
+      "mirrorsHint": "Ellenőrizze a repedéseket/matricákat; a tükrök beállítása megfelelő.",
+      "wipers": "Ablaktörlők és mosó",
+      "wipersHint": "Működés és folyadékszintek ellenőrzése.",
+      "front_view": "Kilátás előre",
+      "front_viewHint": "Teljes kilátás a szélvédőn keresztül.",
+      "warning_lamps": "Figyelmeztető lámpák",
+      "warning_lampsHint": "A műszerfali visszajelzők működésének ellenőrzése.",
+      "steering": "Kormánymű",
+      "steeringHint": "Akadásmentes mozgás és helyes működés.",
+      "horn": "Kürt",
+      "hornHint": "Tiszta és működő hang tesztelése.",
+      "brakes_air": "Fékek és légnyomás",
+      "brakes_airHint": "Fékműködés és légnyomás-felépülés ellenőrzése.",
+      "height_marker": "Magasságjelző",
+      "height_markerHint": "A helyes magasságjelzés jól látható.",
+      "seatbelts": "Biztonsági övek",
+      "seatbeltsHint": "Minden öv működésének ellenőrzése.",
+      "lights_ind": "Lámpák és irányjelzők",
+      "lights_indHint": "Minden lámpa és index megfelelően működik.",
+      "leaks": "Üzemanyag/Olaj szivárgás",
+      "leaksHint": "Folyadéknyomok ellenőrzése a földön vagy az alvázon.",
+      "battery": "Akkumulátor rögzítése",
+      "batteryHint": "Stabil rögzítés és jó állapot.",
+      "adblue": "AdBlue folyadék",
+      "adblueHint": "Megfelelő szint a tartályban.",
+      "smoke": "Túlzott füstölés",
+      "smokeHint": "Sűrű füstkibocsátás ellenőrzése.",
+      "body_wings": "Karosszéria és sárvédők",
+      "body_wingsHint": "Nincsenek kilazult vagy lógó alkatrészek.",
+      "spray": "Sárvédő gumik",
+      "sprayHint": "Stabil rögzítés és szabályos állapot.",
+      "tyres_wheels": "Gumiabroncsok és kerekek",
+      "tyres_wheelsHint": "Csavarok meghúzva. Profil és nyomás megfelelő.",
+      "brake_line": "Fékvezetékek",
+      "brake_lineHint": "Sérülések vagy levegőszivárgás ellenőrzése.",
+      "electrical": "Elektromos csatlakozások",
+      "electricalHint": "Minden csatlakozó egyenkénti tesztelése.",
+      "coupling": "Vontatószerkezet biztonsága",
+      "couplingHint": "A jármű és a rakomány/pótkocsi stabil kapcsolata.",
+      "load_security": "Rakomány rögzítése",
+      "load_securityHint": "Egyenletes súlyelosztás és stabil rögzítés.",
+      "number_plate": "Rendszámtábla",
+      "number_plateHint": "Stabilan rögzítve és jól olvasható.",
+      "reflectors": "Prizmák és lámpák",
+      "reflectorsHint": "Stabil rögzítés és tisztaság.",
+      "markers": "Jelzések",
+      "markersHint": "Minden kötelező fényvisszaverő jelzés a helyén."
+    },
+    "labels": {
+      "regNumber": "RENDSZÁM",
+      "vehicleType": "JÁRMŰKATEGÓRIA",
+      "vehicleMake": "MÁRKA (OPCIONÁLIS)",
+      "hint": "Tipp",
+      "submitting": "Beküldés...",
+      "submit": "Ellenőrzőlista beküldése",
+      "defectPlaceholder": "Írja le a hibát és a megtett azonnali intézkedéseket..."
+    },
+    "errors": {
+      "incomplete": "Kérjük, töltse ki mind a 24 biztonsági pontot a beküldés előtt.",
+      "missingReg": "A jármű rendszáma kötelező."
+    }
+  },
+  "infractions": {
+    "title": "Szabályszegési jelentések",
+    "subtitle": "Megfelelőségi problémák követése és elemzése",
+    "export": "Exportálás CSV-be",
+    "filterAll": "Összes ({{count}})",
+    "filterViolations": "Szabályszegések ({{count}})",
+    "filterWarnings": "Figyelmeztetések ({{count}})",
+    "noInfractions": "Nem található szabályszegés",
+    "noInfractionsSubtitle": "A flotta megfelelősége kiváló",
+    "issue": "Megfelelőségi probléma",
+    "activity": "{{type}} aktivitás",
+    "labels": {
+      "driver": "Sofőr",
+      "dateTime": "Dátum és idő",
+      "location": "Helyszín",
+      "duration": "Időtartam",
+      "notes": "Megjegyzések:",
+      "notRecorded": "Nincs rögzítve",
+      "ongoing": "Folyamatban",
+      "min": "perc"
+    },
+    "csvHeaders": {
+      "date": "Dátum",
+      "driver": "Sofőr",
+      "activity": "Aktivitás",
+      "status": "Állapot",
+      "infractionType": "Típus",
+      "duration": "Időtartam (perc)",
+      "locationStart": "Kezdő helyszín",
+      "notes": "Megjegyzés"
+    }
+  },
+  "audit": {
+    "title": "Ellenőrzési napló exportálása",
+    "subtitle": "Szabálykövetési jelentések generálása hatósági ellenőrzésekhez",
+    "filtersTitle": "Jelentés szűrői",
+    "labels": {
+      "startDate": "Kezdő dátum",
+      "endDate": "Záró dátum",
+      "driver": "Sofőr",
+      "allDrivers": "Minden sofőr"
+    },
+    "trailCard": {
+      "title": "Teljes ellenőrzési napló",
+      "subtitle": "Minden sofőradat teljes részletezéssel",
+      "item1": "Sofőr aktivitási naplók",
+      "item2": "Időbélyegek és időtartamok",
+      "item3": "Helyszín adatok",
+      "item4": "Jármű információk",
+      "button": "Napló letöltése",
+      "generating": "Generálás..."
+    },
+    "summaryCard": {
+      "title": "Megfelelőségi összefoglaló",
+      "subtitle": "Összesített megfelelőségi mutatók",
+      "item1": "Megfelelőségi arány sofőrönként",
+      "item2": "Szabályszegések és figyelmeztetések száma",
+      "item3": "Összesített aktivitási összefoglaló",
+      "item4": "Gyors áttekintés audithoz",
+      "button": "Összefoglaló letöltése"
+    },
+    "footerNotice": "Audit-kész: Ezek a jelentések a hatósági előírásoknak megfelelően vannak formázva.",
+    "csvHeaders": {
+      "date": "Dátum",
+      "driverName": "Sofőr neve",
+      "license": "Jogosítvány száma",
+      "activity": "Típus",
+      "start": "Kezdés",
+      "end": "Befejezés",
+      "duration": "Időtartam (perc)",
+      "status": "Állapot",
+      "infraction": "Szabályszegés típusa",
+      "vehicle": "Jármű azonosító",
+      "locationStart": "Kezdő helyszín",
+      "locationEnd": "Záró helyszín",
+      "notes": "Megjegyzés",
+      "totalLogs": "Összes bejegyzés",
+      "violations": "Szabályszegések",
+      "warnings": "Figyelmeztetések",
+      "complianceRate": "Megfelelőségi arány"
+    },
+    "ongoing": "Folyamatban",
+    "none": "Nincs",
+    "unknown": "Ismeretlen"
+  },
+  "expensesManager": {
+    "title": "Kiadások jóváhagyása",
+    "subtitle": "{{count}} függőben lévő kiadás vár felülvizsgálatra.",
+    "loading": "Kiadások betöltése...",
+    "allClear": "Minden elintézve!",
+    "noPending": "Nincsenek felülvizsgálatra váró kiadások.",
+    "headers": {
+      "driver": "Sofőr",
+      "date": "Dátum",
+      "amount": "Összeg",
+      "description": "Leírás",
+      "receipt": "Bizonylat",
+      "actions": "Műveletek"
+    },
+    "viewReceipt": "Megnyitás",
+    "approve": "Jóváhagyás",
+    "reject": "Elutasítás",
+    "errors": {
+      "actionFailed": "Hiba történt a művelet közben ({{action}}).",
+      "noPath": "A bizonylat útvonala nem található.",
+      "downloadFailed": "Nem sikerült letölteni a bizonylatot."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Felügyelők kezelése",
+    "subtitle": "Összesen {{count}} felügyelő",
+    "notice": "Megjegyzés: A felügyelők a cégkóddal csatlakoznak. Itt kezelheti az állapotukat és adataikat.",
+    "searchPlaceholder": "Keresés névre vagy e-mailre...",
+    "filters": {
+      "all": "Összes",
+      "active": "Aktív",
+      "inactive": "Inaktív"
+    },
+    "noSupervisors": "Nem található felügyelő",
+    "labels": {
+      "supervisor": "Felügyelő",
+      "email": "E-mail",
+      "status": "Állapot",
+      "phone": "Telefonszám",
+      "name": "Teljes név",
+      "emailReadOnly": "E-mail (csak olvasható)"
+    },
+    "status": {
+      "active": "Aktív",
+      "inactive": "Inaktív"
+    },
+    "modal": {
+      "title": "Felügyelő részletei",
+      "save": "Módosítások mentése",
+      "cancel": "Mégse",
+      "errors": {
+        "updateFailed": "Nem sikerült frissíteni az adatokat."
+      },
+      "editTitle": "Adatok szerkesztése"
+    }
+  },
+  "driverDetails": {
+    "title": "Sofőr adatlap: {{name}}",
+    "sections": {
+      "profile": "Profil és Béradatok",
+      "compliance": "Szakmai képesítések",
+      "activity": "Legutóbbi műszakok",
+      "locations": "Gyakori indulási helyszínek"
+    },
+    "labels": {
+      "fullName": "Teljes név",
+      "payrollNo": "Dolgozói azonosító",
+      "niNumber": "Adóazonosító / TAJ szám",
+      "dob": "Születési idő",
+      "phone": "Telefonszám",
+      "emergencyName": "Sürgősségi kapcsolat (Név)",
+      "emergencyPhone": "Sürgősségi kapcsolat (Tel)",
+      "status": "Állapot",
+      "address": "Lakcím",
+      "licence": "Jogosítvány (Előlap)",
+      "licenceNo": "Jogosítvány száma",
+      "entitlements": "Kategóriák (pl. C, C+E)",
+      "dvlaCode": "Ellenőrző kód (ha szükséges)",
+      "cpc": "GKI kártya",
+      "cpcNo": "GKI kártya száma",
+      "qualStart": "Képesítés kezdete",
+      "qualExpiry": "Képesítés lejárata",
+      "tacho": "Digitális sofőrkártya",
+      "tachoNo": "Sofőrkártya száma",
+      "cardExpiry": "Kártya lejárata",
+      "duration": "Időtartam: {{hours}} óra",
+      "noShifts": "Nincsenek rögzített műszakok.",
+      "loadingMap": "Térkép betöltése...",
+      "noMapData": "Nincsenek helyszínadatok a hőtérképhez.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "AKTÍV",
+      "inactive": "INAKTÍV (Üzemen kívül)",
+      "missingExpiry": "Hiányzó lejárat",
+      "expired": "Lejárt: {{date}}",
+      "expiresIn": "{{days}} nap múlva lejár",
+      "expiresOn": "Lejárat: {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Jogosítvány feltöltése",
+      "uploadCpc": "GKI feltöltése",
+      "uploadTacho": "Sofőrkártya feltöltése",
+      "commit": "Módosítások mentése",
+      "saving": "Mentés..."
+    },
+    "errors": {
+      "fillAll": "Kérjük, töltse ki az összes dokumentum mezőt.",
+      "uploadError": "Hiba: {{message}}",
+      "updateFailed": "Nem sikerült frissíteni a sofőr adatait."
+    }
+  },
+  "shiftEdit": {
+    "title": "Műszak manuális szerkesztése",
+    "labels": {
+      "start": "Kezdés (csak olvasható)",
+      "end": "Befejezés",
+      "reason": "Módosítás oka (Kötelező)",
+      "reasonPlaceholder": "pl. A sofőr megerősítette, hogy lemerült a telefonja ebben az időben."
+    },
+    "errors": {
+      "endRequired": "A befejezési idő megadása kötelező.",
+      "reasonRequired": "Indoklás megadása kötelező az ellenőrzési naplóhoz.",
+      "invalidEnd": "A befejezésnek a kezdés után kell lennie.",
+      "updateFailed": "Nem sikerült frissíteni a műszakot."
+    },
+    "buttons": {
+      "save": "Mentés és újraszámítás",
+      "saving": "Mentés..."
+    },
+    "auditNotePrefix": "(Menedzser által szerkesztve) "
+  },
+  "settings": {
+    "company": {
+      "title": "Vállalati adatok",
+      "subscriptionActive": "ELŐFIZETÉS AKTÍV",
+      "inactive": "INAKTÍV",
+      "nameLabel": "Cégnév",
+      "refIdLabel": "Belső hivatkozási azonosító",
+      "authCodeLabel": "Vállalati regisztrációs kód",
+      "authCodeFootnote": "Ezt a kódot adja meg az új sofőröknek és felügyelőknek a csatlakozáshoz.",
+      "complianceTitle": "Szabálykövetés kikényszerítése",
+      "complianceSubtitle": "Magas biztonsági szabványok alkalmazása a flottában.",
+      "mandatoryChecks": "Kötelező járműellenőrzések",
+      "mandatoryChecksSubtitle": "A műszak nem indítható ellenőrzés nélkül.",
+      "mandatoryChecksFootnote": "Ha be van kapcsolva, a sofőröknek kötelező elvégezni a szemlét a munkaidő rögzítése előtt.",
+      "usageMetrics": "Flotta használati mutatók",
+      "usageMetricsSubtitle": "A kilométeróra állása és az ellenőrzések automatikusan rögzítésre kerülnek.",
+      "dataStatus": "Adatok állapota",
+      "activeMonitoring": "Aktív figyelés bekapcsolva",
+      "fleetRegistered": "FLOTTA REGISZTRÁLVA: {{date}}",
+      "errors": {
+        "updateFailed": "Nem sikerült frissíteni a cégnevet.",
+        "settingUpdateFailed": "Hiba a beállítás frissítésekor: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Profilom",
+      "success": "Profil frissítve",
+      "nameLabel": "Teljes név",
+      "emailLabel": "E-mail cím (Belépés)",
+      "phoneLabel": "Telefonszám",
+      "updateButton": "Adatok frissítése",
+      "updating": "Mentés...",
+      "securityTitle": "Biztonság és Jelszó",
+      "securitySubtitle": "Módosítaná jelszavát vagy bekapcsolná az MFA-t?",
+      "resetPassword": "Jelszó visszaállítása",
+      "resetSent": "Visszaállító link elküldve."
+    },
+    "mfa": {
+      "title": "Kétlépcsős azonosítás (MFA)",
+      "subtitle": "Növelje fiókja biztonságát egy hitelesítő alkalmazás (pl. Google Authenticator) használatával.",
+      "enabled": "Az MFA jelenleg aktív.",
+      "step1": "1. Olvassa be a QR-kódot a hitelesítő alkalmazással.",
+      "step2": "2. Adja meg az alkalmazásban látható 6 számjegyű kódot.",
+      "placeholder": "123456",
+      "verifyButton": "Ellenőrzés és aktiválás",
+      "verifying": "Ellenőrzés...",
+      "enableButton": "MFA bekapcsolása",
+      "starting": "Indítás...",
+      "disableButton": "Kikapcsolás",
+      "disabling": "Kikapcsolás...",
+      "confirmDisable": "Biztosan ki szeretné kapcsolni a kétlépcsős azonosítást?",
+      "successEnabled": "Kétlépcsős azonosítás sikeresen aktiválva!",
+      "successDisabled": "Kétlépcsős azonosítás kikapcsolva."
+    }
+  },
+  "common": {
+    "save": "Módosítások mentése",
+    "cancel": "Mégse",
+    "loading": "Betöltés...",
+    "edit": "Szerkesztés",
+    "delete": "Törlés",
+    "refresh": "Lista frissítése",
+    "viewAll": "Összes megtekintése",
+    "success": "Siker",
+    "error": "Hiba",
+    "lastUpdated": "Utolsó frissítés: {{date}}",
+    "details": "Részletek",
+    "syncing": "Szinkronizálás...",
+    "search": "Keresés névre vagy e-mailre...",
+    "confirmDelete": "Biztosan törölni szeretné: {{name}}? Ez véglegesen törli a fiókot és minden adatot.",
+    "selectFile": "Fájl kiválasztása"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil nem található",
+      "message": "Megtaláltuk a fiókját, de a profiladatok betöltése nem sikerült.",
+      "retry": "Újra",
+      "signOut": "Kijelentkezés és újraindítás"
+    }
+  },
+  "howTo": {
+    "title": "Az HourWise EU használata",
+    "subtitle": "Minden, amit a flotta kezeléséhez tudnia kell",
+    "sections": {
+      "gettingStarted": {
+        "title": "Első lépések",
+        "step1": {
+          "title": "1. lépés: Fiók létrehozása",
+          "description": "Hozza létre flottakezelői fiókját a vállalati adatok megadásával."
+        },
+        "step2": {
+          "title": "2. lépés: Sofőrök hozzáadása",
+          "description": "A Sofőrkezelés menüpontban adjon hozzá sofőröket, akik így hozzáférést kapnak a rendszerhez.",
+          "list": [
+            "Adja meg a sofőr nevét és e-mail címét",
+            "A rendszer biztonságos belépési adatokat generál",
+            "A sofőr üdvözlő e-mailt kap az útmutatással"
+          ]
+        },
+        "step3": {
+          "title": "3. lépés: Munkaidő követése",
+          "description": "A sofőrök rögzítik a napi vezetési időt, a rendszer pedig automatikusan figyeli a keretidőket.",
+          "list": [
+            "Sofőrök rögzítik a napi vezetést",
+            "Valós idejű heti és kétheti összesítések",
+            "Automatikus figyelmeztetés a határértékek elérésekor"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Menedzsereknek",
+        "compliance": {
+          "title": "Szabálykövetés figyelése",
+          "description": "Lássa az egész flotta állapotát egy helyen."
+        },
+        "violations": {
+          "title": "Szabályszegések kezelése",
+          "description": "Automatikus rögzítés, ha egy sofőr túllépi a megengedett időkeretet."
+        },
+        "audit": {
+          "title": "Ellenőrzési napló",
+          "description": "Minden művelet naplózva van a hatósági megfelelőség érdekében."
+        }
+      },
+      "drivers": {
+        "title": "Sofőröknek",
+        "workflow": {
+          "title": "Napi folyamat",
+          "step1": {
+            "title": "Belépés a sofőr panelbe",
+            "description": "Használja a menedzserétől kapott adatokat."
+          },
+          "step2": {
+            "title": "Vezetési idő rögzítése",
+            "description": "Adja meg a nap végén az összesített vezetési időt."
+          },
+          "step3": {
+            "title": "Megfelelőség ellenőrzése",
+            "description": "Lássa a heti és kétheti összesített óráit."
+          },
+          "step4": {
+            "title": "Figyeljen a jelzésekre",
+            "description": "Az alkalmazás figyelmezteti, ha közelít a korlátokhoz."
+          }
+        }
+      },
+      "regulations": {
+        "title": "EU szabályozások megértése",
+        "limits": {
+          "title": "Főbb korlátok",
+          "weekly": "Heti korlát:",
+          "weeklyValue": "Maximum 56 óra vezetés hetente",
+          "fortnightly": "Kétheti korlát:",
+          "fortnightlyValue": "Maximum 90 óra bármely két egymást követő héten",
+          "footnote": "Az HourWise EU automatikusan figyeli mindkét korlátot."
+        }
+      },
+      "help": {
+        "title": "További segítségre van szüksége?",
+        "subtitle": "Vegye fel a kapcsolatot ügyfélszolgálatunkkal",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Adatvédelmi tájékoztató",
+    "sections": {
+      "intro": {
+        "title": "1. Bevezetés",
+        "p1": "Az HourWise EU platform segíti a szállítmányozó cégeket a szabálykövetésben és a flotta kezelésében.",
+        "p2": "A szolgáltatás használatával Ön elfogadja az adatok jelen tájékoztató szerinti kezelését."
+      },
+      "collect": {
+        "title": "2. Gyűjtött adatok",
+        "managers": {
+          "title": "2.1 Menedzserek által megadott adatok",
+          "items": [
+            "Fiók adatok: Név, cég és e-mail.",
+            "Sofőr adatok: Azonosító, születési idő, lakcím, vészhelyzeti kapcsolat.",
+            "Képesítések: Jogosítvány, GKI szám és lejárati dátumok."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Sofőrök által megadott adatok (App)",
+          "items": [
+            "Profil adatok: Név és e-mail.",
+            "Munkaidő: Kezdési és befejezési időpontok.",
+            "Kiadások: Összeg, leírás és bizonylat fotók."
+          ]
+        },
+        "app": {
+          "title": "2.3 App jogosultságok",
+          "description": "A működéshez az alkalmazás hozzáférést kér:",
+          "items": [
+            "Kamera: Dokumentumok és bizonylatok fotózásához.",
+            "Helyadatok: GPS koordináták rögzítése CSAK a műszak indításakor és lezárásakor audit célból. Nincs folyamatos háttérkövetés."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Adatfelhasználás",
+        "items": [
+          "Szabálykövetés: Vezetési idők és dokumentumok kezelése.",
+          "Bérszámfejtés: Bruttó összegek kalkulációja.",
+          "Kiadások kezelése: Visszatérítések feldolgozása.",
+          "Audit naplók: Hivatalos nyilvántartások vezetése."
+        ]
+      },
+      "security": {
+        "title": "4. Adatbiztonság",
+        "p1": "Minden adat sorszintű biztonsággal (RLS) védett. A dokumentumokat titkosított tárhelyen tároljuk."
+      },
+      "retention": {
+        "title": "5. Adatmegőrzés",
+        "p1": "A bér- és munkaügyi adatokat a jogszabályoknak megfelelően 3-6 évig őrizzük meg audit céljából."
+      },
+      "rights": {
+        "title": "6. Az Ön jogai (GDPR)",
+        "p1": "Önnek joga van az adataihoz hozzáférni, azokat helyesbíteni vagy törölni."
+      },
+      "contact": {
+        "title": "7. Kapcsolat",
+        "team": "HourWise EU Adatvédelmi Csapat",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Felhasználási feltételek",
+    "sections": {
+      "agreement": {
+        "title": "1. Feltételek elfogadása",
+        "p1": "Az HourWise EU platform használatával Ön elfogadja a jelen feltételeket."
+      },
+      "license": {
+        "title": "2. Felhasználási licenc",
+        "p1": "Ideiglenes engedély a platform üzleti célú használatára.",
+        "items": [
+          "Tilos az anyagok másolása vagy módosítása;",
+          "Tilos a szoftver visszafejtése (reverse engineering);",
+          "Tilos a szerzői jogi jelzések eltávolítása."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Adatok pontossága",
+        "p1": "Az HourWise eszközöket biztosít, de:",
+        "items": [
+          "Felhasználói felelősség: A menedzserek és sofőrök felelősek a rögzített adatok ellenőrzéséért.",
+          "Hatósági megfelelőség: A rendszer használata nem jelent automatikus mentességet a hatósági ellenőrzések alól.",
+          "Adatbeviteli hibák: Nem vállalunk felelősséget a hibásan bevitt adatokért."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Előfizetés és számlázás",
+        "p1": "A professzionális funkciók használata Stripe-on keresztül történő előfizetéshez kötött.",
+        "solo": {
+          "title": "4.1 Solo Sofőr terv",
+          "p1": "Havi számlázás az applikáción keresztül."
+        },
+        "fleet": {
+          "title": "4.2 Flottakezelő terv",
+          "p1": "A számlázás az aktív sofőrök száma alapján történik."
+        },
+        "general": {
+          "title": "4.3 Általános feltételek",
+          "items": [
+            "A befizetett díjak nem téríthetők vissza.",
+            "A fizetés elmaradása a hozzáférés felfüggesztését vonhatja maga után."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Felelősség korlátozása",
+        "p1": "A szolgáltatás „úgy, ahogy van” állapotban érhető el. Nem vállalunk felelősséget közvetett károkért."
+      },
+      "law": {
+        "title": "6. Irányadó jog",
+        "p1": "A jelen feltételekre az Egyesült Királyság (vagy az alkalmazandó helyi jog) törvényei az irányadók."
+      },
+      "changes": {
+        "title": "7. Változtatások",
+        "p1": "Fenntartjuk a jogot a feltételek módosítására 30 napos előzetes értesítéssel."
+      },
+      "contact": {
+        "title": "8. Kapcsolat",
+        "team": "HourWise EU Jogi Csapat",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Kapcsolat",
+    "subtitle": "Segítünk minden kérdésben.",
+    "general": {
+      "title": "Általános kérdések",
+      "description": "Partnerség vagy általános információk."
+    },
+    "technical": {
+      "title": "Technikai támogatás",
+      "description": "Ha technikai problémát észlel az alkalmazással."
+    },
+    "cta": "E-mail küldése"
+  },
+  "privacyRequest": {
+    "title": "Adatvédelmi és adatigénylési kérelem",
+    "form": {
+      "labels": {
+        "fullName": "Teljes név",
+        "email": "Regisztrált e-mail cím",
+        "requestType": "Kérelem típusa",
+        "additionalInfo": "További információ"
+      },
+      "placeholders": {
+        "fullName": "Ahogy az alkalmazásban szerepel",
+        "email": "pelda@email.hu",
+        "details": "Opcionális: részletek a kérelemmel kapcsolatban"
+      },
+      "requestTypes": {
+        "download": "Adatmásolat kérése (Hozzáférés)",
+        "deletion": "Fiók és adatok törlése (Elfeledtetés)"
+      },
+      "cta": "E-mail generálása",
+      "notices": {
+        "fleet": "Flotta sofőröknek: Először a flottakezelőjével egyeztesse a bérszámfejtési adatokat.",
+        "security": "A biztonság érdekében csak a regisztrált címről küldött kéréseket fogadjuk el. Feldolgozási idő: 30 nap."
+      },
+      "success": {
+        "title": "Kérelem előkészítve",
+        "message": "Az e-mail kliens megnyílt. Kattintson a **'Küldés'** gombra.",
+        "submitAnother": "Újabb kérelem küldése"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Sofőrkezelés",
+    "activeDrivers": "aktív sofőr",
+    "pendingInvites": "függő meghívó",
+    "inviteDriver": "Sofőr meghívása",
+    "labels": {
+      "name": "Név",
+      "email": "E-mail",
+      "compliance": "Megfelelőség",
+      "status": "Állapot"
+    },
+    "status": {
+      "active": "Aktív",
+      "inviteSent": "Meghívó elküldve",
+      "noDocuments": "Hiányzó dokumentumok",
+      "expired": "Lejárt dokumentum",
+      "compliant": "Szabálykövető",
+      "checkExpiry": "Lejárat ellenőrzése",
+      "expiresIn": "{{days}} nap múlva lejár",
+      "lost": "Megszakadt kapcsolat",
+      "linkMismatch": "Kapcsolati hiba"
+    },
+    "lostInviteNotice": "A meghívót elfogadták, de a profil összekapcsolása sikertelen. Ellenőrizze a company_id-t.",
+    "noDrivers": "Nem található sofőr vagy meghívó",
+    "incompleteSetup": "Hiányos beállítás"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Új sofőr meghívása",
+      "fullName": "Teljes név *",
+      "email": "E-mail cím *",
+      "payConfig": "Bérbeállítások",
+      "hourlyRate": "Órabér (Ft)",
+      "unpaidBreak": "Nem fizetett szünet (perc)",
+      "allowances": "Pótlékok",
+      "allowanceAmount": "Összeg (Ft)",
+      "unit": "Egység",
+      "units": {
+        "hour": "Óránként",
+        "day": "Naponta",
+        "week": "Hetente",
+        "month": "Havonta",
+        "shift": "Műszakonként",
+        "daily": "Napi",
+        "weekly": "Heti",
+        "monthly": "Havi"
+      },
+      "addAllowance": "Pótlék hozzáadása",
+      "overtime": "Túlóra",
+      "otThreshold": "Túlóra küszöb (óra)",
+      "otUnit": "Túlóra egység",
+      "otMultiplier": "Bérszorzó",
+      "additionalTiers": "További szintek",
+      "afterHours": "{{hours}} óra után",
+      "newMultiplier": "Új szorzó",
+      "addOtTier": "Új túlóra sáv",
+      "submit": "Meghívó küldése",
+      "submitting": "Küldés..."
+    },
+    "errors": {
+      "noCompany": "Nincs céghez rendelve.",
+      "generic": "Ismeretlen hiba történt."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "A próbaidőszak lejárt",
+      "unlockAccess": "Teljes hozzáférés feloldása",
+      "expiredSubtitle": "Fizessen elő az HourWise további használatához",
+      "accessSubtitle": "Korlátlan hozzáférés minden funkcióhoz",
+      "features": {
+        "invoicing": "Számlagenerálás",
+        "invoicingDesc": "Profi számlák az ügyfeleknek",
+        "expenses": "Kiadások követése",
+        "expensesDesc": "Minden üzleti költség egy helyen",
+        "compliance": "Vezetési idők",
+        "complianceDesc": "Yasal limitlerin takibi",
+        "reports": "Adóügyi jelentések",
+        "reportsDesc": "Adatmentés könyveléshez"
+      },
+      "perMonth": "/hónap",
+      "cancelAnytime": "Bármikor lemondható. Nincs hűségidő.",
+      "subscribeNow": "Előfizetés most",
+      "cancelSettings": "Lemondható a fiókbeállításokban",
+      "securePayment": "Biztonságos fizetés (Apple/Google)",
+      "instantAccess": "Azonnali hozzáférés fizetés után"
+    },
+    "manager": {
+      "fleetMember": "Flotta tag",
+      "partOf": "Ön a(z) {{company}} tagja",
+      "fleetAccess": "A teljes hozzáférést a cége biztosítja",
+      "soloTitle": "Solo Sofőr Előfizetés",
+      "manageDesc": "Előfizetés kezelése",
+      "status": {
+        "active": "Aktív",
+        "trial": "Próbaidőszak",
+        "inactive": "Inaktív"
+      },
+      "trialPeriod": "Próbaidőszak",
+      "trialDays": "Még {{count}} nap próbaidő",
+      "trialEnded": "A próbaidőszak véget ért",
+      "activeSub": "Aktív előfizetés",
+      "renewsOn": "Megújul: {{date}}",
+      "noActiveSub": "Nincs aktív előfizetés",
+      "subscribeAccess": "Fizessen elő a teljes hozzáféréshez",
+      "planLabel": "Csomag",
+      "soloPlan": "Solo Sofőr",
+      "priceLabel": "Ár",
+      "priceValue": "3.490 Ft/hónap",
+      "paymentLabel": "Fizetési mód",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Nincs beállítva",
+      "manageButton": "Kezelés",
+      "resubscribe": "Újra-előfizetés",
+      "subscribeNow": "Előfizetés most",
+      "manageAlert": "Az előfizetést az eszköze beállításaiban kezelheti.",
+      "demoAlert": "Az alkalmazáson belüli vásárlás itt indulna el."
+    },
+    "banner": {
+      "daysLeft": "{{count}} nap van hátra",
+      "lastDay": "Az utolsó nap",
+      "trialSuffix": " az ingyenes próbaidőszakból!",
+      "endsIn": "A próbaidő {{count}} nap múlva lejár",
+      "cta": "Fizessen elő havi 3.490 Ft-ért",
+      "subscribeNow": "Előfizetés most"
+    }
+  },
+  "reports": {
+    "title": "Flotta Jelentések",
+    "exportPdf": "Exportálás PDF-be / Nyomtatás",
+    "tabs": {
+      "payroll": "Bérszámfejtés",
+      "efficiency": "Hatékonyság",
+      "vehicleChecks": "Ellenőrzések",
+      "infractions": "Szabályszegések",
+      "driving": "Vezetés"
+    },
+    "filters": {
+      "title": "Szűrők",
+      "driver": "Sofőr",
+      "allDrivers": "Minden sofőr",
+      "startDate": "Kezdő dátum",
+      "endDate": "Záró dátum"
+    },
+    "payroll": {
+      "title": "Bérszámfejtési összesítő",
+      "headers": {
+        "driver": "Sofőr",
+        "workHours": "Munkaórák",
+        "breakHours": "Szünetek",
+        "sessions": "Műszakok"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Járműszemle jelentés",
+      "headers": {
+        "dateTime": "Dátum/Idő",
+        "inspector": "Személy",
+        "vehicle": "Jármű",
+        "status": "Állapot",
+        "defects": "Hibák"
+      },
+      "status": {
+        "pass": "MEGFELELT",
+        "defect": "HIBA"
+      },
+      "noneReported": "Nincs jelentve"
+    },
+    "infractions": {
+      "moduleReady": "Szabályszegés-összesítő kész."
+    },
+    "driving": {
+      "moduleReady": "Vezetési stílus elemző kész."
+    }
+  },
+  "broadcast": {
+    "title": "Közlemény küldése a flottának",
+    "placeholder": "Írja ide az üzenetet minden sofőrnek...",
+    "button": "Küldés mindenkinek",
+    "sending": "Küldés...",
+    "success": "Üzenet sikeresen elküldve!",
+    "errors": {
+      "empty": "Az üzenet nem lehet üres.",
+      "notLoaded": "Profil vagy cégazonosító hiba.",
+      "failed": "A küldés sikertelen."
+    }
+  },
+  "mfa": {
+    "title": "Kétlépcsős azonosítás (MFA)",
+    "subtitle": "Extra biztonság hitelesítő alkalmazással.",
+    "enabled": "Az MFA aktív.",
+    "disableButton": "Kikapcsolás",
+    "disabling": "Kikapcsolás...",
+    "step1": "1. Olvassa be a QR-kódot.",
+    "step2": "2. Adja meg a 6 jegyű kódot.",
+    "placeholder": "123456",
+    "verifyButton": "Ellenőrzés",
+    "verifying": "Ellenőrzés...",
+    "enableButton": "Bekapcsolás",
+    "starting": "Indítás...",
+    "confirmDisable": "Kikapcsolja az MFA-t?",
+    "successEnabled": "MFA sikeresen bekapcsolva!",
+    "successDisabled": "MFA kikapcsolva."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Felügyelők kezelése",
+      "count": "Összesen {{count}} felügyelő",
+      "notice": "A cégkóddal tudnak csatlakozni.",
+      "searchPlaceholder": "Keresés...",
+      "noSupervisors": "Nem található felügyelő",
+      "labels": {
+        "supervisor": "Felügyelő",
+        "email": "E-mail",
+        "status": "Állapot",
+        "edit": "Szerkesztés"
+      }
+    },
+    "modal": {
+      "title": "Felügyelő adatai",
+      "nameLabel": "Név",
+      "emailLabel": "E-mail (Csak olvasható)",
+      "phoneLabel": "Telefonszám",
+      "saveButton": "Mentés",
+      "errorUpdate": "Frissítés sikertelen."
+    }
+  },
+  "location": {
+    "notRecorded": "Helyszín nincs rögzítve",
+    "mapAlt": "Térkép középpontja: {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Flotta riasztások",
+    "urgent": "{{count}} SÜRGŐS",
+    "noAlerts": "Nincs sürgős riasztás.",
+    "offRoad": "Jármű üzemen kívül",
+    "dueOverdue": "{{type}} LEJÁRT",
+    "dueInDays": "{{type}} esedékes {{days}} nap múlva",
+    "viewFullList": "Teljes lista"
+  }
+}

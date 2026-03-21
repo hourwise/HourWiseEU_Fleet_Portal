@@ -1,122 +1,294 @@
 {
   "locale": "sk-SK",
+  "reportType": "Typ prehľadu",
+  "invoice": "Faktúra",
+  "dateRange": "Časové obdobie",
   "common": {
     "save": "Uložiť",
     "cancel": "Zrušiť",
-    "close": "Zatvoriť",
+    "close": "Zavrieť",
     "delete": "Vymazať",
+    "remove": "Odstrániť",
+    "upload": "Nahrať",
     "error": "Chyba",
     "success": "Úspech",
     "date": "Dátum",
     "startTime": "Čas začiatku",
     "endTime": "Čas ukončenia",
     "minutes": "minút",
-    "saving": "Ukladá sa...",
-    "failedToSave": "Nepodarilo sa uložiť dáta.",
-    "gotIt": "Rozumiem!"
+    "saving": "Ukladanie...",
+    "failedToSave": "Dáta sa nepodarilo uložiť.",
+    "gotIt": "Rozumiem!",
+    "logout": "Odhlásiť sa",
+    "openSettings": "Otvoriť nastavenia",
+    "retry": "Skúsiť znova"
+  },
+  "permissions": {
+    "notificationsTitle": "Povolenie upozornení",
+    "notificationsBody": "HourWise využíva upozornenia na zasielanie dôležitých varovaní ohľadom dodržiavania predpisov. Povoľte ich, prosím, aby ste nič nezmeškali.",
+    "locationTitle": "Prístup k polohe",
+    "locationBody": "HourWise potrebuje prístup k polohe na automatickú detekciu jazdy. Povoľte ju, prosím, v nastaveniach.",
+    "backgroundLocationTitle": "Poloha v pozadí",
+    "backgroundLocationBody": "Pre spoľahlivé sledovanie nastavte prístup k polohe na „Povoliť vždy“. Je to nevyhnutné pre automatickú detekciu jazdy, aj keď je aplikácia v pozadí.",
+    "cameraTitle": "Povolenie fotoaparátu",
+    "cameraBody": "HourWise vyžaduje prístup k fotoaparátu, aby ste mohli nahrávať fotografie výdavkov alebo iných dokumentov.",
+    "mediaLibraryTitle": "Prístup ku galérii",
+    "mediaLibraryBody": "HourWise vyžaduje prístup k vašej galérii, aby ste mohli vyberať fotografie výdavkov alebo dokumentov.",
+    "title": "Posledný krok",
+    "body": "HourWise vyžaduje povolenie k poloze a upozorneniam pre správne fungovanie. Vaša poloha sa využíva výhradne na automatickú detekciu jazdy.",
+    "button": "Udeliť oprávnenia",
+    "deniedTitle": "Vyžadované oprávnenia",
+    "deniedBody": "Trvalo ste zamietli nevyhnutné oprávnenia. Prejdite do nastavení zariadenia a povoľte Polohu (Vždy) a Upozornenia."
+  },
+  "messages": {
+    "title": "Správy",
+    "notificationTitle": "Nová správa flotily",
+    "systemNotificationTitle": "Systémové oznámenie",
+    "newMessageBodyFallback": "Máte novú správu.",
+    "noMessages": "Zatiaľ žiadne správy.",
+    "unread": "Neprečítané",
+    "read": "Prečítané",
+    "noUnread": "Všetko je vybavené! Žiadne neprečítané správy."
   },
   "app": {
     "title": "HourWise EU",
     "subtitle": "Sledovanie pracovného času EÚ"
   },
   "dashboard": {
-    "previousShiftEnd": "Koniec minulej smeny",
-    "currentShiftStart": "Začiatok aktuálnej smeny",
-    "newShiftStarted": "Smena zahájená",
+    "previousShiftEnd": "Koniec predchádzajúcej zmeny",
+    "currentShiftStart": "Začiatok aktuálnej zmeny",
+    "newShiftStarted": "Zmena zahájená",
     "dailyRest": "Denný odpočinok",
     "workTimeRemaining": "Zostávajúci pracovný čas",
     "drivingTimeRemaining": "Zostávajúci čas jazdy",
-    "breakDuration": "Trvanie prestávky",
-    "startShift": "Začať smenu",
-    "endShift": "Ukončiť smenu",
+    "breakDuration": "Dĺžka prestávky",
+    "poaDuration": "Doba pohotovosti (POA)",
+    "startShift": "Začať zmenu",
+    "endShift": "Ukončiť zmenu",
     "startBreak": "Začať prestávku",
     "endBreak": "Ukončiť prestávku",
     "poaButtonText": "POHOTOVOSŤ / ČAKANIE",
     "resumeWork": "Pokračovať v práci",
     "currentStatusLabel": "Aktuálny stav:",
     "timerModeLabel": "Režim časovača:",
-    "shiftDurationLabel": "Trvanie smeny:",
-    "targetLabel": "Cieľ"
+    "shiftDurationLabel": "Dĺžka zmeny:",
+    "targetLabel": "Cieľ",
+    "checkVehicle": "Kontrola vozidla",
+    "checkOk": "Kontrola OK",
+    "checklistRequired": "Vyžadovaný kontrolný zoznam",
+    "fleetChecklistNotice": "Vodiči flotily musia pred začatím zmeny vykonať bezpečnostnú kontrolu vozidla.",
+    "complianceDue": "Termín {{type}}",
+    "daysLeft": "Zostáva dní"
+  },
+  "vehicleChecklist": {
+    "title": "Denná bezpečnostná kontrola",
+    "updateTitle": "Aktualizovať kontrolu",
+    "vehicleDetails": "Detaily vozidla",
+    "registration": "Evidenčné číslo (EČV)",
+    "vehicleMake": "Značka vozidla (voliteľné)",
+    "odometer": "Stav tachometra",
+    "internalChecks": "Interná kontrola",
+    "externalChecks": "Externá kontrola",
+    "defectReporting": "Hlásenie porúch",
+    "defectPlaceholder": "Popíšte poruchu a vykonané opatrenia...",
+    "submitReport": "Odoslať hlásenie",
+    "updateReport": "Aktualizovať hlásenie",
+    "currentShiftVehicles": "Vozidlá v tejto zmene",
+    "swapVehicle": "Vymeniť vozidlo",
+    "newVehicleTitle": "Nové vozidlo",
+    "newVehicleMessage": "Týmto zahájite novú kontrolu pre iné vozidlo. Pokračovať?",
+    "startNew": "Začať novú",
+    "success": "Úspech",
+    "checkRecorded": "Kontrola zaznamenaná.",
+    "error": "Chyba",
+    "failedToSave": "Uloženie sa nezdařilo.",
+    "missingReg": "Zadajte EČV.",
+    "incomplete": "Odpovedzte na všetky položky.",
+    "missingDefectDetails": "Popíšte problém.",
+    "hintLabel": "Nápoveda",
+    "items": {
+      "mirrors": "Zrkadlá a sklá",
+      "mirrorsHint": "Skontrolujte praskliny/nálepky; uistite sa, že sú zrkadlá nastavené.",
+      "wipers": "Stierače a ostrekovače",
+      "wipersHint": "Skontrolujte funkčnosť a hladinu kvapaliny.",
+      "front_view": "Výhľad dopredu",
+      "front_viewHint": "Plná viditeľnosť cez čelné sklo kabíny.",
+      "warning_lamps": "Kontrolky",
+      "warning_lampsHint": "Uistite sa, že varovné kontrolky vozidla fungujú správne.",
+      "steering": "Riadenie",
+      "steeringHint": "Hladký pohyb a správna funkcia.",
+      "horn": "Klaksón",
+      "hornHint": "Otestujte jasný a funkčný zvuk.",
+      "brakes_air": "Brzdy a tlak vzduchu",
+      "brakes_airHint": "Skontrolujte funkciu bŕzd a nárast tlaku vzduchu.",
+      "height_marker": "Označenie výšky",
+      "height_markerHint": "Zobrazené správne označenie výšky vozidla.",
+      "seatbelts": "Bezpečnostné pásy",
+      "seatbeltsHint": "Skontrolujte, či všetky pásy fungujú správne.",
+      "lights_ind": "Svetlá a blinkre",
+      "lights_indHint": "Všetky svetlá a ukazovatele smeru sú funkčné.",
+      "leaks": "Úniky paliva/oleja",
+      "leaksHint": "Skontrolujte kaluže pod vozidlom alebo na podvozku.",
+      "battery": "Zaistenie batérie",
+      "batteryHint": "Skontrolujte, či je batéria upevnená a v dobrom stave.",
+      "adblue": "Kvapalina AdBlue",
+      "adblueHint": "Dostatočná hladina kvapaliny pre výfukové plyny.",
+      "smoke": "Nadmerný dym z výfuku",
+      "smokeHint": "Skontrolujte, či vozidlo nadmerne nedymí.",
+      "body_wings": "Zaistenie karosérie/blatníkov",
+      "body_wingsHint": "Uistite sa, že žiadne časti nie sú voľné alebo neodpadávajú.",
+      "spray": "Zástery (proti striekaniu)",
+      "sprayHint": "Bezpečne upevnené a spĺňajúce legislatívu.",
+      "tyres_wheels": "Pneumatiky a upevnenie kolies",
+      "tyres_wheelsHint": "Matice/skrutky dotiahnuté. Dezén a tlak v norme.",
+      "brake_line": "Brzdové potrubie",
+      "brake_lineHint": "Skontrolujte poškodenie alebo úniky vzduchu.",
+      "electrical": "Elektrické spoje",
+      "electricalHint": "Individuálne testy všetkých pripojení.",
+      "coupling": "Zaistenie spojovacieho zariadenia",
+      "couplingHint": "Skontrolujte, či je vozidlo bezpečne pripojené k nákladu.",
+      "load_security": "Zabezpečenie nákladu",
+      "load_securityHint": "Hmotnosť rovnomerne rozložená a náklad zaistený.",
+      "number_plate": "Evidenčné číslo",
+      "number_plateHint": "Upevnené a plne čitateľné.",
+      "reflectors": "Odrazky a svetlá",
+      "reflectorsHint": "Bezpečne upevnené a viditeľné.",
+      "markers": "Značenie",
+      "markersHint": "Všetky povinné značenia bezpečne upevnené."
+    }
+  },
+  "vehicleManagement": {
+    "title": "Správa vozidiel",
+    "sections": {
+      "identity": "Identita vozidla",
+      "compliance": "Zhoda a bezpečnosť"
+    },
+    "fields": {
+      "registration": {
+        "label": "Evidenčné číslo (EČV) *",
+        "placeholder": "NAPR. BA 123AB"
+      },
+      "make": {
+        "label": "Značka",
+        "placeholder": "Scania"
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "R450"
+      },
+      "type": "Typ vozidla",
+      "odometer": {
+        "label": "Aktuálny stav tachometra",
+        "unit": "KM"
+      },
+      "motDate": "Dátum STK",
+      "pmiDate": "Nasledujúci servis (PMI)",
+      "tachoDate": "Kalibrácia tachografu",
+      "lolerDate": "Revízia zdvíhacieho zariadenia",
+      "insuranceDate": "Expirácia poistenia"
+    },
+    "complianceNotice": "Termíny zhody aktivujú systém „semaforu“ na nástenke. Položky po termíne budú označené.",
+    "saveButton": "Uložiť detaily vozidla",
+    "selectDate": "Vybrať dátum",
+    "alerts": {
+      "regRequired": "Evidenčné číslo je povinné",
+      "saveSuccess": "Detaily vozidla úspešne uložené",
+      "duplicateReg": "Toto evidenčné číslo je už zaregistrované.",
+      "saveError": "Nepodarilo sa uložiť detaily vozidla"
+    }
   },
   "shiftSummary": {
-    "title": "Aktuálna smena",
+    "title": "Aktuálna zmena",
     "totalWork": "Práca celkom",
-    "totalDriving": "Jazda celkom",
+    "totalDriving": "Riadenie celkom",
     "totalBreaks": "Prestávky celkom",
     "totalPOA": "Pohotovosť celkom"
   },
+  "endShiftConfirmation": {
+    "title": "Potvrdenie ukončenia zmeny",
+    "shiftSummary": "Záverečné zhrnutie zmeny",
+    "violationsFound": "Nájdené porušenia",
+    "greatJob": "Skvelá práca!",
+    "noViolations": "Pre túto zmenu nebudú zaznamenané žiadne porušenia.",
+    "confirmEnd": "Potvrdiť a ukončiť zmenu"
+  },
   "menu": {
-    "instructions": "Inštrukcie",
-    "privacyInfo": "Ochrana súkromia",
+    "instructions": "Návod",
+    "privacyInfo": "Súkromie",
     "euWorkingTimeRules": "Pravidlá EÚ",
-    "tachoGuide": "Príručka tachografu",
-    "compliance": "Súlad s pravidlami",
+    "tachoGuide": "Príručka tacho",
+    "compliance": "Zhoda",
     "workHistory": "História práce",
-    "downloadReport": "Stiahnuť report"
+    "addExpense": "Pridať výdavky",
+    "downloadReport": "Stiahnuť výkaz"
   },
   "workHistory": {
     "title": "História práce",
-    "daySummary": "Denný prehľad",
-    "recordedShifts": "Zaznamenané smeny",
+    "daySummary": "Denné zhrnutie",
+    "recordedShifts": "Zaznamenané zmeny",
     "totalWork": "Práca celkom",
+    "totalDriving": "Riadenie celkom",
     "totalBreaks": "Prestávky celkom",
     "totalPOA": "Pohotovosť celkom",
     "estimatedEarnings": "Odhadovaný zárobok",
-    "ongoing": "Prebieha",
+    "ongoing": "Prebiehajúca",
     "workTime": "Pracovný čas",
-    "noShifts": "Pre tento dátum nie sú záznamy.",
-    "noShiftsRecordedForDate": "Pre tento dátum nie sú záznamy.",
-    "addShift": "Pridať smenu",
-    "editShift": "Upraviť smenu",
-    "updateShift": "Aktualizovať smenu",
+    "noShifts": "Pre tento dátum nie sú zaznamenané žiadne zmeny.",
+    "noShiftsRecordedForDate": "Pre tento dátum nie sú zaznamenané žiadne zmeny.",
+    "addShift": "Pridať zmenu",
+    "editShift": "Upraviť zmenu",
+    "updateShift": "Aktualizovať zmenu",
     "totalBreakTime": "Celkový čas prestávok",
     "totalPOATime": "Celkový čas pohotovosti",
     "noShiftsTitle": "Deň odpočinku"
   },
   "calendar": {
-    "dayDetailsTitle": "Podrobnosti dňa",
-    "timeSummaryTitle": "Prehľad času",
-    "paySummaryTitle": "Prehľad platieb",
+    "dayDetailsTitle": "Detaily dňa",
+    "timeSummaryTitle": "Zhrnutie času",
+    "paySummaryTitle": "Zhrnutie mzdy",
     "period": "Obdobie",
     "worked": "Odpracované",
     "breaks": "Prestávky",
     "violations": "Porušenia",
     "estimatedPay": "Odh. mzda",
-    "lastCompletedWeek": "Posledný ukončený týždeň",
+    "lastCompletedWeek": "Posledný dokončený týždeň",
     "currentWeek": "Aktuálny týždeň",
-    "monthToDate": "Aktuálny mesiac",
+    "monthToDate": "Mesiac k dnešku",
     "selectedMonthSummary": "Vybraný mesiac",
-    "lastWeekOfSelectedMonth": "Posledný týždeň mesiaca"
+    "lastWeekOfSelectedMonth": "Posledný týždeň mesiaca",
+    "complianceReminders": "Pripomienky zhody",
+    "renewalDue": "Termín obnovy {{type}}"
   },
   "fatigue": {
     "title": "Index únavy a sústredenia",
-    "fullyAlert": "Úplne bdelý",
+    "fullyAlert": "Plne v strehu",
     "freshAndFocused": "Svieži a sústredený",
     "mild": "Mierna únava",
     "moderate": "Stredná únava",
     "high": "Vysoká únava",
     "critical": "Kritická únava",
-    "approaching13h": "Blížite sa k 13h výkonu. Naplánujte si odpočinok.",
+    "approaching13h": "Blížite sa k 13 hodinám výkonu. Naplánujte si odpočinok.",
     "over10h": "Dnes odpracovaných viac ako 10 hodín.",
-    "need45minBreak": "Pri smenách nad 9h sa vyžaduje 45-minútová prestávka.",
-    "need30minBreak": "Pri smenách nad 6h sa vyžaduje 30-minútová prestávka.",
-    "drivingExceeded10h": "Dnešný čas jazdy prekročil 10 hodín.",
-    "drivingOver9h": "Jazda nad 9 hodín (použitie predĺženia).",
-    "dailyRestBelow9h": "Denný odpočinok klesol pod zákonné minimum 9h.",
-    "reducedDailyRest": "Využitý skrátený denný odpočinok (pod 11h)."
+    "need45minBreak": "Pri zmenách nad 9 hodín je vyžadovaná 45-minútová prestávka.",
+    "need30minBreak": "Pri zmenách nad 6 hodín je vyžadovaná 30-minútová prestávka.",
+    "drivingExceeded10h": "Dnes prekročených 10 hodín riadenia.",
+    "drivingOver9h": "Riadenie nad 9 hodín (využitie výnimky).",
+    "dailyRestBelow9h": "Denný odpočinok bol pod zákonným minimom 9 hodín.",
+    "reducedDailyRest": "Čerpaný skrátený denný odpočinok (pod 11 hodín).",
+    "workTimeExceeded": "Limit pracovného času prekročen o {{time}}."
   },
   "complianceScorecard": {
-    "title": "Denné skóre dodržiavania pravidiel",
+    "title": "Denná karta zhody",
     "outOf100": "zo 100",
     "violationsRecorded": "Zaznamenané porušenia:",
     "greatJob": "Skvelá práca!",
-    "noViolations": "Pre tento deň neboli zaznamenané žiadne porušenia."
+    "noViolations": "Pre tento deň neboli zaznamenané žiadne porušenia predpisov."
   },
   "dailyReport": {
-    "title": "Včerajší report",
+    "title": "Včerajší výkaz",
     "violationsFound": "Nájdené porušenia",
-    "greatJob": "Výborne!",
-    "noViolations": "Vo včerajšej smene neboli zaznamenané žiadne porušenia."
+    "greatJob": "Dobrá práca!",
+    "noViolations": "Vo včerajšej zmene neboli zaznamenané žiadne porušenia."
   },
   "day": {
     "mon": "Po",
@@ -128,15 +300,25 @@
     "sun": "Ne"
   },
   "safetyWarning": {
-    "title": "Bezpečnostné upozornenie",
-    "body": "Nepoužívajte aplikáciu počas jazdy. Pred zmenami bezpečne zastavte.",
+    "title": "Bezpečnostné varovanie",
+    "body": "Nemanipulujte s aplikáciou počas riadenia. Pred vykonávaním zmien bezpečne zastavte.",
     "acknowledge": "Rozumiem"
+  },
+  "firstTimeSetup": {
+    "title": "Vitajte v HourWise!",
+    "subtitle": "Pár krokov pre správny začiatok:",
+    "step1_new": "Najskôr si nastavíte profil vodiča a mzdové údaje.",
+    "step2_new": "Potom pridáte svoju poslednú dokončenú zmenu pre správny výpočet odpočinku.",
+    "step3_new": "Následne vás požiadame o potrebné oprávnenia pre presné sledovanie.",
+    "step4_new": "Nakoniec môžete začať sledovať svoje zmeny a zárobky.",
+    "button": "Rozumiem, ideme na to!"
   },
   "settingsMenu": {
     "manageSubscription": "Spravovať predplatné",
     "businessProfile": "Firemný profil",
     "driverSettings": "Nastavenia vodiča",
     "selectLanguage": "Vybrať jazyk",
+    "vehicleManagement": "Správa vozidiel",
     "timezone": {
       "label": "Časové pásmo"
     },
@@ -145,118 +327,113 @@
     }
   },
   "driverSetup": {
-    "header": {
-      "welcomeSetup": "Úvodné nastavenie",
-      "driverSettings": "Nastavenia vodiča"
-    },
-    "sections": {
-      "personalInformation": "Osobné údaje",
-      "companyLink": "Prepojenie s firmou",
-      "payConfiguration": "Konfigurácia mzdy"
-    },
-    "fields": {
-      "driverNameLabel": "Meno vodiča",
-      "basicHourlyRate": "Základná hodinová sadzba",
-      "unpaidBreakDuration": "Dĺžka neplatenej prestávky (minúty)"
-    },
-    "placeholders": {
-      "enterFullName": "Zadajte celé meno",
-      "hourlyRate": "napr. 15.00",
-      "unpaidBreak": "napr. 45"
-    },
-    "company": {
-      "codeOptionalLabel": "Kód prepojenia firmy (voliteľný)",
-      "codePlaceholder": "Zadajte kód firmy",
-      "helperText": "Zadajte kód od vašej firmy na pripojenie k ich flotile.",
-      "linkedToCompany": "Prepojené s firmou"
-    },
-    "allowances": {
-      "title": "Príplatky k smene",
-      "addAllowance": "Pridať príplatok"
-    },
-    "overtime": {
-      "title": "Pravidlá nadčasov",
-      "thresholdLabel": "Hranica pre nadčas",
-      "thresholdPlaceholder": "napr. 40",
-      "rateMultiplierLabel": "Násobiteľ sadzby",
-      "rateMultiplierPlaceholder": "napr. 1.5",
-      "additional": {
-        "addTier": "Pridať ďalšiu úroveň"
-      }
-    },
-    "units": {
-      "overtime": {
-        "day": "za deň",
-        "week": "za týždeň",
-        "month": "za mesiac"
-      },
-      "allowance": {
-        "hour": "za hodinu",
-        "day": "za deň",
-        "week": "za týždeň",
-        "month": "za mesiac",
-        "shift": "za smenu"
-      }
-    }
+    "title": "Nastavenia vodiča",
+    "notAuthenticated": "Užívateľ nie je prihlásený. Reštartujte, prosím, aplikáciu.",
+    "hourlyRate": "Hodinová sadzba",
+    "unpaidBreak": "Neplatená prestávka",
+    "minutes": "Minúty",
+    "overtimeThreshold": "Prah pre nadčasy",
+    "hours": "Hodín týždenne",
+    "overtimeMultiplier": "Koeficient pre nadčasy",
+    "shiftAllowances": "Príplatky za zmenu",
+    "additionalOvertime": "Ďalšie úrovne nadčasov",
+    "threshold": "Prah (hodiny)",
+    "rate": "Sadzba (€)",
+    "addTier": "Pridať úroveň",
+    "skip": "Nateraz preskočiť",
+    "save": "Uložiť a pokračovať",
+    "validationError": "Chyba validácie",
+    "pleaseEnterName": "Zadajte, prosím, svoje meno."
   },
   "instructions": {
     "title": "Ako používať HourWise",
     "disclaimer": {
-      "title": "Oficiálne pokyny majú prednosť",
-      "body": "Táto aplikácia je nástroj na pomoc s dodržiavaním pravidiel, ale nenahrádza oficiálne školenie ani právne poradenstvo. Vždy sa riaďte predpismi EÚ a pravidlami vašej spoločnosti."
+      "title": "Oficiálne pokyny sú prioritou",
+      "body": "Táto aplikácia je nástroj na podporu dodržiavania predpisov, nie náhrada za oficiálne školenie alebo právne poradenstvo. Vždy sa riaďte nariadeniami EÚ a firemnými smernicami."
     },
     "initialSetup": {
       "title": "Prvé kroky",
       "step1": {
-        "title": "1. Zadajte poslednú smenu (Kľúčové!)",
-        "body": "Pre správny výpočet „Denného odpočinku“ MUSÍTE manuálne zadať podrobnosti o poslednej ukončenej smene v Histórii práce."
+        "title": "1. Vyplňte profil vodiča",
+        "body": "Ako samostatný vodič MUSÍTE pri prvom nastavení nakonfigurovať svoju mzdu (sadzby, prestávky), aby boli odhady a výkazy presné."
       },
       "step2": {
-        "title": "2. Vyplňte profil vodiča",
-        "body": "Prejdite do Nastavenia -> Nastavenia vodiča. Vaše meno je potrebné pre reporty."
+        "title": "2. Zadajte poslednú zmenu (Dôležité!)",
+        "body": "Pre správny výpočet „denného odpočinku“ MUSÍTE ručne zadať detaily svojej poslednej dokončenej zmeny (Menu -> História práce)."
       },
       "step3": {
         "title": "3. Pridajte firemné údaje (Voliteľné)",
-        "body": "Pre fakturáciu prejdite do Firemného profilu. Údaje sa automaticky objavia na PDF faktúrach."
+        "body": "Na účely fakturácie prejdite do Nastavenia -> Firemný profil. Údaje sa automaticky zobrazia na PDF faktúrach."
       }
     },
     "workflow": {
-      "title": "Denný postup",
+      "title": "Denný proces",
       "step1": {
-        "title": "1. Začiatok a koniec smeny",
-        "body": "Používajte hlavné tlačidlá. Aplikácia všetko zaznamenáva a automaticky počíta súhrny."
+        "title": "1. Začatie a ukončenie zmeny",
+        "body": "Používajte hlavné tlačidlá „Začať zmenu“ a „Ukončiť zmenu“. Na konci zmeny uvidíte zhrnutie a prípadné porušenia."
+      },
+      "step5": {
+        "title": "2. Denná kontrola vozidla",
+        "body": "Vykonajte kontrolu vozidla pomocou tlačidla „Kontrola vozidla“. Pre vodičov flotily je to povinné a zahŕňa hlásenie porúch a stavu tachometra."
       },
       "step2": {
-        "title": "2. Automatická detekcia jazdy",
-        "body": "Aplikácia detekuje jazdu na základe pohybu a prepne váš stav na „Jazda“. Pri zastavení sa vráti k „Práci“."
+        "title": "3. Automatická detekcia jazdy",
+        "body": "Aplikácia automaticky detekuje jazdu na základe rýchlosti a pohybu a prepne váš stav na „Riadenie“. Po zastavení sa vráti na „Práca“."
       },
       "step3": {
-        "title": "3. Prestávka",
-        "body": "Stlačte „Začať prestávku“. Nepretržitá prestávka aspoň 45 minút resetuje váš 4,5-hodinový časovač jazdy."
+        "title": "4. Čerpanie prestávky",
+        "body": "Stlačte „Začať prestávku“ pre pozastavenie časovačov práce. Nepretržitá prestávka v dĺžke aspoň 45 minút resetuje časovač 4,5 hodiny riadenia."
       },
       "step4": {
-        "title": "4. Pohotovosť (POA)",
-        "body": "Používajte „Pohotovosť / Čakanie“ pre obdobia, keď ste k dispozícii, ale nepracujete (napr. čakanie na nakládku)."
+        "title": "5. Pohotovosť (POA)",
+        "body": "Používajte „Pohotovosť / Čakanie“ pre doby, kedy ste k dispozícii, ale nepracujete aktívne (napr. čakáte na rampu)."
       }
     },
     "keyFeatures": {
       "title": "Kľúčové funkcie",
       "fatigue": {
-        "title": "Sledovanie únavy a sústredenia",
-        "body": "Varovania v reálnom čase pred nedostatkom odpočinku, blížiacimi sa prestávkami a limitmi jazdy.",
-        "audioWarning": "Aplikácia poskytuje zvukové výstrahy pre kritické varovania. Zapnite si zvuk."
+        "title": "Monitor únavy a sústredenia",
+        "body": "Zobrazuje sa na hlavnej obrazovke a v reálnom čase varuje pred nedostatočným odpočinkom alebo blížiacimi sa limitmi."
+      },
+      "messaging": {
+        "title": "Aktualizácie a varovania",
+        "body": "Dostávajte dôležité systémové oznámenia a správy od svojho dispečera priamo v aplikácii."
+      },
+      "compliance": {
+        "title": "Kalendár zhody",
+        "body": "Zobrazuje skóre dodržiavania predpisov pre každý deň. Klepnutím zobrazíte detailný mesačný prehľad."
       },
       "history": {
-        "title": "História práce a úpravy",
-        "body": "V hlavnom menu vyberte „História práce“. Tu môžete:",
-        "bullets": [
-          "Kliknutím na deň zobraziť detailný súhrn smeny.",
-          "Manuálne pridávať alebo upravovať minulé smeny kedykoľvek."
-        ]
+        "title": "História a úpravy",
+        "body": "V menu „História práce“ môžete prehliadať minulé zmeny a ručne ich pridávať alebo upravovať pre opravu záznamov."
+      },
+      "expenses": {
+        "title": "Sledovanie výdavkov",
+        "body": "Zaznamenávajte náklady na palivo či stravu. Účtenky môžete skenovať fotoaparátom a aplikácia sa pokúsi dáta vyplniť automaticky."
       },
       "reports": {
-        "title": "Stiahnuť reporty a faktúry",
-        "body": "Generujte profesionálne PDF súhrny svojej práce alebo faktúry pre zákazníkov za ľubovoľné obdobie."
+        "title": "Sťahovanie výkazov a faktúr",
+        "body": "Generujte profesionálne PDF výkazy práce, faktúry pre zákazníkov alebo históriu kontrol vozidla."
+      },
+      "dailyReport": {
+        "title": "Denná správa o zhode",
+        "body": "Pri prvom otvorení aplikácie v danom dni uvidíte zhrnutie prípadných porušení z predchádzajúceho dňa."
+      },
+      "qualifications": {
+        "title": "Profesijná kvalifikácia",
+        "body": "Spravujte údaje o vodičskom preukaze, kvalifikačnej karte vodiča (KKV) a karte do tachografu s monitorovaním expirácie."
+      },
+      "vehicles": {
+        "title": "Správa vozidiel (Solo)",
+        "body": "Sledujte termíny STK, servisu a kalibrácie tachografu pomocou farebného varovného systému."
+      },
+      "safetyChecks": {
+        "title": "Digitálne kontrolné zoznamy",
+        "body": "Vykonávajte kompletné prehliadky vozidla a veďte si digitálny denník všetkých kontrol a porúch."
+      },
+      "invoicing": {
+        "title": "Fakturácia a firemný profil",
+        "body": "Nastavte si firemný profil a generujte profesionálne PDF faktúry, ktoré automaticky zahŕňajú vypočítané zárobky."
       }
     },
     "footer": {
@@ -264,55 +441,55 @@
     }
   },
   "euRules": {
-    "title": "Pravidlá EÚ a časy jazdy",
-    "closeButton": "Zatvoriť",
+    "title": "Pravidlá EÚ a doba riadenia",
+    "closeButton": "Zavrieť",
     "accessibility": {
-      "closeRules": "Zatvoriť pravidlá",
-      "closeAndReturn": "Zatvoriť a vrátiť sa"
+      "closeRules": "Zavrieť pravidlá",
+      "closeAndReturn": "Zavrieť a vrátiť sa"
     },
     "about": {
       "title": "O týchto pravidlách",
-      "description": "Táto obrazovka zhŕňa kľúčové pokyny EÚ pre časy jazdy a odpočinku vodičov."
+      "description": "Táto obrazovka zhrňuje kľúčové pravidlá EÚ pre dobu riadenia a odpočinku. Vždy sa riaďte oficiálnymi predpismi."
     },
     "overview": {
       "title": "Prehľad",
-      "point1": "Sledujte presne prácu, prestávky, pohotovosť a jazdu.",
-      "point2": "Plánujte prestávky včas, aby ste predišli porušeniam.",
-      "point3": "Skrátený odpočinok a predĺženia jazdy využívajte opatrne."
+      "point1": "Sledujte presne prácu, prestávky, pohotovosť a riadenie.",
+      "point2": "Plánujte prestávky včas, aby ste predišli priestupkom.",
+      "point3": "Skrátený odpočinok a predĺženie riadenia využívajte uvážlivo."
     },
     "drivingLimits": {
-      "title": "Limity času jazdy",
+      "title": "Limity doby riadenia",
       "daily": {
-        "label": "Denný limit jazdy:",
+        "label": "Denná doba riadenia:",
         "description": "9 hodín (možno predĺžiť na 10 hodín dvakrát týždenne)."
       },
       "weekly": {
-        "label": "Týždenný limit jazdy:",
+        "label": "Týždenná doba riadenia:",
         "description": "56 hodín."
       },
       "fortnightly": {
-        "label": "Dvojtýždňový limit jazdy:",
+        "label": "Dvojtýždňová doba riadenia:",
         "description": "90 hodín."
       },
       "breaks": {
-        "label": "Prestávky v jazde:",
-        "description": "Po 4,5 hodinách jazdy si urobte 45-minútovú prestávku."
+        "label": "Prestávky v riadení:",
+        "description": "Po 4,5 hodinách riadenia musí nasledovať 45-minútová prestávka."
       },
-      "breaksSplitExample": "Týchto 45 minút je možné rozdeliť na 15 min + 30 min (v tomto poradí)."
+      "breaksSplitExample": "Prestávku 45 minút možno rozdeliť na 15 minút + 30 minút (v tomto poradí)."
     },
     "restPeriods": {
       "title": "Doby odpočinku",
       "daily": {
         "title": "Denný odpočinok:",
-        "regular": "Pravidelný denný odpočinok: aspoň 11 hodín.",
+        "regular": "Bežný denný odpočinok: aspoň 11 hodín.",
         "reduced": "Skrátený denný odpočinok: aspoň 9 hodín (obmedzené použitie).",
-        "split": "Delený denný odpočinok: celkovo aspoň 12 hodín (napr. 3 + 9)."
+        "split": "Delený denný odpočinok: celkom aspoň 12 hodín (napr. 3 + 9)."
       },
       "weekly": {
         "title": "Týždenný odpočinok:",
-        "regular": "Pravidelný týždenný odpočinok: aspoň 45 hodín.",
-        "reduced": "Skrátený týdenný odpočinok: aspoň 24 hodín (vyžaduje náhradu).",
-        "frequency": "Týždenný odpočinok sa musí čerpať v rámci stanovených období."
+        "regular": "Bežný týždenný odpočinok: aspoň 45 hodín.",
+        "reduced": "Skrátený týždenný odpočinok: aspoň 24 hodín (vyžaduje náhradu).",
+        "frequency": "Týždenný odpočinok musí začať najneskôr po šiestich 24-hodinových úsekoch."
       }
     },
     "workingTimeLimits": {
@@ -323,71 +500,71 @@
       },
       "avgWeekly": {
         "label": "Priemerný týždenný pracovný čas:",
-        "description": "Priemerne 48 hodín za referenčné obdobie."
+        "description": "48 hodín v priemere za referenčné obdobie."
       },
       "nightWork": {
         "label": "Limit pre nočnú prácu:",
-        "description": "Zvyčajne 10 hodín v akomkoľvek 24-hodinovom období."
+        "description": "Spravidla 10 hodín v úseku 24 hodín (môže sa líšiť podľa zmlúv)."
       }
     },
     "workBreaks": {
-      "title": "Požiadavky na prestávky v práci",
-      "intro": "Prestávky v pracovnom čase závisia od celkového počtu odpracovaných hodín.",
+      "title": "Prestávky v pracovnom čase",
+      "intro": "Povinné prestávky závisia od celkového počtu odpracovaných hodín.",
       "rules": {
-        "sixToNine": "Ak pracujete viac ako 6 hodín: aspoň 30-minútová prestávka (celkom).",
-        "ninePlus": "Ak pracujete viac ako 9 hodín: aspoň 45-minútová prestávka (celkom)."
+        "sixToNine": "Práca nad 6 hodín: celkom aspoň 30 minút prestávky.",
+        "ninePlus": "Práca nad 9 hodín: celkom aspoň 45 minút prestávky."
       },
-      "noteDriving": "Prestávky v jazde (pravidlo 4,5h) sú samostatné a musia sa tiež dodržiavať."
+      "noteDriving": "Prestávky v riadení (pravidlo 4,5h) sú samostatné a musia byť tiež dodržané."
     },
     "interaction": {
       "title": "Ako to aplikácia sleduje",
-      "point1": "Časovače práce a jazdy bežia pri aktivite; pohotovosť pozastavuje pracovný cyklus.",
-      "point2": "Uznateľná prestávka môže resetovať váš 4,5-hodinový cyklus jazdy."
+      "point1": "Časovače práce a riadenia bežia pri aktivite; Pohotovosť pozastavuje pracovný cyklus.",
+      "point2": "Platná prestávka resetuje váš cyklus 4,5 hodiny riadenia."
     }
   },
   "tachoGuide": {
-    "title": "Návod na ručný záznam do tachografu",
+    "title": "Príručka pre ručný záznam do tachografu",
     "prepare": {
       "title": "Príprava",
       "point1": "Majte pripravenú kartu vodiča.",
       "point2": "Uistite sa, že je tachograf v režime ručného zadávania.",
-      "point3": "Skontrolujte nastavenie času a časového pásma na prístroji."
+      "point3": "Skontrolujte čas a nastavenie časového pásma na jednotke."
     },
     "confirmManualEntry": {
-      "title": "Potvrdiť ručný záznam",
-      "point1": "Potvrďte, že chcete pridať aktivity od posledného vybratia karty."
+      "title": "Potvrdiť ručné zadanie",
+      "point1": "Potvrďte, že chcete doplniť aktivity od posledného vybratia karty."
     },
     "enterActivities": {
       "title": "Zadať aktivity",
       "point1": "Vyberte správny typ aktivity (odpočinok/práca/pohotovosť).",
-      "point2": "Presne zadajte čas začiatku a ukončenia.",
-      "point3": "Opakujte pre každé chýbajúce obdobie.",
-      "point4": "Skontrolujte, či sekvencia súhlasí so skutočnosťou."
+      "point2": "Zadajte presne čas začiatku a ukončenia.",
+      "point3": "Opakujte pre každý chýbajúci úsek.",
+      "point4": "Skontrolujte, či postupnosť zodpovedá skutočnosti."
     },
     "adjustTimes": {
       "title": "Upraviť časy",
-      "point1": "Ak časy nesedia, vráťte sa a opravte ich.",
-      "point2": "Uistite sa, že nedochádza k prekryviam alebo medzerám.",
-      "point3": "Pred ďalším krokom potvrďte každý záznam."
+      "point1": "Ak sú časy chybné, vráťte sa a opravte ich.",
+      "point2": "Uistite sa, že nie sú žiadne prekryvy alebo medzery.",
+      "point3": "Potvrďte každý záznam, než postúpite ďalej."
     },
     "confirm": {
       "title": "Potvrdiť",
-      "point1": "Skontrolujte súhrn na obrazovke tachografu.",
-      "point2": "Prijmite pre uloženie ručných záznamov."
+      "point1": "Skontrolujte zhrnutie na displeji tachografu.",
+      "point2": "Potvrďte pre uloženie ručných záznamov."
     },
     "finalCheck": {
       "title": "Záverečná kontrola",
       "point1": "Overte, či je časová os aktivít správna.",
-      "point2": "Smenu zahájte, až keď všetko vyzerá správne."
+      "point2": "Zmenu začnite, až keď všetko súhlasí."
     },
-    "closeButton": "Zatvoriť"
+    "closeButton": "Zavrieť"
   },
   "language": {
     "english": "English",
     "german": "Deutsch",
     "french": "Français",
     "spanish": "Español",
-    "italian": "Italiano",
+    "italic": "Italiano",
     "polish": "Polski",
     "romanian": "Română",
     "dutch": "Nederlands",
@@ -406,10 +583,10 @@
   "confirmSignOut": "Naozaj sa chcete odhlásiť?",
   "manageSubscription": "Spravovať predplatné",
   "validation": {
-    "invalidTimeFormat": "Zadajte platný čas vo formáte HH:MM."
+    "invalidTimeFormat": "Zadajte, prosím, platný čas vo formáte HH:MM."
   },
   "validationError": "Chyba validácie",
-  "pleaseEnterName": "Prosím, zadajte svoje meno.",
+  "pleaseEnterName": "Zadajte, prosím, svoje meno.",
   "driverSettings": "Nastavenia vodiča",
   "welcomeSetup": "Úvodné nastavenie",
   "personalInformation": "Osobné údaje",
@@ -417,85 +594,121 @@
   "enterFullName": "Zadajte celé meno",
   "companyLink": "Prepojenie s firmou",
   "linkedToCompany": "Prepojené s firmou",
-  "companyLinkCodeOptional": "Kód prepojenia firmy (voliteľný)",
-  "enterCodeToJoinFleet": "Zadajte kód poskytnutý vašou firmou na pripojenie k flotile.",
+  "companyLinkCodeOptional": "Kód firmy (voliteľné)",
+  "enterCodeToJoinFleet": "Zadajte kód od vašej firmy pre pripojenie k ich flotile.",
   "payConfiguration": "Konfigurácia mzdy",
   "basicHourlyRate": "Základná hodinová sadzba",
   "unpaidBreakDuration": "Dĺžka neplatenej prestávky (minúty)",
-  "shiftAllowances": "Príplatky k smene",
+  "shiftAllowances": "Príplatky za zmenu",
   "addAllowance": "Pridať príplatok",
-  "overtimeRules": "Pravidlá nadčasov",
-  "overtimeThreshold": "Hranica nadčasov",
-  "rateMultiplier": "Násobiteľ sadzby",
+  "overtimeRules": "Pravidlá pre nadčasy",
+  "overtimeThreshold": "Prah pre nadčasy",
+  "rateMultiplier": "Koeficient sadzby",
   "addAnotherTier": "Pridať ďalšiu úroveň",
   "invalidCode": "Neplatný kód",
-  "companyCodeNotFound": "Tento kód firmy sme nenašli.",
+  "companyCodeNotFound": "Tento firemný kód sme nenašli.",
   "expiredCodeTitle": "Kód vypršal",
-  "expiredCodeMessage": "Tento kód firmy vypršal. Požiadajte o nový.",
-  "privacyTitle": "Zásady ochrany osobných údajov",
-  "privacySubtitle": "Vaše dáta, vaša kontrola",
-  "privacyIntro": "Tieto zásady vysvetľujú, aké dáta HourWise zbiera a ako s nimi nakladá.",
+  "expiredCodeMessage": "Tento firemný kód už nie je platný. Vyžiadajte si nový.",
+  "privacyTitle": "Súkromie a vaše dáta",
+  "privacySubtitle": "Vaše dáta pod vašou kontrolou",
+  "privacyIntro": "Zaväzujeme sa chrániť vaše súkromie. Tieto zásady vysvetľujú, aké dáta HourWise zbiera pre zabezpečenie svojich funkcií.",
+  "privacyWhyTitle": "Prečo zbierame dáta",
+  "privacyWhyDesc": "Zbierame iba dáta nevyhnutné pre kľúčové funkcie, ako je výpočet hodín, dodržiavanie nariadení EÚ a generovanie výkazov.",
   "privacyDataCollectedTitle": "Čo ukladáme",
-  "privacyDataCollectedDesc": "Pre výpočet vašich hodín ukladáme nasledujúce informácie:",
+  "privacyDataCollectedDesc": "Pre fungovanie aplikácie bezpečne ukladáme:",
   "privacyDataPoints": [
-    "Vaše meno (pre reporty)",
-    "Vaše zaznamenané smeny (časy začiatku/konca)",
-    "Súčty pre prácu, prestávky a pohotovosť",
-    "Skóre dodržiavania pravidiel a porušenia",
-    "Nastavenia konfigurácie mzdy (voliteľné)"
+    "Vaše meno (pre výkazy)",
+    "Záznamy zmien (časy začiatku/konca, riadenie, práca, prestávky, POA)",
+    "Údaje o polohe (výhradne pre automatickú detekciu jazdy)",
+    "Skóre zhody a porušenia pravidiel",
+    "Detaily výdavkov, vrátane snímok účteniek a textu",
+    "Nastavenia konfigurácie mzdy (voliteľné)",
+    "Firemný profil a bankové údaje (voliteľné)"
   ],
   "privacyStorageTitle": "Zabezpečené cloudové úložisko",
-  "privacyStorageDesc": "Vaše dáta sú uložené v súkromnom, bezpečnom cloude a synchronizované medzi vašimi zariadeniami.",
-  "privacyControlTitle": "Vy máte kontrolu",
-  "privacyControlDesc": "Uložené dáta sú tie, ktoré sami zadáte. Máte možnosť ich kedykoľvek upraviť alebo vymazať.",
+  "privacyStorageDesc": "Vaše dáta sú uložené vo vašom súkromnom cloude a synchronizované medzi zariadeniami pomocou štandardného šifrovania.",
+  "privacyControlTitle": "Máte plnú kontrolu",
+  "privacyControlDesc": "Uložené dáta sú tie, ktoré sami vytvoríte. Svoju históriu a osobné údaje môžete kedykoľvek v aplikácii upraviť alebo trvalo vymazať.",
+  "privacyThirdPartyTitle": "Služby tretích strán",
+  "privacyThirdPartyDesc": "Pre funkcie ako skenovanie účteniek môžeme posielať dáta externým službám (OCR). Vaše dáta nezdieľame na marketingové účely.",
+  "privacyThirdPartyDesc_new": "Snímky účteniek spracováva externá služba na extrakciu textu. Vaše dáta nepredávame.",
   "privacyDisclaimerTitle": "Dôležité",
-  "privacyDisclaimer": "Aj keď používame zabezpečený systém, žiadna metóda prenosu nie je 100% bezpečná.",
-  "notification": {
-    "trackingTitle": "Sledovanie času jazdy",
-    "trackingBody": "HourWise aktívne sleduje vašu polohu kvôli jazde."
+  "privacyDisclaimer": "Hoci používame zabezpečené systémy, žiadny prenos cez internet nie je 100 % bezpečný. Maximálne sa však snažíme o ochranu vašich dát.",
+  "privacy": {
+    "gdprRightsTitle": "Vaše práva podľa GDPR",
+    "gdprRightsDesc": "Podľa GDPR máte právo na prístup, opravu alebo vymazanie osobných údajov. Toto môžete spravovať priamo v aplikácii."
   },
-  "enableComplianceNotifications": "Povoľte upozornenia, aby ste dostávali varovania o dodržiavaní pravidiel.",
-  "locationPermissionRequired": "Na detekciu jazdy sa vyžaduje povolenie polohy.",
-  "backgroundLocationPermissionRequired": "Pre spoľahlivé sledovanie jazdy sa vyžaduje povolenie polohy na pozadí.",
-  "failedToResumeShift": "Nepodarilo sa obnoviť smenu zo servera.",
-  "startShiftError": "Nepodarilo sa zahájiť smenu.",
-  "endShiftError": "Nepodarilo sa ukončiť smenu na serveri. Skontrolujte pripojenie.",
-  "cannotGoToPoaFromBreak": "Počas prestávky nie je možné prepnúť na pohotovosť.",
-  "proactiveNotificationTitle": "Kontrola poslednej smeny",
-  "proactiveNotificationBody": "Tip na dnešok:",
-  "workTimeWarningTitle": "Varovanie pracovného času",
-  "drivingTimeWarningTitle": "Varovanie času jazdy",
-  "workTime30minLeft": "V pracovnom cykle zostáva 30 minút.",
-  "workTime15minLeft": "V pracovnom cykle zostáva 15 minút.",
-  "workTime5minLeft": "V pracovnom cykle zostáva 5 minút.",
+  "account": {
+    "title": "Správa účtu",
+    "manageMyData": "Spravovať moje dáta",
+    "profileSection": "Profil",
+    "editName": "Upraviť meno",
+    "changeEmail": "Zmeniť e-mail",
+    "changePassword": "Zmeniť heslo",
+    "dataSection": "Správa dát",
+    "exportData": "Exportovať moje dáta",
+    "manageSubscription": "Spravovať predplatné",
+    "dangerZone": "Nebezpečná zóna",
+    "delete": {
+      "title": "Vymazať môj účet",
+      "confirmTitle": "Vymazať účet?",
+      "confirmMessage": "Týmto trvalo odstránite históriu zmien, záznamy zhody a profil. Túto akciu nie je možné vrátiť späť.",
+      "confirmButton": "Všetko vymazať",
+      "successTitle": "Účet vymazaný",
+      "successMessage": "Váš účet a všetky pridružené dáta boli trvalo odstránené.",
+      "errorMessage": "Účet sa v tejto chvíli nepodarilo vymazať. Kontaktujte, prosím, podporu."
+    }
+  },
+  "notification": {
+    "trackingTitle": "Sledovanie doby riadenia",
+    "trackingBody": "HourWise aktívne sleduje vašu polohu pre detekciu jazdy.",
+    "shiftStartedTitle": "Zmena zahájená",
+    "shiftStartedBody": "Vaša pracovná zmena sa oficiálne začala.",
+    "shiftEndedTitle": "Zmena ukončená",
+    "shiftEndedBody": "Vaša pracovná zmena bola úspešne ukončená."
+  },
+  "enableComplianceNotifications": "Povoľte, prosím, upozornenia pre príjem varovaní ohľadom zhody.",
+  "locationPermissionRequired": "Pre detekciu jazdy je vyžadované povolenie k polohe.",
+  "backgroundLocationPermissionRequired": "Pre spoľahlivé sledovanie jazdy je vyžadované povolenie k polohe v pozadí.",
+  "failedToResumeShift": "Nepodarilo sa obnoviť zmenu zo servera.",
+  "startShiftError": "Nepodarilo sa začať zmenu.",
+  "endShiftError": "Nepodarilo sa ukončiť zmenu na serveri. Skontrolujte pripojenie.",
+  "cannotGoToPoaFromBreak": "Počas prestávky nie je možné prepnúť na pohotovosť (POA).",
+  "proactiveNotificationTitle": "Kontrola vašej poslednej zmeny",
+  "proactiveNotificationBody": "Tip pre dnešný deň:",
+  "workTimeWarningTitle": "Varovanie: Pracovný čas",
+  "drivingTimeWarningTitle": "Varovanie: Doba riadenia",
+  "workTime30minLeft": "Zostáva 30 minút vášho pracovného cyklu.",
+  "workTime15minLeft": "Zostáva 15 minút vášho pracovného cyklu.",
+  "workTime5minLeft": "Zostáva 5 minút vášho pracovného cyklu.",
   "workTimeLimitReached": "Limit pracovného času dosiahnutý.",
-  "drivingTime30minLeft": "V cykle jazdy zostáva 30 minút.",
-  "drivingTime15minLeft": "V cykle jazdy zostáva 15 minút.",
-  "drivingTime5minLeft": "V cykle jazdy zostáva 5 minút.",
-  "drivingTimeLimitReached": "Limit času jazdy dosiahnutý.",
-  "audioShiftStarted": "Smena zahájená.",
-  "audioShiftEnded": "Smena ukončená.",
+  "drivingTime30minLeft": "Zostáva 30 minút doby riadenia.",
+  "drivingTime15minLeft": "Zostáva 15 minút doby riadenia.",
+  "drivingTime5minLeft": "Zostáva 5 minút doby riadenia.",
+  "drivingTimeLimitReached": "Limit doby riadenia dosiahnutý.",
+  "audioShiftStarted": "Zmena zahájená.",
+  "audioShiftEnded": "Zmena ukončená.",
   "audioBreakStarted": "Prestávka zahájená.",
   "audioResumeWork": "Pokračovanie v práci.",
   "audioPoaStarted": "Pohotovosť zahájená.",
-  "audioDrivingTimeReset": "Čas jazdy resetovaný.",
-  "audioDrivingLimitReached": "Limit jazdy dosiahnutý.",
-  "audioDriving5minLeft": "Zostáva 5 minút jazdy.",
-  "audioDriving15minLeft": "Zostáva 15 minút jazdy.",
-  "audioDriving30minLeft": "Zostáva 30 minút jazdy.",
-  "audioWork5h15": "V pracovnom cykle zostáva 15 minút.",
-  "audioWork5h30": "V pracovnom cykle zostáva 30 minút.",
-  "audioWork5h55": "V pracovnom cykle zostáva 5 minút.",
-  "safetyWarningTitle": "Bezpečnosť",
-  "safetyWarningBody": "Nepoužívajte aplikáciu počas jazdy.",
+  "audioDrivingTimeReset": "Doba riadenia resetovaná.",
+  "audioDrivingLimitReached": "Limit riadenia dosiahnutý.",
+  "audioDriving5minLeft": "Zostáva päť minút riadenia.",
+  "audioDriving15minLeft": "Zostáva pätnásť minút riadenia.",
+  "audioDriving30minLeft": "Zostáva tridsať minút riadenia.",
+  "audioWork5h15": "Zostáva pätnásť minút pracovného cyklu.",
+  "audioWork5h30": "Zostáva tridsať minút pracovného cyklu.",
+  "audioWork5h55": "Zostáva päť minút pracovného cyklu.",
+  "safetyWarningTitle": "Bezpečnostné varovanie",
+  "safetyWarningBody": "Nemanipulujte s aplikáciou počas riadenia. Bezpečne zastavte.",
   "acknowledge": "Potvrdiť",
   "auth": {
     "title": {
-      "signIn": "Prihlásiť sa",
+      "signIn": "Prihlásenie",
       "signUp": "Vytvoriť účet"
     },
     "subtitle": {
-      "signIn": "Vitajte späť! Prosím, prihláste sa.",
+      "signIn": "Vitajte späť! Prihláste sa, prosím.",
       "signUp": "Pridajte sa k nám a začnite sledovať svoje hodiny."
     },
     "fields": {
@@ -513,7 +726,7 @@
       },
       "companyCode": {
         "label": "Kód firmy",
-        "placeholder": "Zadajte kód od svojej firmy"
+        "placeholder": "Zadajte kód od vašej firmy"
       }
     },
     "buttons": {
@@ -537,15 +750,15 @@
     "alerts": {
       "missingInfo": {
         "title": "Chýbajúce informácie",
-        "body": "Prosím, vyplňte všetky povinné polia."
+        "body": "Vyplňte, prosím, všetky povinné polia."
       },
       "companyCodeRequired": {
-        "title": "Vyžaduje sa kód firmy",
-        "body": "Zadajte kód svojej firmy na pokračovanie ako člen flotily."
+        "title": "Kód firmy vyžadovaný",
+        "body": "Pre pokračovanie ako člen flotily zadajte kód firmy."
       },
       "invalidCode": {
         "title": "Neplatný kód",
-        "expired": "Tento kód firmy vypršal. Požiadajte o nový.",
+        "expired": "Tento kód vypršal. Vyžiadajte si nový.",
         "notFound": "Zadaný kód firmy nie je platný."
       },
       "signUpError": {
@@ -553,68 +766,70 @@
       },
       "signUpFailed": {
         "title": "Registrácia zlyhala",
-        "body": "V tejto chvíli sa nepodarilo vytvoriť účet. Skúste to neskôr."
+        "body": "V tejto chvíli nie je možné účet vytvoriť. Skúste to neskôr."
       },
       "profileCreationFailed": {
         "title": "Vytvorenie profilu zlyhalo",
-        "body": "Váš účet bol vytvorený, ale nepodarilo sa nastaviť váš profil."
+        "body": "Účet bol vytvorený, ale nepodarilo sa nastaviť profil. Kontaktujte podporu."
       },
       "checkEmail": {
-        "title": "Skontrolujte si e-mail",
-        "body": "Na váš e-mail bol zaslaný potvrdzovací odkaz. Overte svoj účet."
+        "title": "Skontrolujte e-mail",
+        "body": "Na váš e-mail bol zaslaný potvrdzovací odkaz. Pre pokračovanie overte svoj účet."
       },
       "signInMissing": {
         "title": "Chýbajúce údaje",
         "body": "Zadajte e-mail aj heslo."
       },
       "signInError": {
-        "title": "Chyba pri prihlásení"
+        "title": "Chyba prihlásenia"
       }
     }
   },
   "paywall": {
     "title": "Odomknite HourWise Pro",
-    "subtitle": "Získajte prístup ku všetkým prémiovým funkciám.",
-    "subscribeNow": "Predplatiť teraz",
+    "subtitle": "Získajte prístup ku všetkým prémiovým funkciám vrátane neobmedzeného sledovania a výkazov.",
+    "subscribeNow": "Predplatiť",
     "restorePurchases": "Obnoviť nákupy",
-    "loading": "Otváranie...",
-    "restoring": "Obnovovanie...",
+    "loading": "Otváranie…",
+    "restoring": "Obnovovanie…",
     "alert": {
       "successTitle": "Úspech",
-      "purchased": "Nákup bol dokončený!",
-      "restored": "Nákupy boli obnovené!",
-      "paywallError": "Vyskytla sa chyba. Skúste to znova.",
-      "couldNotDisplay": "Nepodarilo sa zobraziť stránku predplatného.",
+      "purchased": "Nákup bol úspešne dokončený!",
+      "restored": "Vaše nákupy boli obnovené!",
+      "paywallError": "Došlo k chybe. Skúste to, prosím, znova.",
+      "couldNotDisplay": "Stránku predplatného nie je možné zobraziť.",
       "restoreSuccess": "Vaše nákupy boli obnovené.",
-      "noPurchasesTitle": "Nenašli sa nákupy",
-      "noPurchasesBody": "Nenašli sme žiadne aktívne predplatné.",
+      "noPurchasesTitle": "Nenašli sa žiadne nákupy",
+      "noPurchasesBody": "Nenašli sme žiadne aktívne predplatné na obnovenie.",
       "restoreError": "Nákupy sa nepodarilo obnoviť."
     }
   },
   "settings": {
     "subscription": {
-      "openError": "Nepodarilo sa otvoriť správu predplatného.",
-      "opening": "Otváranie..."
+      "openError": "Stránku správy predplatného nie je možné otvoriť.",
+      "opening": "Otváranie…"
     }
   },
   "businessProfile": {
     "title": "Firemný profil",
-    "subtitle": "Pre faktúry a reporty",
+    "subtitle": "Pre faktúry a výkazy",
     "alerts": {
-      "profileSaved": "Firemný profil bol úspešne uložený."
+      "profileSaved": "Firemný profil úspešne uložený."
     },
     "sections": {
       "companyDetails": "Podrobnosti o firme",
-      "bankDetails": "Bankové údaje"
+      "bankDetails": "Bankové údaje",
+      "companyLogo": "Logo firmy",
+      "clients": "Správa klientov"
     },
     "fields": {
       "legalName": {
-        "label": "Právny / obchodný názov",
-        "placeholder": "napr. Vaša Firma s.r.o."
+        "label": "Názov firmy / Meno",
+        "placeholder": "napr. Doprava Kováč s.r.o."
       },
       "address": {
         "label": "Sídlo podnikania",
-        "placeholder": "Zadajte úplnú adresu"
+        "placeholder": "Zadajte celú adresu firmy"
       },
       "email": {
         "label": "Kontaktný e-mail",
@@ -622,84 +837,125 @@
       },
       "phone": {
         "label": "Kontaktný telefón",
-        "placeholder": "napr. +421 900 000 000"
+        "placeholder": "napr. +421 9xx xxx xxx"
       },
       "taxId": {
-        "label": "DIČ / IČO",
-        "placeholder": "napr. SK2020000000"
+        "label": "IČO",
+        "placeholder": "napr. 12345678"
+      },
+      "vatNumber": {
+        "label": "DIČ / IČ DPH",
+        "placeholder": "napr. SK202xxxxxxx"
+      },
+      "paymentTerms": {
+        "label": "Platobné podmienky",
+        "placeholder": "napr. Splatnosť 14 dní"
       },
       "accountName": {
         "label": "Názov účtu",
         "placeholder": "Meno majiteľa účtu"
       },
       "sortCode": {
-        "label": "Kód banky / BIC",
-        "placeholder": "napr. GIBASKBX"
+        "label": "Kód banky",
+        "placeholder": "napr. 0900"
       },
       "accountNumber": {
         "label": "Číslo účtu",
-        "placeholder": "napr. 1234567890"
+        "placeholder": "napr. 1234567890 / 0900"
       },
       "iban": {
         "label": "IBAN",
-        "placeholder": "napr. SK12 1100 ..."
+        "placeholder": "napr. SK65 0900 0000..."
+      }
+    },
+    "clients": {
+      "title": "Klienti",
+      "addClient": "Pridať klienta",
+      "editClient": "Upraviť klienta",
+      "noClients": "Zatiaľ žiadni klienti.",
+      "deleteConfirm": "Naozaj chcete vymazať tohto klienta?",
+      "fields": {
+        "name": "Meno klienta",
+        "address": "Adresa klienta",
+        "email": "E-mail klienta"
       }
     }
   },
   "violation": {
     "EXCEEDED_6H_WORK": {
-      "title": "Prekročených 6h práce bez prestávky",
-      "tip": "Po 6 hodinách práce sa vyžaduje 30-minútová prestávka."
+      "title": "Prekročených 6 h práce bez prestávky",
+      "tip": "Po 6 hodinách práce je vyžadovaná 30-minútová prestávka. Plánujte si prestávky včas."
     },
     "INSUFFICIENT_BREAK_FOR_9H_WORK": {
-      "title": "Nedostatočná prestávka u práce nad 9h",
-      "tip": "U smen nad 9 hodín sa vyžaduje celkovo 45 minút prestávok."
+      "title": "Nedostatočná prestávka pre >9 h práce",
+      "tip": "Pri zmenách dlhších ako 9 hodín je vyžadovaná celková prestávka 45 minút."
     },
     "INSUFFICIENT_DAILY_REST": {
       "title": "Nedostatočný denný odpočinok",
-      "tip": "Medzi smenami dodržujte aspoň 11h odpočinku (skrátiteľné na 9h)."
+      "tip": "Medzi zmenami dodržujte aspoň 11 hodín odpočinku (možno skrátiť na 9 h 3x týždenne)."
     },
     "REDUCED_DAILY_REST_TAKEN": {
-      "title": "Využitý skrátený denný odpočinok",
-      "tip": "Skrátený odpočinok môžete čerpať maximálne 3x medzi týždennými odpočinkami."
+      "title": "Čerpaný skrátený denný odpočinok",
+      "tip": "Využili ste skrátený odpočinok. Možno ho čerpať max. 3x medzi dvoma týždennými odpočinkami."
     },
     "EXCEEDED_4_5H_DRIVING": {
-      "title": "Prekročených 4,5h jazdy",
-      "tip": "Po 4,5 hodinách jazdy musíte mať 45-minútovú prestávku."
+      "title": "Prekročených 4,5 h riadenia",
+      "tip": "Po 4,5 hodinách nepretržitého riadenia musíte mať 45 minút prestávku."
     },
     "EXCEEDED_DAILY_DRIVING_LIMIT": {
-      "title": "Prekročený denný limit jazdy",
-      "tip": "Limit je 9h, predĺženie na 10h je možné len 2x týždenne."
+      "title": "Prekročený denný limit riadenia",
+      "tip": "Denné riadenie je obmedzené na 9 h, predĺženie na 10 h je možné len 2x týždenne."
     },
     "USED_10H_DRIVING_EXTENSION": {
-      "title": "Využité 10-hodinové predĺženie jazdy",
-      "tip": "Využili ste jedno zo svojich dvoch týždenných predĺžení."
+      "title": "Využité predĺženie riadenia na 10 h",
+      "tip": "Využili ste jedno zo svojich dvoch týždenných predĺžení na 10 hodín."
     },
     "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
-      "title": "Prekročený týždenný limit jazdy",
-      "tip": "Maximálny týždenný čas jazdy je 56 hodín."
+      "title": "Prekročený týždenný limit riadenia",
+      "tip": "Maximálna týždenná doba riadenia je 56 hodín. Plánujte svoj týždeň starostlivo."
     },
     "EXCEEDED_WEEKLY_WORK_LIMIT": {
       "title": "Prekročený týždenný limit práce",
-      "tip": "Maximálny týždenný pracovný čas je 60 hodín."
+      "tip": "Maximálny týždenný pracovný čas je 60 hodín. Dbajte na dostatočný odpočinok."
+    },
+    "WORK_TIME_LIMIT_EXCEEDED": {
+      "title": "Limit pracovného času prekročený",
+      "tip": "Prekročili ste limit svojho pracovného cyklu. Nadčas {{time}} bol zaznamenaný."
+    },
+    "FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED": {
+      "title": "Prekročený dvojtýždňový limit riadenia",
+      "tip": "Maximálna doba riadenia v ľubovoľných dvoch po sebe idúcich týždňoch je 90 hodín."
     },
     "default": {
-      "title": "Porušenie pravidiel",
-      "tip": "Došlo k porušeniu pravidiel. Skontrolujte detaily smeny."
+      "title": "Porušenie predpisov",
+      "tip": "Došlo k porušeniu pravidiel zhody. Skontrolujte detaily zmeny."
     }
   },
-  "dateRangeError": "Koncový dátum musí byť po počiatočnom.",
+  "dateRangeError": "Dátum ukončenia musí byť po dátume začatia.",
   "noDataForRange": "Pre toto obdobie sa nenašli žiadne dáta.",
-  "failedToGenerate": "Nepodarilo sa vygenerovať report.",
-  "workReport": "Report o práci",
+  "failedToGenerate": "Výkaz sa nepodarilo vygenerovať.",
+  "workReport": "Pracovný výkaz",
   "reportFrom": "Od",
   "to": "Do",
-  "summary": "Súhrn",
-  "totalWorkTime": "Pracovný čas celkom",
-  "totalBreakTime": "Čas prestávok celkom",
+  "summary": "Zhrnutie",
+  "totalWorkTime": "Celkový pracovný čas",
+  "totalBreakTime": "Celkový čas prestávok",
   "estimatedEarnings": "Odhadovaný zárobok",
-  "previousWeek": "Minulý týždeň",
+  "previousWeek": "Predchádzajúci týždeň",
   "lastMonth": "Minulý mesiac",
   "customRange": "Vlastné obdobie",
-  "generateReport": "Generovať report"
+  "generateReport": "Generovať výkaz",
+  "alerts": {
+    "lowRestWarning": "Varovanie: Od poslednej zmeny ste mali menej ako 9 hodín odpočinku.",
+    "spreadTitle": "Varovanie: Limit zmeny",
+    "spread30m": "Zostáva 30 minút do dosiahnutia 13-hodinového limitu zmeny (amplitúdy)."
+  },
+  "invoiceGeneration": {
+    "title": "Generovať faktúru",
+    "selectClient": "Vybrať klienta",
+    "description": "Popis faktúry",
+    "includeExpenses": "Zahrnúť výdavky",
+    "vatRate": "Sadzba DPH (%)",
+    "noVat": "Bez DPH"
+  }
 }

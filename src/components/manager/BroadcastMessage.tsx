@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Send, MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function BroadcastMessage() {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -11,17 +13,12 @@ export function BroadcastMessage() {
   const [success, setSuccess] = useState(false);
 
   const handleSendBroadcast = async () => {
-    // --- DEBUG LOGS from Gemini ---
-    console.log("Attempting to send broadcast...");
-    console.log("Current Profile Auth ID:", profile?.id);
-    console.log("Company ID being sent:", profile?.company_id);
-
     if (!content.trim()) {
-      setError("Message content cannot be empty.");
+      setError(t('broadcast.errors.empty'));
       return;
     }
     if (!profile?.id || !profile?.company_id) {
-      setError("User profile or Company ID not loaded. Please refresh and try again.");
+      setError(t('broadcast.errors.notLoaded'));
       return;
     }
 
@@ -44,7 +41,7 @@ export function BroadcastMessage() {
       setContent('');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to send broadcast.');
+      setError(err.message || t('broadcast.errors.failed'));
     } finally {
       setIsSending(false);
     }
@@ -55,7 +52,7 @@ export function BroadcastMessage() {
       <div className="flex items-center gap-3 mb-4">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-gray-600" />
-          Send Fleet Broadcast
+          {t('broadcast.title')}
         </h3>
       </div>
       <div className="space-y-3">
@@ -63,7 +60,7 @@ export function BroadcastMessage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={4}
-          placeholder="Type your message to all drivers here..."
+          placeholder={t('broadcast.placeholder')}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
         />
         <button
@@ -72,10 +69,10 @@ export function BroadcastMessage() {
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
           <Send className="w-5 h-5" />
-          {isSending ? 'Sending...' : 'Send to All Drivers'}
+          {isSending ? t('broadcast.sending') : t('broadcast.button')}
         </button>
         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-        {success && <p className="text-sm text-green-600 text-center">Broadcast sent successfully!</p>}
+        {success && <p className="text-sm text-green-600 text-center">{t('broadcast.success')}</p>}
       </div>
     </div>
   );

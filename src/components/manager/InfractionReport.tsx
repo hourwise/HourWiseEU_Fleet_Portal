@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, AlertCircle, Download, Calendar, User, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
 type DriverLog = Database['public']['Tables']['driver_logs']['Row'];
@@ -13,6 +14,7 @@ interface InfractionWithDriver extends DriverLog {
 
 export function InfractionReport() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [infractions, setInfractions] = useState<InfractionWithDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'violation' | 'warning'>('all');
@@ -63,7 +65,16 @@ export function InfractionReport() {
     const filtered = filter === 'all' ? infractions : infractions.filter((i) => i.status_code === filter);
 
     const csv = [
-      ['Date', 'Driver', 'Activity', 'Status', 'Infraction Type', 'Duration (min)', 'Location Start', 'Notes'].join(','),
+      [
+        t('infractions.csvHeaders.date'),
+        t('infractions.csvHeaders.driver'),
+        t('infractions.csvHeaders.activity'),
+        t('infractions.csvHeaders.status'),
+        t('infractions.csvHeaders.infractionType'),
+        t('infractions.csvHeaders.duration'),
+        t('infractions.csvHeaders.locationStart'),
+        t('infractions.csvHeaders.notes')
+      ].join(','),
       ...filtered.map((inf) =>
         [
           new Date(inf.start_time).toLocaleString(),
@@ -107,8 +118,8 @@ export function InfractionReport() {
         <div className="flex items-center gap-3">
           <FileText className="w-8 h-8 text-blue-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Infraction Reports</h2>
-            <p className="text-gray-600">Track and analyze compliance issues</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('infractions.title')}</h2>
+            <p className="text-gray-600">{t('infractions.subtitle')}</p>
           </div>
         </div>
 
@@ -117,7 +128,7 @@ export function InfractionReport() {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
         >
           <Download className="w-5 h-5" />
-          Export CSV
+          {t('infractions.export')}
         </button>
       </div>
 
@@ -131,7 +142,7 @@ export function InfractionReport() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            All ({infractions.length})
+            {t('infractions.filterAll', { count: infractions.length })}
           </button>
           <button
             onClick={() => setFilter('violation')}
@@ -141,7 +152,7 @@ export function InfractionReport() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Violations ({infractions.filter((i) => i.status_code === 'violation').length})
+            {t('infractions.filterViolations', { count: infractions.filter((i) => i.status_code === 'violation').length })}
           </button>
           <button
             onClick={() => setFilter('warning')}
@@ -151,15 +162,15 @@ export function InfractionReport() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Warnings ({infractions.filter((i) => i.status_code === 'warning').length})
+            {t('infractions.filterWarnings', { count: infractions.filter((i) => i.status_code === 'warning').length })}
           </button>
         </div>
 
         {filteredInfractions.length === 0 ? (
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No infractions found</h3>
-            <p className="text-gray-600">Your fleet is maintaining excellent compliance</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('infractions.noInfractions')}</h3>
+            <p className="text-gray-600">{t('infractions.noInfractionsSubtitle')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -181,9 +192,9 @@ export function InfractionReport() {
                     />
                     <div>
                       <h4 className="font-bold text-gray-900">
-                        {infraction.infraction_type || 'Compliance Issue'}
+                        {infraction.infraction_type || t('infractions.issue')}
                       </h4>
-                      <p className="text-sm text-gray-600 capitalize">{infraction.activity_type} Activity</p>
+                      <p className="text-sm text-gray-600 capitalize">{t('infractions.activity', { type: infraction.activity_type })}</p>
                     </div>
                   </div>
 
@@ -202,7 +213,7 @@ export function InfractionReport() {
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-500" />
                     <div>
-                      <span className="text-gray-600 block text-xs">Driver</span>
+                      <span className="text-gray-600 block text-xs">{t('infractions.labels.driver')}</span>
                       <span className="font-medium text-gray-900">{infraction.driver.full_name}</span>
                     </div>
                   </div>
@@ -210,7 +221,7 @@ export function InfractionReport() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <div>
-                      <span className="text-gray-600 block text-xs">Date & Time</span>
+                      <span className="text-gray-600 block text-xs">{t('infractions.labels.dateTime')}</span>
                       <span className="font-medium text-gray-900">
                         {new Date(infraction.start_time).toLocaleString()}
                       </span>
@@ -220,24 +231,24 @@ export function InfractionReport() {
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-500" />
                     <div>
-                      <span className="text-gray-600 block text-xs">Location</span>
+                      <span className="text-gray-600 block text-xs">{t('infractions.labels.location')}</span>
                       <span className="font-medium text-gray-900">
-                        {infraction.location_start || 'Not recorded'}
+                        {infraction.location_start || t('infractions.labels.notRecorded')}
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-gray-600 block text-xs">Duration</span>
+                    <span className="text-gray-600 block text-xs">{t('infractions.labels.duration')}</span>
                     <span className="font-medium text-gray-900">
-                      {infraction.duration_minutes ? `${infraction.duration_minutes} min` : 'Ongoing'}
+                      {infraction.duration_minutes ? `${infraction.duration_minutes} ${t('infractions.labels.min')}` : t('infractions.labels.ongoing')}
                     </span>
                   </div>
                 </div>
 
                 {infraction.notes && (
                   <div className="mt-3 pt-3 border-t border-gray-200">
-                    <span className="text-xs font-medium text-gray-500">Notes:</span>
+                    <span className="text-xs font-medium text-gray-500">{t('infractions.labels.notes')}</span>
                     <p className="text-sm text-gray-700 mt-1">{infraction.notes}</p>
                   </div>
                 )}

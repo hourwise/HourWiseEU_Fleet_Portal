@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Akıllı filo yönetimi artık çok kolay",
+    "description": "Avrupalı nakliye şirketleri için akıllı filo yönetimi ve mevzuat uyum takibi. Kurallara uyun, verimli kalın."
+  },
+  "navigation": {
+    "home": "Ana Sayfa",
+    "howTo": "Nasıl Çalışır",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Hizmet Şartları",
+    "contact": "İletişim",
+    "privacyRequest": "Veri Talepleri (KVKK/GDPR)",
+    "signIn": "Giriş Yap",
+    "getStarted": "Başlayın",
+    "dashboard": "Panel",
+    "drivers": "Sürücüler",
+    "compliance": "Mevzuat Uyumu",
+    "training": "Eğitim",
+    "fleet": "Filo",
+    "safetyChecks": "Güvenlik Kontrolleri",
+    "supervisors": "Denetçiler",
+    "payroll": "Bordro",
+    "expenses": "Giderler",
+    "reports": "Raporlar",
+    "auditTrail": "Denetim Kaydı",
+    "settings": "Ayarlar",
+    "signOut": "Çıkış Yap"
+  },
+  "footer": {
+    "company": "Şirket",
+    "account": "Hesap",
+    "createAccount": "Hesap Oluştur",
+    "allRightsReserved": "Tüm hakları saklıdır."
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "signup": "Kayıt Ol",
+    "email": "E-posta",
+    "password": "Şifre",
+    "forgotPassword": "Şifrenizi mi unuttunuz?",
+    "createAccount": "Filo Yöneticisi Hesabı Oluştur",
+    "managerSignup": "Yönetici Kaydı",
+    "companyName": "Şirket Adı",
+    "fullName": "Ad Soyad",
+    "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş yapın",
+    "signInSubtitle": "Filo yönetim paneline giriş yapın",
+    "forgotPasswordSubtitle": "Şifrenizi sıfırlayın",
+    "magicLinkSubtitle": "Giriş yapmak için sihirli bağlantı alın",
+    "magicLink": "Sihirli Bağlantı ile Giriş",
+    "sendMagicLink": "Bağlantı Gönder",
+    "sendResetLink": "Sıfırlama Bağlantısı Gönder",
+    "backToSignIn": "Girişe Dön",
+    "newToApp": "HourWise'da yeni misiniz?",
+    "createCompanyAccountSubtitle": "Şirket hesabınızı oluşturun",
+    "billingNotice": "Kayıttan sonra web sitesi üzerinden fatura bilgilerini tamamlayın",
+    "codeNotice": "Sürücülerinizle paylaşmak için bir şirket kodu alacaksınız",
+    "creatingAccount": "Hesap oluşturuluyor...",
+    "createFleetAccount": "Filo Hesabı Oluştur",
+    "messages": {
+      "resetSent": "Şifre sıfırlama bağlantısı e-postanıza gönderildi.",
+      "magicLinkSent": "Giriş bağlantısı için e-postanızı kontrol edin."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Filo Yönetici Portalı",
+      "welcome": "Tekrar hoş geldin, {{name}}",
+      "snapshots": {
+        "compliance": "Filo Uyum Puanı",
+        "vehicle": "Araç Uyumluluk Uyarıları",
+        "driver": "Sürücü Yeterlilik Uyarıları",
+        "viewAll": "Tümünü Gör",
+        "avgScore": "Ortalama Puan",
+        "sevenDayInfringements": "İhlaller (7 Gün)",
+        "openBoard": "Uyum Tablosunu Aç",
+        "urgent": "{{count}} ACİL",
+        "noVehicleAlerts": "Acil araç uyarısı bulunmuyor.",
+        "viewFleetList": "Tam Filo Listesini Gör",
+        "noDriverAlerts": "Tüm sürücü belgeleri güncel.",
+        "manageDocs": "Sürücü Belgelerini Yönet",
+        "alerts": "{{count}} UYARI",
+        "alertSingle": "1 UYARI"
+      },
+      "alerts": {
+        "title": "İşlem Gerektiren Uyarılar",
+        "urgent": "ACİL",
+        "trainingMode": "Eğitim Modu Aktif",
+        "discrepancy": "Veri Uyuşmazlığı Tespit Edildi",
+        "allClear": "Her şey yolunda!",
+        "noIssues": "Sorun tespit edilmedi.",
+        "shiftAlert": "{{date}} tarihindeki vardiya uyarısı",
+        "issueDetected": "İnceleme gerektirebilecek bir sorun tespit edildi."
+      },
+      "auditReadiness": {
+        "title": "Denetime Hazırlık",
+        "status": "Filo verileriniz resmi denetim standartlarına uygun olarak senkronize ediliyor."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Filo Yönetimi",
+    "totalAssets": "Toplam Varlık: {{count}}",
+    "addVehicle": "Araç Ekle",
+    "backToList": "Listeye Dön",
+    "vehicleDetails": "Araç Detayları",
+    "complianceBoard": "Uyum Tablosu",
+    "maintenanceActions": "Bakım İşlemleri",
+    "statusNotes": "Durum Notları",
+    "noNotes": "Bu araç için aktif uyarı veya not bulunmuyor.",
+    "markVor": "Hizmet Dışı İşaretle (VOR)",
+    "returnToService": "Hizmete Döndür (Güvenli)",
+    "maintenanceCalled": "Bakım Çağrıldı",
+    "bookedWithGarage": "Servis Randevusu Alındı",
+    "logRepair": "Onarım/PMI Kaydet",
+    "recordWork": "İşlemi Kaydet ve Formu Yükle",
+    "noVehicles": "Filonuzda henüz kayıtlı araç yok.",
+    "addFirst": "İlk aracınızı ekleyin",
+    "status": {
+      "vor": "VOR / Hizmet Dışı",
+      "active": "Aktif",
+      "critical": "Kritik Süre (14g)",
+      "operational": "Operasyonel",
+      "requiresAttention": "Acil Müdahale Gerektiriyor",
+      "compliancePending": "Uyum Kontrolü Bekleniyor",
+      "ready": "Atamaya Hazır",
+      "overdue": "GECİKMİŞ",
+      "expiresIn": "{{days}} gün içinde"
+    },
+    "labels": {
+      "regType": "Araç Bilgileri",
+      "status": "Durum",
+      "motDue": "Muayene Tarihi",
+      "pmiDue": "Bakım/PMI Tarihi",
+      "tachoCal": "Takograf Kalib.",
+      "odometer": "Kilometre Sayacı",
+      "year": "Yıl",
+      "vin": "Şasi No (VIN)",
+      "added": "Eklendi",
+      "actions": "İşlemler"
+    },
+    "modal": {
+      "title": "Yeni Filo Varlığı Ekle",
+      "identity": "Araç Kimliği",
+      "compliance": "Uyum ve Güvenlik",
+      "regNumber": "Plaka *",
+      "make": "Marka *",
+      "model": "Model",
+      "type": "Araç Tipi *",
+      "vinNumber": "Şasi Numarası (VIN)",
+      "initialOdo": "Başlangıç Kilometresi (km)",
+      "currentOdo": "Güncel Kilometre (km)",
+      "motDue": "Sonraki Muayene Tarihi",
+      "pmiDue": "Sonraki Bakım/PMI Tarihi",
+      "tachoDue": "Takograf Kalibrasyon Tarihi",
+      "insuranceExpiry": "Sigorta Bitiş Tarihi",
+      "footnote": "Uyum tarihleri paneldeki 'Trafik Işığı' sistemini tetikler. Gecikmiş öğeler KIRMIZI olarak işaretlenir.",
+      "register": "Aracı Kaydet",
+      "adding": "Varlık ekleniyor...",
+      "errors": {
+        "companyId": "Şirket ID bulunamadı. Lütfen sayfayı yenileyin.",
+        "duplicate": "Bu plakaya sahip bir araç zaten mevcut.",
+        "generic": "Araç eklenirken beklenmedik bir hata oluştu."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Uyum Skor Tablosu",
+    "subtitle": "Sürücülerin son 7 günlük kurallara uyum özeti.",
+    "stats": {
+      "avgScore": "Filo Ortalama Puanı",
+      "totalInfringements": "Toplam İhlal",
+      "driversInViolation": "İhlali Olan Sürücüler"
+    },
+    "details": {
+      "title": "Sürücü Uyum Detayları",
+      "noDrivers": "Güncel verisi olan aktif sürücü yok",
+      "noDriversSubtitle": "Puanlarını görmek için sürücüleri davet edin.",
+      "headers": {
+        "driver": "Sürücü",
+        "score": "Uyum Puanı",
+        "infringements": "İhlaller (Son 7 Gün)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Bakım Denetim Kaydı",
+    "logWork": "İşlem Kaydet",
+    "noRecords": "Resmi bakım kaydı bulunamadı.",
+    "complianceRequired": "Yasal Uyumluluk Gereklidir",
+    "labels": {
+      "date": "TARİH",
+      "odo": "KM",
+      "cost": "MALİYET",
+      "eventType": "İşlem Tipi",
+      "completedAt": "Tamamlanma Tarihi",
+      "provider": "Hizmet Sağlayıcı / Servis",
+      "description": "İşlem Açıklaması",
+      "evidence": "Yasal Kanıt (Bakım Formu/Muayene Belgesi)"
+    },
+    "modal": {
+      "title": "Bakım Kaydı Oluştur",
+      "providerPlaceholder": "Örn: Scania Yetkili Servisi",
+      "descriptionPlaceholder": "Örn: 6 haftalık periyodik kontrol yapıldı. Ön aks fren balataları değiştirildi.",
+      "confirm": "İşlemi Onayla",
+      "saving": "Kaydediliyor..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Periyodik Bakım)",
+      "repair": "Arıza Onarımı",
+      "mot": "Muayene / Denetim",
+      "tacho": "Takograf Kalibrasyonu",
+      "other": "Diğer"
+    }
+  },
+  "training": {
+    "title": "Eğitim ve Takograf Senkronizasyonu",
+    "subtitle": "Resmi takograf verilerini uygulama aktiviteleriyle karşılaştırın",
+    "import": {
+      "title": "Takograf Verisi İçe Aktar",
+      "selectDriver": "Sürücü Seçin",
+      "selectPlaceholder": "Sürücü seçiniz...",
+      "uploadLabel": "Tachomaster'dan alınan .CSV dosyasını yükleyin",
+      "browse": "Dosyalara Göz At",
+      "runButton": "Uyuşmazlık Kontrolünü Çalıştır",
+      "analyzing": "Analiz ediliyor..."
+    },
+    "suggestion": {
+      "title": "Eğitim Önerisi",
+      "description": "Eğer bir sürücü sık sık mod değiştirme hatası yapıyorsa, uygulama bir sonraki vardiyasında ona 'Takograf En İyi Uygulamalar' kılavuzunu otomatik olarak sunar."
+    },
+    "analysis": {
+      "title": "Analiz Sonuçları",
+      "conflictsFound": "{{count}} Çakışma Bulundu",
+      "noData": "Analiz edilecek veri yok.",
+      "noDataSubtitle": "Başlamak için bir sürücü seçin ve takograf dosyası yükleyin.",
+      "tacho": "Takograf",
+      "app": "Uygulama",
+      "priorities": {
+        "high": "Yüksek Öncelik",
+        "low": "Düşük Öncelik"
+      },
+      "activities": {
+        "driving": "Sürüş",
+        "break": "Mola",
+        "work": "Çalışma",
+        "rest": "Dinlenme"
+      },
+      "insightTitle": "Eğitim İçgörüsü",
+      "assignButton": "Tazeleyici Eğitim Ata"
+    }
+  },
+  "payroll": {
+    "title": "Maaş Bordrosu Özeti",
+    "startDate": "Başlangıç Tarihi",
+    "endDate": "Bitiş Tarihi",
+    "exportPayroll": "Bordro CSV Dışa Aktar",
+    "exportExpenses": "Gider CSV Dışa Aktar",
+    "headers": {
+      "driver": "Sürücü",
+      "hours": "Toplam Saat (Normal/Fazla Mesai)",
+      "grossPay": "Brüt Ödeme (Giderler Dahil)"
+    },
+    "labels": {
+      "wages": "Ücretler",
+      "expenses": "Giderler",
+      "normal": "Normal",
+      "overtime": "Mesai",
+      "payrollNumber": "Personel No",
+      "grossPayAmount": "Brüt Tutar (₺)",
+      "wagesAmount": "Maaş Tutarı (₺)"
+    },
+    "noData": "Bu dönem için maaş verisi bulunamadı.",
+    "loading": "Maaş verileri yükleniyor..."
+  },
+  "vehicleChecklist": {
+    "title": "Günlük Araç Güvenlik Kontrolü",
+    "success": {
+      "title": "Kontrol Formu Gönderildi",
+      "message": "Günlük araç güvenlik kontrolü başarıyla kaydedildi."
+    },
+    "manager": {
+      "title": "Güvenlik Kontrolleri",
+      "subtitle": "Günlük denetimleri ve bildirilen arızaları inceleyin",
+      "searchPlaceholder": "Sürücü veya plaka ara...",
+      "noChecks": "Kontrol kaydı bulunamadı",
+      "selectCheck": "Detayları görmek için bir kayıt seçin",
+      "selectCheckSubtitle": "Sürücülerinizin günlük araç denetimleri burada görünecektir",
+      "printExport": "Yazdır / Dışa Aktar",
+      "details": {
+        "vehicleType": "ARAÇ TİPİ",
+        "vehicleMake": "MARKA",
+        "odometer": "KİLOMETRE",
+        "status": "DURUM",
+        "timeRecorded": "KAYIT ZAMANI",
+        "defectsTitle": "BİLDİRİLEN ARIZALAR / ALINAN ÖNLEMLER",
+        "noDefects": "Ek bilgi sağlanmadı."
+      },
+      "status": {
+        "pass": "UYGUN",
+        "fail": "UYGUN DEĞİL",
+        "defect": "ARIZA"
+      }
+    },
+    "sections": {
+      "internal": "İÇ KONTROLLER",
+      "external": "DIŞ KONTROLLER",
+      "vehicleDetails": "Araç Detayları",
+      "defects": "ARIZA BİLDİRİMİ / ALINAN ÖNLEMLER"
+    },
+    "items": {
+      "mirrors": "Aynalar ve Camlar",
+      "mirrorsHint": "Çatlak/etiket kontrolü yapın; aynaların ayarlı olduğundan emin olun.",
+      "wipers": "Silecekler ve Yıkama Sistemi",
+      "wipersHint": "Çalışmayı ve sıvı seviyelerini kontrol edin.",
+      "front_view": "Ön Görüş",
+      "front_viewHint": "Ön camdan tam görüş sağlandığını doğrulayın.",
+      "warning_lamps": "Uyarı Lambaları",
+      "warning_lampsHint": "Gösterge paneli uyarı lambalarının çalıştığından emin olun.",
+      "steering": "Direksiyon Sistemi",
+      "steeringHint": "Sarsıntısız hareket ve doğru çalışma.",
+      "horn": "Korna",
+      "hornHint": "Net ve çalışır durumda olduğunu test edin.",
+      "brakes_air": "Frenler ve Hava Basıncı",
+      "brakes_airHint": "Fren fonksiyonunu ve hava basıncı artışını kontrol edin.",
+      "height_marker": "Yükseklik İşareti",
+      "height_markerHint": "Doğru yükseklik işaretinin görünür olduğunu kontrol edin.",
+      "seatbelts": "Emniyet Kemerleri",
+      "seatbeltsHint": "Tüm kemerlerin düzgün çalıştığını kontrol edin.",
+      "lights_ind": "Lambalar ve Sinyaller",
+      "lights_indHint": "Tüm lamba ve sinyallerin çalıştığını doğrulayın.",
+      "leaks": "Yakıt/Yağ Sızıntıları",
+      "leaksHint": "Yerde veya şaside sıvı sızıntısı olup olmadığını kontrol edin.",
+      "battery": "Akü Güvenliği",
+      "batteryHint": "Akünün sabit ve iyi durumda olduğunu kontrol edin.",
+      "adblue": "AdBlue Sıvısı",
+      "adblueHint": "Yeterli egzoz sıvısı seviyesi.",
+      "smoke": "Aşırı Egzoz Dumanı",
+      "smokeHint": "Yoğun duman emisyonu olup olmadığını kontrol edin.",
+      "body_wings": "Gövde ve Çamurluklar",
+      "body_wingsHint": "Gevşek parça olmadığından emin olun.",
+      "spray": "Sprey Önleyici Sistemler",
+      "sprayHint": "Güvenli bir şekilde sabitlenmiş ve kurallara uygun.",
+      "tyres_wheels": "Lastikler ve Tekerlek Sabitleme",
+      "tyres_wheelsHint": "Bijonlar sıkı. Diş derinliği ve basınç yasal sınırda.",
+      "brake_line": "Fren Hatları",
+      "brake_lineHint": "Hasar veya hava sızıntısı kontrolü yapın.",
+      "electrical": "Elektrik Bağlantıları",
+      "electricalHint": "Tüm bağlantılar için bireysel testler.",
+      "coupling": "Bağlantı (Kavrama) Güvenliği",
+      "couplingHint": "Aracın yüke güvenli bir şekilde bağlandığını kontrol edin.",
+      "load_security": "Yük Güvenliği",
+      "load_securityHint": "Ağırlık eşit dağıtılmış ve yük sabitlenmiş.",
+      "number_plate": "Plaka",
+      "number_plateHint": "Sabitlenmiş ve tamamen görünür.",
+      "reflectors": "Reflektörler ve Lambalar",
+      "reflectorsHint": "Güvenli bir şekilde sabitlenmiş ve görünür.",
+      "markers": "İşaretleyiciler",
+      "markersHint": "Tüm zorunlu işaretleyiciler sabitlenmiş."
+    },
+    "labels": {
+      "regNumber": "PLAKA NO",
+      "vehicleType": "ARAÇ TİPİ",
+      "vehicleMake": "MARKA (OPSİYONEL)",
+      "hint": "İpucu",
+      "submitting": "Gönderiliyor...",
+      "submit": "Formu Gönder",
+      "defectPlaceholder": "Arızayı ve alınan acil önlemleri açıklayın..."
+    },
+    "errors": {
+      "incomplete": "Lütfen göndermeden önce 24 kontrol noktasının tamamını doldurun.",
+      "missingReg": "Araç plakası zorunludur."
+    }
+  },
+  "infractions": {
+    "title": "İhlal Raporları",
+    "subtitle": "Uyum sorunlarını takip edin ve analiz edin",
+    "export": "CSV Dışa Aktar",
+    "filterAll": "Tümü ({{count}})",
+    "filterViolations": "İhlaller ({{count}})",
+    "filterWarnings": "Uyarılar ({{count}})",
+    "noInfractions": "İhlal bulunamadı",
+    "noInfractionsSubtitle": "Filonuz mükemmel bir uyum sergiliyor",
+    "issue": "Uyum Sorunu",
+    "activity": "{{type}} Aktivitesi",
+    "labels": {
+      "driver": "Sürücü",
+      "dateTime": "Tarih ve Saat",
+      "location": "Konum",
+      "duration": "Süre",
+      "notes": "Notlar:",
+      "notRecorded": "Kaydedilmedi",
+      "ongoing": "Devam ediyor",
+      "min": "dk"
+    },
+    "csvHeaders": {
+      "date": "Tarih",
+      "driver": "Sürücü",
+      "activity": "Aktivite",
+      "status": "Durum",
+      "infractionType": "İhlal Tipi",
+      "duration": "Süre (dk)",
+      "locationStart": "Başlangıç Konumu",
+      "notes": "Notlar"
+    }
+  },
+  "audit": {
+    "title": "Denetim Kaydı Dışa Aktarımı",
+    "subtitle": "Resmi denetimler için uyum raporları oluşturun",
+    "filtersTitle": "Rapor Filtreleri",
+    "labels": {
+      "startDate": "Başlangıç Tarihi",
+      "endDate": "Bitiş Tarihi",
+      "driver": "Sürücü",
+      "allDrivers": "Tüm Sürücüler"
+    },
+    "trailCard": {
+      "title": "Tam Denetim Kaydı",
+      "subtitle": "Tüm sürücü günlükleri ve tam detaylar",
+      "item1": "Sürücü aktivite günlükleri",
+      "item2": "Zaman damgaları ve süreler",
+      "item3": "Konum verileri",
+      "item4": "Araç bilgileri",
+      "button": "Denetim Kaydını İndir",
+      "generating": "Oluşturuluyor..."
+    },
+    "summaryCard": {
+      "title": "Uyum Özeti",
+      "subtitle": "Toplu uyum metrikleri",
+      "item1": "Sürücü başına uyum oranları",
+      "item2": "İhlal ve uyarı sayıları",
+      "item3": "Toplam aktivite özeti",
+      "item4": "Hızlı denetim görünümü",
+      "button": "Özeti İndir"
+    },
+    "footerNotice": "Denetime Hazır: Bu raporlar yasal uyumluluk için formatlanmıştır ve doğrudan yetkililere sunulabilir.",
+    "csvHeaders": {
+      "date": "Tarih",
+      "driverName": "Sürücü Adı",
+      "license": "Ehliyet No",
+      "activity": "Aktivite Tipi",
+      "start": "Başlangıç Zamanı",
+      "end": "Bitiş Zamanı",
+      "duration": "Süre (dk)",
+      "status": "Durum",
+      "infraction": "İhlal Tipi",
+      "vehicle": "Araç ID",
+      "locationStart": "Başlangıç Konumu",
+      "locationEnd": "Bitiş Konumu",
+      "notes": "Notlar",
+      "totalLogs": "Toplam Günlük",
+      "violations": "İhlaller",
+      "warnings": "Uyarılar",
+      "complianceRate": "Uyum Oranı"
+    },
+    "ongoing": "Devam ediyor",
+    "none": "Yok",
+    "unknown": "Bilinmiyor"
+  },
+  "expensesManager": {
+    "title": "Gider Onayları",
+    "subtitle": "İncelemeniz gereken {{count}} bekleyen gider var.",
+    "loading": "Bekleyen giderler yükleniyor...",
+    "allClear": "Hepsi tamam!",
+    "noPending": "İncelenecek bekleyen gider yok.",
+    "headers": {
+      "driver": "Sürücü",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "description": "Açıklama",
+      "receipt": "Fiş/Fatura",
+      "actions": "İşlemler"
+    },
+    "viewReceipt": "Görüntüle",
+    "approve": "Onayla",
+    "reject": "Reddet",
+    "errors": {
+      "actionFailed": "Gider işlemi {{action}} başarısız oldu.",
+      "noPath": "Fiş yolu bulunamadı.",
+      "downloadFailed": "Fiş indirilemedi."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Denetçi Yönetimi",
+    "subtitle": "Toplam Denetçi: {{count}}",
+    "notice": "Not: Denetçiler şirket yetkilendirme kodunuzu kullanarak katılırlar. Bu bölüm durumlarını ve profillerini yönetmenizi sağlar.",
+    "searchPlaceholder": "İsim veya e-posta ile ara...",
+    "filters": {
+      "all": "Tümü",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "noSupervisors": "Denetçi bulunamadı",
+    "labels": {
+      "supervisor": "Denetçi",
+      "email": "E-posta",
+      "status": "Durum",
+      "phone": "Telefon Numarası",
+      "name": "Tam İsim",
+      "emailReadOnly": "E-posta (Salt Okunur)"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "modal": {
+      "title": "Denetçi Detayları",
+      "save": "Değişiklikleri Kaydet",
+      "cancel": "İptal",
+      "errors": {
+        "updateFailed": "Denetçi detayları güncellenemedi."
+      },
+      "editTitle": "Detayları Düzenle"
+    }
+  },
+  "driverDetails": {
+    "title": "Sürücü Dosyası: {{name}}",
+    "sections": {
+      "profile": "Temel Profil ve Maaş",
+      "compliance": "Mesleki Yeterlilikler",
+      "activity": "Son Vardiya Kayıtları",
+      "locations": "Başlangıç Konum Kümeleri"
+    },
+    "labels": {
+      "fullName": "Tam İsim",
+      "payrollNo": "Personel No",
+      "niNumber": "TC Kimlik / Sigorta No",
+      "dob": "Doğum Tarihi",
+      "phone": "İletişim Telefonu",
+      "emergencyName": "Acil Durum Kişisi",
+      "emergencyPhone": "Acil Durum Telefonu",
+      "status": "Durum",
+      "address": "İkamet Adresi",
+      "licence": "Ehliyet (Ön Yüz)",
+      "licenceNo": "Ehliyet Numarası",
+      "entitlements": "Sınıflar (Örn: C, CE)",
+      "dvlaCode": "Kontrol Kodu (Varsa)",
+      "cpc": "Mesleki Yeterlilik (SRC/CAP)",
+      "cpcNo": "SRC Belge Numarası",
+      "qualStart": "Yeterlilik Başlangıç",
+      "qualExpiry": "Yeterlilik Bitiş",
+      "tacho": "Dijital Sürücü Kartı",
+      "tachoNo": "Sürücü Kartı Numarası",
+      "cardExpiry": "Kart Bitiş Tarihi",
+      "duration": "Süre: {{hours}} sa",
+      "noShifts": "Kayıtlı yakın vardiya bulunmuyor.",
+      "loadingMap": "Harita yükleniyor...",
+      "noMapData": "Isı haritası için konum verisi yok.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "AKTİF",
+      "inactive": "PASİF (Hizmet Dışı)",
+      "missingExpiry": "Bitiş tarihi eksik",
+      "expired": "{{date}} tarihinde süresi doldu",
+      "expiresIn": "{{days}} gün içinde dolacak",
+      "expiresOn": "{{date}} tarihinde dolacak"
+    },
+    "buttons": {
+      "uploadLicence": "Ehliyet Yükle",
+      "uploadCpc": "SRC Belgesi Yükle",
+      "uploadTacho": "Sürücü Kartı Yükle",
+      "commit": "Değişiklikleri Onayla",
+      "saving": "Kaydediliyor..."
+    },
+    "errors": {
+      "fillAll": "Lütfen tüm belge alanlarını doldurun.",
+      "uploadError": "Hata: {{message}}",
+      "updateFailed": "Sürücü detayları güncellenemedi."
+    }
+  },
+  "shiftEdit": {
+    "title": "Manuel Vardiya Düzenleme",
+    "labels": {
+      "start": "Başlangıç Zamanı (Salt Okunur)",
+      "end": "Bitiş Zamanı",
+      "reason": "Değişiklik Nedeni (Zorunlu)",
+      "reasonPlaceholder": "Örn: Sürücü bu saatte telefonunun şarjının bittiğini onayladı."
+    },
+    "errors": {
+      "endRequired": "Bitiş zamanı zorunludur.",
+      "reasonRequired": "Değişikliği açıklayan denetim notu zorunludur.",
+      "invalidEnd": "Bitiş zamanı başlangıçtan sonra olmalıdır.",
+      "updateFailed": "Vardiya güncellenemedi."
+    },
+    "buttons": {
+      "save": "Kaydet ve Yeniden Hesapla",
+      "saving": "Kaydediliyor..."
+    },
+    "auditNotePrefix": "(Yönetici Tarafından Düzenlendi) "
+  },
+  "settings": {
+    "company": {
+      "title": "Şirket Kimliği",
+      "subscriptionActive": "ABONELİK AKTİF",
+      "inactive": "PASİF",
+      "nameLabel": "Şirket Adı",
+      "refIdLabel": "Dahili Referans ID",
+      "authCodeLabel": "Şirket Yetkilendirme Kodu",
+      "authCodeFootnote": "Bu kodu, filonuza bağlanmaları için yeni sürücülere ve denetçilere verin.",
+      "complianceTitle": "Uyum Zorunluluğu",
+      "complianceSubtitle": "Filo genelinde yüksek güvenlik standartlarını uygulayın.",
+      "mandatoryChecks": "Zorunlu Araç Kontrolleri",
+      "mandatoryChecksSubtitle": "Sürücülerin kontrol yapmadan vardiya başlatmasını engelleyin.",
+      "mandatoryChecksFootnote": "Etkinleştirildiğinde, filo sürücüleri mesai kaydetmeden önce araç kontrolünü tamamlamalıdır.",
+      "usageMetrics": "Filo Kullanım Metrikleri",
+      "usageMetricsSubtitle": "Kilometre ve denetim verileri otomatik olarak yakalanır.",
+      "dataStatus": "Veri Durumu",
+      "activeMonitoring": "Aktif İzleme Etkin",
+      "fleetRegistered": "FİLO KAYIT TARİHİ: {{date}}",
+      "errors": {
+        "updateFailed": "Şirket adı güncellenemedi.",
+        "settingUpdateFailed": "Ayar güncellenemedi: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Profilim",
+      "success": "Profil Güncellendi",
+      "nameLabel": "Tam İsim",
+      "emailLabel": "E-posta Adresi (Giriş)",
+      "phoneLabel": "İletişim Telefonu",
+      "updateButton": "Bilgilerimi Güncelle",
+      "updating": "Kaydediliyor...",
+      "securityTitle": "Güvenlik ve Şifre",
+      "securitySubtitle": "Şifre değiştirmeniz veya MFA'yı açmanız mı gerekiyor?",
+      "resetPassword": "Şifreyi Sıfırla",
+      "resetSent": "Şifre sıfırlama bağlantısı gönderildi."
+    },
+    "mfa": {
+      "title": "Çok Faktörlü Kimlik Doğrulama (MFA)",
+      "subtitle": "Telefonunuzdaki bir kimlik doğrulama uygulamasından kod isteyerek hesabınıza ekstra güvenlik katmanı ekleyin.",
+      "enabled": "MFA şu anda etkin.",
+      "step1": "1. Bu QR kodunu uygulamanızla (Örn: Google Authenticator) tarayın.",
+      "step2": "2. Kurulumu tamamlamak için aşağıdaki 6 haneli kodu girin.",
+      "placeholder": "123456",
+      "verifyButton": "Doğrula ve Etkinleştir",
+      "verifying": "Doğrulanıyor...",
+      "enableButton": "MFA'yı Etkinleştir",
+      "starting": "Başlatılıyor...",
+      "disableButton": "Devre Dışı Bırak",
+      "disabling": "Devre dışı bırakılıyor...",
+      "confirmDisable": "Çok faktörlü kimlik doğrulamayı devre dışı bırakmak istediğinizden emin misiniz?",
+      "successEnabled": "Çok faktörlü kimlik doğrulama başarıyla etkinleştirildi!",
+      "successDisabled": "Çok faktörlü kimlik doğrulama devre dışı bırakıldı."
+    }
+  },
+  "common": {
+    "save": "Değişiklikleri Kaydet",
+    "cancel": "İptal",
+    "loading": "Yükleniyor...",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "refresh": "Listeyi Yenile",
+    "viewAll": "Tümünü Gör",
+    "success": "Başarılı",
+    "error": "Hata",
+    "lastUpdated": "Son Güncelleme: {{date}}",
+    "details": "Detaylar",
+    "syncing": "Liste senkronize ediliyor...",
+    "search": "İsim veya e-posta ile ara...",
+    "confirmDelete": "{{name}} isimli kullanıcıyı kaldırmak istediğinizden emin misiniz? Bu işlem hesabı ve verileri kalıcı olarak silecektir.",
+    "selectFile": "Dosya Seç"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil Bulunamadı",
+      "message": "Hesabınızı bulduk ancak profil detayları yüklenemedi.",
+      "retry": "Yeniden Dene",
+      "signOut": "Çıkış Yap ve Yeniden Başla"
+    }
+  },
+  "howTo": {
+    "title": "HourWise EU Kullanım Kılavuzu",
+    "subtitle": "Filonuzu yönetmeye başlamak için bilmeniz gereken her şey",
+    "sections": {
+      "gettingStarted": {
+        "title": "Başlangıç",
+        "step1": {
+          "title": "Adım 1: Hesabınızı Oluşturun",
+          "description": "Bir filo yöneticisi hesabı oluşturarak başlayın. Şirket bilgilerini girmeniz ve güvenli bir şifre oluşturmanız gerekecektir."
+        },
+        "step2": {
+          "title": "Adım 2: Sürücülerinizi Ekleyin",
+          "description": "Giriş yaptıktan sonra Sürücü Yönetimi bölümüne gidin. Her sürücü için giriş bilgilerini oluşturabilirsiniz.",
+          "list": [
+            "Sürücünün adını ve e-postasını girin",
+            "Sistem güvenli giriş bilgilerini oluşturur",
+            "Sürücüye talimatları içeren bir hoş geldin e-postası gider"
+          ]
+        },
+        "step3": {
+          "title": "Adım 3: Günlük Saatleri Takip Edin",
+          "description": "Sürücüler saatlerini göndermek için uygulamayı kullanır. Sistem toplamları otomatik takip eder ve yasal limitler için uyarır.",
+          "list": [
+            "Sürücüler günlük sürüş saatlerini girer",
+            "Haftalık ve iki haftalık toplamların gerçek zamanlı hesabı",
+            "Limitlere yaklaşıldığında otomatik uyarılar"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Filo Yöneticileri İçin",
+        "compliance": {
+          "title": "Uyum İzleme",
+          "description": "Tüm filonun uyum durumunu gerçek zamanlı görün. Skor tablosu hangi sürücülerin dikkat gerektirdiğini gösterir."
+        },
+        "violations": {
+          "title": "İhlal Yönetimi",
+          "description": "Bir sürücü yasal limitleri aştığında sistem bir ihlal kaydeder. Denetimler için tüm detayları inceleyebilirsiniz."
+        },
+        "audit": {
+          "title": "Denetim Kaydı",
+          "description": "Sistemdeki her işlem kaydedilir. Bu kapsamlı günlük tam sorumluluk sağlar ve yasal gereklilikleri karşılar."
+        }
+      },
+      "drivers": {
+        "title": "Sürücüler İçin",
+        "workflow": {
+          "title": "Günlük İş Akışı",
+          "step1": {
+            "title": "Sürücü panelinize giriş yapın",
+            "description": "Yöneticiniz tarafından sağlanan bilgileri kullanın"
+          },
+          "step2": {
+            "title": "Sürüş saatlerinizi gönderin",
+            "description": "Gün içindeki toplam sürüş saatinizi girin"
+          },
+          "step3": {
+            "title": "Uyum durumunuzu kontrol edin",
+            "description": "Haftalık ve iki haftalık toplamlarınızı görün"
+          },
+          "step4": {
+            "title": "Uyarılara dikkat edin",
+            "description": "Saat limitlerine yaklaştığınızda sistem sizi uyarır"
+          }
+        }
+      },
+      "regulations": {
+        "title": "AB Yönetmeliklerini Anlamak",
+        "limits": {
+          "title": "Temel Limitler",
+          "weekly": "Haftalık Limit:",
+          "weeklyValue": "Haftada en fazla 56 saat sürüş",
+          "fortnightly": "İki Haftalık Limit:",
+          "fortnightlyValue": "Herhangi iki ardışık haftada en fazla 90 saat sürüş",
+          "footnote": "HourWise EU her iki limiti de otomatik olarak izler."
+        }
+      },
+      "help": {
+        "title": "Daha Fazla Yardıma mı İhtiyacınız Var?",
+        "subtitle": "Destek ekibimizle iletişime geçin",
+        "emailLabel": "E-posta:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Gizlilik Politikası",
+    "sections": {
+      "intro": {
+        "title": "1. Giriş",
+        "p1": "HourWise EU, nakliye işletmelerine uyum ve operasyon yönetimi konusunda yardımcı olan bir platform sağlar.",
+        "p2": "Hizmetlerimizi kullanarak, bilgilerin bu politika uyarınca toplanmasını ve kullanılmasını kabul etmiş olursunuz."
+      },
+      "collect": {
+        "title": "2. Hangi Bilgileri Topluyoruz",
+        "managers": {
+          "title": "2.1 Yöneticiler Tarafından Sağlanan Bilgiler",
+          "items": [
+            "Hesap Verileri: İsim, şirket ve e-posta.",
+            "Sürücü Kayıtları: Personel no, doğum tarihi, adres, acil durum kontakları.",
+            "Uyum Detayları: Ehliyet, SRC belgeleri ve bitiş tarihleri."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Sürücüler Tarafından Sağlanan Bilgiler (Uygulama)",
+          "items": [
+            "Profil Verileri: İsim ve e-posta.",
+            "Çalışma Oturumları: Çalışma, mola ve dinlenme zaman damgaları.",
+            "Gider Kayıtları: Tutar, açıklama ve fiş görselleri."
+          ]
+        },
+        "app": {
+          "title": "2.3 Uygulama İzinleri ve Veriler",
+          "description": "Temel özellikler için uygulama şunları ister:",
+          "items": [
+            "Kamera Erişimi: Belge ve fiş yüklemek için.",
+            "Konum Verisi: GPS koordinatlarını SADECE vardiya başlangıç ve bitiş anında denetim amaçlı kaydederiz. Arka planda sürekli takip yoktur."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Bilgilerinizi Nasıl Kullanıyoruz",
+        "items": [
+          "Uyum Takibi: Saatlerin ve belge geçerlilik sürelerinin yönetimi.",
+          "Maaş Kolaylaştırma: Muhasebe için brüt maaş hesaplamaları.",
+          "Gider Yönetimi: Geri ödemeler için fişlerin işlenmesi.",
+          "Denetim Kayıtları: Yasal uyum için çalışma kayıtlarının tutulması."
+        ]
+      },
+      "security": {
+        "title": "4. Veri Güvenliği ve Depolama",
+        "p1": "Tüm veriler Satır Düzeyinde Güvenlik (RLS) ile korunur. Belgeler şifrelenmiş özel depolama alanlarında tutulur."
+      },
+      "retention": {
+        "title": "5. Veri Saklama",
+        "p1": "Yasalar gereği, maaş ve çalışma verileri denetim amaçlı olarak 3 ile 6 yıl arasında saklanır."
+      },
+      "rights": {
+        "title": "6. Veri Haklarınız (KVKK/GDPR)",
+        "p1": "Verilerinize erişme, düzeltme veya silme hakkına sahipsiniz."
+      },
+      "contact": {
+        "title": "7. İletişime Geçin",
+        "team": "HourWise EU Gizlilik Ekibi",
+        "emailLabel": "E-posta:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Hizmet Şartları",
+    "sections": {
+      "agreement": {
+        "title": "1. Şartların Kabulü",
+        "p1": "HourWise EU platformuna erişerek bu şartlara uymayı kabul etmiş olursunuz."
+      },
+      "license": {
+        "title": "2. Kullanım Lisansı",
+        "p1": "Platformun iş amaçlı kullanımı için geçici izin verilir. Bu bir lisans verme işlemidir, mülkiyet devri değildir.",
+        "items": [
+          "Materyalleri değiştirmemek veya kopyalamamak;",
+          "Yazılım üzerinde tersine mühendislik yapmamak;",
+          "Telif hakkı bildirimlerini kaldırmamak."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Veri Doğruluğu ve Uyum",
+        "p1": "HourWise araçlar sağlar ancak:",
+        "items": [
+          "Kullanıcı Sorumluluğu: Yöneticiler ve sürücüler kayıtların doğruluğunu kontrol etmekle yükümlüdür.",
+          "Yasal Uyum: Hizmetin kullanımı yetkililer nezdinde otomatik uyum garantisi vermez.",
+          "Giriş Hataları: Hatalı girilen verilerden doğan sorunlardan sorumlu değiliz."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Abonelikler ve Faturalandırma",
+        "p1": "Profesyonel özelliklere erişim Stripe üzerinden ücretli abonelik gerektirir.",
+        "solo": {
+          "title": "4.1 Solo Sürücü Planı",
+          "p1": "Mobil uygulama üzerinden aylık olarak faturalandırılır."
+        },
+        "fleet": {
+          "title": "4.2 Filo Yönetim Planı",
+          "p1": "Şirketler, filolarındaki aktif sürücü sayısına göre faturalandırılır."
+        },
+        "general": {
+          "title": "4.3 Genel Ödeme Şartları",
+          "items": [
+            "Ücretler iade edilemez.",
+            "Ödemenin yapılmaması erişimin askıya alınmasına neden olabilir."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Sorumluluğun Sınırlandırılması",
+        "p1": "Hizmet 'olduğu gibi' sunulur. Dolaylı zararlardan veya veri kaybından sorumlu olmayacağız."
+      },
+      "law": {
+        "title": "6. Uygulanacak Hukuk",
+        "p1": "Bu şartlar Birleşik Krallık yasalarına (veya ilgili yerel hukuka) tabidir."
+      },
+      "changes": {
+        "title": "7. Şartlardaki Değişiklikler",
+        "p1": "Bu şartları 30 gün önceden bildirim yaparak değiştirme hakkımız saklıdır."
+      },
+      "contact": {
+        "title": "8. İletişim Bilgileri",
+        "team": "HourWise EU Hukuk Ekibi",
+        "emailLabel": "E-posta:"
+      }
+    }
+  },
+  "contact": {
+    "title": "İletişime Geçin",
+    "subtitle": "Yardım etmek için buradayız.",
+    "general": {
+      "title": "Genel Sorular",
+      "description": "Ortaklık veya genel bilgi talepleri için."
+    },
+    "technical": {
+      "title": "Teknik Destek",
+      "description": "Uygulama ile ilgili teknik bir sorun yaşıyorsanız."
+    },
+    "cta": "E-posta Gönder"
+  },
+  "privacyRequest": {
+    "title": "Veri ve Gizlilik Talebi",
+    "form": {
+      "labels": {
+        "fullName": "Tam İsim",
+        "email": "Doğrulanmış E-posta",
+        "requestType": "Talep Türü",
+        "additionalInfo": "Ek Bilgi"
+      },
+      "placeholders": {
+        "fullName": "Uygulamadaki gibi",
+        "email": "e-posta@adresiniz.com",
+        "details": "İsteğe bağlı: Talebinizle ilgili özel detaylar"
+      },
+      "requestTypes": {
+        "download": "Verilerimin kopyasını iste (Erişim)",
+        "deletion": "Hesabımı ve verilerimi sil (Unutulma)"
+      },
+      "cta": "Gizlilik E-postası Oluştur",
+      "notices": {
+        "fleet": "Filo Sürücüleri İçin Not: Hesabınız bir şirket tarafından yönetiliyorsa, maaş işlemlerinin tamamlanması için önce yöneticinizle iletişime geçin.",
+        "security": "Güvenliğiniz için bu talebi kayıtlı e-postanızdan göndermenizi isteyerek kimlik doğrulaması yapıyoruz. Talebi 30 gün içinde işleme alacağız."
+      },
+      "success": {
+        "title": "Talep Hazırlandı",
+        "message": "E-posta istemciniz açıldı. Lütfen ekibimize iletmek için **'Gönder'** butonuna basın.",
+        "submitAnother": "Başka bir talep gönder"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Sürücü Yönetimi",
+    "activeDrivers": "aktif sürücü",
+    "pendingInvites": "bekleyen davet",
+    "inviteDriver": "Sürücü Davet Et",
+    "labels": {
+      "name": "İsim",
+      "email": "E-posta",
+      "compliance": "Uyum",
+      "status": "Durum"
+    },
+    "status": {
+      "active": "Aktif",
+      "inviteSent": "Davet Gönderildi",
+      "noDocuments": "Belge Yok",
+      "expired": "Belge Süresi Dolmuş",
+      "compliant": "Uyumlu",
+      "checkExpiry": "Geçerliliği Kontrol Et",
+      "expiresIn": "{{days}} gün içinde dolacak",
+      "lost": "Bağlantı Kesildi",
+      "linkMismatch": "Bağlantı Hatası"
+    },
+    "lostInviteNotice": "Davet kabul edildi ancak profil bağlantısı başarısız oldu. Supabase üzerinde company_id güncelleyin.",
+    "noDrivers": "Sürücü veya davet bulunamadı",
+    "incompleteSetup": "Eksik Kurulum"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Yeni Sürücü Davet Et",
+      "fullName": "Tam İsim *",
+      "email": "E-post Adresi *",
+      "payConfig": "Maaş Yapılandırması",
+      "hourlyRate": "Saatlik Ücret (₺)",
+      "unpaidBreak": "Ücretsiz Mola (dk)",
+      "allowances": "Ödenekler",
+      "allowanceAmount": "Tutar (₺)",
+      "unit": "Birim",
+      "units": {
+        "hour": "Saatlik",
+        "day": "Günlük",
+        "week": "Haftalık",
+        "month": "Aylık",
+        "shift": "Vardiya Başı",
+        "daily": "Günlük",
+        "weekly": "Haftalık",
+        "monthly": "Aylık"
+      },
+      "addAllowance": "Ödenek Ekle",
+      "overtime": "Fazla Mesai",
+      "otThreshold": "Mesai Eşiği (saat)",
+      "otUnit": "Mesai Birimi",
+      "otMultiplier": "Ücret Çarpanı",
+      "additionalTiers": "Ek Kademeler",
+      "afterHours": "Şu saatten sonra:",
+      "newMultiplier": "Yeni Çarpan",
+      "addOtTier": "Mesai Kademesi Ekle",
+      "submit": "Davet Gönder",
+      "submitting": "Davet gönderiliyor..."
+    },
+    "errors": {
+      "noCompany": "Herhangi bir şirketle bağlantınız yok.",
+      "generic": "Bilinmeyen bir hata oluştu."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Deneme Süresi Doldu",
+      "unlockAccess": "Tam Erişimi Aç",
+      "expiredSubtitle": "HourWise kullanmaya devam etmek için abone olun",
+      "accessSubtitle": "Tüm özelliklere sınırsız erişim",
+      "features": {
+        "invoicing": "Fatura Oluşturma",
+        "invoicingDesc": "Müşteriler için profesyonel faturalar",
+        "expenses": "Gider Takibi",
+        "expensesDesc": "Tüm iş harcamalarınızı izleyin",
+        "compliance": "Saat Uyumu",
+        "complianceDesc": "Sürüş limitlerine uygun kalın",
+        "reports": "Vergi Raporları",
+        "reportsDesc": "Muhasebe için verileri dışa aktarın"
+      },
+      "perMonth": "/ay",
+      "cancelAnytime": "İstediğiniz zaman iptal edin. Taahhüt yok.",
+      "subscribeNow": "Şimdi Abone Ol",
+      "cancelSettings": "Hesap ayarlarından istediğiniz zaman iptal edin",
+      "securePayment": "Apple/Google ile güvenli ödeme",
+      "instantAccess": "Abonelikten sonra anında erişim"
+    },
+    "manager": {
+      "fleetMember": "Filo Üyesi",
+      "partOf": "{{company}} şirketinin bir parçasısınız",
+      "fleetAccess": "Şirketiniz tarafından sağlanan tam erişim",
+      "soloTitle": "Solo Sürücü Aboneliği",
+      "manageDesc": "Aboneliğinizi yönetin",
+      "status": {
+        "active": "Aktif",
+        "trial": "Deneme",
+        "inactive": "Pasif"
+      },
+      "trialPeriod": "Deneme Süresi",
+      "trialDays": "{{count}} gün deneme süresi kaldı",
+      "trialEnded": "Deneme süreniz sona erdi",
+      "activeSub": "Aktif Abonelik",
+      "renewsOn": "{{date}} tarihinde yenileniyor",
+      "noActiveSub": "Aktif Abonelik Yok",
+      "subscribeAccess": "Tam erişim için abone olun",
+      "planLabel": "Plan",
+      "soloPlan": "Solo Sürücü",
+      "priceLabel": "Fiyat",
+      "priceValue": "₺299,99/ay",
+      "paymentLabel": "Ödeme Yöntemi",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Ayarlanmadı",
+      "manageButton": "Aboneliği Yönet",
+      "resubscribe": "Yeniden Abone Ol",
+      "subscribeNow": "Şimdi Abone Ol",
+      "manageAlert": "Aboneliğinizi yönetmek için cihaz ayarlarınızı ziyaret edin.",
+      "demoAlert": "Uygulama içi satın alma akışı burada tetiklenecektir."
+    },
+    "banner": {
+      "daysLeft": "{{count}} gün kaldı",
+      "lastDay": "Son gün",
+      "trialSuffix": " ücretsiz deneme süreniz kaldı!",
+      "endsIn": "Ücretsiz deneme {{count}} gün içinde bitiyor",
+      "cta": "Ayda sadece ₺299,99'a abone olun",
+      "subscribeNow": "Şimdi Abone Ol"
+    }
+  },
+  "reports": {
+    "title": "Filo Raporlama",
+    "exportPdf": "PDF Dışa Aktar / Yazdır",
+    "tabs": {
+      "payroll": "Bordro",
+      "efficiency": "Verimlilik",
+      "vehicleChecks": "Kontroller",
+      "infractions": "İhlaller",
+      "driving": "Sürüş"
+    },
+    "filters": {
+      "title": "Filtreler",
+      "driver": "Sürücü",
+      "allDrivers": "Tüm Sürücüler",
+      "startDate": "Başlangıç Tarihi",
+      "endDate": "Bitiş Tarihi"
+    },
+    "payroll": {
+      "title": "Bordro Özeti",
+      "headers": {
+        "driver": "Sürücü",
+        "workHours": "Çalışma Saati",
+        "breakHours": "Mola Saati",
+        "sessions": "Oturumlar"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Araç Denetim Raporu",
+      "headers": {
+        "dateTime": "Tarih/Saat",
+        "inspector": "Denetçi",
+        "vehicle": "Araç",
+        "status": "Durum",
+        "defects": "Arızalar"
+      },
+      "status": {
+        "pass": "OK",
+        "defect": "ARIZA"
+      },
+      "noneReported": "Bildirim yok"
+    },
+    "infractions": {
+      "moduleReady": "İhlal özet modülü hazır."
+    },
+    "driving": {
+      "moduleReady": "Sürüş davranışı analiz modülü hazır."
+    }
+  },
+  "broadcast": {
+    "title": "Filoya Duyuru Gönder",
+    "placeholder": "Tüm sürücülere gidecek mesajı yazın...",
+    "button": "Herkese Gönder",
+    "sending": "Gönderiliyor...",
+    "success": "Duyuru başarıyla gönderildi!",
+    "errors": {
+      "empty": "Mesaj boş olamaz.",
+      "notLoaded": "Kullanıcı profili veya Şirket ID yüklenemedi.",
+      "failed": "Mesaj gönderilemedi."
+    }
+  },
+  "mfa": {
+    "title": "Çok Faktörlü Kimlik Doğrulama (MFA)",
+    "subtitle": "Kimlik doğrulama uygulamasından alınan bir kodla ekstra güvenlik ekleyin.",
+    "enabled": "MFA şu anda etkin.",
+    "disableButton": "Devre Dışı Bırak",
+    "disabling": "Devre dışı bırakılıyor...",
+    "step1": "1. Bu QR kodunu uygulamanızla tarayın.",
+    "step2": "2. Uygulamadaki 6 haneli kodu girin.",
+    "placeholder": "123456",
+    "verifyButton": "Doğrula ve Etkinleştir",
+    "verifying": "Doğrulanıyor...",
+    "enableButton": "MFA'yı Etkinleştir",
+    "starting": "Başlatılıyor...",
+    "confirmDisable": "MFA'yı devre dışı bırakmak istediğinizden emin misiniz?",
+    "successEnabled": "MFA başarıyla etkinleştirildi!",
+    "successDisabled": "MFA devre dışı bırakıldı."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Denetçi Yönetimi",
+      "count": "Toplam denetçi: {{count}}",
+      "notice": "Not: Denetçiler şirket koduyla katılırlar.",
+      "searchPlaceholder": "Ara...",
+      "noSupervisors": "Denetçi bulunamadı",
+      "labels": {
+        "supervisor": "Denetçi",
+        "email": "E-posta",
+        "status": "Durum",
+        "edit": "Detayları Düzenle"
+      }
+    },
+    "modal": {
+      "title": "Denetçi Detayları",
+      "nameLabel": "Tam İsim",
+      "emailLabel": "E-posta (Salt Okunur)",
+      "phoneLabel": "Telefon Numarası",
+      "saveButton": "Değişiklikleri Kaydet",
+      "errorUpdate": "Detaylar güncellenemedi."
+    }
+  },
+  "location": {
+    "notRecorded": "Konum kaydedilmedi",
+    "mapAlt": "{{lat}}, {{lng}} merkezli harita"
+  },
+  "vehicleCompliance": {
+    "title": "Filo Uyum Uyarıları",
+    "urgent": "{{count}} ACİL",
+    "noAlerts": "Acil uyarı yok.",
+    "offRoad": "Araç Hizmet Dışı (VOR)",
+    "dueOverdue": "{{type}} GECİKMİŞ",
+    "dueInDays": "{{type}} tarihine {{days}} gün kaldı",
+    "viewFullList": "Tam Listeyi Gör"
+  }
+}

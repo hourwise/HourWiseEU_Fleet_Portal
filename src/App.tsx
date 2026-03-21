@@ -7,17 +7,19 @@ import { SignupForm } from './components/auth/SignupForm';
 import { ManagerDashboard } from './components/manager/ManagerDashboard';
 import { HomePage } from './components/public/HomePage';
 import { PrivacyPage } from './components/public/PrivacyPage';
+import { TermsPage } from './components/public/TermsPage';
 import { HowToPage } from './components/public/HowToPage';
-import { ContactPage } from './components/public/ContactPage'; // IMPORT THE NEW PAGE
+import { ContactPage } from './components/public/ContactPage';
 import { Header } from './components/public/Header';
 import { Footer } from './components/public/Footer';
 import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AlertTriangle } from 'lucide-react';
 import { PrivacyRequestPage } from './pages/PrivacyRequestPage';
+import { useTranslation } from 'react-i18next'; // Import
 
-type Route = '/' | '/login' | '/signup' | '/privacy' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
+type Route = '/' | '/login' | '/signup' | '/privacy' | '/terms' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
 
-const PUBLIC_ROUTES: Route[] = ['/', '/privacy', '/how-to', '/privacy-request', '/contact'];
+const PUBLIC_ROUTES: Route[] = ['/', '/privacy', '/terms', '/how-to', '/privacy-request', '/contact'];
 const AUTH_ROUTES: Route[] = ['/login', '/signup'];
 const PROTECTED_ROUTES: Route[] = ['/dashboard'];
 
@@ -70,6 +72,7 @@ function isRoute(path: string): path is Route {
     path === '/login' ||
     path === '/signup' ||
     path === '/privacy' ||
+    path === '/terms' ||
     path === '/how-to' ||
     path === '/dashboard' ||
     path === '/privacy-request' ||
@@ -88,11 +91,12 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function LoadingScreen() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-dark to-brand-card flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-2xl p-8">
         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto" />
-        <p className="text-center mt-4 text-gray-700 font-medium">Loading HourWise EU...</p>
+        <p className="text-center mt-4 text-gray-700 font-medium">{t('common.loading')}</p>
       </div>
     </div>
   );
@@ -140,6 +144,7 @@ class ErrorBoundary extends React.Component<
 function AppContent() {
   const { user, profile, loading, isSigningUp, needsMfa, refreshSession, signOut } = useAuth();
   const { currentPath, navigate } = useRouter();
+  const { t } = useTranslation(); // Use hook
 
   const isPublic = useMemo(() => PUBLIC_ROUTES.includes(currentPath), [currentPath]);
   const isAuth = useMemo(() => AUTH_ROUTES.includes(currentPath), [currentPath]);
@@ -191,6 +196,7 @@ function AppContent() {
         <PublicLayout>
           {currentPath === '/' && <HomePage />}
           {currentPath === '/privacy' && <PrivacyPage />}
+          {currentPath === '/terms' && <TermsPage />}
           {currentPath === '/how-to' && <HowToPage />}
           {currentPath === '/contact' && <ContactPage />}
         </PublicLayout>
@@ -222,9 +228,9 @@ function AppContent() {
         <div className="min-h-screen bg-gradient-to-br from-brand-dark to-brand-card flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6 text-center">
             <AlertTriangle className="w-16 h-16 mx-auto text-orange-500" />
-            <h2 className="text-2xl font-bold text-gray-800">Profile Not Found</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('errors.profileNotFound.title', 'Profile Not Found')}</h2>
             <p className="text-gray-600">
-              We found your account, but couldn't load your profile details. This might be a temporary connection issue.
+              {t('errors.profileNotFound.message', "We found your account, but couldn't load your profile details. This might be a temporary connection issue.")}
             </p>
 
             <div className="space-y-3">
@@ -232,14 +238,14 @@ function AppContent() {
                 onClick={() => refreshSession()}
                 className="w-full flex justify-center py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                Retry Loading Profile
+                {t('errors.profileNotFound.retry', 'Retry Loading Profile')}
               </button>
 
               <button
                 onClick={() => signOut()}
                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                Sign Out and Start Over
+                {t('errors.profileNotFound.signOut', 'Sign Out and Start Over')}
               </button>
             </div>
           </div>

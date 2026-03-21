@@ -1,0 +1,1148 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Viedā autoparka pārvaldība kļuvusi vienkārša",
+    "description": "Viedā autoparka pārvaldība un atbilstības izsekošana Eiropas transporta uzņēmumiem. Saglabājiet atbilstību, saglabājiet efektivitāti."
+  },
+  "navigation": {
+    "home": "Sākums",
+    "howTo": "Kā lietot",
+    "privacy": "Privātuma politika",
+    "terms": "Pakalpojuma noteikumi",
+    "contact": "Kontakti",
+    "privacyRequest": "Datu pieprasījumi (GDPR)",
+    "signIn": "Pierakstīties",
+    "getStarted": "Sākt darbu",
+    "dashboard": "Informācijas panelis",
+    "drivers": "Vadītāji",
+    "compliance": "Atbilstība",
+    "training": "Apmācības",
+    "fleet": "Autoparks",
+    "safetyChecks": "Drošības pārbaudes",
+    "supervisors": "Uzraugi",
+    "payroll": "Algas",
+    "expenses": "Izdevumi",
+    "reports": "Atskaites",
+    "auditTrail": "Audita žurnāls",
+    "settings": "Iestatījumi",
+    "signOut": "Izrakstīties"
+  },
+  "footer": {
+    "company": "Uzņēmums",
+    "account": "Konts",
+    "createAccount": "Izveidot kontu",
+    "allRightsReserved": "Visas tiesības aizsargātas."
+  },
+  "auth": {
+    "login": "Pierakstīties",
+    "signup": "Reģistrēties",
+    "email": "E-pasts",
+    "password": "Parole",
+    "forgotPassword": "Aizmirsi paroli?",
+    "createAccount": "Izveidot autoparka vadītāja kontu",
+    "managerSignup": "Vadītāja reģistrācija",
+    "companyName": "Uzņēmuma nosaukums",
+    "fullName": "Vārds, uzvārds",
+    "alreadyHaveAccount": "Jau ir konts? Pierakstīties",
+    "signInSubtitle": "Pierakstieties savā autoparka panelī",
+    "forgotPasswordSubtitle": "Atiestatīt paroli",
+    "magicLinkSubtitle": "Saņemt burvju saiti pierakstīšanai",
+    "magicLink": "Pierakstīties ar burvju saiti",
+    "sendMagicLink": "Nosūtīt burvju saiti",
+    "sendResetLink": "Nosūtīt atiestatīšanas saiti",
+    "backToSignIn": "Atpakaļ uz pierakstīšanos",
+    "newToApp": "Jauns HourWise lietotājs?",
+    "createCompanyAccountSubtitle": "Izveidojiet sava uzņēmuma kontu",
+    "billingNotice": "Pabeidziet norēķinu iestatīšanu tīmekļa vietnē pēc reģistrācijas",
+    "codeNotice": "Jūs saņemsiet uzņēmuma kodu, ko kopīgot ar saviem vadītājiem",
+    "creatingAccount": "Izveido kontu...",
+    "createFleetAccount": "Izveidot autoparka kontu",
+    "messages": {
+      "resetSent": "Paroles atiestatīšanas saite ir nosūtīta uz jūsu e-pastu.",
+      "magicLinkSent": "Pārbaudiet savu e-pastu, lai saņemtu pierakstīšanās saiti."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Autoparka vadītāja portāls",
+      "welcome": "Sveicināti atpakaļ, {{name}}",
+      "snapshots": {
+        "compliance": "Autoparka atbilstības rādītājs",
+        "vehicle": "TP atbilstības brīdinājumi",
+        "driver": "Vadītāju kvalifikācijas brīdinājumi",
+        "viewAll": "Skatīt visu",
+        "avgScore": "Vidējais rādītājs",
+        "sevenDayInfringements": "7 dienu pārkāpumi",
+        "openBoard": "Atvērt atbilstības tablo",
+        "urgent": "{{count}} STEIDZAMI",
+        "noVehicleAlerts": "Nav steidzamu transportlīdzekļu brīdinājumu.",
+        "viewFleetList": "Skatīt pilnu autoparka sarakstu",
+        "noDriverAlerts": "Visi vadītāju dokumenti ir aktuāli.",
+        "manageDocs": "Pārvaldīt vadītāju dokumentus",
+        "alerts": "{{count}} BRĪDINĀJUMI",
+        "alertSingle": "1 BRĪDINĀJUMS"
+      },
+      "alerts": {
+        "title": "Rīcības brīdinājumi",
+        "urgent": "STEIDZAMI",
+        "trainingMode": "Apmācības režīms aktīvs",
+        "discrepancy": "Atrasta datu neatbilstība",
+        "allClear": "Viss kārtībā!",
+        "noIssues": "Problēmas nav konstatētas.",
+        "shiftAlert": "Brīdinājums par maiņu {{date}}",
+        "issueDetected": "Konstatēta problēma, kurai var būt nepieciešama pārskatīšana."
+      },
+      "auditReadiness": {
+        "title": "Gatavība auditam",
+        "status": "Jūsu autoparka dati pašlaik tiek sinhronizēti atbilstoši audita standartiem."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Autoparka pārvaldība",
+    "totalAssets": "Kopā vienības: {{count}}",
+    "addVehicle": "Pievienot TP",
+    "backToList": "Atpakaļ uz sarakstu",
+    "vehicleDetails": "TP dati",
+    "complianceBoard": "Atbilstības tablo",
+    "maintenanceActions": "Apkopes darbības",
+    "statusNotes": "Statusa piezīmes",
+    "noNotes": "Šim transportlīdzeklim nav aktīvu brīdinājumu vai piezīmju.",
+    "markVor": "Atzīmēt kā VOR (remontā)",
+    "returnToService": "Atgriezt ekspluatācijā (Drošs)",
+    "maintenanceCalled": "Pieteikta apkope",
+    "bookedWithGarage": "Atzīmēt kā pieteiktu servisā",
+    "logRepair": "Reģistrēt remontu/PMI",
+    "recordWork": "Ierakstīt darbu un augšupielādēt lapu",
+    "noVehicles": "Jūsu autoparkā vēl nav reģistrētu transportlīdzekļu.",
+    "addFirst": "Pievienojiet savu pirmo transportlīdzekli",
+    "status": {
+      "vor": "VOR / Noņemts no ceļa",
+      "active": "Aktīvs",
+      "critical": "Kritisks termiņš (14d)",
+      "operational": "Darba kārtībā",
+      "requiresAttention": "Nepieciešama tūlītēja uzmanība",
+      "compliancePending": "Gaida atbilstības pārbaudi",
+      "ready": "Gatavs norīkojumam",
+      "overdue": "KAVĒTS",
+      "expiresIn": "pēc {{days}} dienām"
+    },
+    "labels": {
+      "regType": "TP dati",
+      "status": "Statuss",
+      "motDate": "TA termiņš",
+      "pmiDue": "PMI termiņš",
+      "tachoCal": "Taho kalibr.",
+      "odometer": "Odometrs",
+      "year": "Gads",
+      "vin": "VIN",
+      "added": "Pievienots",
+      "actions": "Darbības"
+    },
+    "modal": {
+      "title": "Pievienot jaunu vienību",
+      "identity": "TP identitāte",
+      "compliance": "Atbilstība un drošība",
+      "regNumber": "Reģistrācijas numurs *",
+      "make": "Marka *",
+      "model": "Modelis",
+      "type": "TP tips *",
+      "vinNumber": "VIN numurs",
+      "initialOdo": "Sākuma odometrs (km)",
+      "currentOdo": "Pašreizējais odometrs (km)",
+      "motDue": "TA termiņš",
+      "pmiDue": "Nākamais PMI datums",
+      "tachoDue": "Tahogrāfa kalibrēšanas termiņš",
+      "insuranceExpiry": "Apdrošināšanas termiņš",
+      "footnote": "Atbilstības datumi iespējo paneļa 'luksofora' sistēmu. Nokavētie punkti tiks atzīmēti SARKANĀ krāsā.",
+      "register": "Reģistrēt transportlīdzekli",
+      "adding": "Pievieno vienību...",
+      "errors": {
+        "companyId": "Uzņēmuma ID nav atrasts. Lūdzu, atsvaidziniet un mēģiniet vēlreiz.",
+        "duplicate": "Transportlīdzeklis ar šādu reģistrācijas numuru jau eksistē.",
+        "generic": "Pievienojot transportlīdzekli, radās neparedzēta kļūda."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Atbilstības rādītāji",
+    "subtitle": "Vadītāju atbilstības kopsavilkums par pēdējām 7 dienām.",
+    "stats": {
+      "avgScore": "Autoparka vidējais rādītājs",
+      "totalInfringements": "Kopējais pārkāpumu skaits",
+      "driversInViolation": "Vadītāji ar pārkāpumiem"
+    },
+    "details": {
+      "title": "Vadītāju atbilstības dati",
+      "noDrivers": "Nav aktīvu vadītāju ar neseniem datiem",
+      "noDriversSubtitle": "Uzaiciniet vadītājus, lai šeit redzētu viņu atbilstības rādītājus.",
+      "headers": {
+        "driver": "Vadītājs",
+        "score": "Atbilstības rādītājs",
+        "infringements": "Pārkāpumi (Pēdējās 7 dienas)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Apkopju audita žurnāls",
+    "logWork": "Reģistrēt darbu",
+    "noRecords": "Nav atrasti oficiāli apkopju ieraksti.",
+    "complianceRequired": "Nepieciešama atbilstība noteikumiem",
+    "labels": {
+      "date": "DATUMS",
+      "odo": "ODO",
+      "cost": "IZMAKSAS",
+      "eventType": "Notikuma veids",
+      "completedAt": "Pabeigšanas datums",
+      "provider": "Pakalpojumu sniedzējs / Serviss",
+      "description": "Darba apraksts",
+      "evidence": "Juridisks pierādījums (PMI lapa/TA sertifikāts)"
+    },
+    "modal": {
+      "title": "Reģistrēt apkopi",
+      "providerPlaceholder": "piem., Scania Workshop",
+      "descriptionPlaceholder": "piem., veikta 6 nedēļu pārbaude. Uzstādīti jauni bremžu kluči priekšējai asij.",
+      "confirm": "Apstiprināt darbu",
+      "saving": "Saglabā..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Serviss)",
+      "repair": "Defekta novēršana",
+      "mot": "TA / Sertifikācija",
+      "tacho": "Taho kalibrēšana",
+      "other": "Cits"
+    }
+  },
+  "training": {
+    "title": "Apmācības un Taho sinhronizācija",
+    "subtitle": "Salīdziniet oficiālos tahogrāfa datus ar vadītāja ievadīto informāciju",
+    "import": {
+      "title": "Importēt taho datus",
+      "selectDriver": "Izvēlēties vadītāju",
+      "selectPlaceholder": "Izvēlieties vadītāju...",
+      "uploadLabel": "Augšupielādēt .CSV no Tachomaster",
+      "browse": "Pārlūkot failus",
+      "runButton": "Veikt neatbilstību pārbaudi",
+      "analyzing": "Analizē..."
+    },
+    "suggestion": {
+      "title": "Apmācības ieteikums",
+      "description": "Ja vadītājam bieži parādās 'Režīmu pārslēgšanas kļūdas', lietotne nākamajā maiņā automātiski piedāvās 'Taho labākās prakses' ceļvedi."
+    },
+    "analysis": {
+      "title": "Analīzes rezultāti",
+      "conflictsFound": "Atrasti {{count}} konflikti",
+      "noData": "Nav analizētu datu.",
+      "noDataSubtitle": "Izvēlieties vadītāju un augšupielādējiet tahogrāfa failu, lai sāktu.",
+      "tacho": "Tahogrāfs",
+      "app": "Lietotne",
+      "priorities": {
+        "high": "Augsta prioritāte",
+        "low": "Zema prioritāte"
+      },
+      "activities": {
+        "driving": "Braukšana",
+        "break": "Pārtraukums",
+        "work": "Darbs",
+        "rest": "Atpūta"
+      },
+      "insightTitle": "Apmācības ieskats",
+      "assignButton": "Nozīmēt kvalifikācijas paaugstināšanas kursu"
+    }
+  },
+  "payroll": {
+    "title": "Algu kopsavilkums",
+    "startDate": "Sākuma datums",
+    "endDate": "Beigu datums",
+    "exportPayroll": "Eksportēt algu CSV",
+    "exportExpenses": "Eksportēt izdevumu CSV",
+    "headers": {
+      "driver": "Vadītājs",
+      "hours": "Kopā stundas (Norm./Virsst.)",
+      "grossPay": "Bruto alga (iesk. izdevumus)"
+    },
+    "labels": {
+      "wages": "Algas",
+      "expenses": "Izdevumi",
+      "normal": "Normāls",
+      "overtime": "Virsst.",
+      "payrollNumber": "Algas numurs",
+      "grossPayAmount": "Bruto alga (€)",
+      "wagesAmount": "Pamata alga (€)"
+    },
+    "noData": "Šajā periodā algu dati nav atrasti.",
+    "loading": "Ielādē algu datus..."
+  },
+  "vehicleChecklist": {
+    "title": "Ikdienas TP drošības pārbaude",
+    "success": {
+      "title": "Kontrolkarte iesniegta",
+      "message": "Ikdienas transportlīdzekļa drošības pārbaude veiksmīgi reģistrēta."
+    },
+    "manager": {
+      "title": "Transportlīdzekļu drošības pārbaudes",
+      "subtitle": "Pārskatiet ikdienas inspekcijas un ziņotos defektus",
+      "searchPlaceholder": "Meklēt vadītāju vai numurzīmi...",
+      "noChecks": "Pārbaudes nav atrastas",
+      "selectCheck": "Izvēlieties pārbaudi, lai skatītu datus",
+      "selectCheckSubtitle": "Šeit parādīsies jūsu vadītāju ikdienas transportlīdzekļu inspekcijas",
+      "printExport": "Drukāt / Eksportēt",
+      "details": {
+        "vehicleType": "TP TIPS",
+        "vehicleMake": "TP MARKA",
+        "odometer": "ODOMETRS",
+        "status": "STATUSS",
+        "timeRecorded": "REĢISTRĀCIJAS LAIKS",
+        "defectsTitle": "ZIŅOTIE DEFEKTI / VEIKTĀS DARBĪBAS",
+        "noDefects": "Papildu informācija nav sniegta."
+      },
+      "status": {
+        "pass": "IZIETS",
+        "fail": "NEIZIETS",
+        "defect": "DEFEKTS"
+      }
+    },
+    "sections": {
+      "internal": "IEKŠĒJĀS PĀRBAUDES",
+      "external": "ĀRĒJĀS PĀRBAUDES",
+      "vehicleDetails": "Transportlīdzekļa dati",
+      "defects": "ZIŅOŠANA PAR BOJĀJUMIEM / DARBĪBAS"
+    },
+    "items": {
+      "mirrors": "Spoguļi un stikli",
+      "mirrorsHint": "Pārbaudiet plaisas/uzlīmes; pārliecinieties, ka spoguļi ir noregulēti.",
+      "wipers": "Logu tīrītāji un mazgātāji",
+      "wipersHint": "Pārbaudiet darbību un šķidruma līmeni.",
+      "front_view": "Skats uz priekšu",
+      "front_viewHint": "Pilna redzamība caur priekšējo stiklu.",
+      "warning_lamps": "Brīdinājuma lampas",
+      "warning_lampsHint": "Pārliecinieties, ka brīdinājuma gaismas darbojas pareizi.",
+      "steering": "Stūres mehānisms",
+      "steeringHint": "Vienmērīga kustība un pareiza darbība.",
+      "horn": "Signāltaure",
+      "hornHint": "Pārbaudiet, vai skaņa ir skaidra un darbojas.",
+      "brakes_air": "Bremzes un gaisa spiediens",
+      "brakes_airHint": "Pārbaudiet bremžu funkciju un gaisa spiediena uzkrāšanos.",
+      "height_marker": "Augstuma zīme",
+      "height_markerHint": "Redzama pareiza augstuma zīme.",
+      "seatbelts": "Drošības jostas",
+      "seatbeltsHint": "Pārbaudiet, vai visas jostas darbojas pareizi.",
+      "lights_ind": "Gaismas un pagriezieni",
+      "lights_indHint": "Visas gaismas un pagriezienu rādītāji darbojas.",
+      "leaks": "Degvielas/eļļas noplūdes",
+      "leaksHint": "Pārbaudiet, vai nav šķidrumu uz zemes vai šasijas.",
+      "battery": "Akumulatora drošība",
+      "batteryHint": "Pārbaudiet, vai akumulators ir nostiprināts un labā stāvoklī.",
+      "adblue": "AdBlue šķidrums",
+      "adblueHint": "Pietiekams izplūdes gāzu šķidruma līmenis.",
+      "smoke": "Pārmērīgi izplūdes dūmi",
+      "smokeHint": "Pārbaudiet, vai nav smagu dūmu emisiju.",
+      "body_wings": "Virsbūves/dubļusargu drošība",
+      "body_wingsHint": "Pārliecinieties, ka detaļas nav vaļīgas.",
+      "spray": "Pretpūsmotāji",
+      "sprayHint": "Nostiprināti un atbilst likumdošanai.",
+      "tyres_wheels": "Riepas un riteņu stiprinājumi",
+      "tyres_wheelsHint": "Uzgriežņi/skrūves pievilktas. Protektors un spiediens normā.",
+      "brake_line": "Bremžu maģistrāles",
+      "brake_lineHint": "Pārbaudiet bojājumus vai gaisa noplūdes.",
+      "electrical": "Elektriskie savienojumi",
+      "electricalHint": "Individuālas pārbaudes visiem savienojumiem.",
+      "coupling": "Sakabes drošība",
+      "couplingHint": "Pārbaudiet, vai TP ir droši pievienots kravai.",
+      "load_security": "Kravas drošība",
+      "load_securityHint": "Svars vienmērīgi sadalīts un krava nostiprināta.",
+      "number_plate": "Numurzīme",
+      "number_plateHint": "Nostiprināta un pilnībā redzama.",
+      "reflectors": "Atstarotāji un gaismas",
+      "reflectorsHint": "Droši nostiprināti un redzami.",
+      "markers": "Marķējumi",
+      "markersHint": "Visi nepieciešamie marķējumi ir droši nostiprināti."
+    },
+    "labels": {
+      "regNumber": "REĢISTRĀCIJAS NR.",
+      "vehicleType": "TRANSPORTLĪDZEKĻA TIPS",
+      "vehicleMake": "MARKA (IZVĒLES)",
+      "hint": "Padoms",
+      "submitting": "Iesniedz...",
+      "submit": "Iesniegt kontrolkarti",
+      "defectPlaceholder": "Aprakstiet bojājumu un jebkādas veiktās darbības..."
+    },
+    "errors": {
+      "incomplete": "Pirms iesniegšanas lūdzam aizpildīt visas 24 drošības pārbaudes.",
+      "missingReg": "Transportlīdzekļa reģistrācijas numurs ir obligāts."
+    }
+  },
+  "infractions": {
+    "title": "Pārkāpumu ziņojumi",
+    "subtitle": "Sekojiet un analizējiet atbilstības problēmas",
+    "export": "Eksportēt CSV",
+    "filterAll": "Visi ({{count}})",
+    "filterViolations": "Pārkāpumi ({{count}})",
+    "filterWarnings": "Brīdinājumi ({{count}})",
+    "noInfractions": "Pārkāpumi nav atrasti",
+    "noInfractionsSubtitle": "Jūsu autoparkā ir izcila atbilstība noteikumiem",
+    "issue": "Atbilstības problēma",
+    "activity": "{{type}} aktivitāte",
+    "labels": {
+      "driver": "Vadītājs",
+      "dateTime": "Datums un laiks",
+      "location": "Atrašanās vieta",
+      "duration": "Ilgums",
+      "notes": "Piezīmes:",
+      "notRecorded": "Nav reģistrēts",
+      "ongoing": "Turpinās",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Datums",
+      "driver": "Vadītājs",
+      "activity": "Aktivitāte",
+      "status": "Statuss",
+      "infractionType": "Pārkāpuma veids",
+      "duration": "Ilgums (min)",
+      "locationStart": "Sākuma atrašanās vieta",
+      "notes": "Piezīmes"
+    }
+  },
+  "audit": {
+    "title": "Audita žurnāla eksports",
+    "subtitle": "Ģenerējiet atbilstības ziņojumus regulējošiem auditiem",
+    "filtersTitle": "Ziņojuma filtri",
+    "labels": {
+      "startDate": "Sākuma datums",
+      "endDate": "Beigu datums",
+      "driver": "Vadītājs",
+      "allDrivers": "Visi vadītāji"
+    },
+    "trailCard": {
+      "title": "Pilns audita žurnāls",
+      "subtitle": "Visi vadītāju žurnāli ar pilnu informāciju",
+      "item1": "Vadītāju aktivitāšu žurnāli",
+      "item2": "Laika zīmogi un ilgumi",
+      "item3": "Atrašanās vietas dati",
+      "item4": "Transportlīdzekļa informācija",
+      "button": "Lejupielādēt audita žurnālu",
+      "generating": "Ģenerē..."
+    },
+    "summaryCard": {
+      "title": "Atbilstības kopsavilkums",
+      "subtitle": "Apkopoti atbilstības rādītāji",
+      "item1": "Atbilstības līmenis katram vadītājam",
+      "item2": "Pārkāpumu un brīdinājumu skaits",
+      "item3": "Kopējais aktivitāšu kopsavilkums",
+      "item4": "Ātrs audita pārskats",
+      "button": "Lejupielādēt kopsavilkumu"
+    },
+    "footerNotice": "Gatavs auditam: Šie ziņojumi ir formatēti atbilstoši normatīvajām prasībām un var tikt iesniegti tieši iestādēm darba laika pārbaudei.",
+    "csvHeaders": {
+      "date": "Datums",
+      "driverName": "Vadītāja vārds",
+      "license": "Vadītāja apliecības numurs",
+      "activity": "Aktivitātes veids",
+      "start": "Sākuma laiks",
+      "end": "Beigu laiks",
+      "duration": "Ilgums (min)",
+      "status": "Statuss",
+      "infraction": "Pārkāpuma veids",
+      "vehicle": "TP ID",
+      "locationStart": "Sākuma atrašanās vieta",
+      "locationEnd": "Beigu atrašanās vieta",
+      "notes": "Piezīmes",
+      "totalLogs": "Kopā žurnāli",
+      "violations": "Pārkāpumi",
+      "warnings": "Brīdinājumi",
+      "complianceRate": "Atbilstības līmenis"
+    },
+    "ongoing": "Turpinās",
+    "none": "Nav",
+    "unknown": "Nezināms"
+  },
+  "expensesManager": {
+    "title": "Izdevumu apstiprināšana",
+    "subtitle": "Nepieciešama {{count}} neapstiprinātu izdevumu pārskatīšana.",
+    "loading": "Ielādē gaidošos izdevumus...",
+    "allClear": "Viss kārtībā!",
+    "noPending": "Nav neapstiprinātu izdevumu, ko pārskatīt.",
+    "headers": {
+      "driver": "Vadītājs",
+      "date": "Datums",
+      "amount": "Summa",
+      "description": "Apraksts",
+      "receipt": "Čeks",
+      "actions": "Darbības"
+    },
+    "viewReceipt": "Skatīt",
+    "approve": "Apstiprināt",
+    "reject": "Noraidīt",
+    "errors": {
+      "actionFailed": "Neizdevās {{action}} izdevumu.",
+      "noPath": "Čeka ceļš nav atrasts.",
+      "downloadFailed": "Neizdevās lejupielādēt čeku."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Uzraugu pārvaldība",
+    "subtitle": "Kopā uzraugi: {{count}}",
+    "notice": "Piezīme: Uzraugi pievienojas, izmantojot jūsu uzņēmuma autorizācijas kodu. Šajā sadaļā varat pārvaldīt viņu statusu un profila datus.",
+    "searchPlaceholder": "Meklēt pēc vārda vai e-pasta...",
+    "filters": {
+      "all": "Visi",
+      "active": "Aktīvie",
+      "inactive": "Neaktīvie"
+    },
+    "noSupervisors": "Uzraugi nav atrasti",
+    "labels": {
+      "supervisor": "Uzraugs",
+      "email": "E-pasts",
+      "status": "Statuss",
+      "phone": "Tālruņa numurs",
+      "name": "Vārds, uzvārds",
+      "emailReadOnly": "E-pasts (tikai lasāms)"
+    },
+    "status": {
+      "active": "Aktīvs",
+      "inactive": "Neaktīvs"
+    },
+    "modal": {
+      "title": "Uzrauga dati",
+      "save": "Saglabāt izmaiņas",
+      "cancel": "Atcelt",
+      "errors": {
+        "updateFailed": "Neizdevās atjaunināt uzrauga datus."
+      },
+      "editTitle": "Labot datus"
+    }
+  },
+  "driverDetails": {
+    "title": "Vadītāja lieta: {{name}}",
+    "sections": {
+      "profile": "Profils un algas dati",
+      "compliance": "Profesionālā kvalifikācija",
+      "activity": "Pēdējās maiņas",
+      "locations": "Sākuma atrašanās vietu klasteri"
+    },
+    "labels": {
+      "fullName": "Vārds, uzvārds",
+      "payrollNo": "Algas nr.",
+      "niNumber": "Sociālās apdrošināšanas nr.",
+      "dob": "Dzimšanas datums",
+      "phone": "Kontakttālrunis",
+      "emergencyName": "Ārkārtas kontaktpersona",
+      "emergencyPhone": "Ārkārtas tālrunis",
+      "status": "Statuss",
+      "address": "Dzīvesvietas adrese",
+      "licence": "Vadītāja apliecība (Priekšpuse)",
+      "licenceNo": "Apliecības numurs",
+      "entitlements": "Kategorijas (piem. C, C+E)",
+      "dvlaCode": "Pārbaudes kods",
+      "cpc": "95. koda karte (DQC)",
+      "cpcNo": "DQC kartes numurs",
+      "qualStart": "Kvalifikācijas sākuma datums",
+      "qualExpiry": "Kvalifikācijas termiņš",
+      "tacho": "Digitālā tahogrāfa karte",
+      "tachoNo": "Taho kartes numurs",
+      "cardExpiry": "Kartes termiņš",
+      "duration": "Ilgums: {{hours}} st.",
+      "noShifts": "Pēdējās maiņas nav reģistrētas.",
+      "loadingMap": "Ielādē karti...",
+      "noMapData": "Nav atrašanās vietas datu siltuma kartei.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "AKTĪVS",
+      "inactive": "NEAKTĪVS (VOR)",
+      "missingExpiry": "Trūkst termiņa",
+      "expired": "Beidzies {{date}}",
+      "expiresIn": "Beidzas pēc {{days}} dienām",
+      "expiresOn": "Beidzas {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Augšupielādēt apliecību",
+      "uploadCpc": "Augšupielādēt 95. kodu",
+      "uploadTacho": "Augšupielādēt taho karti",
+      "commit": "Apstiprināt izmaiņas",
+      "saving": "Saglabā..."
+    },
+    "errors": {
+      "fillAll": "Lūdzu, aizpildiet visus dokumentu laukus.",
+      "uploadError": "Kļūda: {{message}}",
+      "updateFailed": "Neizdevās atjaunināt vadītāja datus."
+    }
+  },
+  "shiftEdit": {
+    "title": "Manuāla maiņas labošana",
+    "labels": {
+      "start": "Sākuma laiks (tikai lasāms)",
+      "end": "Beigu laiks",
+      "reason": "Izmaiņu iemesls (Obligāts)",
+      "reasonPlaceholder": "piem., Vadītājs apstiprināja, ka tālrunis izlādējās šajā laikā."
+    },
+    "errors": {
+      "endRequired": "Beigu laiks ir obligāts.",
+      "reasonRequired": "Nepieciešama audita piezīme, kas paskaidro izmaiņas.",
+      "invalidEnd": "Beigu laikam jābūt pēc sākuma laika.",
+      "updateFailed": "Neizdevās atjaunināt maiņu."
+    },
+    "buttons": {
+      "save": "Saglabāt un pārrēķināt",
+      "saving": "Saglabā..."
+    },
+    "auditNotePrefix": "(Labojis vadītājs) "
+  },
+  "settings": {
+    "company": {
+      "title": "Uzņēmuma identitāte",
+      "subscriptionActive": "ABONEMENTS AKTĪVS",
+      "inactive": "NEAKTĪVS",
+      "nameLabel": "Uzņēmuma nosaukums",
+      "refIdLabel": "Iekšējais atsauces ID",
+      "authCodeLabel": "Uzņēmuma autorizācijas kods",
+      "authCodeFootnote": "Dodiet šo kodu jauniem vadītājiem un uzraugiem, lai piesaistītu viņus jūsu autoparkam.",
+      "complianceTitle": "Atbilstības nodrošināšana",
+      "complianceSubtitle": "Ieviest augstus drošības standartus visā autoparkā.",
+      "mandatoryChecks": "Obligātās TP pārbaudes",
+      "mandatoryChecksSubtitle": "Bloķēt vadītājiem iespēju sākt maiņu bez pārbaudes.",
+      "mandatoryChecksFootnote": "Ja šī funkcija ir iespējota, vadītājiem pirms darba laika uzskaites jāveic TP apskate.",
+      "usageMetrics": "Autoparka lietošanas rādītāji",
+      "usageMetricsSubtitle": "Nobraukuma un pārbaužu dati tiek fiksēti automātiski. Skatiet detalizētas atskaites cilnē **Drošības pārbaudes**.",
+      "dataStatus": "Datu statuss",
+      "activeMonitoring": "Aktīvā uzraudzība iespējota",
+      "fleetRegistered": "AUTOPARKS REĢISTRĒTS: {{date}}",
+      "errors": {
+        "updateFailed": "Neizdevās atjaunināt uzņēmuma nosaukumu.",
+        "settingUpdateFailed": "Neizdevās atjaunināt iestatījumu: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Mans profils",
+      "success": "Profils atjaunināts",
+      "nameLabel": "Vārds, uzvārds",
+      "emailLabel": "E-pasta adrese (Pierakstīšanās)",
+      "phoneLabel": "Kontakttālrunis",
+      "updateButton": "Atjaunināt manus datus",
+      "updating": "Saglabā...",
+      "securityTitle": "Drošība un parole",
+      "securitySubtitle": "Nepieciešams mainīt paroli vai iespējot MFA?",
+      "resetPassword": "Atiestatīt paroli",
+      "resetSent": "Paroles atiestatīšanas saite nosūtīta uz jūsu e-pastu."
+    },
+    "mfa": {
+      "title": "Daudzfaktoru autentifikācija (MFA)",
+      "subtitle": "Pievienojiet papildu drošības slāni savam kontam, pieprasot kodu no autentifikācijas lietotnes tālrunī.",
+      "enabled": "MFA pašlaik ir iespējota.",
+      "step1": "1. Skenējiet šo QR kodu ar savu autentifikācijas lietotni (piem., Google Authenticator, Authy).",
+      "step2": "2. Ievadiet 6 ciparu kodu no lietotnes zemāk, lai pabeigtu iestatīšanu.",
+      "placeholder": "123456",
+      "verifyButton": "Pārbaudīt un iespējot",
+      "verifying": "Pārbauda...",
+      "enableButton": "Iespējot MFA",
+      "starting": "Sāk...",
+      "disableButton": "Atspējot",
+      "disabling": "Atspējo...",
+      "confirmDisable": "Vai tiešām vēlaties atspējot daudzfaktoru autentifikāciju?",
+      "successEnabled": "Daudzfaktoru autentifikācija ir veiksmīgi iespējota!",
+      "successDisabled": "Daudzfaktoru autentifikācija ir atspējota."
+    }
+  },
+  "common": {
+    "save": "Saglabāt izmaiņas",
+    "cancel": "Atcelt",
+    "loading": "Ielādē...",
+    "edit": "Labot",
+    "delete": "Dzēst",
+    "refresh": "Atsvaidzināt sarakstu",
+    "viewAll": "Skatīt visu",
+    "success": "Veiksmīgi",
+    "error": "Kļūda",
+    "lastUpdated": "Pēdējo reizi atjaunināts: {{date}}",
+    "details": "Detaļas",
+    "syncing": "Sinhronizē sarakstu...",
+    "search": "Meklēt pēc vārda vai e-pasta...",
+    "confirmDelete": "Vai tiešām vēlaties noņemt {{name}}? Tas neatgriezeniski dzēsīs viņu kontu un datus.",
+    "selectFile": "Izvēlēties failu"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profils nav atrasts",
+      "message": "Mēs atradām jūsu kontu, bet nevarējām ielādēt jūsu profila datus. Tā var būt īslaicīga savienojuma problēma.",
+      "retry": "Mēģināt vēlreiz ielādēt profilu",
+      "signOut": "Izrakstīties un sākt no jauna"
+    }
+  },
+  "howTo": {
+    "title": "Kā lietot HourWise EU",
+    "subtitle": "Viss, kas jums jāzina, lai sāktu autoparka pārvaldību",
+    "sections": {
+      "gettingStarted": {
+        "title": "Darba sākšana",
+        "step1": {
+          "title": "1. solis: Izveidojiet kontu",
+          "description": "Sāciet, izveidojot autoparka vadītāja kontu. Jums būs jānorāda sava uzņēmuma informācija un jāizveido droša parole."
+        },
+        "step2": {
+          "title": "2. solis: Pievienojiet savus vadītājus",
+          "description": "Pēc pierakstīšanās dodieties uz sadaļu Vadītāju pārvaldība. Jūs varat pievienot vadītājus, izveidojot viņiem kontus.",
+          "list": [
+            "Ievadiet vadītāja vārdu un e-pasta adresi",
+            "Sistēma ģenerē drošus pierakstīšanās datus",
+            "Vadītājs saņem uzaicinājuma e-pastu ar instrukcijām"
+          ]
+        },
+        "step3": {
+          "title": "3. solis: Sekojiet ikdienas stundām",
+          "description": "Vadītāji pierakstās savā panelī, lai iesniegtu ikdienas stundas. Sistēma automātiski seko viņu stundām un brīdina par limitiem.",
+          "list": [
+            "Vadītāji ievada ikdienas braukšanas stundas",
+            "Reāllaika nedēļas un divu nedēļu kopsummu aprēķins",
+            "Automātiski brīdinājumi par limitu tuvošanos"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Autoparka vadītājiem",
+        "compliance": {
+          "title": "Atbilstības uzraudzība",
+          "description": "Skatiet visa autoparka atbilstības statusu reāllaikā. Atbilstības tablo rāda, kuri vadītāji ievēro limitus un kuriem jāpievērš uzmanība."
+        },
+        "violations": {
+          "title": "Pārkāpumu pārvaldība",
+          "description": "Kad vadītājs pārsniedz noteiktos limitus, sistēma automātiski reģistrē pārkāpumu. Skatiet visus pārkāpumus ziņojumā audita vajadzībām."
+        },
+        "audit": {
+          "title": "Audita žurnāls",
+          "description": "Katra darbība sistēmā tiek reģistrēta audita žurnālā. Tas nodrošina pilnīgu atbildību un atbilstību normatīvajām prasībām."
+        }
+      },
+      "drivers": {
+        "title": "Vadītājiem",
+        "workflow": {
+          "title": "Ikdienas darba gaita",
+          "step1": {
+            "title": "Pierakstieties savā vadītāja panelī",
+            "description": "Izmantojiet datus, ko sniedzis jūsu autoparka vadītājs"
+          },
+          "step2": {
+            "title": "Iesniedziet ikdienas braukšanas stundas",
+            "description": "Ievadiet kopējo diennaktī nobraukto stundu skaitu"
+          },
+          "step3": {
+            "title": "Pārbaudiet savu atbilstības statusu",
+            "description": "Skatiet savas nedēļas un divu nedēļu stundu kopsummas"
+          },
+          "step4": {
+            "title": "Pievērsiet uzmanību brīdinājumiem",
+            "description": "Sistēma brīdina, kad tuvojaties stundu limitiem"
+          }
+        }
+      },
+      "regulations": {
+        "title": "ES regulu izpratne",
+        "limits": {
+          "title": "Galvenie limiti",
+          "weekly": "Nedēļas limits:",
+          "weeklyValue": "Maksimāli 56 braukšanas stundas nedēļā",
+          "fortnightly": "Divu nedēļu limits:",
+          "fortnightlyValue": "Maksimāli 90 stundas jebkurās divās secīgās nedēļās",
+          "footnote": "HourWise EU automātiski uzrauga abus limitus un brīdina vadītājus un vadītājus par to sasniegšanu."
+        }
+      },
+      "help": {
+        "title": "Nepieciešama palīdzība?",
+        "subtitle": "Sazinieties ar mūsu atbalsta komandu, lai saņemtu personīgu palīdzību",
+        "emailLabel": "E-pasts:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privātuma politika",
+    "sections": {
+      "intro": {
+        "title": "1. Ievads",
+        "p1": "HourWise EU (\"mēs\", \"mūsu\") nodrošina autoparka pārvaldības platformu transporta uzņēmumiem. Šī politika izskaidro, kā mēs apkopojam un aizsargājam informāciju.",
+        "p2": "Lietojot mūsu pakalpojumus, jūs piekrītat informācijas vākšanai saskaņā ar šo politiku."
+      },
+      "collect": {
+        "title": "2. Kādu informāciju mēs apkopojam",
+        "managers": {
+          "title": "2.1 Autoparka vadītāju sniegtā informācija",
+          "items": [
+            "Konta informācija: vārds, uzvārds, uzņēmums un e-pasts.",
+            "Vadītāju dati: algas numurs, dzimšanas datums, adrese un ārkārtas kontakti.",
+            "Atbilstības dati: vadītāja apliecība, 95. koda dati un termiņi."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Vadītāju sniegtā informācija",
+          "items": [
+            "Profila dati: vārds un e-pasts.",
+            "Darba sesijas: laika zīmogi darbam, pārtraukumiem un atpūtai.",
+            "Izdevumi: summas, apraksti un čeku attēli."
+          ]
+        },
+        "app": {
+          "title": "2.3 Lietotnes atļaujas un dati",
+          "description": "Lai nodrošinātu funkcijas, lietotne pieprasa šādas atļaujas:",
+          "items": [
+            "Kameras piekļuve: čeka un dokumentu augšupielādei.",
+            "Atrašanās vietas dati: fiksējam GPS koordinātas TIKAI maiņas sākumā un beigās audita vajadzībām. Pastāvīga izsekošana fonā netiek veikta."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Kā mēs izmantojam jūsu informāciju",
+        "items": [
+          "Atbilstības izsekošana: vadītāju stundu un dokumentu termiņu pārvaldība.",
+          "Algu aprēķins: bruto algas aprēķināšana grāmatvedībai.",
+          "Izdevumu pārvaldība: čeku apstrāde kompensācijām.",
+          "Audita žurnāli: juridiski nepieciešamo darba sesiju ierakstu uzturēšana."
+        ]
+      },
+      "security": {
+        "title": "4. Datu drošība un glabāšana",
+        "p1": "Visi dati ir aizsargāti ar Supabase Row Level Security (RLS). Dokumenti tiek glabāti šifrētās, privātās krātuvēs."
+      },
+      "retention": {
+        "title": "5. Datu glabāšana",
+        "p1": "Kā to prasa likums, ar algām un darba laiku saistītie dati tiek glabāti vismaz 3 līdz 6 gadus audita vajadzībām."
+      },
+      "rights": {
+        "title": "6. Jūsu datu tiesības (GDPR)",
+        "p1": "Jums ir tiesības piekļūt, labot vai dzēst savus datus. Pieprasījumus var veikt caur vadītāju vai mūsu portālu."
+      },
+      "contact": {
+        "title": "7. Saziņa",
+        "team": "HourWise EU privātuma komanda",
+        "emailLabel": "E-pasts:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Pakalpojuma noteikumi",
+    "sections": {
+      "agreement": {
+        "title": "1. Piekrišana noteikumiem",
+        "p1": "Piekļūstot HourWise EU platformai, jūs piekrītat šiem Pakalpojuma noteikumiem."
+      },
+      "license": {
+        "title": "2. Lietošanas licence",
+        "p1": "Tiek piešķirta atļauja īslaicīgi izmantot lietotni biznesa vajadzībām. Šī ir licences piešķiršana, nevis īpašumtiesību nodošana.",
+        "items": [
+          "Materiālu modificēšana vai kopēšana ir aizliegta;",
+          "Programmatūras dekompilēšana ir aizliegta;",
+          "Autortiesību norāžu noņemšana ir aizliegta."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Datu precizitāte un atbilstība",
+        "p1": "Mēs nodrošinām rīkus, taču lietotāji ir atbildīgi par žurnālu un pārbaužu precizitāti.",
+        "items": [
+          "Lietotāja atbildība: Vadītāji un vadītāji ir atbildīgi par datu pārbaudi.",
+          "Juridiskā atbilstība: Lietotnes lietošana negarantē atbilstību visām transporta regulām.",
+          "Datu ievade: Mēs neatbildam par kļūdām, kas radušās nepareizas datu ievades dēļ."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Abonēšana un rēķini",
+        "p1": "Piekļuve profesionālajām funkcijām prasa apmaksātu abonementu, ko apstrādā Stripe.",
+        "solo": {
+          "title": "4.1 Solo vadītāja plāns",
+          "p1": "Individuāliem vadītājiem abonements tiek pārvaldīts mobilajā lietotnē."
+        },
+        "fleet": {
+          "title": "4.2 Autoparka pārvaldības plāns",
+          "p1": "Uzņēmumiem rēķins tiek sagatavots, pamatojoties uz aktīvo vadītāju skaitu."
+        },
+        "general": {
+          "title": "4.3 Vispārīgie noteikumi",
+          "items": [
+            "Maksājumi netiek atmaksāti, ja vien to neparedz likums.",
+            "Neveiksmīgs maksājums var izraisīt piekļuves ierobežošanu."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Atbildības ierobežošana",
+        "p1": "Pakalpojums tiek sniegts 'tāds, kāds tas ir'. Mēs neuzņemamies atbildību par netiešiem zaudējumiem vai datu kļūdām."
+      },
+      "law": {
+        "title": "6. Piemērojamie tiesību akti",
+        "p1": "Šos noteikumus regulē Apvienotās Karalistes tiesību akti (vai attiecīgā jurisdikcija pēc līguma)."
+      },
+      "changes": {
+        "title": "7. Izmaiņas noteikumos",
+        "p1": "Mēs paturam tiesības mainīt šos noteikumus, brīdinot 30 dienas iepriekš."
+      },
+      "contact": {
+        "title": "8. Kontaktinformācija",
+        "team": "HourWise EU juridiskā komanda",
+        "emailLabel": "E-pasts:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Saziņa",
+    "subtitle": "Mēs esam šeit, lai palīdzētu. Izvēlieties labāko veidu, kā ar mums sazināties.",
+    "general": {
+      "title": "Vispārīgi jautājumi",
+      "description": "Jautājumiem par partnerību vai vispārīgu informāciju sazinieties ar mūsu info komandu."
+    },
+    "technical": {
+      "title": "Tehniskais atbalsts",
+      "description": "Ja rodas tehniskas problēmas vai nepieciešama palīdzība ar lietotni, sazinieties ar atbalsta komandu."
+    },
+    "cta": "Sūtīt e-pastu"
+  },
+  "privacyRequest": {
+    "title": "Datu un privātuma pieprasījums",
+    "form": {
+      "labels": {
+        "fullName": "Vārds, uzvārds",
+        "email": "Verificēta e-pasta adrese",
+        "requestType": "Pieprasījuma veids",
+        "additionalInfo": "Papildu informācija"
+      },
+      "placeholders": {
+        "fullName": "Kā norādīts lietotnē",
+        "email": "e-pasts@ko-izmantojat.lv",
+        "details": "Pēc izvēles: specifiska informācija par jūsu pieprasījumu"
+      },
+      "requestTypes": {
+        "download": "Pieprasīt manu datu kopiju (Piekļuve)",
+        "deletion": "Dzēst manu kontu un visus datus (Dzēšana)"
+      },
+      "cta": "Ģenerēt privātuma e-pastu",
+      "notices": {
+        "fleet": "Paziņojums autoparka vadītājiem: Ja jūsu kontu pārvalda uzņēmums, lūdzu, vispirms sazinieties ar vadītāju par pēdējo algu aprēķinu.",
+        "security": "Drošības nolūkos mēs verificējam identitāti, pieprasot sūtīt šo ziņu no reģistrētā e-pasta. Pieprasījums tiks apstrādāts 30 dienu laikā."
+      },
+      "success": {
+        "title": "Pieprasījums sagatavots",
+        "message": "Jūsu e-pasta klients ir atvērts. Lūdzu, **nospiediet 'Sūtīt'**, lai iesniegtu pieprasījumu.",
+        "submitAnother": "Iesniegt citu pieprasījumu"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Vadītāju pārvaldība",
+    "activeDrivers": "aktīvie vadītāji",
+    "pendingInvites": "gaidošie uzaicinājumi",
+    "inviteDriver": "Uzaicināt vadītāju",
+    "labels": {
+      "name": "Vārds",
+      "email": "E-pasts",
+      "compliance": "Atbilstība",
+      "status": "Statuss"
+    },
+    "status": {
+      "active": "Aktīvs",
+      "inviteSent": "Uzaicinājums nosūtīts",
+      "noDocuments": "Nav dokumentu",
+      "expired": "Dokumenta termiņš beidzies",
+      "compliant": "Atbilstošs",
+      "checkExpiry": "Pārbaudīt termiņu",
+      "expiresIn": "Beidzas pēc {{days}} dienām",
+      "lost": "Savienojums pārtraukts",
+      "linkMismatch": "Saišu neatbilstība"
+    },
+    "lostInviteNotice": "Uzaicinājums pieņemts, bet profila piesaiste neizdevās. Atjauniniet vadītāja company_id sistēmā.",
+    "noDrivers": "Vadītāji vai uzaicinājumi nav atrasti",
+    "incompleteSetup": "Nepabeigta uzstādīšana"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Uzaicināt jaunu vadītāju",
+      "fullName": "Pilns vārds *",
+      "email": "E-pasts *",
+      "payConfig": "Algas konfigurācija",
+      "hourlyRate": "Stundas likme (€)",
+      "unpaidBreak": "Neapmaksāts pārtraukums (min)",
+      "allowances": "Piemaksas",
+      "allowanceAmount": "Summa (€)",
+      "unit": "Vienība",
+      "units": {
+        "hour": "Stundā",
+        "day": "Dienā",
+        "week": "Nedēļā",
+        "month": "Mēnesī",
+        "shift": "Par maiņu",
+        "daily": "Katru dienu",
+        "weekly": "Katru nedēļu",
+        "monthly": "Katru mēnesi"
+      },
+      "addAllowance": "Pievienot piemaksu",
+      "overtime": "Virsstundas",
+      "otThreshold": "Virsstundu slieksnis (st.)",
+      "otUnit": "Virsstundu vienība",
+      "otMultiplier": "Virsstundu koeficients",
+      "additionalTiers": "Papildu līmeņi",
+      "afterHours": "Pēc (stundām)",
+      "newMultiplier": "Jauns koeficients",
+      "addOtTier": "Pievienot virsstundu līmeni",
+      "submit": "Nosūtīt uzaicinājumu",
+      "submitting": "Sūta uzaicinājumu..."
+    },
+    "errors": {
+      "noCompany": "Jūs neesat piesaistīts nevienam uzņēmumam.",
+      "generic": "Radās nezināma kļūda."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Izmēģinājuma laiks beidzies",
+      "unlockAccess": "Atbloķēt pilnu piekļuvi",
+      "expiredSubtitle": "Abonējiet, lai turpinātu lietot HourWise",
+      "accessSubtitle": "Iegūstiet neierobežotu piekļuvi visām funkcijām",
+      "features": {
+        "invoicing": "Rēķinu ģenerēšana",
+        "invoicingDesc": "Profesionāli rēķini jūsu klientiem",
+        "expenses": "Izdevumu izsekošana",
+        "expensesDesc": "Pārraugiet visus biznesa izdevumus",
+        "compliance": "Stundu atbilstība",
+        "complianceDesc": "Saglabājiet atbilstību ES regulām",
+        "reports": "Nodokļu atskaites",
+        "reportsDesc": "Eksportējiet atskaites pašnodarbinātajiem"
+      },
+      "perMonth": "/mēnesī",
+      "cancelAnytime": "Atceliet jebkurā laikā. Nav ilgtermiņa saistību.",
+      "subscribeNow": "Abonēt tūlīt",
+      "cancelSettings": "Atceliet jebkurā laikā konta iestatījumos",
+      "securePayment": "Drošs maksājums ar Apple/Google",
+      "instantAccess": "Tūlītēja piekļuve pēc abonēšanas"
+    },
+    "manager": {
+      "fleetMember": "Autoparka biedrs",
+      "partOf": "Jūs esat daļa no {{company}}",
+      "fleetAccess": "Pilnu piekļuvi nodrošina jūsu uzņēmums",
+      "soloTitle": "Solo vadītāja abonements",
+      "manageDesc": "Pārvaldiet savu abonementu",
+      "status": {
+        "active": "Aktīvs",
+        "trial": "Izmēģinājums",
+        "inactive": "Neaktīvs"
+      },
+      "trialPeriod": "Izmēģinājuma periods",
+      "trialDays": "Jūsu izmēģinājuma laikā atlikušas {{count}} dienas",
+      "trialEnded": "Jūsu izmēģinājuma laiks ir beidzies",
+      "activeSub": "Aktīvs abonements",
+      "renewsOn": "Atjaunojas: {{date}}",
+      "noActiveSub": "Nav aktīva abonementa",
+      "subscribeAccess": "Abonējiet, lai piekļūtu visām funkcijām",
+      "planLabel": "Plāns",
+      "soloPlan": "Solo vadītājs",
+      "priceLabel": "Cena",
+      "priceValue": "€9.99/mēnesī",
+      "paymentLabel": "Maksājuma veids",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Nav iestatīts",
+      "manageButton": "Pārvaldīt abonementu",
+      "resubscribe": "Abonēt vēlreiz",
+      "subscribeNow": "Abonēt tūlīt",
+      "manageAlert": "Lai pārvaldītu abonementu, apmeklējiet ierīces iestatījumus.",
+      "demoAlert": "Šeit tiks aktivizēta lietotnes iekšējā pirkuma plūsma."
+    },
+    "banner": {
+      "daysLeft": "Atlikušas {{count}} dienas",
+      "lastDay": "Pēdējā diena",
+      "trialSuffix": " jūsu bezmaksas izmēģinājumā!",
+      "endsIn": "Bezmaksas izmēģinājums beigsies pēc {{count}} dienām",
+      "cta": "Abonējiet tikai par €9.99/mēnesī, lai turpinātu izmantot visas funkcijas",
+      "subscribeNow": "Abonēt tūlīt"
+    }
+  },
+  "reports": {
+    "title": "Autoparka atskaites",
+    "exportPdf": "Eksportēt PDF / Drukāt",
+    "tabs": {
+      "payroll": "Algas",
+      "efficiency": "Efektivitāte",
+      "vehicleChecks": "TP pārbaudes",
+      "infractions": "Pārkāpumi",
+      "driving": "Braukšana"
+    },
+    "filters": {
+      "title": "Filtri",
+      "driver": "Vadītājs",
+      "allDrivers": "Visi vadītāji",
+      "startDate": "Sākuma datums",
+      "endDate": "Beigu datums"
+    },
+    "payroll": {
+      "title": "Algu kopsavilkums",
+      "headers": {
+        "driver": "Vadītājs",
+        "workHours": "Darba stundas",
+        "breakHours": "Pārtraukuma stundas",
+        "sessions": "Sesijas"
+      }
+    },
+    "vehicleChecks": {
+      "title": "TP inspekcijas ziņojums",
+      "headers": {
+        "dateTime": "Datums/Laiks",
+        "inspector": "Inspektors",
+        "vehicle": "Transportlīdzeklis",
+        "status": "Statuss",
+        "defects": "Defekti"
+      },
+      "status": {
+        "pass": "IZIETS",
+        "defect": "DEFEKTS"
+      },
+      "noneReported": "Nav ziņots"
+    },
+    "infractions": {
+      "moduleReady": "Pārkāpumu kopsavilkuma modulis gatavs."
+    },
+    "driving": {
+      "moduleReady": "Braukšanas uzvedības analīzes modulis gatavs."
+    }
+  },
+  "broadcast": {
+    "title": "Sūtīt ziņu autoparkam",
+    "placeholder": "Ierakstiet ziņu visiem vadītājiem šeit...",
+    "button": "Sūtīt visiem vadītājiem",
+    "sending": "Sūta...",
+    "success": "Ziņa veiksmīgi nosūtīta!",
+    "errors": {
+      "empty": "Ziņas saturs nevar būt tukšs.",
+      "notLoaded": "Lietotāja profils vai uzņēmuma ID nav ielādēts.",
+      "failed": "Neizdevās nosūtīt ziņu."
+    }
+  },
+  "supervisor": {
+    "management": {
+      "title": "Uzraugu pārvaldība",
+      "count": "Kopā uzraugi: {{count}}",
+      "notice": "Piezīme: Uzraugi pievienojas ar uzņēmuma autorizācijas kodu.",
+      "searchPlaceholder": "Meklēt...",
+      "noSupervisors": "Uzraugi nav atrasti",
+      "labels": {
+        "supervisor": "Uzraugs",
+        "email": "E-pasts",
+        "status": "Statuss",
+        "edit": "Labot datus"
+      }
+    },
+    "modal": {
+      "title": "Uzrauga dati",
+      "nameLabel": "Pilns vārds",
+      "emailLabel": "E-pasts (Tikai lasāms)",
+      "phoneLabel": "Tālruņa numurs",
+      "saveButton": "Saglabāt izmaiņas",
+      "errorUpdate": "Neizdevās atjaunināt uzrauga datus."
+    }
+  },
+  "location": {
+    "notRecorded": "Atrašanās vieta nav reģistrēta",
+    "mapAlt": "Karte centrēta uz {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "TP atbilstības brīdinājumi",
+    "urgent": "{{count}} STEIDZAMI",
+    "noAlerts": "Nav steidzamu transportlīdzekļu brīdinājumu.",
+    "offRoad": "Transportlīdzeklis nav ekspluatācijā",
+    "dueOverdue": "{{type}} termiņš KAVĒTS",
+    "dueInDays": "{{type}} termiņš pēc {{days}} dienām",
+    "viewFullList": "Skatīt pilnu sarakstu"
+  }
+}

@@ -1,326 +1,961 @@
 {
+  "locale": "lt-LT",
+  "reportType": "Ataskaitos tipas",
+  "invoice": "Sąskaita faktūra",
+  "dateRange": "Datos intervalas",
   "common": {
     "save": "Išsaugoti",
     "cancel": "Atšaukti",
     "close": "Uždaryti",
+    "delete": "Ištrinti",
+    "remove": "Pašalinti",
+    "upload": "Įkelti",
     "error": "Klaida",
-    "success": "Pavyko",
+    "success": "Sėkminga",
     "date": "Data",
     "startTime": "Pradžios laikas",
     "endTime": "Pabaigos laikas",
-    "minutes": "Minutės",
-    "saving": "Išsaugoma...",
-    "failedToSave": "Nepavyko išsaugoti"
+    "minutes": "minutės",
+    "saving": "Saugoma...",
+    "failedToSave": "Nepavyko išsaugoti duomenų.",
+    "gotIt": "Supratau!",
+    "logout": "Atsijungti",
+    "openSettings": "Atidaryti nustatymus",
+    "retry": "Bandyti dar kartą"
   },
-  "language": {
-    "english": "Anglų",
-    "german": "Vokiečių",
-    "french": "Prancūzų",
-    "spanish": "Ispanų",
-    "italian": "Italų",
-    "polish": "Lenkų",
-    "romanian": "Rumunų",
-    "dutch": "Olandų",
-    "portuguese": "Portugalų",
-    "ukrainian": "Ukrainiečių",
-    "hungarian": "Vengrų",
-    "bulgarian": "Bulgarų",
-    "lithuanian": "Lietuvių",
-    "czech": "Čekų",
-    "slovak": "Slovakų",
-    "latvian": "Latvių",
-    "turkish": "Turkų"
+  "permissions": {
+    "notificationsTitle": "Leidimas pranešimams",
+    "notificationsBody": "„HourWise“ naudoja pranešimus, kad siųstų jums svarbius atitikties įspėjimus. Prašome įjungti pranešimus, kad jų nepraleistumėte.",
+    "locationTitle": "Leidimas vietovei",
+    "locationBody": "„HourWise“ reikalinga prieiga prie vietovės, kad automatiškai aptiktų vairavimą. Prašome įjungti tai nustatymuose.",
+    "backgroundLocationTitle": "Vietovė fone",
+    "backgroundLocationBody": "Patikimam sekimui nustatykite vietovės prieigą į „Leisti visą laiką“. Tai būtina automatiniam vairavimo aptikimui, net kai programėlė veikia fone.",
+    "cameraTitle": "Leidimas kamerai",
+    "cameraBody": "„HourWise“ reikalinga prieiga prie kameros, kad galėtumėte įkelti išlaidų ar kitų dokumentų nuotraukas.",
+    "mediaLibraryTitle": "Leidimas nuotraukų bibliotekai",
+    "mediaLibraryBody": "„HourWise“ reikalinga prieiga prie jūsų nuotraukų bibliotekos, kad galėtumėte pasirinkti išlaidų ar kitų dokumentų nuotraukas.",
+    "title": "Paskutinis žingsnis",
+    "body": "Kad „HourWise“ veiktų tinkamai, reikalingi vietovės ir pranešimų leidimai. Jūsų vietovė naudojama tik automatiniam vairavimo aptikimui.",
+    "button": "Suteikti leidimus",
+    "deniedTitle": "Reikalingi leidimai",
+    "deniedBody": "Jūs visam laikui uždraudėte būtinuosius leidimus. Eikite į įrenginio nustatymus ir įjunkite vietovės (Visą laiką) bei pranešimų leidimus."
   },
-
-  "appTitle": "HourWise EU",
-  "appSubtitle": "ES darbo laiko stebėjimo įrankis",
-  "instructions": "Instrukcijos",
-  "privacyInfo": "Privatumas",
-  "euWorkingTimeRules": "ES darbo ir vairavimo taisyklės",
-  "tachoGuide": "Skaitmeninio tachografo vadovas",
-  "compliance": "Atitiktis",
-  "workHistory": "Darbo istorija",
-  "downloadReport": "Atsisiųsti ataskaitą",
-  "previousShiftEnd": "Ankstesnės pamainos pabaiga",
-  "newShiftStarted": "Naujos pamainos pradžia",
-  "dailyRest": "Dienos poilsis",
-  "breakDuration": "Pertraukos trukmė",
-  "totalPOATime": "POA — iš viso",
-  "workTimeRemaining": "Likęs darbo laikas",
-  "drivingTimeRemaining": "Likęs vairavimo laikas",
-  "startShift": "Pradėti pamainą",
-  "endShift": "Baigti pamainą",
-  "startBreak": "Pradėti pertrauką",
-  "endBreak": "Baigti pertrauką",
-  "resumeWork": "Tęsti darbą",
-  "poaButtonText": "POA / Budėjimas",
-  "currentShiftSummary": "Dabartinė pamaina",
-  "totalWork": "Darbo laikas",
-  "totalDriving": "Vairavimo laikas",
-  "totalBreak": "Pertraukos",
-  "totalPOA": "POA iš viso",
-
-  "signOut": "Atsijungti",
-  "confirmSignOut": "Ar tikrai norite atsijungti?",
-  "selectLanguage": "Pasirinkite kalbą",
-
-  "safetyWarningTitle": "Vairuokite saugiai",
-  "safetyWarningBody": "Visada laikykitės oficialių taisyklių ir įmonės politikos. Ši programėlė yra tik pagalbinė priemonė.",
-  "acknowledge": "Supratau",
-
-  "regionalRules": {
-    "title": "Regioninių taisyklių santrauka",
-    "close": "Uždaryti"
+  "messages": {
+    "title": "Žinutės",
+    "notificationTitle": "Nauja autoparko žinutė",
+    "systemNotificationTitle": "Sistemos pranešimas",
+    "newMessageBodyFallback": "Gavote naują žinutę.",
+    "noMessages": "Žinučių dar nėra.",
+    "unread": "Neperskaityta",
+    "read": "Perskaityta",
+    "noUnread": "Viskas perskaityta! Neperskaitytų žinučių nėra."
   },
-
-  "workHistory.sectionTitle": "Darbo istorija",
-  "workHistory.editShift": "Redaguoti pamainą",
-  "workHistory.addShift": "Pridėti pamainą",
-  "workHistory.totalBreakTime": "Bendras pertraukų laikas",
-  "workHistory.totalPOATime": "Bendras POA laikas",
-  "workHistory.updateShift": "Atnaujinti pamainą",
-  "workHistory.daySummary": "Dienos suvestinė",
-  "workHistory.recordedShifts": "Įrašytos pamainos",
-  "workHistory.ongoing": "Vyksta",
-  "workHistory.totalBreaks": "Pertraukos iš viso",
-  "workHistory.totalPOA": "POA iš viso",
-  "workHistory.noShiftsRecordedForDate": "Šiai datai pamainų nėra.",
-  "workHistory.addShiftButton": "Pridėti pamainą",
-
-  "validation": {
-    "invalidTimeFormat": "Įveskite teisingą laiką (VV:MM)."
+  "app": {
+    "title": "HourWise EU",
+    "subtitle": "ES darbo laiko seklys"
   },
-
-  "instructionsTitle": "Kaip naudoti HourWise",
-  "instructionsDisclaimerTitle": "Pirmenybė — oficialioms taisyklėms",
-  "instructionsDisclaimer": "Ši programėlė padeda, tačiau nepakeičia mokymų ar teisinių reikalavimų.",
-
-  "instructionsInitialSetupTitle": "Pradinė sąranka",
-  "instructionsSetupStep1Title": "1. Įveskite paskutinę pamainą",
-  "instructionsSetupStep1Desc": "Reikalinga poilsiui apskaičiuoti: Meniu → Istorija.",
-  "instructionsSetupStep2Title": "2. Užpildykite vairuotojo profilį",
-  "instructionsSetupStep2Desc": "Nustatymai → Vairuotojo profilis.",
-  "instructionsSetupStep3Title": "3. Įmonės informacija (nebūtina)",
-  "instructionsSetupStep3Desc": "Naudinga ataskaitoms ir dokumentams.",
-
-  "instructionsWorkflowTitle": "Kasdienis darbas",
-  "workflowStep1Title": "1. Pamainos pradžia / pabaiga",
-  "workflowStep1Desc": "Pagrindiniai mygtukai įrašo automatiškai.",
-  "workflowStep2Title": "2. Automatiškas vairavimo nustatymas",
-  "workflowStep2Desc": "Programėlė aptinka judėjimą ir keičia režimą.",
-  "workflowStep3Title": "3. Pertraukos",
-  "workflowStep3Desc": "45 minutės atkuria 4,5 val. vairavimo limitą.",
-  "workflowStep4Title": "4. POA / Budėjimas",
-  "workflowStep4Desc": "Kai esate pasirengę, bet nedirbate aktyviai.",
-
-  "instructionsKeyFeaturesTitle": "Pagrindinės funkcijos",
-  "instructionsFatigueTitle": "Nuovargio stebėjimas",
-  "instructionsFatigueDesc": "Įspėjimai apie pertraukas ir limitus.",
-  "instructionsAudioWarning": "Rekomenduojame įjungti garsinius signalus.",
-  "instructionsHistoryTitle": "Istorija ir taisymai",
-  "instructionsHistoryDesc": "Peržiūrėkite ir taisykite ankstesnius įrašus.",
-  "historyFeature1": "Dienos suvestinės.",
-  "historyFeature2": "Klaidingų įrašų taisymas.",
-  "instructionsReportsTitle": "Ataskaitos ir dokumentai",
-  "instructionsReportsDesc": "PDF ataskaitos bet kuriam laikotarpiui.",
-  "instructionsButtonGotIt": "Gerai",
-
-  "fatigueFocusIndex": "Nuovargio ir susikaupimo indeksas",
-  "criticalFatigue": "Kritinis nuovargis",
-  "highFatigue": "Didelis nuovargis",
-  "moderateFatigue": "Vidutinis nuovargis",
-  "mildFatigue": "Nedidelis nuovargis",
-  "freshAndFocused": "Pailsėjęs ir susikaupęs",
-  "fullyAlert": "Visiškai budrus",
-  "approaching13h": "Artėjate prie 13 val. — suplanuokite poilsį.",
-  "over10h": "Šiandien virš 10 valandų darbo.",
-  "need45minBreak": "Reikalinga 45 min. pertrauka.",
-  "need30minBreak": "Reikalinga 30 min. pertrauka.",
-  "drivingExceeded10h": "Viršytas 10 val. vairavimo limitas.",
-  "drivingOver9h": "Daugiau nei 9 val. vairavimo (maks. 10 val.).",
-  "dailyRestBelow9h": "Dienos poilsis mažesnis nei 9 val.",
-  "reducedDailyRest": "Sumažintas dienos poilsis.",
-
-  "euRulesTitleAndDriving": "ES taisyklės — vairavimas ir darbas",
-  "euRulesAbout": "Apie taisykles",
-  "euRulesAboutDesc": "Trumpa apžvalga — nepakeičia oficialių šaltinių.",
-  "euRulesOverview": "Apžvalga",
-  "euRulesOverviewPoint1": "Taikoma transportui virš 3.5 t arba >9 vietų.",
-  "euRulesOverviewPoint2": "Darbo laikas apima vairavimą ir kitą darbą.",
-  "euRulesOverviewPoint3": "Visada tikrinkite oficialią informaciją.",
-  "euRulesDrivingTimeLimits": "Vairavimo laiko limitai",
-  "euRulesDailyDrivingLimit": "Dienos limitas:",
-  "euRulesDailyDrivingLimitDesc": "9 val. per dieną — du kartus per savaitę iki 10 val.",
-  "euRulesWeeklyDrivingLimit": "Savaitės limitas:",
-  "euRulesWeeklyDrivingLimitDesc": "Daugiausia 56 valandos.",
-  "euRulesFortnightlyDrivingLimit": "Per dvi savaites:",
-  "euRulesFortnightlyDrivingLimitDesc": "Ne daugiau kaip 90 valandų.",
-  "euRulesDrivingBreaks": "Pertraukos vairuojant:",
-  "euRulesDrivingBreaksDesc": "Po 4.5 val. — bent 45 minutės.",
-  "euRulesDrivingBreakSplit": "Galima dalinti: 15 + 30 min.",
-  "euRulesRestPeriods": "Poilsio laikotarpiai",
-  "euRulesDailyRest": "Dienos poilsis",
-  "euRulesDailyRestRegular": "Įprastas: bent 11 valandų.",
-  "euRulesDailyRestReduced": "Sumažintas: bent 9 valandos.",
-  "euRulesDailyRestSplit": "Galima skaidyti: 3 val. + 9 val.",
-  "euRulesWeeklyRest": "Savaitės poilsis",
-  "euRulesWeeklyRestRegular": "Įprastas: mažiausiai 45 valandos.",
-  "euRulesWeeklyRestReduced": "Sumažintas: mažiausiai 24 val. (su kompensacija).",
-  "euRulesWeeklyRestFrequency": "Bent vienas pilnas poilsis per 2 savaites.",
-  "euRulesWorkingTimeLimits": "Darbo laiko limitai",
-  "euRulesMaxWeeklyWork": "Maks. per savaitę:",
-  "euRulesMaxWeeklyWorkDesc": "Paprastai iki 60 valandų.",
-  "euRulesAvgWeeklyWork": "Vidutiniškai:",
-  "euRulesAvgWeeklyWorkDesc": "Vidutiniškai 48 val. per savaitę.",
-  "euRulesNightWorkLimit": "Naktinis darbas:",
-  "euRulesNightWorkLimitDesc": "Gali būti ribojamas iki 10 val.",
-  "euRulesWorkingTimeBreakRequirements": "Pertraukos darbo metu",
-  "euRulesWorkBreakIntro": "Taikoma visam darbo laikui.",
-  "euRulesWorkBreak6to9": "6–9 val.: bent 30 min.",
-  "euRulesWorkBreak9Plus": "Daugiau nei 9 val.: bent 45 min.",
-  "euRulesWorkBreakNoteDriving": "Gali sutapti su vairavimo pertraukomis.",
-  "euRulesInteraction": "Kaip taisyklės veikia kartu",
-  "euRulesInteractionPoint1": "Vairavimas — darbo dalis.",
-  "euRulesInteractionPoint2": "Planavimas padeda išvengti pažeidimų.",
-  "euRulesClose": "Uždaryti",
-
-  "privacyTitle": "Privatumas",
-  "privacySubtitle": "Jūsų duomenų kontrolė",
-  "privacyIntro": "Paaiškiname, kokius duomenis renkame ir kodėl.",
-  "privacyDataCollectedTitle": "Renkami duomenys",
-  "privacyDataCollectedDesc": "Naudojami tik skaičiavimams:",
-  "privacyStorageTitle": "Saugus saugojimas",
-  "privacyStorageDesc": "Duomenys yra apsaugoti.",
-  "privacyControlTitle": "Kontrolė",
-  "privacyControlDesc": "Galite peržiūrėti, redaguoti ir ištrinti.",
-  "privacyDisclaimerTitle": "Svarbu",
-  "privacyDisclaimer": "100% saugumo nėra, bet riziką mažiname.",
-  "privacyDataPoints": [
-    "Profilis (vardas ir el. paštas).",
-    "Įrašytos pamainos.",
-    "Darbo ir vairavimo skaičiavimai.",
-    "Įmonės informacija (nebūtina)."
-  ],
-
-  "driverSettings": "Vairuotojo nustatymai",
-  "welcomeSetup": "Sveiki — pradėkime",
-  "validationError": "Patvirtinimo klaida",
-  "pleaseEnterName": "Įveskite vardą.",
-  "expiredCodeTitle": "Kodas negalioja",
-  "expiredCodeMessage": "Kodas nebegalioja. Paprašykite naujo.",
-  "invalidCode": "Neteisingas kodas",
-  "companyCodeNotFound": "Pagal šį kodą įmonė nerasta.",
-  "personalInformation": "Asmeninė informacija",
-  "driverName": "Vairuotojo vardas",
-  "enterFullName": "Įveskite vardą ir pavardę",
-  "companyLink": "Prisijungti prie įmonės (nebūtina)",
-  "linkedToCompany": "Prijungta prie įmonės",
-  "companyLinkCodeOptional": "Įveskite kodą, jei turite.",
-  "enterCodeToJoinFleet": "Įveskite kodą prisijungti prie autoparko.",
-  "payConfiguration": "Apmokėjimo nustatymai",
-  "basicHourlyRate": "Valandinis atlygis",
-  "unpaidBreakDuration": "Neapmokėta pertrauka (min.)",
-  "shiftAllowances": "Pamainos priedai",
-  "addAllowance": "Pridėti priedą",
-  "overtimeRules": "Viršvalandžių taisyklės",
-  "overtimeThreshold": "Riba",
-  "rateMultiplier": "Koeficientas",
-  "addAnotherTier": "Pridėti naują lygį",
-
-  "businessProfile": "Įmonės profilis",
-  "companyDetails": "Įmonės informacija",
-  "legalName": "Teisinis pavadinimas",
-  "yourBusinessName": "Įmonės pavadinimas",
-  "address": "Adresas",
-  "streetTownPostcode": "Gatvė, miestas, pašto kodas",
-  "email": "El. paštas",
-  "phone": "Telefonas",
-  "taxId": "Mokesčių kodas",
-  "bankDetails": "Banko informacija",
-  "accountName": "Sąskaitos vardas",
-  "sortCode": "Banko kodas",
-  "accountNumber": "Sąskaitos numeris",
-  "iban": "IBAN",
-  "profileSaved": "Profilis sėkmingai išsaugotas.",
-
-  "dateRangeError": "Pabaigos data turi būti vėlesnė už pradžios datą.",
-  "noDataForRange": "Šiam laikotarpiui duomenų nėra.",
-  "failedToGenerate": "Nepavyko sugeneruoti ataskaitos.",
-  "workReport": "Darbo ataskaita",
-  "reportFrom": "Ataskaita nuo:",
-  "to": "iki:",
-  "summary": "Suvestinė",
-  "totalWorkTime": "Bendras darbo laikas",
-  "totalBreakTime": "Bendras pertraukų laikas",
-  "estimatedEarnings": "Numatomas uždarbis",
-  "previousWeek": "Praėjusi savaitė",
-  "lastMonth": "Praėjęs mėnuo",
-  "customRange": "Pasirinktas laikotarpis",
-  "generateReport": "Generuoti ataskaitą",
-  "workTime": "Darbo laikas",
-
-  "digitalTachographGuide": {
-    "title": "Rankinis įvedimas — skaitmeninis tachografas",
-    "prepare": {
-      "title": "Pasiruošimas",
-      "point1": "Sustokite saugioje vietoje.",
-      "point2": "Įdėkite vairuotojo kortelę.",
-      "point3": "Jei reikia — pasirinkite šalį."
-    },
-    "confirmManualEntry": {
-      "title": "Patvirtinti rankinį įvedimą",
-      "point1": "Įveskite trūkstamus laikotarpius."
-    },
-    "enterActivities": {
-      "title": "Veiklų įvedimas",
-      "point1": "Pasirinkite teisingas piktogramas.",
-      "point2": "Įveskite chronologine tvarka.",
-      "point3": "Įtraukite pertraukas ir poilsį.",
-      "point4": "Patikrinkite prieš patvirtinant."
-    },
-    "adjustTimes": {
-      "title": "Laiko koregavimas",
-      "point1": "Naudokite 24 val. formatą.",
-      "point2": "Laikykitės minimalių reikalavimų.",
-      "point3": "Ištaisykite netikslumus."
-    },
-    "confirm": {
-      "title": "Patvirtinimas",
-      "point1": "Peržiūrėkite suvestinę.",
-      "point2": "Patvirtinkite tik jei viskas teisinga."
-    },
-    "finalCheck": {
-      "title": "Paskutinis patikrinimas",
-      "point1": "Įsitikinkite, kad pasirinktas tinkamas režimas.",
-      "point2": "Kilę abejonių — kreipkitės pagalbos."
-    },
-    "warning": {
-      "title": "Įspėjimas",
-      "text": "Klaidos gali sukelti baudas."
-    },
-    "closeButton": "Uždaryti"
+  "dashboard": {
+    "previousShiftEnd": "Ankstesnės pamainos pabaiga",
+    "currentShiftStart": "Dabartinės pamainos pradžia",
+    "newShiftStarted": "Pamaina pradėta",
+    "dailyRest": "Kasdienis poilsis",
+    "workTimeRemaining": "Likęs darbo laikas",
+    "drivingTimeRemaining": "Likęs vairavimo laikas",
+    "breakDuration": "Pertraukos trukmė",
+    "poaDuration": "Būdėjimo trukmė (POA)",
+    "startShift": "Pradėti pamainą",
+    "endShift": "Baigti pamainą",
+    "startBreak": "Pradėti pertrauką",
+    "endBreak": "Baigti pertrauką",
+    "poaButtonText": "BŪDĖJIMAS / LAUKIMAS",
+    "resumeWork": "Tęsti darbą",
+    "currentStatusLabel": "Dabartinė būsena:",
+    "timerModeLabel": "Laikmačio režimas:",
+    "shiftDurationLabel": "Pamainos trukmė:",
+    "targetLabel": "Tikslas",
+    "checkVehicle": "Tikrinti TP",
+    "checkOk": "Patikra OK",
+    "checklistRequired": "Reikalingas kontrolinis sąrašas",
+    "fleetChecklistNotice": "Autoparko vairuotojai, prieš pradėdami pamainą, privalo atlikti transporto priemonės saugos patikrą.",
+    "complianceDue": "Terminas: {{type}}",
+    "daysLeft": "Liko dienų"
   },
-
-  "locale": "lt",
+  "vehicleChecklist": {
+    "title": "Kasdienė saugos patikra",
+    "updateTitle": "Atnaujinti patikrą",
+    "vehicleDetails": "Informacija apie TP",
+    "registration": "Valstybinis numeris",
+    "vehicleMake": "Markė (neprivaloma)",
+    "odometer": "Odometro parodymai",
+    "internalChecks": "Vidinė patikra",
+    "externalChecks": "Išorinė patikra",
+    "defectReporting": "Pranešimas apie gedimus",
+    "defectPlaceholder": "Aprašykite gedimą ir veiksmus, kurių imtasi...",
+    "submitReport": "Pateikti ataskaitą",
+    "updateReport": "Atnaujinti ataskaitą",
+    "currentShiftVehicles": "Šios pamainos TP",
+    "swapVehicle": "Pakeisti TP",
+    "newVehicleTitle": "Nauja TP",
+    "newVehicleMessage": "Bus pradėta nauja kitos TP patikra. Tęsti?",
+    "startNew": "Pradėti naują",
+    "success": "Sėkminga",
+    "checkRecorded": "Patikra užregistruota.",
+    "error": "Klaida",
+    "failedToSave": "Nepavyko išsaugoti.",
+    "missingReg": "Įveskite numerį.",
+    "incomplete": "Atsakykite į visus punktus.",
+    "missingDefectDetails": "Aprašykite problemą.",
+    "hintLabel": "Patarimas",
+    "items": {
+      "mirrors": "Veidrodžiai ir stiklai",
+      "mirrorsHint": "Patikrinkite įtrūkimus/lipdukus; įsitikinkite, kad veidrodžiai nustatyti.",
+      "wipers": "Valytuvai ir plovikliai",
+      "wipersHint": "Patikrinkite veikimą ir skysčio lygį.",
+      "front_view": "Vaizdas priekyje",
+      "front_viewHint": "Pilnas matomumas per priekinį langą.",
+      "warning_lamps": "Įspėjamosios lemputės",
+      "warning_lampsHint": "Įsitikinkite, kad prietaisų skydelio lemputės veikia.",
+      "steering": "Vairavimo mechanizmas",
+      "steeringHint": "Sklandus judėjimas ir teisingas veikimas.",
+      "horn": "Garso signalas",
+      "hornHint": "Patikrinkite, ar garsas aiškus ir veikia.",
+      "brakes_air": "Stabdžiai ir oro slėgis",
+      "brakes_airHint": "Patikrinkite stabdžių veikimą ir oro slėgio kilimą.",
+      "height_marker": "Aukščio žyma",
+      "height_markerHint": "Rodoma teisinga aukščio žyma.",
+      "seatbelts": "Saugos diržai",
+      "seatbeltsHint": "Patikrinkite, ar visi diržai veikia tinkamai.",
+      "lights_ind": "Žibintai ir posūkiai",
+      "lights_indHint": "Visi žibintai ir posūkių signalai veikia.",
+      "leaks": "Kuro/tepalo nuotėkis",
+      "leaksHint": "Patikrinkite, ar nėra skysčių ant žemės ar važiuoklės.",
+      "battery": "Akumuliatoriaus tvirtinimas",
+      "batteryHint": "Patikrinkite, ar akumuliatorius saugiai pritvirtintas.",
+      "adblue": "AdBlue skystis",
+      "adblueHint": "Pakankamas išmetamųjų dujų skysčio lygis.",
+      "smoke": "Pertekliniai dūmai",
+      "smokeHint": "Patikrinkite išmetamųjų dujų dūmingumą.",
+      "body_wings": "Kėbulo/sparnų saugumas",
+      "body_wingsHint": "Įsitikinkite, kad nėra atsilaisvinusių dalių.",
+      "spray": "Purvą sulaikančios sistemos",
+      "sprayHint": "Saugiai pritvirtinta ir atitinka teisės aktus.",
+      "tyres_wheels": "Padangos ir ratų tvirtinimas",
+      "tyres_wheelsHint": "Veržlės priveržtos. Protektorius ir slėgis atitinka normas.",
+      "brake_line": "Stabdžių linijos",
+      "brake_lineHint": "Patikrinkite, ar nėra pažeidimų ar oro nuotėkio.",
+      "electrical": "Elektros jungtys",
+      "electricalHint": "Visų jungčių patikra.",
+      "coupling": "Sukabinimo saugumas",
+      "couplingHint": "Patikrinkite, ar TP saugiai prikabinta prie krovinio.",
+      "load_security": "Krovinio saugumas",
+      "load_securityHint": "Svoris paskirstytas tolygiai, krovinys pritvirtintas.",
+      "number_plate": "Valstybinis numeris",
+      "number_plateHint": "Pritvirtintas ir aiškiai matomas.",
+      "reflectors": "Atšvaitai ir šviesos",
+      "reflectorsHint": "Saugiai pritvirtinti ir matomi.",
+      "markers": "Žymekliai",
+      "markersHint": "Visi reikiami žymekliai saugiai pritvirtinti."
+    }
+  },
+  "vehicleManagement": {
+    "title": "Transporto priemonių valdymas",
+    "sections": {
+      "identity": "TP tapatybė",
+      "compliance": "Atitiktis ir sauga"
+    },
+    "fields": {
+      "registration": {
+        "label": "Valstybinis numeris *",
+        "placeholder": "PVZ. ABC 123"
+      },
+      "make": {
+        "label": "Markė",
+        "placeholder": "Scania"
+      },
+      "model": {
+        "label": "Modelis",
+        "placeholder": "R450"
+      },
+      "type": "TP tipas",
+      "odometer": {
+        "label": "Dabartinė rida",
+        "unit": "KM"
+      },
+      "motDate": "Techninė apžiūra (iki)",
+      "pmiDate": "Kitas aptarnavimas (PMI)",
+      "tachoDate": "Tachografo patikra",
+      "lolerDate": "Keltuvo patikra (LOLER)",
+      "insuranceDate": "Draudimo galiojimas"
+    },
+    "complianceNotice": "Atitikties datos aktyvuoja „šviesoforo“ sistemą skydelyje. Vėluojantys punktai bus pažymėti.",
+    "saveButton": "Išsaugoti TP duomenis",
+    "selectDate": "Pasirinkti datą",
+    "alerts": {
+      "regRequired": "Valstybinis numeris privalomas",
+      "saveSuccess": "TP duomenys sėkmingai išsaugoti",
+      "duplicateReg": "Šis valstybinis numeris jau užregistruotas.",
+      "saveError": "Nepavyko išsaugoti TP duomenų"
+    }
+  },
+  "shiftSummary": {
+    "title": "Dabartinė pamaina",
+    "totalWork": "Visas darbas",
+    "totalDriving": "Visas vairavimas",
+    "totalBreaks": "Visos pertraukos",
+    "totalPOA": "Visas būdėjimas (POA)"
+  },
+  "endShiftConfirmation": {
+    "title": "Pamainos pabaigos patvirtinimas",
+    "shiftSummary": "Galinė pamainos suvestinė",
+    "violationsFound": "Rasti pažeidimai",
+    "greatJob": "Puikus darbas!",
+    "noViolations": "Šioje pamainoje pažeidimų neužfiksuota.",
+    "confirmEnd": "Patvirtinti ir baigti pamainą"
+  },
+  "menu": {
+    "instructions": "Instrukcijos",
+    "privacyInfo": "Privatumas",
+    "euWorkingTimeRules": "ES taisyklės",
+    "tachoGuide": "Tacho gidas",
+    "compliance": "Atitiktis",
+    "workHistory": "Darbo istorija",
+    "addExpense": "Pridėti išlaidas",
+    "downloadReport": "Atsisiųsti ataskaitą"
+  },
+  "workHistory": {
+    "title": "Darbo istorija",
+    "daySummary": "Dienos suvestinė",
+    "recordedShifts": "Įrašytos pamainos",
+    "totalWork": "Visas darbas",
+    "totalDriving": "Visas vairavimas",
+    "totalBreaks": "Visos pertraukos",
+    "totalPOA": "Visas būdėjimas",
+    "estimatedEarnings": "Numatomas uždarbis",
+    "ongoing": "Vykstanti",
+    "workTime": "Darbo laikas",
+    "noShifts": "Šią dieną pamainų neužregistruota.",
+    "noShiftsRecordedForDate": "Šią dieną pamainų neužregistruota.",
+    "addShift": "Pridėti pamainą",
+    "editShift": "Redaguoti pamainą",
+    "updateShift": "Atnaujinti pamainą",
+    "totalBreakTime": "Visas pertraukų laikas",
+    "totalPOATime": "Visas būdėjimo laikas",
+    "noShiftsTitle": "Poilsio diena"
+  },
+  "calendar": {
+    "dayDetailsTitle": "Dienos informacija",
+    "timeSummaryTitle": "Laiko suvestinė",
+    "paySummaryTitle": "Užmokesčio suvestinė",
+    "period": "Laikotarpis",
+    "worked": "Dirbta",
+    "breaks": "Pertraukos",
+    "violations": "Pažeidimai",
+    "estimatedPay": "Numat. alga",
+    "lastCompletedWeek": "Praėjusi savaitė",
+    "currentWeek": "Ši savaitė",
+    "monthToDate": "Šis mėnuo",
+    "selectedMonthSummary": "Pasirinktas mėnuo",
+    "lastWeekOfSelectedMonth": "Paskutinė mėnesio savaitė",
+    "complianceReminders": "Atitikties priminimai",
+    "renewalDue": "{{type}} galiojimo pabaiga"
+  },
+  "fatigue": {
+    "title": "Nuovargio ir dėmesio indeksas",
+    "fullyAlert": "Visiškai budrus",
+    "freshAndFocused": "Žvalus ir susikaupęs",
+    "mild": "Lengvas nuovargis",
+    "moderate": "Vidutinis nuovargis",
+    "high": "Didelis nuovargis",
+    "critical": "Kritinis nuovargis",
+    "approaching13h": "Artėjate prie 13 valandų darbo ciklo. Planuokite poilsį.",
+    "over10h": "Šiandien dirbta virš 10 valandų.",
+    "need45minBreak": "Pamainoms virš 9 val. reikalinga 45 min. pertrauka.",
+    "need30minBreak": "Pamainoms virš 6 val. reikalinga 30 min. pertrauka.",
+    "drivingExceeded10h": "Viršyta 10 valandų vairavimo šiandien.",
+    "drivingOver9h": "Vairuojama virš 9 valandų (naudojant pratęsimą).",
+    "dailyRestBelow9h": "Kasdienis poilsis buvo mažesnis nei 9 valandos.",
+    "reducedDailyRest": "Pasinaudota sutrumpintu poilsiu (mažiau nei 11 val.).",
+    "workTimeExceeded": "Darbo laiko limitas viršytas {{time}}."
+  },
+  "complianceScorecard": {
+    "title": "Dienos atitikties kortelė",
+    "outOf100": "iš 100",
+    "violationsRecorded": "Užfiksuoti pažeidimai:",
+    "greatJob": "Puikus darbas!",
+    "noViolations": "Šią dieną atitikties pažeidimų neužfiksuota."
+  },
+  "dailyReport": {
+    "title": "Vakarykštė ataskaita",
+    "violationsFound": "Rasti pažeidimai",
+    "greatJob": "Puiku!",
+    "noViolations": "Vakarykštėje pamainoje pažeidimų neužfiksuota."
+  },
   "day": {
     "mon": "Pr",
     "tue": "An",
     "wed": "Tr",
     "thu": "Kt",
     "fri": "Pn",
-    "sat": "Št",
-    "sun": "Sk"
+    "sat": "Še",
+    "sun": "Se"
   },
-  "timeSummary": "Laiko suvestinė",
-  "paySummary": "Apmokėjimo suvestinė",
-  "period": "Laikotarpis",
-  "worked": "Dirbta",
-  "breaks": "Pertraukos",
-  "violations": "Pažeidimai",
-  "estimatedPay": "Numatomas atlygis",
-  "lastCompletedWeek": "Paskutinė užbaigta savaitė",
-  "currentWeek": "Dabartinė savaitė",
-  "monthToDate": "Mėnuo iki šiandien",
-  "selectedMonthSummary": "Pasirinktas mėnuo",
-  "lastWeekOfSelectedMonth": "Paskutinė pasirinkto mėnesio savaitė"
+  "safetyWarning": {
+    "title": "Saugos įspėjimas",
+    "body": "Nenaudokite programėlės vairuodami. Saugiems pakeitimams atlikti sustokite.",
+    "acknowledge": "Supratau"
+  },
+  "firstTimeSetup": {
+    "title": "Sveiki atvykę į „HourWise“!",
+    "subtitle": "Keli žingsniai sėkmingai pradžiai:",
+    "step1_new": "Pirmiausia nustatysite vairuotojo profilį ir apmokėjimo duomenis.",
+    "step2_new": "Tada pridėsite paskutinę pamainą, kad poilsis būtų skaičiuojamas teisingai.",
+    "step3_new": "Tada paprašysime leidimų tiksliam sekimui užtikrinti.",
+    "step4_new": "Galiausiai galėsite pradėti sekti savo pamainas ir uždarbį.",
+    "button": "Supratau, pradedam!"
+  },
+  "settingsMenu": {
+    "manageSubscription": "Valdyti prenumeratą",
+    "businessProfile": "Verslo profilis",
+    "driverSettings": "Vairuotojo nustatymai",
+    "selectLanguage": "Pasirinkti kalbą",
+    "vehicleManagement": "Transporto priemonių valdymas",
+    "timezone": {
+      "label": "Laiko juosta"
+    },
+    "signOut": {
+      "action": "Atsijungti"
+    }
+  },
+  "driverSetup": {
+    "title": "Vairuotojo nustatymas",
+    "notAuthenticated": "Vartotojas neidentifikuotas. Paleiskite programėlę iš naujo.",
+    "hourlyRate": "Valandinis įkainis",
+    "unpaidBreak": "Neapmokama pertrauka",
+    "minutes": "Minutės",
+    "overtimeThreshold": "Viršvalandžių riba",
+    "hours": "Valandos per savaitę",
+    "overtimeMultiplier": "Viršvalandžių koeficientas",
+    "shiftAllowances": "Pamainos priedai",
+    "additionalOvertime": "Papildomi viršvalandžių lygiai",
+    "threshold": "Riba (valandomis)",
+    "rate": "Įkainis (€)",
+    "addTier": "Pridėti lygį",
+    "skip": "Praleisti",
+    "save": "Išsaugoti ir tęsti",
+    "validationError": "Validacijos klaida",
+    "pleaseEnterName": "Prašome įvesti vardą."
+  },
+  "instructions": {
+    "title": "Kaip naudotis „HourWise“",
+    "disclaimer": {
+      "title": "Oficialios taisyklės yra svarbiausios",
+      "body": "Ši programėlė yra pagalbinė priemonė, o ne oficialių mokymų ar teisinių patarimų pakaitalas. Visada vadovaukitės ES reglamentais ir įmonės politika."
+    },
+    "initialSetup": {
+      "title": "Pirmieji žingsniai",
+      "step1": {
+        "title": "1. Užpildykite vairuotojo profilį",
+        "body": "Solo vairuotojai PRIVALO nustatyti apmokėjimo konfigūraciją pradinio nustatymo metu, kad veiktų uždarbio prognozės."
+      },
+      "step2": {
+        "title": "2. Įveskite paskutinę pamainą (SVARBU!)",
+        "body": "Teisingam „Kasdienio poilsio“ skaičiavimui PRIVALOTE rankiniu būdu įvesti paskutinės užbaigtos pamainos duomenis."
+      },
+      "step3": {
+        "title": "3. Pridėkite verslo informaciją (Pasirinktinai)",
+        "body": "Sąskaitų išrašymui eikite į Nustatymai -> Verslo profilis. Jūsų duomenys bus matomi generuojamose PDF sąskaitose."
+      }
+    },
+    "workflow": {
+      "title": "Dienos eiga",
+      "step1": {
+        "title": "1. Pradėkite ir baikite pamainą",
+        "body": "Naudokite pagrindinius mygtukus. Pamainos pabaigoje pamatysite suvestinę ir galimus pažeidimus."
+      },
+      "step5": {
+        "title": "2. Kasdienė TP saugos patikra",
+        "body": "Atlikite patikrą naudodami mygtuką „Tikrinti TP“. Tai privaloma autoparko vairuotojams."
+      },
+      "step2": {
+        "title": "3. Automatinis vairavimo aptikimas",
+        "body": "Programėlė aptinka judėjimą ir perjungia būseną į „Vairavimas“. Sustojus būsena grįžta į „Darbas“."
+      },
+      "step3": {
+        "title": "4. Pertraukos darymas",
+        "body": "Paspauskite „Pradėti pertrauką“. Nepertraukiama bent 45 min. pertrauka nunulina 4,5 val. vairavimo laikmatį."
+      },
+      "step4": {
+        "title": "5. Būdėjimo laikas (POA)",
+        "body": "Naudokite „Būdėjimas / Laukimas“, kai esate prieinamas, bet nedirbate aktyviai (pvz., laukiate pakrovimo)."
+      }
+    },
+    "keyFeatures": {
+      "title": "Pagrindinės funkcijos",
+      "fatigue": {
+        "title": "Nuovargio monitorius",
+        "body": "Rodomas pagrindiniame ekrane, teikia įspėjimus apie nepakankamą poilsį ar vairavimo limitus."
+      },
+      "messaging": {
+        "title": "Atnaujinimai ir pranešimai",
+        "body": "Gaukite svarbius sistemos pranešimus ir vadovybės žinutes tiesiai programėlėje."
+      },
+      "compliance": {
+        "title": "Atitikties kalendorius",
+        "body": "Rodo kiekvienos dienos atitikties įvertinimą. Bakstelėkite, kad pamatytumėte mėnesio informaciją."
+      },
+      "history": {
+        "title": "Istorija ir redagavimas",
+        "body": "Peržiūrėkite praeities pamainas, redaguokite jas ar pridėkite praleistus įrašus."
+      },
+      "expenses": {
+        "title": "Išlaidų sekimas",
+        "body": "Registruokite kurą ar maitinimą. Galite skenuoti čekius – programėlė pati užpildys sumą."
+      },
+      "reports": {
+        "title": "Ataskaitų atsisiuntimas",
+        "body": "Generuokite PDF ataskaitas atitikties patikrai, sąskaitas klientams arba TP patikrų žurnalus."
+      },
+      "dailyReport": {
+        "title": "Dienos ataskaita",
+        "body": "Kiekvieną rytą pamatysite langą su vakarykštės pamainos pažeidimų suvestine."
+      },
+      "qualifications": {
+        "title": "Profesinė kvalifikacija",
+        "body": "Tvarkykite vairuotojo pažymėjimo, 95 kodo ir tacho kortelės galiojimo datas."
+      },
+      "vehicles": {
+        "title": "TP valdymas",
+        "body": "Sekite svarbias datas: TA, servisus, tacho patikras su įspėjamąja sistema."
+      },
+      "safetyChecks": {
+        "title": "Skaitmeniniai žurnalai",
+        "body": "Atlikite pilnas patikras ir saugokite skaitmeninį visų gedimų bei apžiūrų žurnalą."
+      },
+      "invoicing": {
+        "title": "Sąskaitų išrašymas",
+        "body": "Nustatykite verslo profilį, kad generuotumėte profesionalias sąskaitas su visais rekvizitais."
+      }
+    },
+    "footer": {
+      "gotIt": "Supratau!"
+    }
+  },
+  "euRules": {
+    "title": "ES taisyklės ir vairavimo laikas",
+    "closeButton": "Uždaryti",
+    "accessibility": {
+      "closeRules": "Uždaryti taisykles",
+      "closeAndReturn": "Uždaryti ir grįžti"
+    },
+    "about": {
+      "title": "Apie šias taisykles",
+      "description": "Čia pateikiama pagrindinių ES vairavimo ir poilsio laiko taisyklių suvestinė. Visada laikykitės oficialių teisės aktų."
+    },
+    "overview": {
+      "title": "Apžvalga",
+      "point1": "Tiksliai sekite darbą, pertraukas, POA ir vairavimą.",
+      "point2": "Planuokite pertraukas iš anksto, kad išvengtumėte pažeidimų.",
+      "point3": "Sutrumpintą poilsį ir vairavimo pratęsimus naudokite atsargiai."
+    },
+    "drivingLimits": {
+      "title": "Vairavimo apribojimai",
+      "daily": {
+        "label": "Dienos vairavimo limitas:",
+        "description": "9 valandos (gali būti pratęsta iki 10 val. du kartus per savaitę)."
+      },
+      "weekly": {
+        "label": "Savaitės vairavimo limitas:",
+        "description": "56 valandos."
+      },
+      "fortnightly": {
+        "label": "Dviejų savaičių limitas:",
+        "description": "90 valandų."
+      },
+      "breaks": {
+        "label": "Vairavimo pertraukos:",
+        "description": "Po 4,5 val. vairavimo darykite 45 min. pertrauką."
+      },
+      "breaksSplitExample": "45 min. galima skaidyti į 15 min. + 30 min. (tik tokia tvarka)."
+    },
+    "restPeriods": {
+      "title": "Poilsio laikotarpiai",
+      "daily": {
+        "title": "Kasdienis poilsis:",
+        "regular": "Normalus poilsis: bent 11 valandų.",
+        "reduced": "Sutrumpintas poilsis: bent 9 valandos (ribotas naudojimas).",
+        "split": "Skaidytas poilsis: iš viso bent 12 valandų (pvz., 3 + 9)."
+      },
+      "weekly": {
+        "title": "Savaitinis poilsis:",
+        "regular": "Normalus savaitinis poilsis: bent 45 valandos.",
+        "reduced": "Sutrumpintas savaitinis poilsis: bent 24 valandos (reikalinga kompensacija).",
+        "frequency": "Savaitinis poilsis turi būti pradėtas ne vėliau kaip po šešių 24 val. laikotarpių."
+      }
+    },
+    "workingTimeLimits": {
+      "title": "Darbo laiko apribojimai",
+      "maxWeekly": {
+        "label": "Maks. savaitės darbo laikas:",
+        "description": "60 valandų (griežta riba)."
+      },
+      "avgWeekly": {
+        "label": "Vidutinis savaitės laikas:",
+        "description": "Vidutiniškai 48 valandos per apskaitos laikotarpį."
+      },
+      "nightWork": {
+        "label": "Naktinio darbo limitas:",
+        "description": "Paprastai 10 valandų per bet kurį 24 valandų laikotarpį."
+      }
+    },
+    "workBreaks": {
+      "title": "Darbo pertraukų reikalavimai",
+      "intro": "Darbo pertraukos priklauso nuo visų dirbtų valandų.",
+      "rules": {
+        "sixToNine": "Jei dirbate virš 6 val.: darykite bent 30 min. pertrauką.",
+        "ninePlus": "Jei dirbate virš 9 val.: darykite bent 45 min. pertrauką."
+      },
+      "noteDriving": "Vairavimo pertraukos (4,5 val. taisyklė) yra atskiros ir jų taip pat būtina laikytis."
+    },
+    "interaction": {
+      "title": "Kaip programėlė tai seka",
+      "point1": "Darbo ir vairavimo laikmačiai veikia aktyvumo metu; POA sustabdo darbo ciklą.",
+      "point2": "Tinkama pertrauka nunulina jūsų 4,5 val. vairavimo ciklą."
+    }
+  },
+  "tachoGuide": {
+    "title": "Skaitmeninio tachografo rankinio įvedimo gidas",
+    "prepare": {
+      "title": "Pasiruoškite",
+      "point1": "Turėkite vairuotojo kortelę paruoštą.",
+      "point2": "Įsitikinkite, kad tachografas yra rankinio įvedimo režime.",
+      "point3": "Patikrinkite laiką ir laiko juostos nustatymus."
+    },
+    "confirmManualEntry": {
+      "title": "Patvirtinkite rankinį įvedimą",
+      "point1": "Patvirtinkite, kad norite pridėti veiklas nuo paskutinio kortelės išėmimo."
+    },
+    "enterActivities": {
+      "title": "Įveskite veiklas",
+      "point1": "Pasirinkite teisingą veiklos tipą (poilsis/darbas/būdėjimas).",
+      "point2": "Tiksliai įveskite pradžios ir pabaigos laiką.",
+      "point3": "Pakartokite kiekvienam trūkstamam laikotarpiui.",
+      "point4": "Patikrinkite, ar seka atitinka tikrovę."
+    },
+    "adjustTimes": {
+      "title": "Koreguokite laiką",
+      "point1": "Jei laikas klaidingas, grįžkite ir ištaisykite.",
+      "point2": "Įsitikinkite, kad nėra persidengimų ar tarpų.",
+      "point3": "Patvirtinkite kiekvieną įrašą prieš tęsdami."
+    },
+    "confirm": {
+      "title": "Patvirtinimas",
+      "point1": "Peržiūrėkite suvestinę tachografo ekrane.",
+      "point2": "Patvirtinkite, kad išsaugotumėte įrašus."
+    },
+    "finalCheck": {
+      "title": "Galutinis patikrinimas",
+      "point1": "Patikrinkite, ar laiko juosta teisinga.",
+      "point2": "Pradėkite pamainą tik tada, kai viskas atrodo gerai."
+    },
+    "closeButton": "Uždaryti"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "french": "Français",
+    "spanish": "Español",
+    "italic": "Italiano",
+    "polish": "Polski",
+    "romanian": "Română",
+    "dutch": "Nederlands",
+    "portuguese": "Português",
+    "ukrainian": "Українська",
+    "hungarian": "Magyar",
+    "bulgarian": "Български",
+    "lithuanian": "Lietuvių",
+    "czech": "Čeština",
+    "slovak": "Slovenčina",
+    "latvian": "Latviešu",
+    "turkish": "Türkçe"
+  },
+  "selectLanguage": "Pasirinkti kalbą",
+  "signOut": "Atsijungti",
+  "confirmSignOut": "Ar tikrai norite atsijungti?",
+  "manageSubscription": "Valdyti prenumeratą",
+  "validation": {
+    "invalidTimeFormat": "Įveskite teisingą laiką HH:MM formatu."
+  },
+  "validationError": "Validacijos klaida",
+  "pleaseEnterName": "Įveskite savo vardą.",
+  "driverSettings": "Vairuotojo nustatymai",
+  "welcomeSetup": "Sveikinimo nustatymas",
+  "personalInformation": "Asmeninė informacija",
+  "driverName": "Vairuotojo vardas",
+  "enterFullName": "Įveskite pilną vardą",
+  "companyLink": "Ryšys su įmone",
+  "linkedToCompany": "Susieta su įmone",
+  "companyLinkCodeOptional": "Įmonės kodas (neprivaloma)",
+  "enterCodeToJoinFleet": "Įveskite kodą, gautą iš įmonės, kad prisijungtumėte prie jų parko.",
+  "payConfiguration": "Apmokėjimo konfigūracija",
+  "basicHourlyRate": "Bazinis valandinis įkainis",
+  "unpaidBreakDuration": "Neapmokamos pertraukos trukmė (minutėmis)",
+  "shiftAllowances": "Pamainos priedai",
+  "addAllowance": "Pridėti priedą",
+  "overtimeRules": "Viršvalandžių taisyklės",
+  "overtimeThreshold": "Viršvalandžių riba",
+  "rateMultiplier": "Įkainio koeficientas",
+  "addAnotherTier": "Pridėti kitą lygį",
+  "invalidCode": "Neteisingas kodas",
+  "companyCodeNotFound": "Įmonės kodas nerastas.",
+  "expiredCodeTitle": "Kodas nebegalioja",
+  "expiredCodeMessage": "Šis kodas nustojo galioti. Paprašykite naujo.",
+  "privacyTitle": "Privatumas ir jūsų duomenys",
+  "privacySubtitle": "Jūsų duomenys, jūsų kontrolė",
+  "privacyIntro": "Mes saugome jūsų privatumą. Ši politika paaiškina, kokius duomenis „HourWise“ renka funkcijoms užtikrinti.",
+  "privacyWhyTitle": "Kodėl renkame duomenis",
+  "privacyWhyDesc": "Renkame tik būtinus duomenis: darbo valandų skaičiavimui, ES atitikčiai ir ataskaitoms.",
+  "privacyDataCollectedTitle": "Ką saugome",
+  "privacyDataCollectedDesc": "Kad programėlė veiktų, saugiai saugome šią jūsų pateiktą informaciją:",
+  "privacyDataPoints": [
+    "Jūsų vardas (ataskaitoms)",
+    "Įrašytos pamainos (laikas, vairavimas, darbas, pertraukos, POA)",
+    "Vietovės duomenys (tik automatiniam vairavimo aptikimui)",
+    "Atitikties balai ir pažeidimai",
+    "Išlaidų informacija ir čekių nuotraukos",
+    "Apmokėjimo nustatymai (neprivaloma)",
+    "Verslo profilis ir banko rekvizitai (neprivaloma)"
+  ],
+  "privacyStorageTitle": "Saugi debesija",
+  "privacyStorageDesc": "Jūsų duomenys saugomi asmeninėje debesijos paskyroje naudojant pramoninius šifravimo standartus.",
+  "privacyControlTitle": "Jūs viską kontroliuojate",
+  "privacyControlDesc": "Jūs galite bet kada peržiūrėti, redaguoti ar ištrinti savo istoriją bei asmeninę informaciją.",
+  "privacyThirdPartyTitle": "Trečiųjų šalių paslaugos",
+  "privacyThirdPartyDesc": "Čekių skenavimui naudojame OCR paslaugas. Jūsų duomenų nenaudojame rinkodarai.",
+  "privacyThirdPartyDesc_new": "Čekių nuotraukos apdorojamos išorinėje tarnyboje tekstui išgauti. Mes neparduodame jūsų duomenų.",
+  "privacyDisclaimerTitle": "Svarbu",
+  "privacyDisclaimer": "Nors naudojame saugias sistemas, joks duomenų perdavimas internetu nėra 100% saugus. Esame pilnai įsipareigoję jus saugoti.",
+  "privacy": {
+    "gdprRightsTitle": "Jūsų BDAR teisės",
+    "gdprRightsDesc": "Pagal BDAR turite teisę pasiekti, taisyti ar ištrinti savo duomenis tiesiogiai programėlėje."
+  },
+  "account": {
+    "title": "Paskyros valdymas",
+    "manageMyData": "Valdyti duomenis",
+    "profileSection": "Profilis",
+    "editName": "Keisti vardą",
+    "changeEmail": "Keisti el. paštą",
+    "changePassword": "Keisti slaptažodį",
+    "dataSection": "Duomenų valdymas",
+    "exportData": "Eksportuoti duomenis",
+    "manageSubscription": "Valdyti prenumeratą",
+    "dangerZone": "Pavojaus zona",
+    "delete": {
+      "title": "Ištrinti paskyrą",
+      "confirmTitle": "Ištrinti?",
+      "confirmMessage": "Tai visam laikui pašalins pamainas, atitikties įrašus ir profilį. Veiksmas neatšaukiamas.",
+      "confirmButton": "Ištrinti viską",
+      "successTitle": "Paskyra ištrinta",
+      "successMessage": "Jūsų paskyra ir visi duomenys buvo pašalinti.",
+      "errorMessage": "Šiuo metu paskyros ištrinti nepavyko. Susisiekite su pagalba."
+    }
+  },
+  "notification": {
+    "trackingTitle": "Sekamas vairavimo laikas",
+    "trackingBody": "„HourWise“ stebi jūsų vietovę vairavimui aptikti.",
+    "shiftStartedTitle": "Pamaina pradėta",
+    "shiftStartedBody": "Jūsų darbo pamaina oficialiai prasidėjo.",
+    "shiftEndedTitle": "Pamaina baigta",
+    "shiftEndedBody": "Jūsų darbo pamaina sėkmingai užbaigta."
+  },
+  "enableComplianceNotifications": "Įjunkite pranešimus atitikties įspėjimams gauti.",
+  "locationPermissionRequired": "Vairavimo aptikimui reikalingas vietovės leidimas.",
+  "backgroundLocationPermissionRequired": "Patikimam sekimui reikalingas vietovės leidimas fone.",
+  "failedToResumeShift": "Nepavyko atnaujinti pamainos iš serverio.",
+  "startShiftError": "Nepavyko pradėti pamainos.",
+  "endShiftError": "Nepavyko baigti pamainos serveryje. Patikrinkite ryšį.",
+  "cannotGoToPoaFromBreak": "Negalima perjungti į POA būnant pertraukoje.",
+  "proactiveNotificationTitle": "Paskutinės pamainos apžvalga",
+  "proactiveNotificationBody": "Patarimas šiandienai:",
+  "workTimeWarningTitle": "Darbo laiko įspėjimas",
+  "drivingTimeWarningTitle": "Vairavimo laiko įspėjimas",
+  "workTime30minLeft": "Liko 30 minučių darbo ciklo.",
+  "workTime15minLeft": "Liko 15 minučių darbo ciklo.",
+  "workTime5minLeft": "Liko 5 minutės darbo ciklo.",
+  "workTimeLimitReached": "Darbo laiko limitas pasiektas.",
+  "drivingTime30minLeft": "Liko 30 minučių vairavimo.",
+  "drivingTime15minLeft": "Liko 15 minučių vairavimo.",
+  "drivingTime5minLeft": "Liko 5 minutės vairavimo.",
+  "drivingTimeLimitReached": "Vairavimo laiko limitas pasiektas.",
+  "audioShiftStarted": "Pamaina pradėta.",
+  "audioShiftEnded": "Pamaina baigta.",
+  "audioBreakStarted": "Pertrauka pradėta.",
+  "audioResumeWork": "Grįžtama prie darbo.",
+  "audioPoaStarted": "P. O. A. pradėtas.",
+  "audioDrivingTimeReset": "Vairavimo laikas nunulintas.",
+  "audioDrivingLimitReached": "Vairavimo limitas pasiektas.",
+  "audioDriving5minLeft": "Liko 5 minutės vairavimo.",
+  "audioDriving15minLeft": "Liko 15 minučių vairavimo.",
+  "audioDriving30minLeft": "Liko 30 minučių vairavimo.",
+  "audioWork5h15": "Liko 15 minučių darbo ciklo.",
+  "audioWork5h30": "Liko 30 minučių darbo ciklo.",
+  "audioWork5h55": "Liko 5 minutės darbo ciklo.",
+  "safetyWarningTitle": "Saugos įspėjimas",
+  "safetyWarningBody": "Nenaudokite programėlės vairuodami. Sustokite pakeitimams.",
+  "acknowledge": "Patvirtinti",
+  "auth": {
+    "title": {
+      "signIn": "Prisijungti",
+      "signUp": "Sukurti paskyrą"
+    },
+    "subtitle": {
+      "signIn": "Sveiki sugrįžę! Prisijunkite.",
+      "signUp": "Prisijunkite prie mūsų ir sekite savo valandas."
+    },
+    "fields": {
+      "email": {
+        "label": "El. pašto adresas",
+        "placeholder": "vardas@pavyzdys.lt"
+      },
+      "password": {
+        "label": "Slaptažodis",
+        "placeholder": "Įveskite slaptažodį"
+      },
+      "driverName": {
+        "label": "Vairuotojo vardas ir pavardė",
+        "placeholder": "pvz., Jonas Jonaitis"
+      },
+      "companyCode": {
+        "label": "Įmonės kodas",
+        "placeholder": "Įveskite kodą gautą iš įmonės"
+      }
+    },
+    "buttons": {
+      "signIn": "Prisijungti",
+      "createAccount": "Sukurti paskyrą"
+    },
+    "switchTo": {
+      "signUp": "Neturite paskyros? Registruotis",
+      "signIn": "Jau turite paskyrą? Prisijungti"
+    },
+    "accountType": {
+      "solo": {
+        "title": "Solo vairuotojas",
+        "subtitle": "Nepriklausomas profesionalas"
+      },
+      "fleet": {
+        "title": "Parko narys",
+        "subtitle": "Įmonės darbuotojas"
+      }
+    },
+    "alerts": {
+      "missingInfo": {
+        "title": "Trūksta informacijos",
+        "body": "Užpildykite visus privalomus laukus."
+      },
+      "companyCodeRequired": {
+        "title": "Reikalingas įmonės kodas",
+        "body": "Įveskite kodą, kad tęstumėte kaip parko narys."
+      },
+      "invalidCode": {
+        "title": "Neteisingas kodas",
+        "expired": "Šis kodas nebegalioja.",
+        "notFound": "Įvestas kodas yra neteisingas."
+      },
+      "signUpError": {
+        "title": "Registracijos klaida"
+      },
+      "signUpFailed": {
+        "title": "Registracija nepavyko",
+        "body": "Šiuo metu paskyros sukurti negalime."
+      },
+      "profileCreationFailed": {
+        "title": "Nepavyko sukurti profilio",
+        "body": "Paskyra sukurta, bet profilio nustatymas nepavyko. Susisiekite su pagalba."
+      },
+      "checkEmail": {
+        "title": "Patikrinkite el. paštą",
+        "body": "Patvirtinimo nuoroda išsiųsta jūsų adresu."
+      },
+      "signInMissing": {
+        "title": "Trūksta duomenų",
+        "body": "Įveskite el. paštą ir slaptažodį."
+      },
+      "signInError": {
+        "title": "Prisijungimo klaida"
+      }
+    }
+  },
+  "paywall": {
+    "title": "Atrakinkite „HourWise Pro“",
+    "subtitle": "Gaukite visas funkcijas, neribotą sekimą ir ataskaitas.",
+    "subscribeNow": "Prenumeruoti dabar",
+    "restorePurchases": "Atkurti pirkinius",
+    "loading": "Atidaroma…",
+    "restoring": "Atkuriama…",
+    "alert": {
+      "successTitle": "Sėkminga",
+      "purchased": "Pirkimas baigtas!",
+      "restored": "Pirkiniai atkurti!",
+      "paywallError": "Įvyko klaida. Bandykite dar kartą.",
+      "couldNotDisplay": "Nepavyko parodyti prenumeratos puslapio.",
+      "restoreSuccess": "Jūsų pirkiniai sėkmingai atkurti.",
+      "noPurchasesTitle": "Pirkinių nerasta",
+      "noPurchasesBody": "Nerasta aktyvių prenumeratų.",
+      "restoreError": "Nepavyko atkurti pirkinių."
+    }
+  },
+  "settings": {
+    "subscription": {
+      "openError": "Nepavyko atidaryti valdymo puslapio.",
+      "opening": "Atidaroma…"
+    }
+  },
+  "businessProfile": {
+    "title": "Verslo profilis",
+    "subtitle": "Sąskaitoms ir ataskaitoms",
+    "alerts": {
+      "profileSaved": "Verslo profilis sėkmingai išsaugotas."
+    },
+    "sections": {
+      "companyDetails": "Įmonės duomenys",
+      "bankDetails": "Banko rekvizitai",
+      "companyLogo": "Įmonės logotipas",
+      "clients": "Klientų valdymas"
+    },
+    "fields": {
+      "legalName": {
+        "label": "Pavadinimas / Vardas, pavardė",
+        "placeholder": "pvz., UAB „Transportas“"
+      },
+      "address": {
+        "label": "Verslo adresas",
+        "placeholder": "Įveskite pilną adresą"
+      },
+      "email": {
+        "label": "Kontaktinis el. paštas",
+        "placeholder": "pvz., info@imone.lt"
+      },
+      "phone": {
+        "label": "Telefonas",
+        "placeholder": "pvz., +37060000000"
+      },
+      "taxId": {
+        "label": "Įmonės / PVM kodas",
+        "placeholder": "pvz., LT100000000"
+      },
+      "vatNumber": {
+        "label": "PVM mokėtojo kodas",
+        "placeholder": "pvz., LT100000000"
+      },
+      "paymentTerms": {
+        "label": "Mokėjimo sąlygos",
+        "placeholder": "pvz., apmokėti per 30 dienų"
+      },
+      "accountName": {
+        "label": "Sąskaitos savininkas",
+        "placeholder": "Savininko vardas arba įmonė"
+      },
+      "sortCode": {
+        "label": "Banko kodas",
+        "placeholder": "pvz., 70440"
+      },
+      "accountNumber": {
+        "label": "Sąskaitos numeris",
+        "placeholder": "Sąskaitos numeris"
+      },
+      "iban": {
+        "label": "IBAN",
+        "placeholder": "pvz., LT00 0000 0000 0000 0000"
+      }
+    },
+    "clients": {
+      "title": "Klientai",
+      "addClient": "Pridėti klientą",
+      "editClient": "Redaguoti klientą",
+      "noClients": "Klientų dar nepridėta.",
+      "deleteConfirm": "Ar tikrai norite ištrinti šį klientą?",
+      "fields": {
+        "name": "Kliento pavadinimas",
+        "address": "Kliento adresas",
+        "email": "Kliento el. paštas"
+      }
+    }
+  },
+  "violation": {
+    "EXCEEDED_6H_WORK": {
+      "title": "Viršyta 6 val. darbo be pertraukos",
+      "tip": "Po 6 val. darbo privaloma 30 min. pertrauka. Planuokite iš anksto."
+    },
+    "INSUFFICIENT_BREAK_FOR_9H_WORK": {
+      "title": "Nepakankama pertrauka dirbant >9 val.",
+      "tip": "Pamainoms virš 9 val. reikalingos iš viso 45 min. pertraukų."
+    },
+    "INSUFFICIENT_DAILY_REST": {
+      "title": "Nepakankamas kasdienis poilsis",
+      "tip": "Užtikrinkite bent 11 val. poilsį (gali būti trumpinama iki 9 val. 3 kartus per savaitę)."
+    },
+    "REDUCED_DAILY_REST_TAKEN": {
+      "title": "Pasinaudota sutrumpintu poilsiu",
+      "tip": "Panaudojote sutrumpintą poilsį. Tai galite daryti 3 kartus tarp savaitinių poilsių."
+    },
+    "EXCEEDED_4_5H_DRIVING": {
+      "title": "Viršyta 4,5 val. vairavimo",
+      "tip": "Privalote daryti 45 min. pertrauką po 4,5 val. nepertraukiamo vairavimo."
+    },
+    "EXCEEDED_DAILY_DRIVING_LIMIT": {
+      "title": "Viršytas dienos vairavimo limitas",
+      "tip": "Vairavimas ribojamas iki 9 val. (pratęsiama iki 10 val. tik 2 kartus per savaitę)."
+    },
+    "USED_10H_DRIVING_EXTENSION": {
+      "title": "Panaudotas 10 val. vairavimo pratęsimas",
+      "tip": "Panaudojote vieną iš dviejų savaitinių 10 val. vairavimo pratęsimų."
+    },
+    "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
+      "title": "Viršytas savaitės vairavimo limitas",
+      "tip": "Maksimalus savaitės vairavimo laikas yra 56 valandos."
+    },
+    "EXCEEDED_WEEKLY_WORK_LIMIT": {
+      "title": "Viršytas savaitės darbo limitas",
+      "tip": "Maksimalus savaitės darbo laikas yra 60 valandų."
+    },
+    "WORK_TIME_LIMIT_EXCEEDED": {
+      "title": "Viršytas darbo laiko limitas",
+      "tip": "Viršijote darbo ciklą. Užfiksuotas {{time}} viršijimas."
+    },
+    "FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED": {
+      "title": "Viršytas dviejų savaičių vairavimo limitas",
+      "tip": "Maksimalus vairavimo laikas per bet kurias dvi savaites iš eilės yra 90 valandų."
+    },
+    "default": {
+      "title": "Atitikties pažeidimas",
+      "tip": "Pažeista taisyklė. Peržiūrėkite pamainos informaciją."
+    }
+  },
+  "dateRangeError": "Pabaigos data turi būti vėlesnė už pradžios.",
+  "noDataForRange": "Šiuo laikotarpiu duomenų nerasta.",
+  "failedToGenerate": "Nepavyko sugeneruoti ataskaitos.",
+  "workReport": "Darbo ataskaita",
+  "reportFrom": "Nuo",
+  "to": "Iki",
+  "summary": "Suvestinė",
+  "totalWorkTime": "Visas darbo laikas",
+  "totalBreakTime": "Visas pertraukų laikas",
+  "estimatedEarnings": "Numatomas uždarbis",
+  "previousWeek": "Praėjusi savaitė",
+  "lastMonth": "Praėjęs mėnuo",
+  "customRange": "Pasirinktas intervalas",
+  "generateReport": "Generuoti ataskaitą",
+  "alerts": {
+    "lowRestWarning": "Įspėjimas: Mažiau nei 9 val. poilsio nuo paskutinės pamainos.",
+    "spreadTitle": "Pamainos laiko įspėjimas",
+    "spread30m": "Liko 30 minučių iki 13 valandų pamainos limito pasiekimo."
+  },
+  "invoiceGeneration": {
+    "title": "Generuoti sąskaitą",
+    "selectClient": "Pasirinkti klientą",
+    "description": "Sąskaitos aprašymas",
+    "includeExpenses": "Įtraukti išlaidas",
+    "vatRate": "PVM tarifas (%)",
+    "noVat": "Be PVM"
+  }
 }

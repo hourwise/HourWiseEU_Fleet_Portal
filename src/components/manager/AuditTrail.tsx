@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Download, FileDown, Calendar, Filter } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export function AuditTrail() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<string>('all');
@@ -76,32 +78,32 @@ export function AuditTrail() {
 
       const csv = [
         [
-          'Date',
-          'Driver Name',
-          'License Number',
-          'Activity Type',
-          'Start Time',
-          'End Time',
-          'Duration (min)',
-          'Status',
-          'Infraction Type',
-          'Vehicle ID',
-          'Location Start',
-          'Location End',
-          'Notes',
+          t('audit.csvHeaders.date'),
+          t('audit.csvHeaders.driverName'),
+          t('audit.csvHeaders.license'),
+          t('audit.csvHeaders.activity'),
+          t('audit.csvHeaders.start'),
+          t('audit.csvHeaders.end'),
+          t('audit.csvHeaders.duration'),
+          t('audit.csvHeaders.status'),
+          t('audit.csvHeaders.infraction'),
+          t('audit.csvHeaders.vehicle'),
+          t('audit.csvHeaders.locationStart'),
+          t('audit.csvHeaders.locationEnd'),
+          t('audit.csvHeaders.notes'),
         ].join(','),
         ...(logs || []).map((log) => {
           const driver = driverMap.get(log.driver_id);
           return [
             new Date(log.start_time).toLocaleDateString(),
-            driver?.full_name || 'Unknown',
+            driver?.full_name || t('audit.unknown'),
             driver?.driver_license_number || 'N/A',
             log.activity_type,
             new Date(log.start_time).toLocaleTimeString(),
-            log.end_time ? new Date(log.end_time).toLocaleTimeString() : 'Ongoing',
+            log.end_time ? new Date(log.end_time).toLocaleTimeString() : t('audit.ongoing'),
             log.duration_minutes || 'N/A',
             log.status_code,
-            log.infraction_type || 'None',
+            log.infraction_type || t('audit.none'),
             log.vehicle_id || 'N/A',
             log.location_start || 'N/A',
             log.location_end || 'N/A',
@@ -168,7 +170,14 @@ export function AuditTrail() {
       });
 
       const csv = [
-        ['Driver Name', 'License Number', 'Total Logs', 'Violations', 'Warnings', 'Compliance Rate'].join(','),
+        [
+          t('audit.csvHeaders.driverName'),
+          t('audit.csvHeaders.license'),
+          t('audit.csvHeaders.totalLogs'),
+          t('audit.csvHeaders.violations'),
+          t('audit.csvHeaders.warnings'),
+          t('audit.csvHeaders.complianceRate')
+        ].join(','),
         ...summary.map((row) =>
           [
             row.driverName,
@@ -202,21 +211,21 @@ export function AuditTrail() {
       <div className="flex items-center gap-3">
         <FileDown className="w-8 h-8 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Audit Trail Export</h2>
-          <p className="text-gray-600">Generate compliance reports for regulatory audits</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('audit.title')}</h2>
+          <p className="text-gray-600">{t('audit.subtitle')}</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center gap-2 mb-6">
           <Filter className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-bold text-gray-900">Report Filters</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('audit.filtersTitle')}</h3>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           <div>
             <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
-              Start Date
+              {t('audit.labels.startDate')}
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -232,7 +241,7 @@ export function AuditTrail() {
 
           <div>
             <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-              End Date
+              {t('audit.labels.endDate')}
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -248,7 +257,7 @@ export function AuditTrail() {
 
           <div>
             <label htmlFor="driver" className="block text-sm font-medium text-gray-700 mb-2">
-              Driver
+              {t('audit.labels.driver')}
             </label>
             <select
               id="driver"
@@ -256,7 +265,7 @@ export function AuditTrail() {
               onChange={(e) => setSelectedDriver(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Drivers</option>
+              <option value="all">{t('audit.labels.allDrivers')}</option>
               {drivers.map((driver) => (
                 <option key={driver.id} value={driver.id}>
                   {driver.full_name}
@@ -271,27 +280,27 @@ export function AuditTrail() {
             <div className="flex items-center gap-3 mb-4">
               <Download className="w-8 h-8 text-blue-600" />
               <div>
-                <h4 className="text-lg font-bold text-gray-900">Complete Audit Trail</h4>
-                <p className="text-sm text-gray-600">All driver logs with full details</p>
+                <h4 className="text-lg font-bold text-gray-900">{t('audit.trailCard.title')}</h4>
+                <p className="text-sm text-gray-600">{t('audit.trailCard.subtitle')}</p>
               </div>
             </div>
 
             <ul className="space-y-2 mb-6 text-sm text-gray-700">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                Driver activity logs
+                {t('audit.trailCard.item1')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                Timestamps and durations
+                {t('audit.trailCard.item2')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                Location data
+                {t('audit.trailCard.item3')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                Vehicle information
+                {t('audit.trailCard.item4')}
               </li>
             </ul>
 
@@ -301,7 +310,7 @@ export function AuditTrail() {
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-5 h-5" />
-              {generating ? 'Generating...' : 'Download Audit Trail'}
+              {generating ? t('audit.trailCard.generating') : t('audit.trailCard.button')}
             </button>
           </div>
 
@@ -309,27 +318,27 @@ export function AuditTrail() {
             <div className="flex items-center gap-3 mb-4">
               <Download className="w-8 h-8 text-green-600" />
               <div>
-                <h4 className="text-lg font-bold text-gray-900">Compliance Summary</h4>
-                <p className="text-sm text-gray-600">Aggregated compliance metrics</p>
+                <h4 className="text-lg font-bold text-gray-900">{t('audit.summaryCard.title')}</h4>
+                <p className="text-sm text-gray-600">{t('audit.summaryCard.subtitle')}</p>
               </div>
             </div>
 
             <ul className="space-y-2 mb-6 text-sm text-gray-700">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                Per-driver compliance rates
+                {t('audit.summaryCard.item1')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                Violation and warning counts
+                {t('audit.summaryCard.item2')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                Total activity summary
+                {t('audit.summaryCard.item3')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                Quick audit overview
+                {t('audit.summaryCard.item4')}
               </li>
             </ul>
 
@@ -339,15 +348,14 @@ export function AuditTrail() {
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-5 h-5" />
-              {generating ? 'Generating...' : 'Download Summary'}
+              {generating ? t('audit.trailCard.generating') : t('audit.summaryCard.button')}
             </button>
           </div>
         </div>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
-            <strong>Audit Ready:</strong> These reports are formatted for regulatory compliance and can be submitted
-            directly to authorities for HOS and WTD verification.
+            {t('audit.footerNotice')}
           </p>
         </div>
       </div>

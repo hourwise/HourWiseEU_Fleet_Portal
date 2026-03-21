@@ -1,49 +1,216 @@
 {
   "locale": "ro-RO",
+  "reportType": "Tip raport",
+  "invoice": "Factură",
+  "dateRange": "Interval calendaristic",
   "common": {
     "save": "Salvează",
     "cancel": "Anulează",
     "close": "Închide",
     "delete": "Șterge",
+    "remove": "Elimină",
+    "upload": "Încarcă",
     "error": "Eroare",
     "success": "Succes",
-    "date": "Dată",
+    "date": "Data",
     "startTime": "Ora de început",
     "endTime": "Ora de sfârșit",
     "minutes": "minute",
     "saving": "Se salvează...",
-    "failedToSave": "Eșec la salvarea datelor.",
-    "gotIt": "Am înțeles!"
+    "failedToSave": "Eroare la salvarea datelor.",
+    "gotIt": "Am înțeles!",
+    "logout": "Deconectare",
+    "openSettings": "Deschide setările",
+    "retry": "Reîncearcă"
+  },
+  "permissions": {
+    "notificationsTitle": "Permisiune Notificări",
+    "notificationsBody": "HourWise folosește notificările pentru a-ți trimite alerte critice de conformitate. Te rugăm să le permiți pentru a nu rata avertismentele.",
+    "locationTitle": "Permisiune Locație",
+    "locationBody": "HourWise are nevoie de acces la locație pentru a detecta automat condusul. Te rugăm să permiți accesul din setări.",
+    "backgroundLocationTitle": "Locație în fundal",
+    "backgroundLocationBody": "Pentru o monitorizare fiabilă, setează accesul la locație pe „Permite mereu”. Acest lucru este esențial pentru detectarea automată a condusului, chiar și când aplicația este în fundal.",
+    "cameraTitle": "Permisiune Cameră",
+    "cameraBody": "HourWise are nevoie de acces la cameră pentru a putea încărca fotografii ale chitanțelor sau ale altor documente.",
+    "mediaLibraryTitle": "Permisiune Galerie Foto",
+    "mediaLibraryBody": "HourWise are nevoie de acces la galeria foto pentru a selecta imagini cu cheltuieli sau documente.",
+    "title": "Un ultim pas",
+    "body": "HourWise necesită permisiuni pentru Locație și Notificări pentru a funcționa corect. Locația ta este utilizată exclusiv pentru detectarea automată a condusului.",
+    "button": "Acordă permisiunile",
+    "deniedTitle": "Permisiuni necesare",
+    "deniedBody": "Ai respins definitiv permisiunile esențiale. Mergi la setările dispozitivului pentru a activa Locația (Mereu) și Notificările."
+  },
+  "messages": {
+    "title": "Mesaje",
+    "notificationTitle": "Mesaj nou de la flotă",
+    "systemNotificationTitle": "Anunț de sistem",
+    "newMessageBodyFallback": "Ai primit un mesaj nou.",
+    "noMessages": "Încă nu există mesaje.",
+    "unread": "Neatentate",
+    "read": "Citite",
+    "noUnread": "Ești la zi! Nu ai mesaje necitite."
   },
   "app": {
     "title": "HourWise EU",
-    "subtitle": "Monitorizare Timp de Lucru UE"
+    "subtitle": "Monitorizare Timpi Lucru UE"
   },
   "dashboard": {
-    "previousShiftEnd": "Sfârșit schimb anterior",
-    "currentShiftStart": "Început schimb actual",
-    "newShiftStarted": "Schimb început",
-    "dailyRest": "Repaus Zilnic",
-    "workTimeRemaining": "Timp de lucru rămas",
-    "drivingTimeRemaining": "Timp de condus rămas",
-    "breakDuration": "Durată pauză",
-    "startShift": "Începe Schimbul",
-    "endShift": "Termină Schimbul",
+    "previousShiftEnd": "Sfârșitul turei anterioare",
+    "currentShiftStart": "Începutul turei actuale",
+    "newShiftStarted": "Tura a început",
+    "dailyRest": "Repaus zilnic",
+    "workTimeRemaining": "Timp de muncă rămas",
+    "drivingTimeRemaining": "Timp de conducere rămas",
+    "breakDuration": "Durata pauzei",
+    "poaDuration": "Durata Disponibilitate (POA)",
+    "startShift": "Începe Tura",
+    "endShift": "Încheie Tura",
     "startBreak": "Începe Pauza",
     "endBreak": "Termină Pauza",
     "poaButtonText": "DISPONIBILITATE / AȘTEPTARE",
-    "resumeWork": "Reia Lucrul",
-    "currentStatusLabel": "Status Actual:",
-    "timerModeLabel": "Mod Cronometru:",
-    "shiftDurationLabel": "Durată Schimb:",
-    "targetLabel": "Țintă"
+    "resumeWork": "Reia Munca",
+    "currentStatusLabel": "Status actual:",
+    "timerModeLabel": "Mod cronometru:",
+    "shiftDurationLabel": "Durata turei:",
+    "targetLabel": "Țintă",
+    "checkVehicle": "Verificare Vehicul",
+    "checkOk": "Verificare OK",
+    "checklistRequired": "Checklist necesar",
+    "fleetChecklistNotice": "Șoferii de flotă trebuie să efectueze verificarea de siguranță a vehiculului pentru a începe tura.",
+    "complianceDue": "Scadență {{type}}",
+    "daysLeft": "Zile rămase"
+  },
+  "vehicleChecklist": {
+    "title": "Verificare zilnică de siguranță",
+    "updateTitle": "Actualizează verificarea",
+    "vehicleDetails": "Detalii Vehicul",
+    "registration": "Număr de înmatriculare",
+    "vehicleMake": "Marcă (Opțional)",
+    "odometer": "Kilometraj (bord)",
+    "internalChecks": "Verificări interne",
+    "externalChecks": "Verificări externe",
+    "defectReporting": "Raportare defecte",
+    "defectPlaceholder": "Descrie defectul și măsurile luate...",
+    "submitReport": "Trimite raportul",
+    "updateReport": "Actualizează raportul",
+    "currentShiftVehicles": "Vehicule în tura actuală",
+    "swapVehicle": "Schimbă vehiculul",
+    "newVehicleTitle": "Vehicul nou",
+    "newVehicleMessage": "Această acțiune va începe o nouă verificare pentru un alt vehicul. Continuați?",
+    "startNew": "Începe nouă",
+    "success": "Succes",
+    "checkRecorded": "Verificare înregistrată.",
+    "error": "Eroare",
+    "failedToSave": "Eșec la salvare.",
+    "missingReg": "Introdu nr. înmatriculare.",
+    "incomplete": "Răspunde la toate punctele.",
+    "missingDefectDetails": "Descrie problema.",
+    "hintLabel": "Indiciu",
+    "items": {
+      "mirrors": "Oglinzi și geamuri",
+      "mirrorsHint": "Verifică fisuri/stickere; asigură-te că oglinzile sunt reglate.",
+      "wipers": "Ștergătoare și spălător",
+      "wipersHint": "Verifică funcționarea și nivelul lichidului.",
+      "front_view": "Vizibilitate față",
+      "front_viewHint": "Vizibilitate totală prin parbriz.",
+      "warning_lamps": "Martori de bord",
+      "warning_lampsHint": "Asigură-te că martorii de avertizare funcționează corect.",
+      "steering": "Direcție",
+      "steeringHint": "Mișcare fluidă și funcționare corectă.",
+      "horn": "Claxon",
+      "hornHint": "Testează dacă sunetul este clar și funcțional.",
+      "brakes_air": "Frâne și presiune aer",
+      "brakes_airHint": "Verifică frânarea și acumularea presiunii de aer.",
+      "height_marker": "Indicator înălțime",
+      "height_markerHint": "Indicator de înălțime corect afișat.",
+      "seatbelts": "Centuri de siguranță",
+      "seatbeltsHint": "Verifică dacă toate centurile funcționează corect.",
+      "lights_ind": "Lumini și semnalizări",
+      "lights_indHint": "Toate luminile și semnalizatoarele sunt funcționale.",
+      "leaks": "Scurgeri combustibil/ulei",
+      "leaksHint": "Verifică dacă există lichide sub vehicul sau pe șasiu.",
+      "battery": "Fixare baterie",
+      "batteryHint": "Verifică dacă bateria este fixată și în stare bună.",
+      "adblue": "Lichid AdBlue",
+      "adblueHint": "Nivel suficient de AdBlue.",
+      "smoke": "Fum excesiv evacuare",
+      "smokeHint": "Verifică dacă există emisii de fum dens.",
+      "body_wings": "Siguranță caroserie/aripi",
+      "body_wingsHint": "Asigură-te că nu există elemente slăbite.",
+      "spray": "Sisteme anti-proiecție",
+      "sprayHint": "Fixate sigur și conform legislației.",
+      "tyres_wheels": "Anvelope și fixare roți",
+      "tyres_wheelsHint": "Piulițe strânse. Profil și presiune conform legii.",
+      "brake_line": "Conducte de frână",
+      "brake_lineHint": "Verifică dacă există deteriorări sau pierderi de aer.",
+      "electrical": "Conexiuni electrice",
+      "electricalHint": "Teste individuale pentru toate conexiunile.",
+      "coupling": "Siguranță cuplare",
+      "couplingHint": "Verifică dacă vehiculul este cuplat sigur la sarcină.",
+      "load_security": "Siguranța încărcăturii",
+      "load_securityHint": "Greutate distribuită egal și marfă fixată.",
+      "number_plate": "Număr de înmatriculare",
+      "number_plateHint": "Fixat și complet vizibil.",
+      "reflectors": "Reflectori și lumini",
+      "reflectorsHint": "Fixate sigur și vizibile.",
+      "markers": "Marcaje",
+      "markersHint": "Toate marcajele obligatorii fixate sigur."
+    }
+  },
+  "vehicleManagement": {
+    "title": "Gestionare Vehicule",
+    "sections": {
+      "identity": "Identitate Vehicul",
+      "compliance": "Conformitate și Siguranță"
+    },
+    "fields": {
+      "registration": {
+        "label": "Număr de înmatriculare *",
+        "placeholder": "EX. B 123 ABC"
+      },
+      "make": {
+        "label": "Marcă",
+        "placeholder": "Scania"
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "R450"
+      },
+      "type": "Tip vehicul",
+      "odometer": {
+        "label": "Kilometraj actual",
+        "unit": "KM"
+      },
+      "motDate": "Expirare ITP",
+      "pmiDate": "Următoarea Revizie (PMI)",
+      "tachoDate": "Calibrare Tahograf",
+      "lolerDate": "Verificare Rampă (LOLER)",
+      "insuranceDate": "Expirare Asigurare"
+    },
+    "complianceNotice": "Datele de conformitate activează sistemul „semafor” în tabloul de bord. Elementele expirate vor fi semnalate.",
+    "saveButton": "Salvează detaliile vehiculului",
+    "selectDate": "Selectează data",
+    "alerts": {
+      "regRequired": "Numărul de înmatriculare este obligatoriu",
+      "saveSuccess": "Detaliile vehiculului au fost salvate",
+      "duplicateReg": "Acest număr de înmatriculare este deja înregistrat.",
+      "saveError": "Eroare la salvarea detaliilor vehiculului"
+    }
   },
   "shiftSummary": {
-    "title": "Schimbul Actual",
-    "totalWork": "Total Lucru",
-    "totalDriving": "Total Condus",
-    "totalBreaks": "Total Pauze",
-    "totalPOA": "Total Disponibilitate"
+    "title": "Tura actuală",
+    "totalWork": "Total muncă",
+    "totalDriving": "Total conducere",
+    "totalBreaks": "Total pauze",
+    "totalPOA": "Total disponibilitate"
+  },
+  "endShiftConfirmation": {
+    "title": "Confirmare încheiere tură",
+    "shiftSummary": "Rezumat final tură",
+    "violationsFound": "Încălcări detectate",
+    "greatJob": "Bravo!",
+    "noViolations": "Nu vor fi înregistrate încălcări pentru această tură.",
+    "confirmEnd": "Confirmă și încheie"
   },
   "menu": {
     "instructions": "Instrucțiuni",
@@ -52,71 +219,76 @@
     "tachoGuide": "Ghid Tahograf",
     "compliance": "Conformitate",
     "workHistory": "Istoric Lucru",
+    "addExpense": "Adaugă Cheltuieli",
     "downloadReport": "Descarcă Raport"
   },
   "workHistory": {
     "title": "Istoric Lucru",
-    "daySummary": "Rezumat Zi",
-    "recordedShifts": "Schimburi Înregistrate",
-    "totalWork": "Total Lucru",
-    "totalBreaks": "Total Pauze",
-    "totalPOA": "Total Disp.",
-    "estimatedEarnings": "Câștiguri Estimate",
-    "ongoing": "În curs",
-    "workTime": "Timp de Lucru",
-    "noShifts": "Nu există schimburi pentru această dată.",
-    "noShiftsRecordedForDate": "Nu există schimburi pentru această dată.",
-    "addShift": "Adaugă Schimb",
-    "editShift": "Editează Schimb",
-    "updateShift": "Actualizează Schimb",
-    "totalBreakTime": "Total Timp Pauză",
-    "totalPOATime": "Total Timp Disp.",
-    "noShiftsTitle": "Zi de Repaus"
+    "daySummary": "Rezumat zi",
+    "recordedShifts": "Ture înregistrate",
+    "totalWork": "Total muncă",
+    "totalDriving": "Total conducere",
+    "totalBreaks": "Total pauze",
+    "totalPOA": "Total disponibilitate",
+    "estimatedEarnings": "Venituri estimate",
+    "ongoing": "În desfășurare",
+    "workTime": "Timp de lucru",
+    "noShifts": "Nicio tură înregistrată pentru această dată.",
+    "noShiftsRecordedForDate": "Nicio tură înregistrată pentru această dată.",
+    "addShift": "Adaugă tură",
+    "editShift": "Editează tură",
+    "updateShift": "Actualizează tură",
+    "totalBreakTime": "Total timp pauză",
+    "totalPOATime": "Total timp disponibilitate",
+    "noShiftsTitle": "Zi de repaus"
   },
   "calendar": {
-    "dayDetailsTitle": "Detalii Zi",
-    "timeSummaryTitle": "Rezumat Timp",
-    "paySummaryTitle": "Rezumat Plată",
+    "dayDetailsTitle": "Detalii zi",
+    "timeSummaryTitle": "Rezumat timp",
+    "paySummaryTitle": "Rezumat plată",
     "period": "Perioadă",
     "worked": "Lucrat",
     "breaks": "Pauze",
     "violations": "Încălcări",
-    "estimatedPay": "Plată Est.",
-    "lastCompletedWeek": "Ultima Săptămână Încheiată",
-    "currentWeek": "Săptămâna Actuală",
-    "monthToDate": "Luna în Curs",
-    "selectedMonthSummary": "Luna Selectată",
-    "lastWeekOfSelectedMonth": "Ultima Săp. a Lunii"
+    "estimatedPay": "Plată est.",
+    "lastCompletedWeek": "Ultima săptămână încheiată",
+    "currentWeek": "Săptămâna curentă",
+    "monthToDate": "Luna curentă",
+    "selectedMonthSummary": "Rezumat lună selectată",
+    "lastWeekOfSelectedMonth": "Ultima săptămână a lunii",
+    "complianceReminders": "Memento-uri conformitate",
+    "renewalDue": "Trebuie reînnoit {{type}}"
   },
   "fatigue": {
     "title": "Index Oboseală și Focus",
-    "fullyAlert": "Complet Alert",
-    "freshAndFocused": "Odhinit și Concentrat",
-    "mild": "Oboseală Ușoară",
-    "moderate": "Oboseală Moderată",
-    "high": "Oboseală Ridicată",
-    "critical": "Oboseală Critică",
-    "approaching13h": "Se apropie 13 ore de amplitudine. Planifică repausul.",
-    "over10h": "Peste 10 ore de muncă astăzi.",
-    "need45minBreak": "Pauză de 45 min necesară pentru schimburi > 9h.",
-    "need30minBreak": "Pauză de 30 min necesară pentru schimburi > 6h.",
-    "drivingExceeded10h": "S-au depășit 10 ore de condus astăzi.",
-    "drivingOver9h": "Condus peste 9h (folosind extensia).",
-    "dailyRestBelow9h": "Repausul zilnic sub minimul legal de 9 ore.",
-    "reducedDailyRest": "S-a efectuat repaus zilnic redus (sub 11h)."
+    "fullyAlert": "Alertă maximă",
+    "freshAndFocused": "Odhinit și concentrat",
+    "mild": "Oboseală ușoară",
+    "moderate": "Oboseală moderată",
+    "high": "Oboseală ridicată",
+    "critical": "Oboseală critică",
+    "approaching13h": "Te apropii de 13 ore de program. Planifică odihna.",
+    "over10h": "Peste 10 ore de muncă azi.",
+    "need45minBreak": "Pauză de 45 min necesară pentru ture peste 9 ore.",
+    "need30minBreak": "Pauză de 30 min necesară pentru ture peste 6 ore.",
+    "drivingExceeded10h": "S-au depășit 10 ore de conducere azi.",
+    "drivingOver9h": "Conducere peste 9 ore (folosind prelungirea).",
+    "dailyRestBelow9h": "Repausul zilnic a fost sub minimul legal de 9 ore.",
+    "reducedDailyRest": "Repaus zilnic redus efectuat (sub 11 ore).",
+    "workTimeExceeded": "Limită timp de lucru depășită cu {{time}}."
   },
   "complianceScorecard": {
-    "title": "Scorul de Conformitate Zilnic",
+    "title": "Scor de conformitate zilnic",
     "outOf100": "din 100",
-    "violationsRecorded": "Încălcări Înregistrate:",
-    "greatJob": "Bravo!",
-    "noViolations": "Nu s-au înregistrat încălcări ale conformității în această zi."
+    "violationsRecorded": "Încălcări înregistrate:",
+    "greatJob": "Treabă excelentă!",
+    "noViolations": "Nicio încălcare de conformitate înregistrată pentru azi."
   },
   "dailyReport": {
-    "title": "Raportul de Ieri",
-    "violationsFound": "Încălcări Găsite",
-    "greatJob": "Excelent!",
-    "noViolations": "Nicio încălcare înregistrată pentru schimbul de ieri."
+    "title": "Raportul de ieri",
+    "violationsFound": "Încălcări detectate",
+    "greatJob": "Bravo!",
+    "noViolations": "Nicio încălcare înregistrată în tura de ieri."
   },
   "day": {
     "mon": "Lun",
@@ -129,134 +301,139 @@
   },
   "safetyWarning": {
     "title": "Avertisment de Siguranță",
-    "body": "Nu interacționați cu aplicația în timp ce conduceți. Opriți în siguranță înainte de a face modificări.",
-    "acknowledge": "Înțeleg"
+    "body": "Nu folosi aplicația în timp ce conduci. Oprește în siguranță înainte de a face modificări.",
+    "acknowledge": "Am înțeles"
+  },
+  "firstTimeSetup": {
+    "title": "Bine ai venit la HourWise!",
+    "subtitle": "Câțiva pași pentru a începe corect:",
+    "step1_new": "Mai întâi, configurează profilul de șofer și detaliile de plată.",
+    "step2_new": "Apoi, adaugă ultima tură încheiată pentru calculul corect al repausului zilnic.",
+    "step3_new": "Ulterior, vom solicita permisiunile necesare pentru monitorizare precisă.",
+    "step4_new": "În final, poți începe să-ți monitorizezi turele și veniturile.",
+    "button": "Am înțeles, să începem!"
   },
   "settingsMenu": {
     "manageSubscription": "Gestionare Abonament",
     "businessProfile": "Profil Afacere",
     "driverSettings": "Setări Șofer",
     "selectLanguage": "Selectare Limbă",
+    "vehicleManagement": "Gestionare Vehicule",
     "timezone": {
-      "label": "Fus Orar"
+      "label": "Fus orar"
     },
     "signOut": {
       "action": "Deconectare"
     }
   },
   "driverSetup": {
-    "header": {
-      "welcomeSetup": "Configurare",
-      "driverSettings": "Setări Șofer"
-    },
-    "sections": {
-      "personalInformation": "Informații Personale",
-      "companyLink": "Link Companie",
-      "payConfiguration": "Configurare Plată"
-    },
-    "fields": {
-      "driverNameLabel": "Nume Șofer",
-      "basicHourlyRate": "Tarif orar de bază",
-      "unpaidBreakDuration": "Durată pauză neplătită (minute)"
-    },
-    "placeholders": {
-      "enterFullName": "Introduceți numele complet",
-      "hourlyRate": "ex. 15.00",
-      "unpaidBreak": "ex. 45"
-    },
-    "company": {
-      "codeOptionalLabel": "Cod link companie (opțional)",
-      "codePlaceholder": "Introduceți codul firmei",
-      "helperText": "Introduceți codul oferit de companie pentru a vă alătura flotei.",
-      "linkedToCompany": "Legat de companie"
-    },
-    "allowances": {
-      "title": "Diurne / Indemnizații",
-      "addAllowance": "Adaugă indemnizație"
-    },
-    "overtime": {
-      "title": "Reguli Ore Suplimentare",
-      "thresholdLabel": "Prag ore suplimentare",
-      "thresholdPlaceholder": "ex. 40",
-      "rateMultiplierLabel": "Multiplicator tarif",
-      "rateMultiplierPlaceholder": "ex. 1.5",
-      "additional": {
-        "addTier": "Adaugă alt prag"
-      }
-    },
-    "units": {
-      "overtime": {
-        "day": "pe zi",
-        "week": "pe săptămână",
-        "month": "pe lună"
-      },
-      "allowance": {
-        "hour": "pe oră",
-        "day": "pe zi",
-        "week": "pe săptămână",
-        "month": "pe lună",
-        "shift": "pe schimb"
-      }
-    }
+    "title": "Configurare Șofer",
+    "notAuthenticated": "Utilizator neautentificat. Te rugăm să repornești aplicația.",
+    "hourlyRate": "Tarif orar",
+    "unpaidBreak": "Pauză neplătită",
+    "minutes": "Minute",
+    "overtimeThreshold": "Prag ore suplimentare",
+    "hours": "Ore pe săptămână",
+    "overtimeMultiplier": "Multiplicator ore suplimentare",
+    "shiftAllowances": "Indemnizații de tură",
+    "additionalOvertime": "Niveluri suplimentare ore extra",
+    "threshold": "Prag (Ore)",
+    "rate": "Tarif (RON)",
+    "addTier": "Adaugă nivel",
+    "skip": "Omite pentru moment",
+    "save": "Salvează și continuă",
+    "validationError": "Eroare de validare",
+    "pleaseEnterName": "Te rugăm să introduci numele tău."
   },
   "instructions": {
     "title": "Cum se folosește HourWise",
     "disclaimer": {
-      "title": "Regulamentul Oficial Primordial",
-      "body": "Această aplicație este un instrument de ajutor, nu un înlocuitor pentru instruirea oficială. Consultați întotdeauna regulamentele UE și politica companiei."
+      "title": "Ghidurile oficiale au prioritate",
+      "body": "Această aplicație este un instrument de asistență pentru conformitate, dar nu înlocuiește instruirea oficială sau consultanța juridică. Respectați întotdeauna reglementările UE și politica companiei."
     },
     "initialSetup": {
-      "title": "Primii Pași",
+      "title": "Primii pași",
       "step1": {
-        "title": "1. Introdu ultimul schimb (Crucial!)",
-        "body": "Pentru calculul corect al Repausului Zilnic, TREBUIE să introduci manual detaliile ultimului schimb în Istoric Lucru."
+        "title": "1. Completează profilul de șofer",
+        "body": "Pentru șoferii independenți (Solo): TREBUIE să configurezi parametrii de plată la configurarea inițială pentru a permite estimări și rapoarte precise."
       },
       "step2": {
-        "title": "2. Completează Profilul Șoferului",
-        "body": "Mergi la Setări -> Setări Șofer. Numele este necesar pentru rapoarte."
+        "title": "2. Introdu ultima tură (Crucial!)",
+        "body": "Pentru calculul corect al „Repausului Zilnic”, TREBUIE să introduci manual detaliile ultimei ture încheiate în Meniu -> Istoric Lucru."
       },
       "step3": {
-        "title": "3. Detalii Afacere (Opțional)",
-        "body": "Pentru facturare, mergi la Profil Afacere. Detaliile vor apărea automat pe facturile PDF."
+        "title": "3. Adaugă detalii afacere (Opțional)",
+        "body": "Pentru facturare, mergi la Setări -> Profil Afacere. Datele tale vor apărea automat pe facturile PDF generate."
       }
     },
     "workflow": {
-      "title": "Flux Zilnic",
+      "title": "Fluxul zilnic",
       "step1": {
-        "title": "1. Începe și Termină Schimbul",
-        "body": "Folosește butoanele principale. Aplicația calculează automat totalurile."
+        "title": "1. Începe și Încheie tura",
+        "body": "Folosește butoanele principale. La finalul turei, un ecran de confirmare va afișa totalurile și eventualele încălcări."
+      },
+      "step5": {
+        "title": "2. Verificarea zilnică de siguranță",
+        "body": "Efectuează inspecția vizuală folosind butonul „Verificare Vehicul”. Obligatoriu pentru șoferii de flotă."
       },
       "step2": {
-        "title": "2. Detecție Automată Condus",
-        "body": "Aplicația detectează condusul pe baza vitezei și mișcării. Când te oprești, revine la statutul 'Lucru'."
+        "title": "3. Detectarea automată a condusului",
+        "body": "Aplicația detectează mișcarea în funcție de viteză și schimbă statusul pe „Conducere”. Când te oprești, revine la „Muncă”."
       },
       "step3": {
-        "title": "3. Luarea unei Pauze",
-        "body": "Apasă 'Începe Pauza'. O pauză continuă de 45 min resetează cronometrul de 4.5 ore de condus."
+        "title": "4. Luarea unei pauze",
+        "body": "Apasă pe „Începe pauza”. O pauză continuă de cel puțin 45 de minute va reseta cronometrul de 4,5 ore de conducere."
       },
       "step4": {
-        "title": "4. Disponibilitate (POA)",
-        "body": "Folosește 'Disponibilitate' pentru perioadele când ești disponibil dar nu lucrezi activ (ex: așteptare la rampă)."
+        "title": "5. Timp de Disponibilitate (POA)",
+        "body": "Folosește „Disponibilitate / Așteptare” pentru perioadele în care ești disponibil, dar nu lucrezi activ (ex: așteptare la rampă)."
       }
     },
     "keyFeatures": {
-      "title": "Funcții Cheie",
+      "title": "Funcții cheie",
       "fatigue": {
-        "title": "Monitor Oboseală și Focus",
-        "body": "Alerte în timp real pentru repaus insuficient, pauze necesare și limite de condus.",
-        "audioWarning": "Aplicația oferă alerte sonore pentru avertismente critice."
+        "title": "Monitor Oboseală și Alertă",
+        "body": "Apare pe ecranul principal, oferind alerte în timp real despre odihnă și limitele de conducere."
+      },
+      "messaging": {
+        "title": "Actualizări și alerte",
+        "body": "Primește anunțuri de sistem și mesaje de la managerul tău direct în aplicație."
+      },
+      "compliance": {
+        "title": "Calendar Conformitate",
+        "body": "Afișează scorul de conformitate pentru fiecare zi. Apasă pentru detalii lunare."
       },
       "history": {
-        "title": "Istoric și Editări Manuale",
-        "body": "Din meniu, selectează 'Istoric Lucru' pentru a gestiona schimburi trecute:",
-        "bullets": [
-          "Apasă pe orice zi pentru rezumatul detaliat.",
-          "Adaugă sau editează manual schimburile oricând."
-        ]
+        "title": "Istoric și Editări manuale",
+        "body": "Vizualizează, adaugă sau editează manual ture trecute pentru a corecta înregistrările."
+      },
+      "expenses": {
+        "title": "Urmărire Cheltuieli",
+        "body": "Înregistrează costuri precum combustibil sau mese. Scanează chitanțele și aplicația va completa datele automat."
       },
       "reports": {
-        "title": "Descarcă Rapoarte și Facturi",
-        "body": "Generează un PDF profesional cu munca ta sau o factură pentru clienți pentru orice perioadă."
+        "title": "Descărcare Rapoarte și Facturi",
+        "body": "Generează PDF-uri profesionale pentru conformitate, facturi pentru clienți sau jurnale de verificare vehicul."
+      },
+      "dailyReport": {
+        "title": "Raport zilnic de conformitate",
+        "body": "Un pop-up afișat în fiecare dimineață cu rezumatul încălcărilor din tura precedentă."
+      },
+      "qualifications": {
+        "title": "Calificări Profesionale",
+        "body": "Gestionează Permisul, CPC/Atestatul și Cardul Tahograf cu alerte de expirare."
+      },
+      "vehicles": {
+        "title": "Gestionare Vehicule (Solo)",
+        "body": "Monitorizează date critice precum ITP și calibrarea tahografului cu sistem de alertă tip semafor."
+      },
+      "safetyChecks": {
+        "title": "Checklist-uri digitale",
+        "body": "Efectuează inspecții complete ale vehiculului și menține un jurnal digital al defectelor."
+      },
+      "invoicing": {
+        "title": "Facturare și Profil Afacere",
+        "body": "Configurează profilul pentru a genera facturi PDF care includ veniturile calculate și datele bancare."
       }
     },
     "footer": {
@@ -264,7 +441,7 @@
     }
   },
   "euRules": {
-    "title": "Reguli UE și Timp de Condus",
+    "title": "Reguli UE și Timpi Conducere",
     "closeButton": "Închide",
     "accessibility": {
       "closeRules": "Închide regulile",
@@ -272,113 +449,113 @@
     },
     "about": {
       "title": "Despre aceste reguli",
-      "description": "Acest ecran rezumă ghidul UE pentru timpii de conducere și odihnă ai șoferilor."
+      "description": "Acesta este un rezumat al regulilor UE privind timpii de conducere și odihnă. Respectați întotdeauna legislația oficială."
     },
     "overview": {
-      "title": "Prezentare Generală",
-      "point1": "Monitorizează precis lucrul, pauzele, disponibilitatea și condusul.",
-      "point2": "Planifică pauzele și repausul din timp pentru a evita încălcările.",
-      "point3": "Folosește repausul redus și extensiile de condus cu atenție."
+      "title": "Prezentare generală",
+      "point1": "Urmărește precis munca, pauzele, POA și conducerea.",
+      "point2": "Planifică pauzele din timp pentru a evita încălcările.",
+      "point3": "Folosește odihna redusă și prelungirile de conducere cu prudență."
     },
     "drivingLimits": {
-      "title": "Limite Timp de Condus",
+      "title": "Limite Timpi Conducere",
       "daily": {
-        "label": "Limită zilnică de condus:",
-        "description": "9 ore (poate fi extinsă la 10 ore de două ori pe săptămână)."
+        "label": "Limită conducere zilnică:",
+        "description": "9 ore (poate fi crescută la 10 ore de două ori pe săptămână)."
       },
       "weekly": {
-        "label": "Limită săptămânală de condus:",
+        "label": "Limită conducere săptămânală:",
         "description": "56 ore."
       },
       "fortnightly": {
-        "label": "Limită la două săptămâni:",
+        "label": "Limită conducere bilunară:",
         "description": "90 ore."
       },
       "breaks": {
-        "label": "Pauze de condus:",
-        "description": "După 4.5 ore de condus, ia 45 de minute pauză."
+        "label": "Pauze în timpul condusului:",
+        "description": "După 4,5 ore de conducere, ia o pauză de 45 de minute."
       },
-      "breaksSplitExample": "Cele 45 de minute pot fi fracționate în 15 min + 30 min (în această ordine)."
+      "breaksSplitExample": "Cele 45 de minute pot fi fracționate în 15 + 30 de minute (în această ordine)."
     },
     "restPeriods": {
-      "title": "Perioade de Repaus",
+      "title": "Perioade de Odihnă",
       "daily": {
         "title": "Repaus zilnic:",
-        "regular": "Repaus normal: minim 11 ore.",
-        "reduced": "Repaus redus: minim 9 ore (utilizare limitată).",
-        "split": "Repaus fracționat: total minim 12 ore (ex. 3 + 9)."
+        "regular": "Repaus regulat: cel puțin 11 ore.",
+        "reduced": "Repaus redus: cel puțin 9 ore (utilizare limitată).",
+        "split": "Repaus fracționat: total cel puțin 12 ore (ex: 3 + 9)."
       },
       "weekly": {
         "title": "Repaus săptămânal:",
-        "regular": "Repaus normal: minim 45 ore.",
-        "reduced": "Repaus redus: minim 24 ore (necesită compensare).",
-        "frequency": "Repausul săptămânal trebuie luat în perioadele obligatorii."
+        "regular": "Repaus regulat: cel puțin 45 ore.",
+        "reduced": "Repaus redus: cel puțin 24 ore (necesită compensare).",
+        "frequency": "Repausul săptămânal trebuie început înainte de sfârșitul perioadei permise."
       }
     },
     "workingTimeLimits": {
       "title": "Limite Timp de Lucru",
       "maxWeekly": {
-        "label": "Timp de lucru săptămânal max:",
-        "description": "60 ore (plafon absolut)."
+        "label": "Muncă săptămânală max:",
+        "description": "60 ore (limită absolută)."
       },
       "avgWeekly": {
-        "label": "Timp mediu săptămânal:",
-        "description": "48 ore în medie pe perioada de referință."
+        "label": "Medie săptămânală:",
+        "description": "O medie de 48 de ore pe perioada de referință."
       },
       "nightWork": {
         "label": "Limită muncă de noapte:",
-        "description": "De regulă 10 ore în orice interval de 24 ore."
+        "description": "De regulă 10 ore în orice perioadă de 24 de ore."
       }
     },
     "workBreaks": {
-      "title": "Cerințe Pauze Timp de Lucru",
-      "intro": "Pauzele de lucru depind de totalul orelor lucrate.",
+      "title": "Cerințe Pauze de Lucru",
+      "intro": "Pauzele depind de totalul orelor lucrate.",
       "rules": {
-        "sixToNine": "Dacă lucrezi peste 6 ore: ia cel puțin 30 min pauză.",
-        "ninePlus": "Dacă lucrezi peste 9 ore: ia cel puțin 45 min pauză."
+        "sixToNine": "Dacă lucrezi între 6 și 9 ore: cel puțin 30 min pauză.",
+        "ninePlus": "Dacă lucrezi peste 9 ore: cel puțin 45 min pauză."
       },
-      "noteDriving": "Pauzele de condus (regula 4.5h) sunt separate și trebuie respectate."
+      "noteDriving": "Pauzele de conducere (regula 4,5h) sunt separate și trebuie de asemenea respectate."
     },
     "interaction": {
       "title": "Cum monitorizează aplicația",
-      "point1": "Cronometrele de lucru și condus rulează când ești activ; Disponibilitatea pune pe pauză ciclul de lucru.",
-      "point2": "O pauză validă poate reseta ciclul de condus de 4.5h."
+      "point1": "Cronometrele de muncă și conducere rulează când ești activ; POA suspendă ciclul de muncă.",
+      "point2": "O pauză validă poate reseta ciclul de conducere de 4,5 ore."
     }
   },
   "tachoGuide": {
-    "title": "Ghid Introducere Manuală Tahograf",
+    "title": "Ghid de Introducere Manuală Tahograf",
     "prepare": {
-      "title": "Pregătire",
-      "point1": "Ai cardul de șofer pregătit.",
-      "point2": "Tahograful trebuie să fie în modul introducere manuală.",
-      "point3": "Verifică setările de oră și fus orar ale unității."
+      "title": "Pregătește-te",
+      "point1": "Ține cardul de șofer pregătit.",
+      "point2": "Asigură-te că tahograful este în modul de introducere manuală.",
+      "point3": "Verifică ora și setările fusului orar pe unitate."
     },
     "confirmManualEntry": {
       "title": "Confirmă introducerea manuală",
-      "point1": "Confirmă că vrei să adaugi activități de la ultima scoatere a cardului."
+      "point1": "Confirmă că vrei să adaugi activitățile de la ultima extragere a cardului."
     },
     "enterActivities": {
-      "title": "Introdu activități",
-      "point1": "Selectează tipul corect (repaus/lucru/disponibilitate).",
-      "point2": "Introdu orele de început și sfârșit cu precizie.",
+      "title": "Introdu activitățile",
+      "point1": "Selectează tipul corect (odihnă/muncă/disponibilitate).",
+      "point2": "Introdu ora de început și sfârșit cu precizie.",
       "point3": "Repetă pentru fiecare perioadă lipsă.",
-      "point4": "Verifică dacă secvența corespunde cu realitatea."
+      "point4": "Verifică dacă secvența corespunde realității."
     },
     "adjustTimes": {
       "title": "Ajustează orele",
-      "point1": "Dacă orele par greșite, mergi înapoi și corectează.",
+      "point1": "Dacă orele sunt greșite, revino și corectează.",
       "point2": "Asigură-te că nu există suprapuneri sau goluri.",
-      "point3": "Confirmă fiecare intrare înainte de a continua."
+      "point3": "Confirmă fiecare intrare înainte de a merge mai departe."
     },
     "confirm": {
       "title": "Confirmă",
-      "point1": "Verifică rezumatul pe ecranul tahografului.",
+      "point1": "Revizuiește rezumatul pe ecranul tahografului.",
       "point2": "Acceptă pentru a salva intrările manuale."
     },
     "finalCheck": {
       "title": "Verificare finală",
-      "point1": "Verifică dacă istoricul activităților este corect.",
-      "point2": "Începe schimbul doar când totul este în regulă."
+      "point1": "Verifică dacă cronologia este corectă.",
+      "point2": "Începe tura doar când totul este corect."
     },
     "closeButton": "Închide"
   },
@@ -387,7 +564,7 @@
     "german": "Deutsch",
     "french": "Français",
     "spanish": "Español",
-    "italian": "Italiano",
+    "italic": "Italiano",
     "polish": "Polski",
     "romanian": "Română",
     "dutch": "Nederlands",
@@ -403,105 +580,141 @@
   },
   "selectLanguage": "Selectare Limbă",
   "signOut": "Deconectare",
-  "confirmSignOut": "Sigur doriți să vă deconectați?",
+  "confirmSignOut": "Sigur vrei să te deconectezi?",
   "manageSubscription": "Gestionare Abonament",
   "validation": {
-    "invalidTimeFormat": "Introduceți o oră validă în format HH:MM."
+    "invalidTimeFormat": "Te rugăm să introduci o oră validă în format HH:MM."
   },
   "validationError": "Eroare de Validare",
-  "pleaseEnterName": "Vă rugăm introduceți numele.",
+  "pleaseEnterName": "Te rugăm să introduci numele tău.",
   "driverSettings": "Setări Șofer",
-  "welcomeSetup": "Configurare",
+  "welcomeSetup": "Configurare Bun Venit",
   "personalInformation": "Informații Personale",
   "driverName": "Nume Șofer",
-  "enterFullName": "Introduceți numele complet",
-  "companyLink": "Link Companie",
-  "linkedToCompany": "Legat de companie",
-  "companyLinkCodeOptional": "Cod link companie (opțional)",
-  "enterCodeToJoinFleet": "Introduceți codul pentru a vă alătura flotei.",
-  "payConfiguration": "Configurare Plată",
+  "enterFullName": "Introdu numele complet",
+  "companyLink": "Legătură Companie",
+  "linkedToCompany": "Conectat la companie",
+  "companyLinkCodeOptional": "Cod companie (opțional)",
+  "enterCodeToJoinFleet": "Introdu codul primit de la companie pentru a te alătura flotei lor.",
+  "payConfiguration": "Configurație Plată",
   "basicHourlyRate": "Tarif orar de bază",
-  "unpaidBreakDuration": "Durată pauză neplătită (min)",
-  "shiftAllowances": "Diurne / Indemnizații",
+  "unpaidBreakDuration": "Durata pauzei neplătite (minute)",
+  "shiftAllowances": "Indemnizații de tură",
   "addAllowance": "Adaugă indemnizație",
   "overtimeRules": "Reguli Ore Suplimentare",
   "overtimeThreshold": "Prag ore suplimentare",
   "rateMultiplier": "Multiplicator tarif",
-  "addAnotherTier": "Adaugă alt prag",
-  "invalidCode": "Cod Invalid",
+  "addAnotherTier": "Adaugă alt nivel",
+  "invalidCode": "Cod invalid",
   "companyCodeNotFound": "Codul companiei nu a fost găsit.",
   "expiredCodeTitle": "Cod Expirat",
-  "expiredCodeMessage": "Acest cod a expirat. Cereți unul nou.",
-  "privacyTitle": "Politica de Confidențialitate",
+  "expiredCodeMessage": "Acest cod de companie a expirat. Te rugăm să soliciți unul nou.",
+  "privacyTitle": "Confidențialitatea și Datele Tale",
   "privacySubtitle": "Datele tale, controlul tău",
-  "privacyIntro": "Această politică explică ce date colectează HourWise.",
+  "privacyIntro": "Ne angajăm să îți protejăm confidențialitatea. Această politică explică ce date colectează HourWise.",
+  "privacyWhyTitle": "De ce colectăm date",
+  "privacyWhyDesc": "Colectăm doar date esențiale pentru funcții: calcularea orelor, conformitatea UE și raportare.",
   "privacyDataCollectedTitle": "Ce stocăm",
-  "privacyDataCollectedDesc": "Pentru a calcula orele, stocăm următoarele:",
+  "privacyDataCollectedDesc": "Pentru a permite funcționarea, stocăm în siguranță următoarele informații:",
   "privacyDataPoints": [
-    "Numele (pentru rapoarte)",
-    "Schimburile înregistrate (ore start/stop)",
-    "Totaluri pentru lucru, pauze și disp.",
+    "Numele tău (pentru rapoarte)",
+    "Turele înregistrate (ore, conducere, muncă, pauze, POA)",
+    "Locația (exclusiv pentru detectarea automată a condusului)",
     "Scoruri de conformitate și încălcări",
-    "Setări plată (opțional)"
+    "Detalii cheltuieli și imagini ale chitanțelor",
+    "Configurații de plată (opțional)",
+    "Profil afacere și date bancare (opțional)"
   ],
-  "privacyStorageTitle": "Stocare Securizată în Cloud",
-  "privacyStorageDesc": "Datele sunt stocate în contul tău securizat și sincronizate pe dispozitive.",
-  "privacyControlTitle": "Tu ești în control",
-  "privacyControlDesc": "Poți vedea, edita și șterge istoricul în orice moment.",
+  "privacyStorageTitle": "Stocare Cloud Securizată",
+  "privacyStorageDesc": "Datele tale sunt criptate conform standardelor industriale și sincronizate între dispozitivele tale.",
+  "privacyControlTitle": "Tu ai controlul",
+  "privacyControlDesc": "Poți vizualiza, edita sau șterge permanent istoricul și informațiile personale oricând din aplicație.",
+  "privacyThirdPartyTitle": "Servicii Terțe",
+  "privacyThirdPartyDesc": "Pentru scanarea chitanțelor (OCR), putem trimite date către servicii specializate. Nu vindem datele tale pentru marketing.",
+  "privacyThirdPartyDesc_new": "Imaginile chitanțelor sunt procesate de un serviciu extern pentru extragerea textului. Nu vindem datele tale.",
   "privacyDisclaimerTitle": "Important",
   "privacyDisclaimer": "Nicio metodă de transmisie pe internet nu este 100% sigură, dar facem tot posibilul să te protejăm.",
+  "privacy": {
+    "gdprRightsTitle": "Drepturile tale GDPR",
+    "gdprRightsDesc": "Conform GDPR, ai dreptul de a accesa, rectifica sau șterge datele tale direct din aplicație."
+  },
+  "account": {
+    "title": "Gestionare Cont",
+    "manageMyData": "Gestionare date",
+    "profileSection": "Profil",
+    "editName": "Editează nume complet",
+    "changeEmail": "Schimbă Email",
+    "changePassword": "Schimbă Parola",
+    "dataSection": "Gestionare Date",
+    "exportData": "Exportă datele mele",
+    "manageSubscription": "Gestionare abonament",
+    "dangerZone": "Zonă de Pericol",
+    "delete": {
+      "title": "Șterge contul meu",
+      "confirmTitle": "Ștergi contul?",
+      "confirmMessage": "Această acțiune va șterge permanent istoricul turelor și profilul. Acțiunea este ireversibilă.",
+      "confirmButton": "Șterge tot",
+      "successTitle": "Cont Șters",
+      "successMessage": "Contul tău și toate datele asociate au fost eliminate cu succes.",
+      "errorMessage": "Nu am putut șterge contul acum. Te rugăm să contactezi asistența."
+    }
+  },
   "notification": {
     "trackingTitle": "Monitorizare Condus",
-    "trackingBody": "HourWise monitorizează locația pentru condus."
+    "trackingBody": "HourWise monitorizează locația pentru detectarea condusului.",
+    "shiftStartedTitle": "Tură Începută",
+    "shiftStartedBody": "Tura ta de muncă a început oficial.",
+    "shiftEndedTitle": "Tură Încheiată",
+    "shiftEndedBody": "Tura ta de muncă a fost încheiată cu succes."
   },
-  "enableComplianceNotifications": "Activează notificările pentru alerte de conformitate.",
-  "locationPermissionRequired": "Permisiunea de locație este necesară pentru condus.",
+  "enableComplianceNotifications": "Activează notificările pentru alertele de conformitate.",
+  "locationPermissionRequired": "Permisiunea de locație este necesară pentru detectarea condusului.",
   "backgroundLocationPermissionRequired": "Locația în fundal este necesară pentru monitorizare fiabilă.",
-  "failedToResumeShift": "Eșec la reluarea schimbului de pe server.",
-  "startShiftError": "Eșec la pornirea schimbului.",
-  "endShiftError": "Eșec la oprirea schimbului. Verifică conexiunea.",
-  "cannotGoToPoaFromBreak": "Nu poți trece pe disponibilitate în timpul pauzei.",
-  "proactiveNotificationTitle": "Analiza ultimului schimb",
-  "proactiveNotificationBody": "Un sfat pentru astăzi:",
-  "workTimeWarningTitle": "Avertisment Timp de Lucru",
-  "drivingTimeWarningTitle": "Avertisment Timp de Condus",
-  "workTime30minLeft": "30 minute rămase din ciclul de lucru.",
-  "workTime15minLeft": "15 minute rămase din ciclul de lucru.",
-  "workTime5minLeft": "5 minute rămase din ciclul de lucru.",
+  "failedToResumeShift": "Eșec la reluarea turei de pe server.",
+  "startShiftError": "Eroare la începerea turei.",
+  "endShiftError": "Eroare la încheierea turei pe server. Verifică conexiunea.",
+  "cannotGoToPoaFromBreak": "Nu se poate trece în POA în timpul pauzei.",
+  "proactiveNotificationTitle": "Revizuirea ultimei ture",
+  "proactiveNotificationBody": "Un sfat pentru azi:",
+  "workTimeWarningTitle": "Alertă Timp de Lucru",
+  "drivingTimeWarningTitle": "Alertă Timp de Conducere",
+  "workTime30minLeft": "Mai ai 30 de minute din ciclul de muncă.",
+  "workTime15minLeft": "Mai ai 15 minute din ciclul de muncă.",
+  "workTime5minLeft": "Mai ai 5 minute din ciclul de muncă.",
   "workTimeLimitReached": "Limită timp de lucru atinsă.",
-  "drivingTime30minLeft": "30 minute rămase din ciclul de condus.",
-  "drivingTime15minLeft": "15 minute rămase din ciclul de condus.",
-  "drivingTime5minLeft": "5 minute rămase din ciclul de condus.",
-  "drivingTimeLimitReached": "Limită timp de condus atinsă.",
-  "audioShiftStarted": "Schimb început.",
-  "audioShiftEnded": "Schimb terminat.",
-  "audioBreakStarted": "Pauză începută.",
-  "audioResumeWork": "Reluare lucru.",
-  "audioPoaStarted": "Disponibilitate începută.",
-  "audioDrivingTimeReset": "Timpul de condus resetat.",
-  "audioDrivingLimitReached": "Limită de condus atinsă.",
-  "audioDriving5minLeft": "5 minute de condus rămase.",
-  "audioDriving15minLeft": "15 minute de condus rămase.",
-  "audioDriving30minLeft": "30 minute de condus rămase.",
-  "audioWork5h15": "15 minute rămase din ciclul de lucru.",
-  "audioWork5h30": "30 minute rămase din ciclul de lucru.",
-  "audioWork5h55": "5 minute rămase din ciclul de lucru.",
+  "drivingTime30minLeft": "Mai ai 30 de minute de condus.",
+  "drivingTime15minLeft": "Mai ai 15 minute de condus.",
+  "drivingTime5minLeft": "Mai ai 5 minute de condus.",
+  "drivingTimeLimitReached": "Limită de condus atinsă.",
+  "audioShiftStarted": "Tura a început.",
+  "audioShiftEnded": "Tura s-a încheiat.",
+  "audioBreakStarted": "Pauza a început.",
+  "audioResumeWork": "Se reia munca.",
+  "audioPoaStarted": "Timp de disponibilitate început.",
+  "audioDrivingTimeReset": "Timpul de conducere a fost resetat.",
+  "audioDrivingLimitReached": "Limită de conducere atinsă.",
+  "audioDriving5minLeft": "Mai sunt cinci minute de condus.",
+  "audioDriving15minLeft": "Mai sunt cincisprezece minute de condus.",
+  "audioDriving30minLeft": "Mai sunt treizeci de minute de condus.",
+  "audioWork5h15": "Mai sunt cincisprezece minute din ciclul de muncă.",
+  "audioWork5h30": "Mai sunt treizeci de minute din ciclul de muncă.",
+  "audioWork5h55": "Mai sunt cinci minute din ciclul de muncă.",
   "safetyWarningTitle": "Siguranță",
-  "safetyWarningBody": "Nu folosi aplicația în timp ce conduci.",
+  "safetyWarningBody": "Nu folosi aplicația în timp ce conduci. Oprește în siguranță.",
   "acknowledge": "Confirmă",
   "auth": {
     "title": {
-      "signIn": "Conectare",
+      "signIn": "Autentificare",
       "signUp": "Creare Cont"
     },
     "subtitle": {
-      "signIn": "Bine ai revenit!",
-      "signUp": "Începe să-ți monitorizezi orele de lucru."
+      "signIn": "Bine ai revenit! Te rugăm să te autentifici.",
+      "signUp": "Alătură-te nouă și începe să-ți urmărești orele."
     },
     "fields": {
       "email": {
-        "label": "Adresă Email",
-        "placeholder": "email@exemplu.ro"
+        "label": "Adresa Email",
+        "placeholder": "email.tau@exemplu.ro"
       },
       "password": {
         "label": "Parolă",
@@ -513,193 +726,236 @@
       },
       "companyCode": {
         "label": "Cod Companie",
-        "placeholder": "Introdu codul de la angajator"
+        "placeholder": "Introdu codul primit de la companie"
       }
     },
     "buttons": {
-      "signIn": "Conectare",
-      "createAccount": "Creare Cont"
+      "signIn": "Intră în cont",
+      "createAccount": "Creează cont"
     },
     "switchTo": {
       "signUp": "Nu ai cont? Înregistrează-te",
-      "signIn": "Ai deja cont? Conectează-te"
+      "signIn": "Ai deja cont? Autentifică-te"
     },
     "accountType": {
       "solo": {
-        "title": "Șofer Solo",
+        "title": "Șofer Independent (Solo)",
         "subtitle": "Profesionist independent"
       },
       "fleet": {
         "title": "Membru Flotă",
-        "subtitle": "Parte dintr-o firmă"
+        "subtitle": "Angajat al unei companii"
       }
     },
     "alerts": {
       "missingInfo": {
-        "title": "Informații Lipsă",
+        "title": "Informații lipsă",
         "body": "Te rugăm să completezi toate câmpurile."
       },
       "companyCodeRequired": {
-        "title": "Cod Companie Necesar",
-        "body": "Introdu codul firmei pentru a continua."
+        "title": "Cod Companie necesar",
+        "body": "Introdu codul pentru a continua ca membru de flotă."
       },
       "invalidCode": {
-        "title": "Cod Invalid",
-        "expired": "Codul a expirat.",
-        "notFound": "Codul nu este valid."
+        "title": "Cod invalid",
+        "expired": "Acest cod a expirat.",
+        "notFound": "Codul introdus nu este valid."
       },
       "signUpError": {
         "title": "Eroare Înregistrare"
       },
       "signUpFailed": {
-        "title": "Înregistrare Eșuată",
-        "body": "Nu am putut crea contul acum. Reîncearcă mai târziu."
+        "title": "Înregistrare eșuată",
+        "body": "Nu am putut crea contul în acest moment."
       },
       "profileCreationFailed": {
         "title": "Eroare Creare Profil",
-        "body": "Contul a fost creat, dar profilul nu a putut fi configurat."
+        "body": "Contul a fost creat, dar profilul a eșuat. Contactează asistența."
       },
       "checkEmail": {
-        "title": "Verifică Email-ul",
-        "body": "Un link de confirmare a fost trimis pe email."
+        "title": "Verifică email-ul",
+        "body": "Ți-am trimis un link de confirmare."
       },
       "signInMissing": {
-        "title": "Informații Lipsă",
+        "title": "Date lipsă",
         "body": "Introdu email-ul și parola."
       },
       "signInError": {
-        "title": "Eroare Conectare"
+        "title": "Eroare Autentificare"
       }
     }
   },
   "paywall": {
     "title": "Deblochează HourWise Pro",
-    "subtitle": "Acces la toate funcțiile premium și rapoarte nelimitate.",
-    "subscribeNow": "Abonează-te Acum",
-    "restorePurchases": "Restaurează Achizițiile",
-    "loading": "Se deschide...",
-    "restoring": "Se restaurează...",
+    "subtitle": "Acces la toate funcțiile premium, monitorizare și rapoarte nelimitate.",
+    "subscribeNow": "Abonează-te acum",
+    "restorePurchases": "Restaurare achiziții",
+    "loading": "Se încarcă…",
+    "restoring": "Se restaurează…",
     "alert": {
       "successTitle": "Succes",
       "purchased": "Achiziție finalizată!",
       "restored": "Achiziții restaurate!",
-      "paywallError": "A apărut o eroare. Reîncearcă.",
+      "paywallError": "A apărut o eroare. Încearcă din nou.",
       "couldNotDisplay": "Nu s-a putut afișa pagina de abonament.",
-      "restoreSuccess": "Achizițiile au fost restaurate.",
-      "noPurchasesTitle": "Nicio Achiziție Găsită",
-      "noPurchasesBody": "Nu am găsit abonamente active.",
-      "restoreError": "Eșec la restaurare."
+      "restoreSuccess": "Achizițiile tale au fost restaurate.",
+      "noPurchasesTitle": "Nicio achiziție găsită",
+      "noPurchasesBody": "Nu am găsit abonamente active de restaurat.",
+      "restoreError": "Restaurare eșuată."
     }
   },
   "settings": {
     "subscription": {
-      "openError": "Nu s-a putut deschide pagina de abonament.",
-      "opening": "Se deschide..."
+      "openError": "Nu s-a putut deschide pagina de gestionare.",
+      "opening": "Se deschide…"
     }
   },
   "businessProfile": {
     "title": "Profil Afacere",
     "subtitle": "Pentru facturi și rapoarte",
     "alerts": {
-      "profileSaved": "Profil salvat cu succes."
+      "profileSaved": "Profilul afacerii a fost salvat."
     },
     "sections": {
       "companyDetails": "Detalii Companie",
-      "bankDetails": "Detalii Bancare"
+      "bankDetails": "Date Bancare",
+      "companyLogo": "Logo Companie",
+      "clients": "Gestionare Clienți"
     },
     "fields": {
       "legalName": {
-        "label": "Nume Juridic / Firmă",
-        "placeholder": "ex. Compania Mea SRL"
+        "label": "Nume Juridic / Persoană",
+        "placeholder": "ex. Transport Popescu SRL"
       },
       "address": {
-        "label": "Adresă Sediu",
+        "label": "Adresă sediu",
         "placeholder": "Introdu adresa completă"
       },
       "email": {
-        "label": "Email Contact",
+        "label": "Email contact",
         "placeholder": "ex. contact@firma.ro"
       },
       "phone": {
-        "label": "Telefon Contact",
-        "placeholder": "ex. +40722000000"
+        "label": "Telefon",
+        "placeholder": "ex. +40 7xx xxx xxx"
       },
       "taxId": {
-        "label": "CUI / Cod Fiscal",
+        "label": "CUI / CIF",
         "placeholder": "ex. RO12345678"
+      },
+      "vatNumber": {
+        "label": "Nr. TVA (VIES)",
+        "placeholder": "ex. RO12345678"
+      },
+      "paymentTerms": {
+        "label": "Termeni Plată",
+        "placeholder": "ex. Plată la 30 de zile"
       },
       "accountName": {
         "label": "Titular Cont",
-        "placeholder": "Numele titularului"
+        "placeholder": "Numele de pe contul bancar"
       },
       "sortCode": {
-        "label": "Cod Bancă / Swift",
-        "placeholder": "ex. RNCB"
+        "label": "Cod Sucursală / BIC",
+        "placeholder": "ex. SWIFT Code"
       },
       "accountNumber": {
         "label": "Număr Cont",
-        "placeholder": "ex. 12345678"
+        "placeholder": "Numărul contului"
       },
       "iban": {
         "label": "IBAN",
-        "placeholder": "ex. RO00 RNCB ..."
+        "placeholder": "ex. ROxx xxxx xxxx xxxx xxxx xxxx"
+      }
+    },
+    "clients": {
+      "title": "Clienți",
+      "addClient": "Adaugă Client",
+      "editClient": "Editează Client",
+      "noClients": "Niciun client adăugat.",
+      "deleteConfirm": "Ștergi acest client?",
+      "fields": {
+        "name": "Nume Client",
+        "address": "Adresă Client",
+        "email": "Email Client"
       }
     }
   },
   "violation": {
     "EXCEEDED_6H_WORK": {
-      "title": "Depășire 6h de lucru fără pauză",
-      "tip": "Pauză de 30 min necesară după 6 ore de lucru."
+      "title": "Peste 6h de muncă fără pauză",
+      "tip": "Este necesară o pauză de 30 min după 6 ore de muncă."
     },
     "INSUFFICIENT_BREAK_FOR_9H_WORK": {
-      "title": "Pauză insuficientă pentru >9h de lucru",
-      "tip": "Pentru schimburi peste 9 ore, total 45 min pauză necesară."
+      "title": "Pauză insuficientă pentru >9h de muncă",
+      "tip": "Pentru ture mai lungi de 9 ore, este necesar un total de 45 min de pauză."
     },
     "INSUFFICIENT_DAILY_REST": {
       "title": "Repaus zilnic insuficient",
-      "tip": "Asigură minim 11h de repaus (sau 9h redus)."
+      "tip": "Asigură-te că ai cel puțin 11h de odihnă (redus la 9h de maxim 3 ori pe săptămână)."
     },
     "REDUCED_DAILY_REST_TAKEN": {
       "title": "Repaus zilnic redus efectuat",
-      "tip": "Poți face asta de maxim 3 ori pe săptămână."
+      "tip": "Ai luat un repaus redus. Limita este de 3 ori între două repausuri săptămânale."
     },
     "EXCEEDED_4_5H_DRIVING": {
-      "title": "Depășire 4.5h de condus",
-      "tip": "Trebuie să iei 45 min pauză după 4.5 ore de condus continuu."
+      "title": "Peste 4,5h de conducere",
+      "tip": "Trebuie să iei o pauză de 45 min după 4,5 ore de conducere continuă."
     },
     "EXCEEDED_DAILY_DRIVING_LIMIT": {
-      "title": "Depășire limită zilnică de condus",
-      "tip": "Maxim 9h (10h doar de două ori pe săptămână)."
+      "title": "Limită zilnică de condus depășită",
+      "tip": "Limita este de 9 ore (10 ore permis de doar două ori pe săptămână)."
     },
     "USED_10H_DRIVING_EXTENSION": {
-      "title": "Extensie 10h condus utilizată",
-      "tip": "Ai utilizat una dintre cele două extensii săptămânale."
+      "title": "Prelungire condus 10h utilizată",
+      "tip": "Ai folosit una dintre cele două prelungiri săptămânale la 10 ore."
     },
     "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
-      "title": "Depășire limită condus săptămânală",
-      "tip": "Maxim 56 de ore de condus pe săptămână."
+      "title": "Limită săptămânală de condus depășită",
+      "tip": "Timpul maxim de conducere pe săptămână este de 56 ore."
     },
     "EXCEEDED_WEEKLY_WORK_LIMIT": {
-      "title": "Depășire limită lucru săptămânală",
-      "tip": "Maxim 60 de ore de lucru în orice săptămână."
+      "title": "Limită săptămânală de muncă depășită",
+      "tip": "Timpul maxim de muncă pe săptămână este de 60 ore."
+    },
+    "WORK_TIME_LIMIT_EXCEEDED": {
+      "title": "Limită timp de lucru depășită",
+      "tip": "Ai depășit programul de lucru. S-a înregistrat o depășire de {{time}}."
+    },
+    "FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED": {
+      "title": "Limită bilunară de condus depășită",
+      "tip": "Timpul maxim de conducere în două săptămâni consecutive este de 90 ore."
     },
     "default": {
       "title": "Încălcare Conformitate",
-      "tip": "O regulă a fost încălcată. Verifică detaliile schimbului."
+      "tip": "O regulă a fost încălcată. Verifică detaliile turei."
     }
   },
-  "dateRangeError": "Data de sfârșit trebuie să fie după început.",
-  "noDataForRange": "Nicio dată găsită pentru acest interval.",
+  "dateRangeError": "Data de sfârșit trebuie să fie după data de început.",
+  "noDataForRange": "Nu s-au găsit date pentru acest interval.",
   "failedToGenerate": "Eșec la generarea raportului.",
   "workReport": "Raport de Lucru",
   "reportFrom": "De la",
-  "to": "La",
+  "to": "Până la",
   "summary": "Rezumat",
   "totalWorkTime": "Total Timp Lucru",
   "totalBreakTime": "Total Timp Pauză",
-  "estimatedEarnings": "Câștiguri Estimate",
+  "estimatedEarnings": "Venituri Estimate",
   "previousWeek": "Săptămâna Trecută",
   "lastMonth": "Luna Trecută",
   "customRange": "Interval Personalizat",
-  "generateReport": "Generează Raport"
+  "generateReport": "Generează Raport",
+  "alerts": {
+    "lowRestWarning": "Avertisment: Mai puțin de 9h de odihnă de la ultima tură.",
+    "spreadTitle": "Avertisment Amplitudine",
+    "spread30m": "Mai ai 30 de minute până la limita de 13 ore a programului (amplitudine)."
+  },
+  "invoiceGeneration": {
+    "title": "Generare Factură",
+    "selectClient": "Selectează Client",
+    "description": "Descriere Factură",
+    "includeExpenses": "Include Cheltuieli",
+    "vatRate": "Cota TVA (%)",
+    "noVat": "Fără TVA"
+  }
 }

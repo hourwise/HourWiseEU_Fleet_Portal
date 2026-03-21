@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Inteligentná správa vozového parku jednoducho",
+    "description": "Inteligentná správa vozového parku a sledovanie dodržiavania predpisov pre európske dopravné spoločnosti. Buďte v súlade s predpismi, buďte efektívni."
+  },
+  "navigation": {
+    "home": "Domov",
+    "howTo": "Návod",
+    "privacy": "Zásady ochrany súkromia",
+    "terms": "Zmluvné podmienky",
+    "contact": "Kontakt",
+    "privacyRequest": "Žiadosti o údaje (GDPR)",
+    "signIn": "Prihlásiť sa",
+    "getStarted": "Začať",
+    "dashboard": "Prehľad",
+    "drivers": "Vodiči",
+    "compliance": "Súlad",
+    "training": "Školenia",
+    "fleet": "Vozový park",
+    "safetyChecks": "Bezpečnostné kontroly",
+    "supervisors": "Dozorní pracovníci",
+    "payroll": "Mzdy",
+    "expenses": "Výdavky",
+    "reports": "Reporty",
+    "auditTrail": "Auditný záznam",
+    "settings": "Nastavenia",
+    "signOut": "Odhlásiť sa"
+  },
+  "footer": {
+    "company": "Spoločnosť",
+    "account": "Účet",
+    "createAccount": "Vytvoriť účet",
+    "allRightsReserved": "Všetky práva vyhradené."
+  },
+  "auth": {
+    "login": "Prihlásiť sa",
+    "signup": "Registrovať sa",
+    "email": "E-mail",
+    "password": "Heslo",
+    "forgotPassword": "Zabudli ste heslo?",
+    "createAccount": "Vytvoriť účet správcu vozového parku",
+    "managerSignup": "Registrácia správcu",
+    "companyName": "Názov spoločnosti",
+    "fullName": "Celé meno",
+    "alreadyHaveAccount": "Už máte účet? Prihláste sa",
+    "signInSubtitle": "Prihláste sa do svojho ovládacieho panela",
+    "forgotPasswordSubtitle": "Obnovte si heslo",
+    "magicLinkSubtitle": "Získajte magický odkaz na prihlásenie",
+    "magicLink": "Prihlásiť sa cez Magic Link",
+    "sendMagicLink": "Odoslať Magic Link",
+    "sendResetLink": "Odoslať odkaz na obnovu",
+    "backToSignIn": "Späť na prihlásenie",
+    "newToApp": "Nový v HourWise?",
+    "createCompanyAccountSubtitle": "Vytvorte si firemný účet",
+    "billingNotice": "Fakturačné údaje doplňte po registrácii na webe",
+    "codeNotice": "Dostanete firemný kód, ktorý zdieľajte so svojimi vodičmi",
+    "creatingAccount": "Vytvára sa účet...",
+    "createFleetAccount": "Vytvoriť firemný účet",
+    "messages": {
+      "resetSent": "Odkaz na obnovenie hesla bol odoslaný na váš e-mail.",
+      "magicLinkSent": "Skontrolujte si e-mail pre prihlasovací odkaz."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Portál správcu vozového parku",
+      "welcome": "Vitajte späť, {{name}}",
+      "snapshots": {
+        "compliance": "Skóre súladu vozového parku",
+        "vehicle": "Upozornenia na stav vozidiel",
+        "driver": "Upozornenia na kvalifikáciu vodičov",
+        "viewAll": "Zobraziť všetko",
+        "avgScore": "Priemerné skóre",
+        "sevenDayInfringements": "Porušenia (7 dní)",
+        "openBoard": "Otvoriť panel súladu",
+        "urgent": "{{count}} URGENTNÉ",
+        "noVehicleAlerts": "Žiadne urgentné upozornenia na vozidlá.",
+        "viewFleetList": "Zobraziť celý vozový park",
+        "noDriverAlerts": "Všetky dokumenty vodičov sú aktuálne.",
+        "manageDocs": "Spravovať dokumenty vodičov",
+        "alerts": "{{count}} UPOZORNENÍ",
+        "alertSingle": "1 UPOZORNENIE"
+      },
+      "alerts": {
+        "title": "Akčné upozornenia",
+        "urgent": "URGENTNÉ",
+        "trainingMode": "Tréningový režim aktívny",
+        "discrepancy": "Zistený nesúlad v údajoch",
+        "allClear": "Všetko v poriadku!",
+        "noIssues": "Nezistené žiadne problémy.",
+        "shiftAlert": "Upozornenie na zmenu dňa {{date}}",
+        "issueDetected": "Zistený problém, ktorý môže vyžadovať kontrolu."
+      },
+      "auditReadiness": {
+        "title": "Pripravenosť na audit",
+        "status": "Údaje vášho vozového parku sa synchronizujú podľa štandardov pre audit."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Správa vozového parku",
+    "totalAssets": "Celkovo vozidiel: {{count}}",
+    "addVehicle": "Pridať vozidlo",
+    "backToList": "Späť na zoznam",
+    "vehicleDetails": "Detaily vozidla",
+    "complianceBoard": "Panel súladu",
+    "maintenanceActions": "Údržbové úkony",
+    "statusNotes": "Poznámky k stavu",
+    "noNotes": "Pre toto vozidlo nie sú žiadne aktívne upozornenia.",
+    "markVor": "Označiť ako odstavené (VOR)",
+    "returnToService": "Vrátiť do prevádzky (Bezpečné)",
+    "maintenanceCalled": "Údržba nahlásená",
+    "bookedWithGarage": "Objednané do servisu",
+    "logRepair": "Zaznamenať opravu/PMI",
+    "recordWork": "Zapísať prácu a nahrať hárok",
+    "noVehicles": "Vo vašom parku ešte nie sú registrované vozidlá.",
+    "addFirst": "Pridajte svoje prvé vozidlo",
+    "status": {
+      "vor": "VOR / Mimo prevádzky",
+      "active": "Aktívne",
+      "critical": "Kritický termín (14d)",
+      "operational": "Prevádzkyschopné",
+      "requiresAttention": "Vyžaduje okamžitú pozornosť",
+      "compliancePending": "Čaká na kontrolu súladu",
+      "ready": "Pripravené na priradenie",
+      "overdue": "PO TERMÍNE",
+      "expiresIn": "o {{days}} dní"
+    },
+    "labels": {
+      "regType": "Detaily vozidla",
+      "status": "Stav",
+      "motDue": "Termín STK",
+      "pmiDue": "Termín PMI/Prehliadky",
+      "tachoCal": "Kalib. tacho",
+      "odometer": "Stav tachometra",
+      "year": "Rok",
+      "vin": "VIN",
+      "added": "Pridané",
+      "actions": "Akcie"
+    },
+    "modal": {
+      "title": "Pridať nové vozidlo",
+      "identity": "Identita vozidla",
+      "compliance": "Súlad a bezpečnosť",
+      "regNumber": "EČV (ŠPZ) *",
+      "make": "Značka *",
+      "model": "Model",
+      "type": "Typ vozidla *",
+      "vinNumber": "Číslo VIN",
+      "initialOdo": "Počiatočný stav (km)",
+      "currentOdo": "Aktuálny stav (km)",
+      "motDue": "Dátum nasledujúcej STK",
+      "pmiDue": "Dátum nasledujúcej PMI",
+      "tachoDue": "Kalibrácia tachografu",
+      "insuranceExpiry": "Expirácia poistenia",
+      "footnote": "Termíny súladu aktivujú systém 'Semafor'. Položky po termíne budú ČERVENÉ.",
+      "register": "Registrovať vozidlo",
+      "adding": "Pridáva sa vozidlo...",
+      "errors": {
+        "companyId": "ID spoločnosti sa nenašlo. Obnovte stránku.",
+        "duplicate": "Vozidlo s týmto EČV už existuje.",
+        "generic": "Pri pridávaní vozidla sa vyskytla neočakávaná chyba."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Prehľad súladu",
+    "subtitle": "Súhrn súladu vodičov za posledných 7 dní.",
+    "stats": {
+      "avgScore": "Priemerné skóre parku",
+      "totalInfringements": "Celkový počet porušení",
+      "driversInViolation": "Vodiči s porušením predpisov"
+    },
+    "details": {
+      "title": "Detail súladu vodičov",
+      "noDrivers": "Žiadni aktívni vodiči s nedávnymi údajmi",
+      "noDriversSubtitle": "Pozvite vodičov, aby ste tu videli ich skóre.",
+      "headers": {
+        "driver": "Vodič",
+        "score": "Skóre súladu",
+        "infringements": "Porušenia (Posledných 7 dní)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Auditný záznam údržby",
+    "logWork": "Zaznamenať prácu",
+    "noRecords": "Nenašli sa žiadne oficiálne záznamy o údržbe.",
+    "complianceRequired": "Vyžaduje sa zákonný súlad",
+    "labels": {
+      "date": "DÁTUM",
+      "odo": "ODO (KM)",
+      "cost": "CENA",
+      "eventType": "Typ udalosti",
+      "completedAt": "Dátum dokončenia",
+      "provider": "Poskytovateľ / Servis",
+      "description": "Popis práce",
+      "evidence": "Doklad (Hárok PMI/Certifikát STK)"
+    },
+    "modal": {
+      "title": "Zapísať údržbu",
+      "providerPlaceholder": "napr. Scania Servis",
+      "descriptionPlaceholder": "napr. Vykonaná 6-týždňová prehliadka. Namontované nové brzdové obloženie na prednej náprave.",
+      "confirm": "Potvrdiť prácu",
+      "saving": "Ukladá sa..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Prehliadka)",
+      "repair": "Oprava chyby",
+      "mot": "STK / Kontrola",
+      "tacho": "Kalibrácia tachografu",
+      "other": "Iné"
+    }
+  },
+  "training": {
+    "title": "Školenia a synchronizácia tacho",
+    "subtitle": "Porovnajte zákonné údaje z tachografu s aktivitou v aplikácii",
+    "import": {
+      "title": "Importovať údaje z tachografu",
+      "selectDriver": "Vybrať vodiča",
+      "selectPlaceholder": "Vyberte vodiča...",
+      "uploadLabel": "Nahrať .CSV z Tachomaster",
+      "browse": "Prehľadávať súbory",
+      "runButton": "Spustiť kontrolu nesúladu",
+      "analyzing": "Analyzuje sa..."
+    },
+    "suggestion": {
+      "title": "Návrh na školenie",
+      "description": "Ak vodič vykazuje časté chyby v prepínaní režimov, aplikácia mu pri ďalšej zmene automaticky zobrazí príručku 'Osvedčené postupy pre tachograf'."
+    },
+    "analysis": {
+      "title": "Výsledky analýzy",
+      "conflictsFound": "Počet zistených konfliktov: {{count}}",
+      "noData": "Žiadne dáta na analýzu.",
+      "noDataSubtitle": "Vyberte vodiča a nahrajte súbor z tachografu.",
+      "tacho": "Tachograf",
+      "app": "Aplikácia",
+      "priorities": {
+        "high": "Vysoká priorita",
+        "low": "Nízka priorita"
+      },
+      "activities": {
+        "driving": "Jazda",
+        "break": "Prestávka",
+        "work": "Práca",
+        "rest": "Odpočinok"
+      },
+      "insightTitle": "Školiaci postreh",
+      "assignButton": "Priradiť preškoľovací kurz"
+    }
+  },
+  "payroll": {
+    "title": "Mzdový súhrn",
+    "startDate": "Dátum začiatku",
+    "endDate": "Dátum konca",
+    "exportPayroll": "Exportovať mzdy (CSV)",
+    "exportExpenses": "Exportovať výdavky (CSV)",
+    "headers": {
+      "driver": "Vodič",
+      "hours": "Celkom hodín (Základ/Nadčas)",
+      "grossPay": "Hrubá mzda (vrátane výdavkov)"
+    },
+    "labels": {
+      "wages": "Mzdy",
+      "expenses": "Výdavky",
+      "normal": "Základ",
+      "overtime": "Nadčas",
+      "payrollNumber": "Osobné číslo",
+      "grossPayAmount": "Hrubá mzda (€)",
+      "wagesAmount": "Základná mzda (€)"
+    },
+    "noData": "Pre toto obdobie sa nenašli mzdové údaje.",
+    "loading": "Načítavajú sa mzdové údaje..."
+  },
+  "vehicleChecklist": {
+    "title": "Denná kontrola bezpečnosti vozidla",
+    "success": {
+      "title": "Kontrolný zoznam odoslaný",
+      "message": "Denná bezpečnostná kontrola vozidla bola úspešne zaznamenaná."
+    },
+    "manager": {
+      "title": "Bezpečnostné kontroly vozidiel",
+      "subtitle": "Kontrola denných inšpekcií a nahlásených závad",
+      "searchPlaceholder": "Hľadať vodiča alebo EČV...",
+      "noChecks": "Nenašli sa žiadne kontroly",
+      "selectCheck": "Vyberte kontrolu na zobrazenie detailov",
+      "selectCheckSubtitle": "Tu sa zobrazia denné kontroly vozidiel od vašich vodičov",
+      "printExport": "Tlačiť / Exportovať",
+      "details": {
+        "vehicleType": "TYP VOZIDLA",
+        "vehicleMake": "ZNAČKA VOZIDLA",
+        "odometer": "STAV TACHOMETRA",
+        "status": "STAV",
+        "timeRecorded": "ČAS ZÁZNAMU",
+        "defectsTitle": "NAHLÁSENÉ ZÁVADY / VYKONANÉ OPRAVY",
+        "noDefects": "Neboli poskytnuté žiadne ďalšie podrobnosti."
+      },
+      "status": {
+        "pass": "VYHOVUJE",
+        "fail": "NEVYHOVUJE",
+        "defect": "ZÁVADA"
+      }
+    },
+    "sections": {
+      "internal": "VNÚTORNÉ KONTROLY",
+      "external": "VONKAJŠIE KONTROLY",
+      "vehicleDetails": "Detaily vozidla",
+      "defects": "HLÁSENIE PORÚCH / VYKONANÉ OPRAVY"
+    },
+    "items": {
+      "mirrors": "Zrkadlá a sklá",
+      "mirrorsHint": "Skontrolujte praskliny/nálepky; uistite sa, že zrkadlá sú nastavené.",
+      "wipers": "Stierače a ostrekovače",
+      "wipersHint": "Skontrolujte funkčnosť a hladinu kvapaliny.",
+      "front_view": "Výhľad dopredu",
+      "front_viewHint": "Plná viditeľnosť cez čelné sklo.",
+      "warning_lamps": "Výstražné kontrolky",
+      "warning_lampsHint": "Uistite sa, že kontrolky vozidla fungujú správne.",
+      "steering": "Riadenie",
+      "steeringHint": "Plynulý pohyb a správna funkcia.",
+      "horn": "Klaksón",
+      "hornHint": "Otestujte jasný a funkčný zvuk.",
+      "brakes_air": "Brzdy a tlak vzduchu",
+      "brakes_airHint": "Skontrolujte funkciu bŕzd a nárast tlaku vzduchu.",
+      "height_marker": "Označenie výšky",
+      "height_markerHint": "Zobrazené správne označenie výšky.",
+      "seatbelts": "Bezpečnostné pásy",
+      "seatbeltsHint": "Skontrolujte funkčnosť všetkých pásov.",
+      "lights_ind": "Svetlá a smerovky",
+      "lights_indHint": "Všetky svetlá a smerovky fungujú správne.",
+      "leaks": "Úniky paliva/oleja",
+      "leaksHint": "Skontrolujte kvapaliny na zemi alebo podvozku.",
+      "battery": "Upevnenie batérie",
+      "batteryHint": "Skontrolujte upevnenie a stav batérie.",
+      "adblue": "Kvapalina AdBlue",
+      "adblueHint": "Dostatočná hladina močoviny.",
+      "smoke": "Nadmerný dym z výfuku",
+      "smokeHint": "Skontrolujte emisie hustého dymu.",
+      "body_wings": "Karoséria a blatníky",
+      "body_wingsHint": "Uistite sa, že žiadne časti nie sú uvoľnené.",
+      "spray": "Lapače nečistôt (Spray Suppression)",
+      "sprayHint": "Pevne namontované a v súlade s predpismi.",
+      "tyres_wheels": "Pneumatiky a upevnenie kolies",
+      "tyres_wheelsHint": "Skrutky/matice dotiahnuté. Dezén a tlak v norme.",
+      "brake_line": "Brzdové vedenie",
+      "brake_lineHint": "Skontrolujte poškodenie alebo únik vzduchu.",
+      "electrical": "Elektrické pripojenia",
+      "electricalHint": "Individuálne testy všetkých pripojení.",
+      "coupling": "Bezpečnosť spojovacieho zariadenia",
+      "couplingHint": "Skontrolujte, či je vozidlo bezpečne pripojené k nákladu.",
+      "load_security": "Zabezpečenie nákladu",
+      "load_securityHint": "Hmotnosť rovnomerne rozložená a náklad zaistený.",
+      "number_plate": "Tabuľka s EČV",
+      "number_plateHint": "Pevne uchytená a plne viditeľná.",
+      "reflectors": "Odrazky a svetlá",
+      "reflectorsHint": "Pevne uchytené a viditeľné.",
+      "markers": "Označenia",
+      "markersHint": "Všetky požadované označenia pevne uchytené."
+    },
+    "labels": {
+      "regNumber": "EČV (ŠPZ)",
+      "vehicleType": "TYP VOZIDLA",
+      "vehicleMake": "ZNAČKA (VOLITEĽNÉ)",
+      "hint": "Tip",
+      "submitting": "Odosiela sa...",
+      "submit": "Odoslať kontrolu",
+      "defectPlaceholder": "Popíšte závadu a vykonané bezprostredné opatrenia..."
+    },
+    "errors": {
+      "incomplete": "Pred odoslaním dokončite všetkých 24 kontrol.",
+      "missingReg": "EČV vozidla je povinný údaj."
+    }
+  },
+  "infractions": {
+    "title": "Hlásenia o porušení predpisov",
+    "subtitle": "Sledovanie a analýza problémov so súladom",
+    "export": "Exportovať CSV",
+    "filterAll": "Všetky ({{count}})",
+    "filterViolations": "Porušenia ({{count}})",
+    "filterWarnings": "Varovania ({{count}})",
+    "noInfractions": "Nenašli sa žiadne porušenia",
+    "noInfractionsSubtitle": "Váš vozový park udržiava vynikajúci súlad s predpismi",
+    "issue": "Problém so súladom",
+    "activity": "Aktivita: {{type}}",
+    "labels": {
+      "driver": "Vodič",
+      "dateTime": "Dátum a čas",
+      "location": "Lokalita",
+      "duration": "Trvanie",
+      "notes": "Poznámky:",
+      "notRecorded": "Nezaznamenané",
+      "ongoing": "Prebieha",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Dátum",
+      "driver": "Vodič",
+      "activity": "Aktivita",
+      "status": "Stav",
+      "infractionType": "Typ porušenia",
+      "duration": "Trvanie (min)",
+      "locationStart": "Lokalita začiatku",
+      "notes": "Poznámky"
+    }
+  },
+  "audit": {
+    "title": "Export auditného záznamu",
+    "subtitle": "Generovanie správ pre regulačné audity",
+    "filtersTitle": "Filtre správ",
+    "labels": {
+      "startDate": "Dátum začiatku",
+      "endDate": "Dátum konca",
+      "driver": "Vodič",
+      "allDrivers": "Všetci vodiči"
+    },
+    "trailCard": {
+      "title": "Kompletný auditný záznam",
+      "subtitle": "Všetky denníky vodičov s úplnými detailmi",
+      "item1": "Záznamy o aktivite vodiča",
+      "item2": "Časové pečiatky a trvanie",
+      "item3": "Údaje o lokalite",
+      "item4": "Informácie o vozidle",
+      "button": "Stiahnuť auditný záznam",
+      "generating": "Generuje sa..."
+    },
+    "summaryCard": {
+      "title": "Súhrn súladu",
+      "subtitle": "Agregované metriky súladu",
+      "item1": "Miera súladu na vodiča",
+      "item2": "Počet porušení a varovaní",
+      "item3": "Súhrn celkovej aktivity",
+      "item4": "Rýchly prehľad pre audit",
+      "button": "Stiahnuť súhrn"
+    },
+    "footerNotice": "Audit Ready: Tieto správy sú formátované pre regulačný súlad a môžu byť predložené úradom.",
+    "csvHeaders": {
+      "date": "Dátum",
+      "driverName": "Meno vodiča",
+      "license": "Číslo vodičského preukazu",
+      "activity": "Typ aktivity",
+      "start": "Čas začiatku",
+      "end": "Čas konca",
+      "duration": "Trvanie (min)",
+      "status": "Stav",
+      "infraction": "Typ porušenia",
+      "vehicle": "ID vozidla",
+      "locationStart": "Lokalita začiatku",
+      "locationEnd": "Lokalita konca",
+      "notes": "Poznámky",
+      "totalLogs": "Celkom záznamov",
+      "violations": "Porušenia",
+      "warnings": "Varovania",
+      "complianceRate": "Miera súladu"
+    },
+    "ongoing": "Prebieha",
+    "none": "Žiadne",
+    "unknown": "Neznáme"
+  },
+  "expensesManager": {
+    "title": "Schvaľovanie výdavkov",
+    "subtitle": "{{count}} čakajúcich výdavkov vyžaduje vašu kontrolu.",
+    "loading": "Načítavajú sa čakajúce výdavky...",
+    "allClear": "Všetko hotové!",
+    "noPending": "Nie sú žiadne čakajúce výdavky na kontrolu.",
+    "headers": {
+      "driver": "Vodič",
+      "date": "Dátum",
+      "amount": "Suma",
+      "description": "Popis",
+      "receipt": "Doklad",
+      "actions": "Akcie"
+    },
+    "viewReceipt": "Zobraziť",
+    "approve": "Schváliť",
+    "reject": "Odmietnuť",
+    "errors": {
+      "actionFailed": "Nepodarilo sa vykonať akciu {{action}} pre tento výdavok.",
+      "noPath": "Cesta k dokladu sa nenašla.",
+      "downloadFailed": "Nepodarilo sa stiahnuť doklad."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Správa dozorných pracovníkov",
+    "subtitle": "Celkovo dozorných pracovníkov: {{count}}",
+    "notice": "Poznámka: Dozorní pracovníci sa pripájajú pomocou firemného kódu. Táto sekcia umožňuje spravovať ich stav a profil.",
+    "searchPlaceholder": "Hľadať podľa mena alebo e-mailu...",
+    "filters": {
+      "all": "Všetci",
+      "active": "Aktívni",
+      "inactive": "Neaktívni"
+    },
+    "noSupervisors": "Nenašli sa žiadni dozorní pracovníci",
+    "labels": {
+      "supervisor": "Dozorný pracovník",
+      "email": "E-mail",
+      "status": "Stav",
+      "phone": "Telefónne číslo",
+      "name": "Celé meno",
+      "emailReadOnly": "E-mail (len na čítanie)"
+    },
+    "status": {
+      "active": "Aktívny",
+      "inactive": "Neaktívny"
+    },
+    "modal": {
+      "title": "Detail dozorného pracovníka",
+      "save": "Uložiť zmeny",
+      "cancel": "Zrušiť",
+      "errors": {
+        "updateFailed": "Nepodarilo sa aktualizovať údaje dozorného pracovníka."
+      },
+      "editTitle": "Upraviť detaily"
+    }
+  },
+  "driverDetails": {
+    "title": "Karta vodiča: {{name}}",
+    "sections": {
+      "profile": "Profil a mzdy",
+      "compliance": "Profesionálna kvalifikácia",
+      "activity": "Nedávne záznamy zmien",
+      "locations": "Zhluky štartovacích lokalít"
+    },
+    "labels": {
+      "fullName": "Celé meno",
+      "payrollNo": "Osobné číslo",
+      "niNumber": "IČO / Číslo poistenca",
+      "dob": "Dátum narodenia",
+      "phone": "Kontaktný telefón",
+      "emergencyName": "Núdzový kontakt - meno",
+      "emergencyPhone": "Núdzový kontakt - telefón",
+      "status": "Stav",
+      "address": "Bydlisko",
+      "licence": "Vodičský preukaz (Predná strana)",
+      "licenceNo": "Číslo vodičského preukazu",
+      "entitlements": "Oprávnenia (napr. C, C+E)",
+      "dvlaCode": "Overovací kód (ak je relevantné)",
+      "cpc": "Kvalifikačná karta vodiča (KKV)",
+      "cpcNo": "Číslo karty KKV",
+      "qualStart": "Začiatok platnosti kvalifikácie",
+      "qualExpiry": "Koniec platnosti kvalifikácie",
+      "tacho": "Digitálna karta vodiča",
+      "tachoNo": "Číslo tacho karty",
+      "cardExpiry": "Platnosť karty",
+      "duration": "Trvanie: {{hours}} hod.",
+      "noShifts": "Žiadne nedávne zmeny.",
+      "loadingMap": "Načítava sa mapa...",
+      "noMapData": "Žiadne dáta o polohe pre mapu.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "AKTÍVNY",
+      "inactive": "NEAKTÍVNY (VOR)",
+      "missingExpiry": "Chýba dátum expirácie",
+      "expired": "Expirovalo {{date}}",
+      "expiresIn": "Expiruje o {{days}} dní",
+      "expiresOn": "Expiruje {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Nahrať VP",
+      "uploadCpc": "Nahrať KKV",
+      "uploadTacho": "Nahrať Tacho kartu",
+      "commit": "Potvrdiť zmeny",
+      "saving": "Ukladá sa..."
+    },
+    "errors": {
+      "fillAll": "Vyplňte všetky polia dokumentov.",
+      "uploadError": "Chyba: {{message}}",
+      "updateFailed": "Nepodarilo sa aktualizovať údaje vodiča."
+    }
+  },
+  "shiftEdit": {
+    "title": "Manuálne upraviť zmenu",
+    "labels": {
+      "start": "Čas začiatku (len na čítanie)",
+      "end": "Čas konca",
+      "reason": "Dôvod zmeny (povinné)",
+      "reasonPlaceholder": "napr. Vodič potvrdil, že sa mu v tomto čase vybil telefón."
+    },
+    "errors": {
+      "endRequired": "Čas konca je povinný.",
+      "reasonRequired": "Poznámka pre audit vysvetľujúca zmenu je povinná.",
+      "invalidEnd": "Čas konca musí byť po čase začiatku.",
+      "updateFailed": "Nepodarilo sa aktualizovať zmenu."
+    },
+    "buttons": {
+      "save": "Uložiť a prepočítať",
+      "saving": "Ukladá sa..."
+    },
+    "auditNotePrefix": "(Upravené správcom) "
+  },
+  "settings": {
+    "company": {
+      "title": "Identita spoločnosti",
+      "subscriptionActive": "PREDPLATNÉ AKTÍVNE",
+      "inactive": "NEAKTÍVNE",
+      "nameLabel": "Názov spoločnosti",
+      "refIdLabel": "Interné referenčné ID",
+      "authCodeLabel": "Firemný autorizačný kód",
+      "authCodeFootnote": "Tento kód dajte novým vodičom a dozorným pracovníkom, aby sa prepojili s vaším vozovým parkom.",
+      "complianceTitle": "Vymáhanie súladu",
+      "complianceSubtitle": "Presadzovanie vysokých bezpečnostných štandardov.",
+      "mandatoryChecks": "Povinné kontroly vozidiel",
+      "mandatoryChecksSubtitle": "Zablokovať vodičom spustenie zmeny bez kontroly.",
+      "mandatoryChecksFootnote": "Ak je táto možnosť zapnutá, vodiči musia vykonať obhliadku pred zápisom hodín.",
+      "usageMetrics": "Metriky využitia parku",
+      "usageMetricsSubtitle": "Údaje o najazdených kilometroch a inšpekciách sa zaznamenávajú automaticky. Pozrite si reporty v sekcii **Bezpečnostné kontroly**.",
+      "dataStatus": "Stav údajov",
+      "activeMonitoring": "Aktívne monitorovanie zapnuté",
+      "fleetRegistered": "VOZOVÝ PARK REGISTROVANÝ: {{date}}",
+      "errors": {
+        "updateFailed": "Nepodarilo sa aktualizovať názov spoločnosti.",
+        "settingUpdateFailed": "Nepodarilo sa aktualizovať nastavenie: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Môj profil",
+      "success": "Profil aktualizovaný",
+      "nameLabel": "Celé meno",
+      "emailLabel": "E-mailová adresa (prihlasovacia)",
+      "phoneLabel": "Kontaktný telefón",
+      "updateButton": "Aktualizovať údaje",
+      "updating": "Ukladá sa...",
+      "securityTitle": "Zabezpečenie a heslo",
+      "securitySubtitle": "Potrebujete si zmeniť heslo alebo zapnúť MFA?",
+      "resetPassword": "Obnoviť heslo",
+      "resetSent": "Odkaz na obnovu hesla bol odoslaný na váš e-mail."
+    },
+    "mfa": {
+      "title": "Viacfaktorové overenie (MFA)",
+      "subtitle": "Pridajte k svojmu účtu ďalšiu vrstvu zabezpečenia vyžadovaním kódu z autentifikačnej aplikácie v telefóne.",
+      "enabled": "MFA je momentálne zapnuté.",
+      "step1": "1. Naskenujte tento QR kód pomocou autentifikačnej aplikácie (napr. Google Authenticator).",
+      "step2": "2. Zadajte 6-miestny kód z aplikácie nižšie na overenie a dokončenie nastavenia.",
+      "placeholder": "123456",
+      "verifyButton": "Overiť a zapnúť",
+      "verifying": "Overuje sa...",
+      "enableButton": "Zapnúť MFA",
+      "starting": "Spúšťa sa...",
+      "disableButton": "Vypnúť",
+      "disabling": "Vypína sa...",
+      "confirmDisable": "Naozaj chcete vypnúť viacfaktorové overenie?",
+      "successEnabled": "Viacfaktorové overenie bolo úspešne zapnuté!",
+      "successDisabled": "Viacfaktorové overenie bolo vypnuté."
+    }
+  },
+  "common": {
+    "save": "Uložiť zmeny",
+    "cancel": "Zrušiť",
+    "loading": "Načítava sa...",
+    "edit": "Upraviť",
+    "delete": "Vymazať",
+    "refresh": "Obnoviť zoznam",
+    "viewAll": "Zobraziť všetko",
+    "success": "Úspech",
+    "error": "Chyba",
+    "lastUpdated": "Posledná aktualizácia: {{date}}",
+    "details": "Detaily",
+    "syncing": "Synchronizuje sa zoznam...",
+    "search": "Hľadať podľa mena alebo e-mailu...",
+    "confirmDelete": "Naozaj chcete odstrániť používateľa {{name}}? Týmto sa natrvalo vymaže jeho účet a údaje.",
+    "selectFile": "Vybrať súbor"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil sa nenašiel",
+      "message": "Váš účet sme našli, ale nepodarilo sa načítať detaily profilu. Skúste pripojenie znova.",
+      "retry": "Skúsiť znova",
+      "signOut": "Odhlásiť sa a začať odznova"
+    }
+  },
+  "howTo": {
+    "title": "Ako používať HourWise EU",
+    "subtitle": "Všetko, čo potrebujete vedieť, aby ste mohli začať spravovať vozový park",
+    "sections": {
+      "gettingStarted": {
+        "title": "Začíname",
+        "step1": {
+          "title": "Krok 1: Vytvorte si účet",
+          "description": "Začnite vytvorením účtu správcu vozového parku. Budete musieť zadať informácie o spoločnosti a zvoliť si bezpečné heslo."
+        },
+        "step2": {
+          "title": "Krok 2: Pridajte svojich vodičov",
+          "description": "Po prihlásení prejdite do sekcie Správa vodičov. Každý vodič dostane prihlasovacie údaje na prihlásenie a odosielanie odpracovaných hodín.",
+          "list": [
+            "Zadajte meno a e-mailovú adresu vodiča",
+            "Systém vygeneruje bezpečné prihlasovacie údaje",
+            "Vodič dostane uvítací e-mail s pokynmi"
+          ]
+        },
+        "step3": {
+          "title": "Krok 3: Sledujte denné hodiny",
+          "description": "Vodiči sa prihlásia do svojho prehľadu, aby odoslali denné hodiny. Systém automaticky sleduje ich kumulatívne hodiny a upozorňuje na limity.",
+          "list": [
+            "Vodiči zadávajú denné hodiny jazdy",
+            "Výpočet týždenných a dvojtýždenných súčtov v reálnom čase",
+            "Automatické upozornenia pri blížiacich sa limitoch"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Pre správcov vozového parku",
+        "compliance": {
+          "title": "Monitorovanie súladu",
+          "description": "Sledujte stav súladu celého parku v reálnom čase. Panel ukazuje, ktorí vodiči sú v norme a ktorí vyžadujú pozornosť."
+        },
+        "violations": {
+          "title": "Správa porušení",
+          "description": "Keď vodič prekročí regulačné limity, systém automaticky zaznamená priestupok. Pozrite si všetky priestupky pre účely auditu."
+        },
+        "audit": {
+          "title": "Auditný záznam",
+          "description": "Každá akcia v systéme je zaznamenaná. Tento komplexný protokol zabezpečuje plnú zodpovednosť a spĺňa regulačné požiadavky."
+        }
+      },
+      "drivers": {
+        "title": "Pre vodičov",
+        "workflow": {
+          "title": "Denný pracovný postup",
+          "step1": {
+            "title": "Prihláste sa do svojho prehľadu",
+            "description": "Použite údaje poskytnuté správcom"
+          },
+          "step2": {
+            "title": "Odošlite svoje hodiny jazdy",
+            "description": "Zadajte celkový počet odjazdených hodín za deň"
+          },
+          "step3": {
+            "title": "Skontrolujte svoj stav súladu",
+            "description": "Pozrite si svoje týždenné a dvojtýždenné súčty hodín"
+          },
+          "step4": {
+            "title": "Venujte pozornosť upozorneniam",
+            "description": "Systém vás upozorní, keď sa blížite k limitom hodín"
+          }
+        }
+      },
+      "regulations": {
+        "title": "Pochopenie predpisov EÚ",
+        "limits": {
+          "title": "Kľúčové limity",
+          "weekly": "Týždenný limit:",
+          "weeklyValue": "Maximálne 56 hodín jazdy týždenne",
+          "fortnightly": "Dvojtýždenný limit:",
+          "fortnightlyValue": "Maximálne 90 hodín počas akýchkoľvek dvoch po sebe nasledujúcich týždňov",
+          "footnote": "HourWise EU automaticky monitoruje oba limity."
+        }
+      },
+      "help": {
+        "title": "Potrebujete ďalšiu pomoc?",
+        "subtitle": "Kontaktujte náš tím podpory pre osobnú asistenciu",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Zásady ochrany súkromia",
+    "sections": {
+      "intro": {
+        "title": "1. Úvod",
+        "p1": "HourWise EU poskytuje platformu na správu vozového parku pre dopravné podniky na zabezpečenie súladu. Tieto zásady vysvetľujú, ako chránime vaše údaje.",
+        "p2": "Používaním našich služieb súhlasíte so zhromažďovaním informácií v súlade s týmito zásadami."
+      },
+      "collect": {
+        "title": "2. Aké informácie zhromažďujeme",
+        "managers": {
+          "title": "2.1 Informácie poskytované správcami",
+          "items": [
+            "Údaje o účte: Meno, názov spoločnosti a e-mail.",
+            "Záznamy o vodičoch: Osobné číslo, dátum narodenia, adresa, núdzové kontakty.",
+            "Podrobnosti o súlade: Vodičský preukaz, čísla KKV a dátumy expirácie."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Informácie poskytované vodičmi (cez aplikáciu)",
+          "items": [
+            "Profilové údaje: Meno a e-mail.",
+            "Pracovné relácie: Časové pečiatky pre prácu, prestávku a odpočinok.",
+            "Záznamy o výdavkoch: Suma, popis a obrázky dokladov."
+          ]
+        },
+        "app": {
+          "title": "2.3 Povolenia aplikácie a údaje",
+          "description": "Pre kľúčové funkcie aplikácia vyžaduje:",
+          "items": [
+            "Prístup k fotoaparátu: Na nahrávanie dokladov a preukazov.",
+            "Údaje o polohe: GPS súradnice zaznamenávame LEN pri štarte a konci zmeny pre účely auditu. Žiadne kontinuálne sledovanie v pozadí."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Ako používame vaše informácie",
+        "items": [
+          "Sledovanie súladu: Správa hodín a platnosti dokumentov.",
+          "Mzdová agenda: Výpočet hrubej mzdy pre účtovníctvo.",
+          "Správa výdavkov: Spracovanie dokladov na preplatenie.",
+          "Auditné záznamy: Uchovávanie zákonných záznamov pre súlad s predpismi."
+        ]
+      },
+      "security": {
+        "title": "4. Zabezpečenie a ukladanie dát",
+        "p1": "Všetky údaje sú chránené pomocou Row Level Security (RLS). Dokumenty sú uložené v šifrovaných súkromných úložiskách."
+      },
+      "retention": {
+        "title": "5. Uchovávanie údajov",
+        "p1": "Podľa zákonov sa mzdové údaje a relácie uchovávajú minimálne 3 až 6 rokov (podľa jurisdikcie) pre účely auditu."
+      },
+      "rights": {
+        "title": "6. Vaše práva (GDPR)",
+        "p1": "Máte právo na prístup, opravu alebo vymazanie svojich údajov."
+      },
+      "contact": {
+        "title": "7. Kontaktujte nás",
+        "team": "Tím pre súkromie HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Zmluvné podmienky",
+    "sections": {
+      "agreement": {
+        "title": "1. Súhlas s podmienkami",
+        "p1": "Prístupom k platforme HourWise EU súhlasíte s týmito podmienkami."
+      },
+      "license": {
+        "title": "2. Licencia na používanie",
+        "p1": "Udeľuje sa povolenie na dočasné používanie platformy na obchodné účely. Toto je udelenie licencie, nie prevod vlastníctva.",
+        "items": [
+          "Upravovať alebo kopírovať materiály;",
+          "Pokúšať sa o reverzné inžinierstvo softvéru;",
+          "Odstraňovať autorské práva z materiálov."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Presnosť údajov a súlad",
+        "p1": "HourWise EU poskytuje nástroje, avšak:",
+        "items": [
+          "Zodpovednosť používateľa: Používatelia sú výhradne zodpovední za overenie presnosti záznamov.",
+          "Právny súlad: Používanie služby nezaručuje automatický právny súlad u úradov.",
+          "Chyby pri zadávaní: Nezodpovedáme za chyby spôsobené nesprávnym zadaním údajov používateľom."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Predplatné a fakturácia",
+        "p1": "Prístup k profesionálnym funkciám vyžaduje platené predplatné cez Stripe.",
+        "solo": {
+          "title": "4.1 Plán Solo vodič",
+          "p1": "Fakturované mesačne priamo cez mobilnú aplikáciu."
+        },
+        "fleet": {
+          "title": "4.2 Plán Správa vozového parku",
+          "p1": "Spoločnosti sú fakturované na základe počtu aktívnych vodičov."
+        },
+        "general": {
+          "title": "4.3 Všeobecné platobné podmienky",
+          "items": [
+            "Poplatky sú nevratné, pokiaľ to nevyžaduje zákon.",
+            "Neudržiavanie platnej platobnej metódy môže viesť k pozastaveniu prístupu."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Obmedzenie zodpovednosti",
+        "p1": "Služba je poskytovaná 'tak, ako je'. Nezodpovedáme za nepriame škody alebo stratu údajov."
+      },
+      "law": {
+        "title": "6. Rozhodujúce právo",
+        "p1": "Tieto podmienky sa riadia zákonmi Spojeného kráľovstva (alebo relevantnou miestnou jurisdikciou)."
+      },
+      "changes": {
+        "title": "7. Zmeny podmienok",
+        "p1": "Vyhradzujeme si právo upraviť tieto podmienky s 30-dňovým upozornením."
+      },
+      "contact": {
+        "title": "8. Kontaktné informácie",
+        "team": "Právny tím HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Kontaktujte nás",
+    "subtitle": "Sme tu, aby sme vám pomohli. Vyberte si spôsob kontaktu.",
+    "general": {
+      "title": "Všeobecné otázky",
+      "description": "Pre otázky ohľadom partnerstva alebo informácií kontaktujte náš tím."
+    },
+    "technical": {
+      "title": "Technická podpora",
+      "description": "Ak máte technické problémy s aplikáciou, kontaktujte náš tím podpory."
+    },
+    "cta": "Odoslať e-mail"
+  },
+  "privacyRequest": {
+    "title": "Žiadosť o údaje a súkromie",
+    "form": {
+      "labels": {
+        "fullName": "Celé meno",
+        "email": "Overená e-mailová adresa",
+        "requestType": "Typ žiadosti",
+        "additionalInfo": "Doplňujúce informácie"
+      },
+      "placeholders": {
+        "fullName": "Tak, ako je v aplikácii",
+        "email": "vas.email@priklad.sk",
+        "details": "Voliteľné: Detaily k vašej žiadosti"
+      },
+      "requestTypes": {
+        "download": "Požiadať o kópiu mojich údajov (Prístup)",
+        "deletion": "Vymazať môj účet a všetky údaje (Vymazanie)"
+      },
+      "cta": "Generovať e-mail o súkromí",
+      "notices": {
+        "fleet": "Upozornenie pre firemných vodičov: Najprv kontaktujte svojho správcu parku pre spracovanie mzdy.",
+        "security": "Z bezpečnostných dôvodov vyžadujeme odoslanie žiadosti z registrovaného e-mailu. Žiadosť spracujeme do 30 dní."
+      },
+      "success": {
+        "title": "Žiadosť pripravená",
+        "message": "Váš e-mailový klient bol otvorený. Kliknite na **'Odoslať'** v e-mailovej aplikácii.",
+        "submitAnother": "Odoslať ďalšiu žiadosť"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Správa vodičov",
+    "activeDrivers": "aktívni vodiči",
+    "pendingInvites": "čakajúce pozvánky",
+    "inviteDriver": "Pozvať vodiča",
+    "labels": {
+      "name": "Meno",
+      "email": "E-mail",
+      "compliance": "Súlad",
+      "status": "Stav"
+    },
+    "status": {
+      "active": "Aktívny",
+      "inviteSent": "Pozvánka odoslaná",
+      "noDocuments": "Žiadne dokumenty",
+      "expired": "Dokument expiroval",
+      "compliant": "V súlade",
+      "checkExpiry": "Kontrola expirácie",
+      "expiresIn": "Expiruje o {{days}} dní",
+      "lost": "Spojenie prerušené",
+      "linkMismatch": "Nesúlad prepojenia"
+    },
+    "lostInviteNotice": "Pozvánka bola prijatá, ale prepojenie profilu zlyhalo. Upravte company_id v Supabase.",
+    "noDrivers": "Nenašli sa vodiči ani pozvánky",
+    "incompleteSetup": "Neúplné nastavenie"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Pozvať nového vodiča",
+      "fullName": "Celé meno *",
+      "email": "E-mailová adresa *",
+      "payConfig": "Konfigurácia mzdy",
+      "hourlyRate": "Hodinová sadzba (€)",
+      "unpaidBreak": "Neplatená prestávka (min)",
+      "allowances": "Príplatky",
+      "allowanceAmount": "Suma (€)",
+      "unit": "Jednotka",
+      "units": {
+        "hour": "Za hodinu",
+        "day": "Za deň",
+        "week": "Za týždeň",
+        "month": "Za mesiac",
+        "shift": "Za zmenu",
+        "daily": "Denne",
+        "weekly": "Týždenne",
+        "monthly": "Mesačne"
+      },
+      "addAllowance": "Pridať príplatok",
+      "overtime": "Nadčasy",
+      "otThreshold": "Hranica nadčasov (hod.)",
+      "otUnit": "Jednotka nadčasu",
+      "otMultiplier": "Koeficient nadčasu",
+      "additionalTiers": "Ďalšie úrovne",
+      "afterHours": "Po (hod.)",
+      "newMultiplier": "Nový koeficient",
+      "addOtTier": "Pridať úroveň nadčasov",
+      "submit": "Odoslať pozvánku",
+      "submitting": "Odosiela sa..."
+    },
+    "errors": {
+      "noCompany": "Nie ste priradený k žiadnej spoločnosti.",
+      "generic": "Vyskytla sa neznáma chyba."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Skúšobná doba skončila",
+      "unlockAccess": "Odomknúť plný prístup",
+      "expiredSubtitle": "Predplaťte si HourWise pre pokračovanie",
+      "accessSubtitle": "Získajte neobmedzený prístup ku všetkým funkciám",
+      "features": {
+        "invoicing": "Generovanie faktúr",
+        "invoicingDesc": "Profesionálne faktúry pre klientov",
+        "expenses": "Sledovanie výdavkov",
+        "expensesDesc": "Sledujte firemné výdavky",
+        "compliance": "Súlad hodín",
+        "complianceDesc": "Dodržujte nariadenia o jazde",
+        "reports": "Daňové reporty",
+        "reportsDesc": "Exporty pre účtovníctvo"
+      },
+      "perMonth": "/mesiac",
+      "cancelAnytime": "Zrušte kedykoľvek. Bez viazanosti.",
+      "subscribeNow": "Predplatiť teraz",
+      "cancelSettings": "Zrušenie kedykoľvek v nastaveniach účtu",
+      "securePayment": "Bezpečná platba cez Apple/Google",
+      "instantAccess": "Okamžitý prístup po predplatení"
+    },
+    "manager": {
+      "fleetMember": "Člen parku",
+      "partOf": "Ste súčasťou {{company}}",
+      "fleetAccess": "Plný prístup zabezpečuje spoločnosť",
+      "soloTitle": "Predplatné Solo vodič",
+      "manageDesc": "Spravovať predplatné",
+      "status": {
+        "active": "Aktívne",
+        "trial": "Skúšobná doba",
+        "inactive": "Neaktívne"
+      },
+      "trialPeriod": "Skúšobná doba",
+      "trialDays": "Zostáva {{count}} dní skúšobnej doby",
+      "trialEnded": "Skúšobná doba skončila",
+      "activeSub": "Aktívne predplatné",
+      "renewsOn": "Obnoví sa dňa {{date}}",
+      "noActiveSub": "Žiadne aktívne predplatné",
+      "subscribeAccess": "Predplaťte si pre plný prístup",
+      "planLabel": "Plán",
+      "soloPlan": "Solo vodič",
+      "priceLabel": "Cena",
+      "priceValue": "9,99 € / mesiac",
+      "paymentLabel": "Platobná metóda",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Nenastavené",
+      "manageButton": "Spravovať predplatné",
+      "resubscribe": "Obnoviť predplatné",
+      "subscribeNow": "Predplatiť teraz",
+      "manageAlert": "Pre správu predplatného navštívte nastavenia zariadenia.",
+      "demoAlert": "Tu by sa spustil nákup v aplikácii."
+    },
+    "banner": {
+      "daysLeft": "Zostáva {{count}} dní",
+      "lastDay": "Posledný deň",
+      "trialSuffix": " bezplatnej skúšobnej doby!",
+      "endsIn": "Skúšobná doba končí o {{count}} dní",
+      "cta": "Predplaťte si teraz len za 9,99 € / mesiac",
+      "subscribeNow": "Predplatiť teraz"
+    }
+  },
+  "reports": {
+    "title": "Firemné reporty",
+    "exportPdf": "Exportovať PDF / Tlačiť",
+    "tabs": {
+      "payroll": "Mzdy",
+      "efficiency": "Efektivita",
+      "vehicleChecks": "Kontroly",
+      "infractions": "Porušenia",
+      "driving": "Jazda"
+    },
+    "filters": {
+      "title": "Filtre",
+      "driver": "Vodič",
+      "allDrivers": "Všetci vodiči",
+      "startDate": "Dátum začiatku",
+      "endDate": "Dátum konca"
+    },
+    "payroll": {
+      "title": "Mzdový súhrn",
+      "headers": {
+        "driver": "Vodič",
+        "workHours": "Pracovné hodiny",
+        "breakHours": "Prestávky",
+        "sessions": "Relácie"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Report inšpekcií vozidiel",
+      "headers": {
+        "dateTime": "Dátum/Čas",
+        "inspector": "Inšpektor",
+        "vehicle": "Vozidlo",
+        "status": "Stav",
+        "defects": "Závady"
+      },
+      "status": {
+        "pass": "OK",
+        "defect": "ZÁVADA"
+      },
+      "noneReported": "Žiadne nahlásené"
+    },
+    "infractions": {
+      "moduleReady": "Modul porušení pripravený."
+    },
+    "driving": {
+      "moduleReady": "Modul analýzy jazdy pripravený."
+    }
+  },
+  "broadcast": {
+    "title": "Odoslať hromadnú správu",
+    "placeholder": "Napíšte správu všetkým vodičom...",
+    "button": "Odoslať všetkým vodičom",
+    "sending": "Odosiela sa...",
+    "success": "Hromadná správa bola úspešne odoslaná!",
+    "errors": {
+      "empty": "Obsah správy nemôže byť prázdny.",
+      "notLoaded": "Profil alebo firemný ID nebol načítaný.",
+      "failed": "Odosielanie správy zlyhalo."
+    }
+  },
+  "mfa": {
+    "title": "Viacfaktorové overenie (MFA)",
+    "subtitle": "Zvýšte bezpečnosť účtu vyžadovaním kódu z aplikácie.",
+    "enabled": "MFA je zapnuté.",
+    "disableButton": "Vypnúť",
+    "disabling": "Vypína sa...",
+    "step1": "1. Naskenujte QR kód aplikáciou.",
+    "step2": "2. Zadajte 6-miestny kód.",
+    "placeholder": "123456",
+    "verifyButton": "Overiť a zapnúť",
+    "verifying": "Overuje sa...",
+    "enableButton": "Zapnúť MFA",
+    "starting": "Spúšťa sa...",
+    "confirmDisable": "Naozaj chcete vypnúť MFA?",
+    "successEnabled": "MFA bolo úspešne zapnuté!",
+    "successDisabled": "MFA bolo vypnuté."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Správa dozorných pracovníkov",
+      "count": "Celkom dozorných pracovníkov: {{count}}",
+      "notice": "Poznámka: Pripájajú sa pomocou firemného kódu.",
+      "searchPlaceholder": "Hľadať...",
+      "noSupervisors": "Nenašli sa žiadni dozorní pracovníci",
+      "labels": {
+        "supervisor": "Dozorný pracovník",
+        "email": "E-mail",
+        "status": "Stav",
+        "edit": "Upraviť detaily"
+      }
+    },
+    "modal": {
+      "title": "Detail dozorného pracovníka",
+      "nameLabel": "Celé meno",
+      "emailLabel": "E-mail (len na čítanie)",
+      "phoneLabel": "Telefónne číslo",
+      "saveButton": "Uložiť zmeny",
+      "errorUpdate": "Nepodarilo sa aktualizovať údaje."
+    }
+  },
+  "location": {
+    "notRecorded": "Lokalita nezaznamenaná",
+    "mapAlt": "Mapa vycentrovaná na {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Upozornenia vozového parku",
+    "urgent": "{{count}} URGENTNÉ",
+    "noAlerts": "Žiadne urgentné upozornenia.",
+    "offRoad": "Vozidlo mimo prevádzky (VOR)",
+    "dueOverdue": "Termín {{type}} PO TERMÍNE",
+    "dueInDays": "Termín {{type}} o {{days}} dní",
+    "viewFullList": "Zobraziť celý vozový park"
+  }
+}

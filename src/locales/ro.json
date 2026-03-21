@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Managementul inteligent al flotei, simplificat",
+    "description": "Management inteligent al flotei și monitorizarea conformității pentru companiile de transport europene. Rămâneți conformi, rămâneți eficienți."
+  },
+  "navigation": {
+    "home": "Acasă",
+    "howTo": "Ghid de utilizare",
+    "privacy": "Confidențialitate",
+    "terms": "Termeni și condiții",
+    "contact": "Contact",
+    "privacyRequest": "Cereri date (GDPR)",
+    "signIn": "Autentificare",
+    "getStarted": "Începe acum",
+    "dashboard": "Panou de control",
+    "drivers": "Șoferi",
+    "compliance": "Conformitate",
+    "training": "Instruire",
+    "fleet": "Flotă",
+    "safetyChecks": "Verificări siguranță",
+    "supervisors": "Supervizori",
+    "payroll": "Salarizare",
+    "expenses": "Cheltuieli",
+    "reports": "Rapoarte",
+    "auditTrail": "Traseu de audit",
+    "settings": "Setări",
+    "signOut": "Deconectare"
+  },
+  "footer": {
+    "company": "Companie",
+    "account": "Cont",
+    "createAccount": "Creare cont",
+    "allRightsReserved": "Toate drepturile rezervate."
+  },
+  "auth": {
+    "login": "Autentificare",
+    "signup": "Înregistrare",
+    "email": "E-mail",
+    "password": "Parolă",
+    "forgotPassword": "Ați uitat parola?",
+    "createAccount": "Creare cont Manager Flotă",
+    "managerSignup": "Înregistrare Manager",
+    "companyName": "Numele companiei",
+    "fullName": "Nume complet",
+    "alreadyHaveAccount": "Aveți deja un cont? Autentificați-vă",
+    "signInSubtitle": "Accesați panoul de control al flotei",
+    "forgotPasswordSubtitle": "Resetați parola",
+    "magicLinkSubtitle": "Primiți un link magic pentru autentificare",
+    "magicLink": "Autentificare prin Magic Link",
+    "sendMagicLink": "Trimite Magic Link",
+    "sendResetLink": "Trimite link resetare",
+    "backToSignIn": "Înapoi la autentificare",
+    "newToApp": "Nou pe HourWise?",
+    "createCompanyAccountSubtitle": "Creați contul companiei",
+    "billingNotice": "Finalizați configurarea facturării pe site după înregistrare",
+    "codeNotice": "Veți primi un cod de companie pe care să-l partajați cu șoferii",
+    "creatingAccount": "Se creează contul...",
+    "createFleetAccount": "Creare cont flotă",
+    "messages": {
+      "resetSent": "Un link pentru resetarea parolei a fost trimis pe e-mail.",
+      "magicLinkSent": "Verificați e-mailul pentru linkul de acces."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Portal Manager Flotă",
+      "welcome": "Bine ai revenit, {{name}}",
+      "snapshots": {
+        "compliance": "Scor conformitate flotă",
+        "vehicle": "Alerte conformitate vehicule",
+        "driver": "Alerte calificare șoferi",
+        "viewAll": "Vezi tot",
+        "avgScore": "Scor mediu",
+        "sevenDayInfringements": "Încălcări (7 zile)",
+        "openBoard": "Deschide panoul de conformitate",
+        "urgent": "{{count}} URGENT",
+        "noVehicleAlerts": "Nicio alertă urgentă pentru vehicule.",
+        "viewFleetList": "Vezi lista completă a flotei",
+        "noDriverAlerts": "Toate documentele șoferilor sunt la zi.",
+        "manageDocs": "Gestionare documente șoferi",
+        "alerts": "{{count}} ALERTE",
+        "alertSingle": "1 ALERTĂ"
+      },
+      "alerts": {
+        "title": "Alerte de acțiune",
+        "urgent": "URGENT",
+        "trainingMode": "Mod instruire activ",
+        "discrepancy": "Discrepanță de date detectată",
+        "allClear": "Totul este în regulă!",
+        "noIssues": "Nu s-au detectat probleme.",
+        "shiftAlert": "Alertă pentru tura din {{date}}",
+        "issueDetected": "Problemă detectată care necesită revizuire."
+      },
+      "auditReadiness": {
+        "title": "Pregătire pentru audit",
+        "status": "Datele flotei sunt sincronizate conform standardelor de audit ale autorităților."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Managementul flotei",
+    "totalAssets": "{{count}} Vehicule totale",
+    "addVehicle": "Adaugă vehicul",
+    "backToList": "Înapoi la listă",
+    "vehicleDetails": "Detalii vehicul",
+    "complianceBoard": "Panou conformitate",
+    "maintenanceActions": "Acțiuni mentenanță",
+    "statusNotes": "Note de stare",
+    "noNotes": "Nicio alertă activă sau notă pentru acest vehicul.",
+    "markVor": "Marchează ca imobilizat (VOR)",
+    "returnToService": "Revino în serviciu (Sigur)",
+    "maintenanceCalled": "Mentenanță solicitată",
+    "bookedWithGarage": "Programat în service",
+    "logRepair": "Înregistrează reparație/PMI",
+    "recordWork": "Înregistrează lucrarea și încarcă fișa",
+    "noVehicles": "Nu există vehicule înregistrate în flotă.",
+    "addFirst": "Adăugați primul vehicul",
+    "status": {
+      "vor": "VOR / Imobilizat",
+      "active": "Activ",
+      "critical": "Termen critic (14z)",
+      "operational": "Operațional",
+      "requiresAttention": "Necesită atenție imediată",
+      "compliancePending": "Inspecții în așteptare",
+      "ready": "Gata pentru alocare",
+      "overdue": "EXPIRAT",
+      "expiresIn": "în {{days}} zile"
+    },
+    "labels": {
+      "regType": "Detalii vehicul",
+      "status": "Stare",
+      "motDue": "Expirare ITP",
+      "pmiDue": "Expirare PMI/Revizie",
+      "tachoCal": "Calibrare tahograf",
+      "odometer": "Odometru",
+      "year": "An",
+      "vin": "Serie șasiu (VIN)",
+      "added": "Adăugat",
+      "actions": "Acțiuni"
+    },
+    "modal": {
+      "title": "Adăugare vehicul nou",
+      "identity": "Identitate vehicul",
+      "compliance": "Conformitate și Siguranță",
+      "regNumber": "Număr înmatriculare *",
+      "make": "Marcă *",
+      "model": "Model",
+      "type": "Tip vehicul *",
+      "vinNumber": "Serie șasiu (VIN)",
+      "initialOdo": "Kilometraj inițial (km)",
+      "currentOdo": "Kilometraj actual (km)",
+      "motDue": "Data expirării ITP",
+      "pmiDue": "Următoarea dată PMI",
+      "tachoDue": "Calibrare tahograf",
+      "insuranceExpiry": "Expirare asigurare",
+      "footnote": "Datele de conformitate activează sistemul „Semafor”. Elementele expirate vor fi marcate cu ROȘU.",
+      "register": "Înregistrează vehicul",
+      "adding": "Se adaugă vehiculul...",
+      "errors": {
+        "companyId": "ID-ul companiei nu a fost găsit. Reîmprospătați pagina.",
+        "duplicate": "Există deja un vehicul cu acest număr de înmatriculare.",
+        "generic": "A apărut o eroare neașteptată la adăugarea vehiculului."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Panou de conformitate",
+    "subtitle": "Rezumatul conformității șoferilor (ultimele 7 zile).",
+    "stats": {
+      "avgScore": "Media flotei",
+      "totalInfringements": "Total încălcări",
+      "driversInViolation": "Șoferi cu încălcări"
+    },
+    "details": {
+      "title": "Detalii conformitate șofer",
+      "noDrivers": "Niciun șofer activ cu date recente",
+      "noDriversSubtitle": "Invitați șoferi pentru a le vedea scorurile aici.",
+      "headers": {
+        "driver": "Șofer",
+        "score": "Scor conformitate",
+        "infringements": "Încălcări (Ultimele 7 zile)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Traseu audit mentenanță",
+    "logWork": "Înregistrează lucrare",
+    "noRecords": "Nu s-au găsit înregistrări oficiale de mentenanță.",
+    "complianceRequired": "Conformitate legală obligatorie",
+    "labels": {
+      "date": "DATA",
+      "odo": "KM",
+      "cost": "COST",
+      "eventType": "Tip eveniment",
+      "completedAt": "Data finalizării",
+      "provider": "Furnizor / Service",
+      "description": "Descriere lucrare",
+      "evidence": "Dovadă legală (Fișă PMI/Certificat ITP)"
+    },
+    "modal": {
+      "title": "Înregistrare mentenanță",
+      "providerPlaceholder": "ex: Service Scania",
+      "descriptionPlaceholder": "ex: Inspecție periodică efectuată. Plăcuțe de frână noi montate pe puntea față.",
+      "confirm": "Confirmă lucrarea",
+      "saving": "Se salvează..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Revizie)",
+      "repair": "Reparație defect",
+      "mot": "ITP / Inspecție",
+      "tacho": "Calibrare tahograf",
+      "other": "Altele"
+    }
+  },
+  "training": {
+    "title": "Instruire și Sincronizare Tahograf",
+    "subtitle": "Comparați datele legale din tahograf cu activitatea din aplicație",
+    "import": {
+      "title": "Import date tahograf",
+      "selectDriver": "Selectează șofer",
+      "selectPlaceholder": "Alegeți un șofer...",
+      "uploadLabel": "Încărcați .CSV din Tachomaster",
+      "browse": "Răsfoire fișiere",
+      "runButton": "Verifică discrepanțele",
+      "analyzing": "Analiză în curs..."
+    },
+    "suggestion": {
+      "title": "Sugestie instruire",
+      "description": "Dacă un șofer are erori frecvente de schimbare a modului, aplicația îi va afișa automat ghidul „Bune practici tahograf” la următoarea tură."
+    },
+    "analysis": {
+      "title": "Rezultate analiză",
+      "conflictsFound": "{{count}} Conflicte găsite",
+      "noData": "Nicio dată analizată.",
+      "noDataSubtitle": "Selectați un șofer și încărcați un fișier tahograf pentru a începe.",
+      "tacho": "Tahograf",
+      "app": "Aplicație",
+      "priorities": {
+        "high": "Prioritate mare",
+        "low": "Prioritate mică"
+      },
+      "activities": {
+        "driving": "Conducere",
+        "break": "Pauză",
+        "work": "Lucru",
+        "rest": "Odihnă"
+      },
+      "insightTitle": "Insight instruire",
+      "assignButton": "Alocă curs de reîmprospătare"
+    }
+  },
+  "payroll": {
+    "title": "Rezumat salarizare",
+    "startDate": "Data de început",
+    "endDate": "Data de sfârșit",
+    "exportPayroll": "Exportă CSV Salarii",
+    "exportExpenses": "Exportă CSV Cheltuieli",
+    "headers": {
+      "driver": "Șofer",
+      "hours": "Total ore (Normale/Suplimentare)",
+      "grossPay": "Salariu brut (incl. cheltuieli)"
+    },
+    "labels": {
+      "wages": "Salariu",
+      "expenses": "Cheltuieli",
+      "normal": "Normal",
+      "overtime": "Supl.",
+      "payrollNumber": "Număr personal",
+      "grossPayAmount": "Salariu brut (RON)",
+      "wagesAmount": "Valoare salariu (RON)"
+    },
+    "noData": "Nu s-au găsit date de salarizare pentru această perioadă.",
+    "loading": "Se încarcă datele de salarizare..."
+  },
+  "vehicleChecklist": {
+    "title": "Verificarea zilnică a siguranței",
+    "success": {
+      "title": "Checklist trimis",
+      "message": "Verificarea zilnică a siguranței vehiculului a fost înregistrată."
+    },
+    "manager": {
+      "title": "Verificări de siguranță",
+      "subtitle": "Revizuirea inspecțiilor zilnice și a defectelor raportate",
+      "searchPlaceholder": "Caută șofer sau nr. înmatriculare...",
+      "noChecks": "Nicio verificare găsită",
+      "selectCheck": "Selectați o verificare pentru detalii",
+      "selectCheckSubtitle": "Inspecțiile zilnice ale șoferilor vor apărea aici",
+      "printExport": "Imprimă / Exportă",
+      "details": {
+        "vehicleType": "TIP VEHICUL",
+        "vehicleMake": "MARCĂ",
+        "odometer": "ODOMETRU",
+        "status": "STARE",
+        "timeRecorded": "ORA ÎNREGISTRĂRII",
+        "defectsTitle": "DEFECTE RAPORTATE / ACȚIUNI ÎNTREPRINSE",
+        "noDefects": "Nu au fost furnizate detalii suplimentare."
+      },
+      "status": {
+        "pass": "ADMIS",
+        "fail": "RESPINS",
+        "defect": "DEFECT"
+      }
+    },
+    "sections": {
+      "internal": "CONTROALE INTERNE",
+      "external": "CONTROALE EXTERNE",
+      "vehicleDetails": "Detalii vehicul",
+      "defects": "RAPORTARE DEFECTE / ACȚIUNI ÎNTREPRINSE"
+    },
+    "items": {
+      "mirrors": "Oglinzi și geamuri",
+      "mirrorsHint": "Verificați fisuri/autocolante; asigurați alinierea oglinzilor.",
+      "wipers": "Ștergătoare și spălător parbriz",
+      "wipersHint": "Verificați funcționarea și nivelul lichidului.",
+      "front_view": "Vizibilitate față",
+      "front_viewHint": "Vizibilitate totală prin parbriz.",
+      "warning_lamps": "Martori de bord",
+      "warning_lampsHint": "Asigurați-vă că martorii de bord funcționează corect.",
+      "steering": "Direcție",
+      "steeringHint": "Mișcare lină și funcționare corectă.",
+      "horn": "Claxon",
+      "hornHint": "Testați pentru un sunet clar și funcțional.",
+      "brakes_air": "Frâne și presiune aer",
+      "brakes_airHint": "Verificați frânarea și acumularea presiunii de aer.",
+      "height_marker": "Indicator înălțime",
+      "height_markerHint": "Indicator înălțime corect și vizibil.",
+      "seatbelts": "Centuri de siguranță",
+      "seatbeltsHint": "Verificați funcționarea tuturor centurilor.",
+      "lights_ind": "Lumini și semnalizări",
+      "lights_indHint": "Toate luminile și semnalizările funcționează.",
+      "leaks": "Scurgeri combustibil/ulei",
+      "leaksHint": "Verificați scurgerile sub șasiu.",
+      "battery": "Siguranță baterie",
+      "batteryHint": "Baterie fixată și în stare bună.",
+      "adblue": "Lichid AdBlue",
+      "adblueHint": "Nivel suficient de AdBlue.",
+      "smoke": "Fum excesiv evacuare",
+      "smokeHint": "Verificați emisiile de fum dens.",
+      "body_wings": "Caroserie și aripi",
+      "body_wingsHint": "Asigurați-vă că nu există piese slăbite.",
+      "spray": "Sisteme anti-proiecție (Aparători)",
+      "sprayHint": "Fixate sigur și conform legii.",
+      "tyres_wheels": "Anvelope și fixare roți",
+      "tyres_wheelsHint": "Prezoane strânse. Profil și presiune legale.",
+      "brake_line": "Conducte frână",
+      "brake_lineHint": "Verificați daune sau pierderi de aer.",
+      "electrical": "Conexiuni electrice",
+      "electricalHint": "Teste individuale pentru toate conexiunile.",
+      "coupling": "Siguranță cuplare",
+      "couplingHint": "Verificați dacă vehiculul este cuplat sigur la încărcătură.",
+      "load_security": "Siguranță încărcătură",
+      "load_securityHint": "Greutate distribuită și marfă securizată.",
+      "number_plate": "Plăcuță înmatriculare",
+      "number_plateHint": "Fixată și complet vizibilă.",
+      "reflectors": "Reflectori și lumini",
+      "reflectorsHint": "Fixate sigur și vizibile.",
+      "markers": "Marcaje vehicul",
+      "markersHint": "Toate marcajele obligatorii fixate."
+    },
+    "labels": {
+      "regNumber": "NR. ÎNMATRICULARE",
+      "vehicleType": "TIP VEHICUL",
+      "vehicleMake": "MARCĂ (OPȚIONAL)",
+      "hint": "Indiciu",
+      "submitting": "Se trimite...",
+      "submit": "Trimite checklist",
+      "defectPlaceholder": "Descrieți defectul și orice acțiune imediată întreprinsă..."
+    },
+    "errors": {
+      "incomplete": "Vă rugăm să completați toate cele 24 de verificări înainte de a trimite.",
+      "missingReg": "Numărul de înmatriculare este obligatoriu."
+    }
+  },
+  "infractions": {
+    "title": "Rapoarte de încălcări",
+    "subtitle": "Urmăriți și analizați problemele de conformitate",
+    "export": "Exportă CSV",
+    "filterAll": "Toate ({{count}})",
+    "filterViolations": "Încălcări ({{count}})",
+    "filterWarnings": "Avertismente ({{count}})",
+    "noInfractions": "Nu s-au găsit încălcări",
+    "noInfractionsSubtitle": "Flota dumneavoastră menține o conformitate excelentă",
+    "issue": "Problemă conformitate",
+    "activity": "Activitate: {{type}}",
+    "labels": {
+      "driver": "Șofer",
+      "dateTime": "Dată și oră",
+      "location": "Locație",
+      "duration": "Durată",
+      "notes": "Note:",
+      "notRecorded": "Neînregistrat",
+      "ongoing": "În desfășurare",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Data",
+      "driver": "Șofer",
+      "activity": "Activitate",
+      "status": "Stare",
+      "infractionType": "Tip încălcare",
+      "duration": "Durată (min)",
+      "locationStart": "Locație pornire",
+      "notes": "Note"
+    }
+  },
+  "audit": {
+    "title": "Export traseu audit",
+    "subtitle": "Generați rapoarte de conformitate pentru audituri oficiale",
+    "filtersTitle": "Filtre raport",
+    "labels": {
+      "startDate": "Data de început",
+      "endDate": "Data de sfârșit",
+      "driver": "Șofer",
+      "allDrivers": "Toți șoferii"
+    },
+    "trailCard": {
+      "title": "Traseu audit complet",
+      "subtitle": "Toate jurnalele șoferilor cu detalii complete",
+      "item1": "Jurnale activitate șofer",
+      "item2": "Timestamp-uri și durate",
+      "item3": "Date locație",
+      "item4": "Informații vehicul",
+      "button": "Descarcă traseu audit",
+      "generating": "Se generează..."
+    },
+    "summaryCard": {
+      "title": "Rezumat conformitate",
+      "subtitle": "Metrice de conformitate agregate",
+      "item1": "Rata de conformitate per șofer",
+      "item2": "Număr încălcări și avertismente",
+      "item3": "Rezumat activitate totală",
+      "item4": "Vedere rapidă pentru audit",
+      "button": "Descarcă rezumat"
+    },
+    "footerNotice": "Audit Ready: Aceste rapoarte sunt formatate pentru conformitate legală și pot fi prezentate autorităților.",
+    "csvHeaders": {
+      "date": "Data",
+      "driverName": "Nume șofer",
+      "license": "Număr permis",
+      "activity": "Tip activitate",
+      "start": "Ora pornire",
+      "end": "Ora oprire",
+      "duration": "Durată (min)",
+      "status": "Stare",
+      "infraction": "Tip încălcare",
+      "vehicle": "ID Vehicul",
+      "locationStart": "Locație pornire",
+      "locationEnd": "Locație destinație",
+      "notes": "Note",
+      "totalLogs": "Total jurnale",
+      "violations": "Încălcări",
+      "warnings": "Avertismente",
+      "complianceRate": "Rata conformitate"
+    },
+    "ongoing": "În desfășurare",
+    "none": "Niciunul",
+    "unknown": "Necunoscut"
+  },
+  "expensesManager": {
+    "title": "Aprobare cheltuieli",
+    "subtitle": "{{count}} cheltuieli în așteptare necesită revizuire.",
+    "loading": "Se încarcă cheltuielile...",
+    "allClear": "Totul este la zi!",
+    "noPending": "Nu există cheltuieli în așteptare.",
+    "headers": {
+      "driver": "Șofer",
+      "date": "Data",
+      "amount": "Sumă",
+      "description": "Descriere",
+      "receipt": "Bon",
+      "actions": "Acțiuni"
+    },
+    "viewReceipt": "Vezi",
+    "approve": "Aprobă",
+    "reject": "Respinge",
+    "errors": {
+      "actionFailed": "Eșec la {{action}} cheltuiala.",
+      "noPath": "Calea către bon nu a fost găsită.",
+      "downloadFailed": "Eșec la descărcarea bonului."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Management supervizori",
+    "subtitle": "{{count}} supervizori în total",
+    "notice": "Notă: Supervizorii se alătură folosind codul de autorizare al companiei. Gestionați aici starea lor.",
+    "searchPlaceholder": "Caută după nume sau e-mail...",
+    "filters": {
+      "all": "Toți",
+      "active": "Activi",
+      "inactive": "Inactivi"
+    },
+    "noSupervisors": "Niciun supervizor găsit",
+    "labels": {
+      "supervisor": "Supervizor",
+      "email": "E-mail",
+      "status": "Stare",
+      "phone": "Telefon",
+      "name": "Nume complet",
+      "emailReadOnly": "E-mail (Doar citire)"
+    },
+    "status": {
+      "active": "Activ",
+      "inactive": "Inactiv"
+    },
+    "modal": {
+      "title": "Detalii supervizor",
+      "save": "Salvează modificări",
+      "cancel": "Anulează",
+      "errors": {
+        "updateFailed": "Actualizare eșuată."
+      },
+      "editTitle": "Editează detalii"
+    }
+  },
+  "driverDetails": {
+    "title": "Dosar șofer: {{name}}",
+    "sections": {
+      "profile": "Profil și Salarii",
+      "compliance": "Calificări profesionale",
+      "activity": "Jurnale ture recente",
+      "locations": "Locații pornire frecvente"
+    },
+    "labels": {
+      "fullName": "Nume complet",
+      "payrollNo": "Nr. personal",
+      "niNumber": "CNP / Serie asigurare",
+      "dob": "Data nașterii",
+      "phone": "Telefon contact",
+      "emergencyName": "Contact urgență (Nume)",
+      "emergencyPhone": "Contact urgență (Telefon)",
+      "status": "Stare",
+      "address": "Adresă domiciliu",
+      "licence": "Permis conducere (Față)",
+      "licenceNo": "Număr permis",
+      "entitlements": "Categorii (ex: C, C+E)",
+      "dvlaCode": "Cod verificare (unde e cazul)",
+      "cpc": "Card CPC (Cod 95)",
+      "cpcNo": "Număr card Cod 95",
+      "qualStart": "Început calificare",
+      "qualExpiry": "Expirare calificare",
+      "tacho": "Card tahograf digital",
+      "tachoNo": "Număr card tahograf",
+      "cardExpiry": "Expirare card",
+      "duration": "Durată: {{hours}} h",
+      "noShifts": "Nicio tură recentă înregistrată.",
+      "loadingMap": "Se încarcă harta...",
+      "noMapData": "Nicio dată de locație disponibilă.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "ACTIV",
+      "inactive": "INACTIV (VOR)",
+      "missingExpiry": "Dată expirare lipsă",
+      "expired": "Expirat la {{date}}",
+      "expiresIn": "Expiră în {{days}} zile",
+      "expiresOn": "Expiră la {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Încarcă Permis",
+      "uploadCpc": "Încarcă Cod 95",
+      "uploadTacho": "Încarcă Card Tacho",
+      "commit": "Aplică modificările",
+      "saving": "Se salvează..."
+    },
+    "errors": {
+      "fillAll": "Vă rugăm să completați toate câmpurile.",
+      "uploadError": "Eroare: {{message}}",
+      "updateFailed": "Actualizarea detaliilor șoferului a eșuat."
+    }
+  },
+  "shiftEdit": {
+    "title": "Editare manuală tură",
+    "labels": {
+      "start": "Ora pornire (Doar citire)",
+      "end": "Ora oprire",
+      "reason": "Motivul modificării (Obligatoriu)",
+      "reasonPlaceholder": "ex: Șoferul a confirmat că telefonul s-a descărcat în acest interval."
+    },
+    "errors": {
+      "endRequired": "Ora de oprire este obligatorie.",
+      "reasonRequired": "O notă de audit este obligatorie.",
+      "invalidEnd": "Ora de oprire trebuie să fie după ora de pornire.",
+      "updateFailed": "Actualizarea turei a eșuat."
+    },
+    "buttons": {
+      "save": "Salvează și Recalculează",
+      "saving": "Se salvează..."
+    },
+    "auditNotePrefix": "(Editat de Manager) "
+  },
+  "settings": {
+    "company": {
+      "title": "Identitate companie",
+      "subscriptionActive": "ABONAMENT ACTIV",
+      "inactive": "INACTIV",
+      "nameLabel": "Numele companiei",
+      "refIdLabel": "ID referință intern",
+      "authCodeLabel": "Cod autorizare companie",
+      "authCodeFootnote": "Dați acest cod noilor șoferi și supervizori pentru a-i conecta la flotă.",
+      "complianceTitle": "Aplicare conformitate",
+      "complianceSubtitle": "Mențineți standarde înalte de siguranță.",
+      "mandatoryChecks": "Verificări vehicul obligatorii",
+      "mandatoryChecksSubtitle": "Blocați pornirea turei fără verificare prealabilă.",
+      "mandatoryChecksFootnote": "Dacă este activat, șoferii trebuie să inspecteze vehiculul înainte de a ponta.",
+      "usageMetrics": "Metrici utilizare flotă",
+      "usageMetricsSubtitle": "Kilometrajul și datele de inspecție sunt capturate automat.",
+      "dataStatus": "Stare date",
+      "activeMonitoring": "Monitorizare activă activată",
+      "fleetRegistered": "FLOTĂ ÎNREGISTRATĂ LA: {{date}}",
+      "errors": {
+        "updateFailed": "Actualizarea numelui companiei a eșuat.",
+        "settingUpdateFailed": "Actualizarea setării a eșuat: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Profilul meu",
+      "success": "Profil actualizat",
+      "nameLabel": "Nume complet",
+      "emailLabel": "E-mail (Login)",
+      "phoneLabel": "Telefon contact",
+      "updateButton": "Actualizează datele mele",
+      "updating": "Se salvează...",
+      "securityTitle": "Securitate și Parolă",
+      "securitySubtitle": "Schimbați parola sau activați MFA.",
+      "resetPassword": "Resetare parolă",
+      "resetSent": "Link de resetare trimis pe e-mail."
+    },
+    "mfa": {
+      "title": "Autentificare multi-factor (MFA)",
+      "subtitle": "Adăugați securitate suplimentară folosind un cod dintr-o aplicație de autentificare.",
+      "enabled": "MFA este activată.",
+      "step1": "1. Scanați codul QR cu aplicația (ex: Google Authenticator).",
+      "step2": "2. Introduceți codul de 6 cifre.",
+      "placeholder": "123456",
+      "verifyButton": "Verifică și Activează",
+      "verifying": "Se verifică...",
+      "enableButton": "Activează MFA",
+      "starting": "Se pornește...",
+      "disableButton": "Dezactivează",
+      "disabling": "Se dezactivează...",
+      "confirmDisable": "Sigur doriți să dezactivați MFA?",
+      "successEnabled": "MFA a fost activată cu succes!",
+      "successDisabled": "MFA a fost dezactivată."
+    }
+  },
+  "common": {
+    "save": "Salvează modificări",
+    "cancel": "Anulează",
+    "loading": "Se încarcă...",
+    "edit": "Editează",
+    "delete": "Șterge",
+    "refresh": "Reîmprospătează lista",
+    "viewAll": "Vezi tot",
+    "success": "Succes",
+    "error": "Eroare",
+    "lastUpdated": "Ultima actualizare: {{date}}",
+    "details": "Detalii",
+    "syncing": "Se sincronizează...",
+    "search": "Caută după nume sau e-mail...",
+    "confirmDelete": "Sigur doriți să ștergeți {{name}}? Această acțiune este permanentă.",
+    "selectFile": "Selectează fișier"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profil negăsit",
+      "message": "Am găsit contul, dar nu am putut încărca datele profilului.",
+      "retry": "Reîncearcă",
+      "signOut": "Deconectare și restart"
+    }
+  },
+  "howTo": {
+    "title": "Cum să folosești HourWise EU",
+    "subtitle": "Tot ce trebuie să știi pentru a începe gestionarea flotei",
+    "sections": {
+      "gettingStarted": {
+        "title": "Primii pași",
+        "step1": {
+          "title": "Pasul 1: Creează contul",
+          "description": "Începeți prin crearea unui cont de manager cu datele companiei."
+        },
+        "step2": {
+          "title": "Pasul 2: Adaugă șoferi",
+          "description": "Din secțiunea Management Șoferi, creați conturi pentru personal.",
+          "list": [
+            "Introduceți numele și e-mailul",
+            "Sistemul generează credențiale sigure",
+            "Șoferul primește un e-mail de bun venit"
+          ]
+        },
+        "step3": {
+          "title": "Pasul 3: Urmărește orele",
+          "description": "Șoferii trimit orele zilnice, iar sistemul calculează automat limitele legale.",
+          "list": [
+            "Înregistrarea orelor de condus",
+            "Calcul în timp real al totalurilor",
+            "Alerte automate la atingerea limitelor"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Pentru Manageri",
+        "compliance": {
+          "title": "Monitorizare conformitate",
+          "description": "Starea flotei în timp real."
+        },
+        "violations": {
+          "title": "Gestionare încălcări",
+          "description": "Înregistrare automată pentru audit."
+        },
+        "audit": {
+          "title": "Traseu audit",
+          "description": "Responsabilitate totală și rapoarte conforme."
+        }
+      },
+      "drivers": {
+        "title": "Pentru Șoferi",
+        "workflow": {
+          "title": "Flux zilnic",
+          "step1": {
+            "title": "Intră în aplicație",
+            "description": "Folosește datele de la managerul tău."
+          },
+          "step2": {
+            "title": "Trimite orele de condus",
+            "description": "Introdu totalul zilei."
+          },
+          "step3": {
+            "title": "Verifică conformitatea",
+            "description": "Vezi totalurile tale acumulate."
+          },
+          "step4": {
+            "title": "Atenție la alerte",
+            "description": "Aplicația te avertizează dacă te apropii de limite."
+          }
+        }
+      },
+      "regulations": {
+        "title": "Reglementări UE",
+        "limits": {
+          "title": "Limite cheie",
+          "weekly": "Limită săptămânală:",
+          "weeklyValue": "Maxim 56 ore de condus pe săptămână",
+          "fortnightly": "Limită bisăptămânală:",
+          "fortnightlyValue": "Maxim 90 ore în două săptămâni consecutive",
+          "footnote": "HourWise EU monitorizează automat ambele limite."
+        }
+      },
+      "help": {
+        "title": "Ai nevoie de ajutor?",
+        "subtitle": "Contactează echipa de suport.",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Politica de confidențialitate",
+    "sections": {
+      "intro": {
+        "title": "1. Introducere",
+        "p1": "HourWise EU ajută firmele de transport în conformitate și management.",
+        "p2": "Utilizarea implică acceptarea colectării datelor conform politicii."
+      },
+      "collect": {
+        "title": "2. Date colectate",
+        "managers": {
+          "title": "2.1 Furnizate de manageri",
+          "items": [
+            "Cont: Nume, companie, e-mail.",
+            "Șoferi: Nr. personal, CNP, adresă.",
+            "Conformitate: Permis, CPC și expirări."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Furnizate de șoferi (App)",
+          "items": [
+            "Profil: Nume și e-mail.",
+            "Sesiuni: Timestamp lucru, pauză, odihnă.",
+            "Cheltuieli: Sumă, descriere și poze bonuri."
+          ]
+        },
+        "app": {
+          "title": "2.3 Permisiuni App",
+          "description": "Aplicația solicită:",
+          "items": [
+            "Cameră: Pentru documente și bonuri.",
+            "Locație: Coordonate GPS DOAR la start/stop tură pentru audit. Fără urmărire continuă."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Utilizarea datelor",
+        "items": [
+          "Urmărire conformitate: Ore și documente.",
+          "Salarii: Calcul brut pentru contabilitate.",
+          "Cheltuieli: Procesare rambursări.",
+          "Audit: Jurnale legale pentru control."
+        ]
+      },
+      "security": {
+        "title": "4. Securitate",
+        "p1": "Date protejate prin RLS. Documente în stocare privată criptată."
+      },
+      "retention": {
+        "title": "5. Retenție",
+        "p1": "Datele salariale se păstrează între 3 și 6 ani conform legii."
+      },
+      "rights": {
+        "title": "6. Drepturi (GDPR)",
+        "p1": "Acces, rectificare sau ștergere date."
+      },
+      "contact": {
+        "title": "7. Contact",
+        "team": "Echipa Privacy HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Termeni și condiții",
+    "sections": {
+      "agreement": {
+        "title": "1. Acord",
+        "p1": "Utilizarea platformei implică acceptarea termenilor."
+      },
+      "license": {
+        "title": "2. Licență",
+        "p1": "Licență temporară pentru uz profesional flotă.",
+        "items": [
+          "Nu copiați materialele;",
+          "Fără reverse engineering;",
+          "Nu eliminați drepturile de autor."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Acuratețe date",
+        "p1": "HourWise oferă instrumente, dar:",
+        "items": [
+          "Responsabilitate: Managerii și Șoferii trebuie să verifice jurnalele.",
+          "Conformitate: Utilizarea nu garantează aprobarea automată a autorităților.",
+          "Erori: Nu răspundem pentru erori de introducere."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Abonamente",
+        "p1": "Acces pro prin Stripe.",
+        "solo": {
+          "title": "4.1 Plan Șofer Solo",
+          "p1": "Facturat lunar prin aplicație."
+        },
+        "fleet": {
+          "title": "4.2 Plan Flotă",
+          "p1": "Facturare bazată pe șoferii activi."
+        },
+        "general": {
+          "title": "4.3 Condiții generale",
+          "items": [
+            "Taxele nu sunt rambursabile.",
+            "Neplata poate suspenda accesul."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Răspundere",
+        "p1": "Serviciu furnizat „ca atare”. Nu răspundem pentru daune indirecte."
+      },
+      "law": {
+        "title": "6. Legea aplicabilă",
+        "p1": "Legile Regatului Unit (sau jurisdicția locală aplicabilă)."
+      },
+      "changes": {
+        "title": "7. Modificări",
+        "p1": "Modificări cu preaviz de 30 zile."
+      },
+      "contact": {
+        "title": "8. Contact",
+        "team": "Echipa Legal HourWise EU",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "Ajutor personalizat.",
+    "general": {
+      "title": "Întrebări generale",
+      "description": "Parteneriate sau info generale."
+    },
+    "technical": {
+      "title": "Suport tehnic",
+      "description": "Probleme cu aplicația."
+    },
+    "cta": "Trimite E-mail"
+  },
+  "privacyRequest": {
+    "title": "Cerere Privacy",
+    "form": {
+      "labels": {
+        "fullName": "Nume complet",
+        "email": "E-mail verificat",
+        "requestType": "Tip cerere",
+        "additionalInfo": "Info extra"
+      },
+      "placeholders": {
+        "fullName": "Ca în aplicație",
+        "email": "e-mailul.tau@exemplu.ro",
+        "details": "Detalii specifice"
+      },
+      "requestTypes": {
+        "download": "Copie date (Acces)",
+        "deletion": "Șterge cont (Uitare)"
+      },
+      "cta": "Generează E-mail",
+      "notices": {
+        "fleet": "Șoferi Flotă: Contactați managerul înainte de cerere.",
+        "security": "Verificăm identitatea prin e-mail. Procesare în 30 zile."
+      },
+      "success": {
+        "title": "Cerere pregătită",
+        "message": "E-mailul a fost deschis. Click pe **'Trimite'**.",
+        "submitAnother": "Trimite altă cerere"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Management șoferi",
+    "activeDrivers": "șoferi activi",
+    "pendingInvites": "invitații în așteptare",
+    "inviteDriver": "Invită șofer",
+    "labels": {
+      "name": "Nume",
+      "email": "E-mail",
+      "compliance": "Conformitate",
+      "status": "Stare"
+    },
+    "status": {
+      "active": "Activ",
+      "inviteSent": "Invitație trimisă",
+      "noDocuments": "Fără documente",
+      "expired": "Document expirat",
+      "compliant": "Conform",
+      "checkExpiry": "Verifică expirarea",
+      "expiresIn": "Expiră în {{days}} zile",
+      "lost": "Conexiune pierdută",
+      "linkMismatch": "Eroare asociere"
+    },
+    "lostInviteNotice": "Invitație acceptată, dar eroare profil. Actualizați company_id în Supabase.",
+    "noDrivers": "Niciun șofer găsit",
+    "incompleteSetup": "Configurare incompletă"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Invită șofer nou",
+      "fullName": "Nume complet *",
+      "email": "Adresă e-mail *",
+      "payConfig": "Configurare salarii",
+      "hourlyRate": "Paga orară (RON)",
+      "unpaidBreak": "Pauză neplătită (min)",
+      "allowances": "Sporuri/Diurne",
+      "allowanceAmount": "Valoare (RON)",
+      "unit": "Unitate",
+      "units": {
+        "hour": "Pe oră",
+        "day": "Pe zi",
+        "week": "Pe săptămână",
+        "month": "Pe lună",
+        "shift": "Pe tură",
+        "daily": "Zilnic",
+        "weekly": "Săptămânal",
+        "monthly": "Lunar"
+      },
+      "addAllowance": "Adaugă spor",
+      "overtime": "Ore suplimentare",
+      "otThreshold": "Prag ore supl. (h)",
+      "otUnit": "Unitate supl.",
+      "otMultiplier": "Multiplicator pagă",
+      "additionalTiers": "Niveluri extra",
+      "afterHours": "După (h)",
+      "newMultiplier": "Multiplicator nou",
+      "addOtTier": "Adaugă prag",
+      "submit": "Trimite invitația",
+      "submitting": "Se trimite..."
+    },
+    "errors": {
+      "noCompany": "Nu sunteți asociat unei companii.",
+      "generic": "Eroare necunoscută."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Perioadă probă expirată",
+      "unlockAccess": "Deblochează acces complet",
+      "expiredSubtitle": "Abonați-vă pentru a continua utilizarea",
+      "accessSubtitle": "Acces nelimitat la toate funcțiile",
+      "features": {
+        "invoicing": "Creare facturi",
+        "invoicingDesc": "Facturi pro pentru clienți",
+        "expenses": "Control cheltuieli",
+        "expensesDesc": "Monitorizați costurile de afaceri",
+        "compliance": "Conformitate ore",
+        "complianceDesc": "Respectați limitele legale",
+        "reports": "Rapoarte fiscale",
+        "reportsDesc": "Export pentru contabilitate"
+      },
+      "perMonth": "/lună",
+      "cancelAnytime": "Anulați oricând. Fără obligații.",
+      "subscribeNow": "Abonează-te acum",
+      "cancelSettings": "Anulați din setările contului",
+      "securePayment": "Plată sigură via Apple/Google",
+      "instantAccess": "Acces imediat după abonare"
+    },
+    "manager": {
+      "fleetMember": "Membru flotă",
+      "partOf": "Faceți parte din {{company}}",
+      "fleetAccess": "Acces total oferit de companie",
+      "soloTitle": "Abonament Șofer Solo",
+      "manageDesc": "Gestionați abonamentul",
+      "status": {
+        "active": "Activ",
+        "trial": "Probă",
+        "inactive": "Inactiv"
+      },
+      "trialPeriod": "Perioadă probă",
+      "trialDays": "{{count}} zile de probă rămase",
+      "trialEnded": "Proba s-a terminat",
+      "activeSub": "Abonament activ",
+      "renewsOn": "Se reînnoiește la {{date}}",
+      "noActiveSub": "Niciun abonament activ",
+      "subscribeAccess": "Abonați-vă pentru acces total",
+      "planLabel": "Plan",
+      "soloPlan": "Șofer Solo",
+      "priceLabel": "Preț",
+      "priceValue": "49,99 RON/lună",
+      "paymentLabel": "Metodă plată",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Neconfigurat",
+      "manageButton": "Gestionează abonament",
+      "resubscribe": "Abonează-te din nou",
+      "subscribeNow": "Abonează-te acum",
+      "manageAlert": "Folosiți setările dispozitivului pentru a gestiona abonamentul.",
+      "demoAlert": "Procesul In-App purchase va porni aici."
+    },
+    "banner": {
+      "daysLeft": "{{count}} zile rămase",
+      "lastDay": "Ultima zi",
+      "trialSuffix": " de probă gratuită!",
+      "endsIn": "Proba se termină în {{count}} zile",
+      "cta": "Abonează-te acum cu 49,99 RON/lună",
+      "subscribeNow": "Abonează-te acum"
+    }
+  },
+  "reports": {
+    "title": "Rapoarte flotă",
+    "exportPdf": "Exportă PDF / Imprimă",
+    "tabs": {
+      "payroll": "Salarii",
+      "efficiency": "Eficiență",
+      "vehicleChecks": "Verificări",
+      "infractions": "Încălcări",
+      "driving": "Condus"
+    },
+    "filters": {
+      "title": "Filtre",
+      "driver": "Șofer",
+      "allDrivers": "Toți șoferii",
+      "startDate": "Data de început",
+      "endDate": "Data de sfârșit"
+    },
+    "payroll": {
+      "title": "Rezumat salarizare",
+      "headers": {
+        "driver": "Șofer",
+        "workHours": "Ore muncă",
+        "breakHours": "Ore pauză",
+        "sessions": "Sesiuni"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Rapoarte inspecții",
+      "headers": {
+        "dateTime": "Data/Ora",
+        "inspector": "Inspector",
+        "vehicle": "Vehicul",
+        "status": "Stare",
+        "defects": "Defecte"
+      },
+      "status": {
+        "pass": "ADMIS",
+        "defect": "DEFECT"
+      },
+      "noneReported": "Nimic raportat"
+    },
+    "infractions": {
+      "moduleReady": "Modul încălcări gata."
+    },
+    "driving": {
+      "moduleReady": "Modul analiză condus gata."
+    }
+  },
+  "broadcast": {
+    "title": "Comunicat către flotă",
+    "placeholder": "Scrieți mesajul aici...",
+    "button": "Trimite la toți",
+    "sending": "Se trimite...",
+    "success": "Comunicat trimis cu succes!",
+    "errors": {
+      "empty": "Mesajul nu poate fi gol.",
+      "notLoaded": "Eroare la încărcarea profilului.",
+      "failed": "Trimiterea a eșuat."
+    }
+  },
+  "mfa": {
+    "title": "MFA",
+    "subtitle": "Securitate extra cu aplicație de autentificare.",
+    "enabled": "MFA este activă.",
+    "disableButton": "Dezactivează",
+    "disabling": "Se dezactivează...",
+    "step1": "1. Scanați QR-ul.",
+    "step2": "2. Introduceți codul.",
+    "placeholder": "123456",
+    "verifyButton": "Verifică",
+    "verifying": "Se verifică...",
+    "enableButton": "Activează",
+    "starting": "Pornire...",
+    "confirmDisable": "Dezactivați MFA?",
+    "successEnabled": "MFA activată!",
+    "successDisabled": "MFA dezactivată."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Management supervizori",
+      "count": "{{count}} supervizori",
+      "notice": "Se alătură prin codul companiei.",
+      "searchPlaceholder": "Caută...",
+      "noSupervisors": "Niciunul găsit",
+      "labels": {
+        "supervisor": "Supervizor",
+        "email": "E-mail",
+        "status": "Stare",
+        "edit": "Editează"
+      }
+    },
+    "modal": {
+      "title": "Detalii supervizor",
+      "nameLabel": "Nume",
+      "emailLabel": "E-mail (Citire)",
+      "phoneLabel": "Telefon",
+      "saveButton": "Salvează",
+      "errorUpdate": "Actualizare eșuată."
+    }
+  },
+  "location": {
+    "notRecorded": "Locație neînregistrată",
+    "mapAlt": "Hartă centrată la {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Alerte Flotă",
+    "urgent": "{{count}} URGENT",
+    "noAlerts": "Fără alerte urgente.",
+    "offRoad": "Vehicul Imobilizat",
+    "dueOverdue": "{{type}} EXPIRAT",
+    "dueInDays": "{{type}} expiră în {{days}} zile",
+    "viewFullList": "Vezi lista completă"
+  }
+}

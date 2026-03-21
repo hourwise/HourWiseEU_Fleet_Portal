@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShieldCheck, Search, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {
   id: string;
@@ -22,6 +23,7 @@ interface VehicleCheck {
 
 export function VehicleChecksModule() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [checks, setChecks] = useState<VehicleCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,44 +68,14 @@ export function VehicleChecksModule() {
     );
   }
 
-  const getCheckItemLabel = (id: string) => {
-    const allChecks = [
-      { id: 'mirrors', label: 'Mirrors and Glass' },
-      { id: 'wipers', label: 'Wipers and Washers' },
-      { id: 'front_view', label: 'Front View' },
-      { id: 'warning_lamps', label: 'Warning Lamps' },
-      { id: 'steering', label: 'Steering' },
-      { id: 'horn', label: 'Horn' },
-      { id: 'brakes_air', label: 'Brakes and Air Build-up' },
-      { id: 'height_marker', label: 'Height Marker' },
-      { id: 'seatbelts', label: 'Seatbelts' },
-      { id: 'lights_ind', label: 'Lights and Indicators' },
-      { id: 'leaks', label: 'Fuel/Oil Leaks' },
-      { id: 'battery', label: 'Battery Security' },
-      { id: 'adblue', label: 'AdBlue Fluid' },
-      { id: 'smoke', label: 'Excessive Exhaust Smoke' },
-      { id: 'body_wings', label: 'Security of Body/Wings' },
-      { id: 'spray', label: 'Spray Suppression' },
-      { id: 'tyres_wheels', label: 'Tyres and Wheel Fixing' },
-      { id: 'brake_line', label: 'Brake Line' },
-      { id: 'electrical', label: 'Electrical Connections' },
-      { id: 'coupling', label: 'Coupling Security' },
-      { id: 'load_security', label: 'Security of Load' },
-      { id: 'number_plate', label: 'Number Plate' },
-      { id: 'reflectors', label: 'Reflectors and Lights' },
-      { id: 'markers', label: 'Markers' }
-    ];
-    return allChecks.find(c => c.id === id)?.label || id;
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-8 h-8 text-blue-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Vehicle Safety Checks</h2>
-            <p className="text-gray-600">Review daily inspections and reported defects</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('vehicleChecklist.manager.title')}</h2>
+            <p className="text-gray-600">{t('vehicleChecklist.manager.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -114,7 +86,7 @@ export function VehicleChecksModule() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search driver or registration..."
+              placeholder={t('vehicleChecklist.manager.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -124,7 +96,7 @@ export function VehicleChecksModule() {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
             <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
               {filteredChecks.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">No checks found</div>
+                <div className="p-8 text-center text-gray-500">{t('vehicleChecklist.manager.noChecks')}</div>
               ) : (
                 filteredChecks.map((check) => (
                   <button
@@ -177,35 +149,35 @@ export function VehicleChecksModule() {
                   className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
                 >
                   <FileText size={16} />
-                  Print / Export
+                  {t('vehicleChecklist.manager.printExport')}
                 </button>
               </div>
 
               <div className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">VEHICLE TYPE</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.vehicleType')}</label>
                     <p className="font-bold text-gray-900">{selectedCheck.vehicle_type}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">VEHICLE MAKE</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.vehicleMake')}</label>
                     <p className="font-bold text-gray-900">{selectedCheck.vehicle_make || 'N/A'}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">ODOMETER</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.odometer')}</label>
                     <div className="flex items-center gap-1">
                       <Gauge size={14} className="text-blue-600" />
                       <p className="font-bold text-gray-900">{selectedCheck.odometer_reading?.toLocaleString() || 'N/A'}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">STATUS</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.status')}</label>
                     <span className={`font-bold ${selectedCheck.check_status === 'defect' ? 'text-amber-600' : 'text-green-600'}`}>
-                      {selectedCheck.check_status.toUpperCase()}
+                      {t(`vehicleChecklist.manager.status.${selectedCheck.check_status}`).toUpperCase()}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">TIME RECORDED</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.timeRecorded')}</label>
                     <p className="font-bold text-gray-900">{new Date(selectedCheck.created_at).toLocaleTimeString()}</p>
                   </div>
                 </div>
@@ -214,23 +186,23 @@ export function VehicleChecksModule() {
                   <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                     <h4 className="text-amber-800 font-bold flex items-center gap-2 mb-2">
                       <AlertTriangle size={20} />
-                      REPORTED DEFECTS / ACTION TAKEN
+                      {t('vehicleChecklist.manager.details.defectsTitle')}
                     </h4>
-                    <p className="text-amber-900 whitespace-pre-wrap">{selectedCheck.defect_details || 'No additional details provided.'}</p>
+                    <p className="text-amber-900 whitespace-pre-wrap">{selectedCheck.defect_details || t('vehicleChecklist.manager.details.noDefects')}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                   {Object.entries(selectedCheck.items).map(([id, status]) => (
                     <div key={id} className="flex items-center justify-between py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-700">{getCheckItemLabel(id)}</span>
+                      <span className="text-sm text-gray-700">{t(`vehicleChecklist.items.${id}`)}</span>
                       {status ? (
                         <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1">
-                          <CheckCircle size={12} /> PASS
+                          <CheckCircle size={12} /> {t('vehicleChecklist.manager.status.pass')}
                         </span>
                       ) : (
                         <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1">
-                          <AlertTriangle size={12} /> FAIL
+                          <AlertTriangle size={12} /> {t('vehicleChecklist.manager.status.fail')}
                         </span>
                       )}
                     </div>
@@ -241,8 +213,8 @@ export function VehicleChecksModule() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
               <ShieldCheck className="w-16 h-16 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">Select a check to view details</h3>
-              <p className="text-gray-500">Daily vehicle inspections from your drivers will appear here</p>
+              <h3 className="text-lg font-medium text-gray-900">{t('vehicleChecklist.manager.selectCheck')}</h3>
+              <p className="text-gray-500">{t('vehicleChecklist.manager.selectCheckSubtitle')}</p>
             </div>
           )}
         </div>

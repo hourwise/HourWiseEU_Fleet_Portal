@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Download, ChevronsRight } from 'lucide-react';
-import { calculateDailyPay } from '../../lib/payCalculations'; // Assuming this function exists and works
+import { calculateDailyPay } from '../../lib/payCalculations';
 import type { Database } from '../../lib/database.types';
+import { useTranslation } from 'react-i18next';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
@@ -21,6 +22,7 @@ const toISODateString = (date: Date) => date.toISOString().split('T')[0];
 
 export function PayrollModule() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [drivers, setDrivers] = useState<DriverWithPay[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -47,7 +49,6 @@ export function PayrollModule() {
     const endDateString = toISODateString(endDate);
 
     try {
-      console.log("Fallback: Fetching payroll data in separate queries.");
       const { data: driverData, error: driverError } = await supabase
           .from('profiles')
           .select('*, pay_configurations(*)')
@@ -80,8 +81,6 @@ export function PayrollModule() {
   
   const payrollData = useMemo(() => {
     return drivers.map(driver => {
-        // NOTE: This logic assumes calculateDailyPay returns a detailed object.
-        // We will need to create/verify calculateDailyPay function later.
         let wagePay = 0;
         let normalHours = 0;
         let overtimeHours = 0;
@@ -118,7 +117,15 @@ export function PayrollModule() {
   }, [drivers]);
 
   const handleExportPayrollCSV = () => {
-    const headers = ['Driver Name', 'Payroll Number', 'Normal Hours', 'Overtime Hours', 'Wages Pay (£)', 'Expenses (£)', 'Gross Pay (£)'];
+    const headers = [
+      t('payroll.headers.driver'),
+      'Payroll Number',
+      t('payroll.labels.normal'),
+      t('payroll.labels.overtime'),
+      `${t('maintenance.title')} (£)`,
+      `${t('payroll.labels.expenses')} (£)`,
+      'Gross Pay (£)'
+    ];
     const rows = payrollData.map(p => 
       [p.driverName, p.payrollNumber, p.normalHours, p.overtimeHours, p.wagePay, p.totalExpenses, p.grossPay].join(',')
     );
@@ -133,19 +140,17 @@ export function PayrollModule() {
   };
   
   const handleExportExpensesCSV = () => {
-    // TODO: Implement this functionality
     alert("Expense export functionality is not yet implemented.");
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Payroll Summary</h2>
+      <h2 className="text-2xl font-bold text-gray-900">{t('payroll.title')}</h2>
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
-            {/* Date Range Pickers */}
             <div className="flex items-center gap-4">
               <div>
-                <label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</label>
+                <label htmlFor="startDate" className="text-sm font-medium text-gray-700">{t('payroll.startDate')}</label>
                 <input
                   type="date"
                   id="startDate"
@@ -155,7 +160,7 @@ export function PayrollModule() {
                 />
               </div>
               <div>
-                <label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</label>
+                <label htmlFor="endDate" className="text-sm font-medium text-gray-700">{t('payroll.endDate')}</label>
                 <input
                   type="date"
                   id="endDate"
@@ -165,45 +170,49 @@ export function PayrollModule() {
                 />
               </div>
             </div>
-            {/* Action Buttons */}
             <div className="flex gap-2">
                <button onClick={handleExportPayrollCSV} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                   <Download className="w-5 h-5" />
-                  Export Payroll CSV
+                  {t('payroll.exportPayroll')}
                </button>
                <button onClick={handleExportExpensesCSV} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                   <Download className="w-5 h-5" />
-                  Export Expenses CSV
+                  {t('payroll.exportExpenses')}
                </button>
             </div>
         </div>
         {loading ? (
-          <div className="flex justify-center items-center h-48">Loading...</div>
+          <div className="flex justify-center items-center h-48">{t('payroll.loading')}</div>
         ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="border-b bg-gray-50">
-                <th className="p-4 font-semibold">Driver</th>
-                <th className="p-4 font-semibold">Total Hours (Normal/OT)</th>
-                <th className="p-4 font-semibold">Gross Pay (inc. Expenses)</th>
+                <th className="p-4 font-semibold">{t('payroll.headers.driver')}</th>
+                <th className="p-4 font-semibold">{t('payroll.headers.hours')}</th>
+                <th className="p-4 font-semibold">{t('payroll.headers.grossPay')}</th>
                 <th className="p-4"></th>
               </tr>
             </thead>
             <tbody>
-              {payrollData.map(row => (
-                <tr key={row.driverId} className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-medium">{row.driverName} <span className="text-xs text-gray-500">({row.payrollNumber})</span></td>
-                  <td className="p-4">{parseFloat(row.normalHours) + parseFloat(row.overtimeHours)}h ({row.normalHours} / {row.overtimeHours})</td>
-                  <td className="p-4">
-                    <div className="font-medium">£{row.grossPay}</div>
-                    <div className="text-sm text-gray-500">Wages: £{row.wagePay} | Expenses: £{row.totalExpenses}</div>
-                  </td>
-                  <td className="p-4">
-                    {/* TODO: Link to a detailed breakdown view */}
-                    <ChevronsRight className="w-5 h-5 text-gray-400" />
-                  </td>
+              {payrollData.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-gray-500">{t('payroll.noData')}</td>
                 </tr>
-              ))}
+              ) : (
+                payrollData.map(row => (
+                  <tr key={row.driverId} className="border-b hover:bg-gray-50">
+                    <td className="p-4 font-medium">{row.driverName} <span className="text-xs text-gray-500">({row.payrollNumber})</span></td>
+                    <td className="p-4">{parseFloat(row.normalHours) + parseFloat(row.overtimeHours)}h ({row.normalHours} {t('payroll.labels.normal')} / {row.overtimeHours} {t('payroll.labels.overtime')})</td>
+                    <td className="p-4">
+                      <div className="font-medium">£{row.grossPay}</div>
+                      <div className="text-sm text-gray-500">{t('payroll.labels.wages')}: £{row.wagePay} | {t('payroll.labels.expenses')}: £{row.totalExpenses}</div>
+                    </td>
+                    <td className="p-4">
+                      <ChevronsRight className="w-5 h-5 text-gray-400" />
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         )}

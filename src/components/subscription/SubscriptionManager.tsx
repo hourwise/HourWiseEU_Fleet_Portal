@@ -1,8 +1,10 @@
 import { CreditCard, Calendar, CheckCircle, XCircle, AlertCircle, Users } from 'lucide-react';
 import { useSubscription } from '../../hooks/useSubscription';
 import { getTrialDaysRemaining } from '../../lib/subscription';
+import { useTranslation } from 'react-i18next';
 
 export function SubscriptionManager() {
+  const { t } = useTranslation();
   const {
     accountType,
     subscriptionStatus,
@@ -31,13 +33,13 @@ export function SubscriptionManager() {
             <Users className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Fleet Member</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">{t('subscription.manager.fleetMember')}</h3>
             <p className="text-gray-700 mb-3">
-              You're part of <span className="font-semibold">{companyName}</span>
+              {t('subscription.manager.partOf', { company: companyName })}
             </p>
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-gray-700">Full access provided by your company</span>
+              <span className="text-gray-700">{t('subscription.manager.fleetAccess')}</span>
             </div>
           </div>
         </div>
@@ -54,8 +56,8 @@ export function SubscriptionManager() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Solo Driver Subscription</h3>
-          <p className="text-gray-600 text-sm">Manage your subscription</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">{t('subscription.manager.soloTitle')}</h3>
+          <p className="text-gray-600 text-sm">{t('subscription.manager.manageDesc')}</p>
         </div>
         <div
           className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -66,7 +68,7 @@ export function SubscriptionManager() {
               : 'bg-gray-100 text-gray-700'
           }`}
         >
-          {isActive ? 'Active' : isInTrial ? 'Trial' : 'Inactive'}
+          {isActive ? t('subscription.manager.status.active') : isInTrial ? t('subscription.manager.status.trial') : t('subscription.manager.status.inactive')}
         </div>
       </div>
 
@@ -76,11 +78,11 @@ export function SubscriptionManager() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-blue-900 mb-1">Trial Period</p>
+                <p className="font-medium text-blue-900 mb-1">{t('subscription.manager.trialPeriod')}</p>
                 <p className="text-sm text-blue-700">
                   {daysRemaining > 0
-                    ? `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining in your trial`
-                    : 'Your trial has ended'}
+                    ? t('subscription.manager.trialDays', { count: daysRemaining })
+                    : t('subscription.manager.trialEnded')}
                 </p>
               </div>
             </div>
@@ -92,9 +94,9 @@ export function SubscriptionManager() {
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-green-900 mb-1">Active Subscription</p>
+                <p className="font-medium text-green-900 mb-1">{t('subscription.manager.activeSub')}</p>
                 <p className="text-sm text-green-700">
-                  Renews on {new Date(subscriptionPeriodEnd).toLocaleDateString('en-GB')}
+                  {t('subscription.manager.renewsOn', { date: new Date(subscriptionPeriodEnd).toLocaleDateString('en-GB') })}
                 </p>
               </div>
             </div>
@@ -106,8 +108,8 @@ export function SubscriptionManager() {
             <div className="flex items-start gap-3">
               <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-red-900 mb-1">No Active Subscription</p>
-                <p className="text-sm text-red-700">Subscribe to access all features</p>
+                <p className="font-medium text-red-900 mb-1">{t('subscription.manager.noActiveSub')}</p>
+                <p className="text-sm text-red-700">{t('subscription.manager.subscribeAccess')}</p>
               </div>
             </div>
           </div>
@@ -115,17 +117,17 @@ export function SubscriptionManager() {
 
         <div className="border-t border-gray-200 pt-4">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-gray-600">Plan</span>
-            <span className="font-medium text-gray-900">Solo Driver</span>
+            <span className="text-gray-600">{t('subscription.manager.planLabel')}</span>
+            <span className="font-medium text-gray-900">{t('subscription.manager.soloPlan')}</span>
           </div>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-gray-600">Price</span>
-            <span className="font-medium text-gray-900">£9.99/month</span>
+            <span className="text-gray-600">{t('subscription.manager.priceLabel')}</span>
+            <span className="font-medium text-gray-900">{t('subscription.manager.priceValue')}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Payment Method</span>
+            <span className="text-gray-600">{t('subscription.manager.paymentLabel')}</span>
             <span className="font-medium text-gray-900">
-              {isActive ? 'Apple/Google Pay' : 'Not set up'}
+              {isActive ? t('subscription.manager.nativePay') : t('subscription.manager.notSetUp')}
             </span>
           </div>
         </div>
@@ -133,28 +135,24 @@ export function SubscriptionManager() {
         {isActive && (
           <button
             onClick={() => {
-              alert('To manage your subscription, visit your device settings:\n\n' +
-                'iOS: Settings > Your Name > Subscriptions\n' +
-                'Android: Play Store > Menu > Subscriptions');
+              alert(t('subscription.manager.manageAlert'));
             }}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
           >
             <CreditCard className="w-5 h-5" />
-            Manage Subscription
+            {t('subscription.manager.manageButton')}
           </button>
         )}
 
         {(isInTrial || isInactive) && (
           <button
             onClick={() => {
-              alert('In-App Purchase flow will be triggered here.\n\n' +
-                'This will show the native Apple/Google payment screen.\n\n' +
-                'For demo purposes, this is just a placeholder.');
+              alert(t('subscription.manager.demoAlert'));
             }}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
           >
             <CreditCard className="w-5 h-5" />
-            {isInTrial ? 'Subscribe Now' : 'Resubscribe'}
+            {isInTrial ? t('subscription.manager.subscribeNow') : t('subscription.manager.resubscribe')}
           </button>
         )}
       </div>

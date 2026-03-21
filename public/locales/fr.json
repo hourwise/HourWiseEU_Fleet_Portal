@@ -1,10 +1,15 @@
 {
   "locale": "fr-FR",
+  "reportType": "Type de rapport",
+  "invoice": "Facture",
+  "dateRange": "Période",
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
     "close": "Fermer",
     "delete": "Supprimer",
+    "remove": "Retirer",
+    "upload": "Télécharger",
     "error": "Erreur",
     "success": "Succès",
     "date": "Date",
@@ -13,7 +18,37 @@
     "minutes": "minutes",
     "saving": "Enregistrement...",
     "failedToSave": "Échec de l'enregistrement des données.",
-    "gotIt": "Compris !"
+    "gotIt": "Compris !",
+    "logout": "Déconnexion",
+    "openSettings": "Ouvrir les paramètres",
+    "retry": "Réessayer"
+  },
+  "permissions": {
+    "notificationsTitle": "Autorisation des notifications",
+    "notificationsBody": "HourWise utilise les notifications pour vous envoyer des alertes de conformité critiques. Veuillez les activer pour ne rien manquer.",
+    "locationTitle": "Autorisation de localisation",
+    "locationBody": "HourWise a besoin d'accéder à votre position pour détecter automatiquement la conduite. Veuillez l'activer dans vos paramètres.",
+    "backgroundLocationTitle": "Localisation en arrière-plan",
+    "backgroundLocationBody": "Pour un suivi fiable, veuillez régler l'accès à la position sur 'Toujours autoriser'. C'est crucial pour la détection automatique de la conduite, même lorsque l'application est en arrière-plan.",
+    "cameraTitle": "Autorisation de l'appareil photo",
+    "cameraBody": "HourWise a besoin d'accéder à l'appareil photo pour vous permettre de télécharger des photos de reçus ou d'autres documents.",
+    "mediaLibraryTitle": "Autorisation de la bibliothèque multimédia",
+    "mediaLibraryBody": "HourWise a besoin d'accéder à votre bibliothèque pour vous permettre de sélectionner des photos de frais ou d'autres documents.",
+    "title": "Une dernière étape",
+    "body": "HourWise nécessite les autorisations de localisation et de notification pour fonctionner correctement. Votre position n'est utilisée que pour détecter la conduite automatiquement.",
+    "button": "Accorder les autorisations",
+    "deniedTitle": "Autorisations requises",
+    "deniedBody": "Vous avez refusé de façon permanente des autorisations essentielles. Veuillez vous rendre dans les paramètres de votre appareil pour activer la localisation (Toujours autoriser) et les notifications."
+  },
+  "messages": {
+    "title": "Messages",
+    "notificationTitle": "Nouveau message de la flotte",
+    "systemNotificationTitle": "Annonce système",
+    "newMessageBodyFallback": "Vous avez un nouveau message.",
+    "noMessages": "Pas encore de messages.",
+    "unread": "Non lu",
+    "read": "Lu",
+    "noUnread": "Vous êtes à jour ! Aucun message non lu."
   },
   "app": {
     "title": "HourWise EU",
@@ -22,45 +57,179 @@
   "dashboard": {
     "previousShiftEnd": "Fin du service précédent",
     "currentShiftStart": "Début du service actuel",
-    "newShiftStarted": "Service commencé",
-    "dailyRest": "Repos journalier",
+    "newShiftStarted": "Service démarré",
+    "dailyRest": "Repos quotidien",
     "workTimeRemaining": "Temps de travail restant",
     "drivingTimeRemaining": "Temps de conduite restant",
     "breakDuration": "Durée de la pause",
-    "startShift": "Démarrer service",
+    "poaDuration": "Durée Disponibilité (dispo)",
+    "startShift": "Débuter service",
     "endShift": "Terminer service",
-    "startBreak": "Démarrer pause",
+    "startBreak": "Débuter pause",
     "endBreak": "Terminer pause",
-    "poaButtonText": "Disponibilité / Attente",
-    "resumeWork": "Reprendre le travail",
+    "poaButtonText": "DISPONIBILITÉ / ATTENTE",
+    "resumeWork": "Reprendre travail",
     "currentStatusLabel": "Statut actuel :",
-    "timerModeLabel": "Mode minuterie :",
+    "timerModeLabel": "Mode minuteur :",
     "shiftDurationLabel": "Durée du service :",
-    "targetLabel": "Cible"
+    "targetLabel": "Cible",
+    "checkVehicle": "Vérifier véhicule",
+    "checkOk": "Vérification OK",
+    "checklistRequired": "Check-list requise",
+    "fleetChecklistNotice": "Les conducteurs de flotte doivent effectuer un contrôle de sécurité pour commencer leur service.",
+    "complianceDue": "{{type}} dû",
+    "daysLeft": "Jours restants"
+  },
+  "vehicleChecklist": {
+    "title": "Contrôle de sécurité quotidien",
+    "updateTitle": "Mettre à jour le contrôle",
+    "vehicleDetails": "Détails du véhicule",
+    "registration": "Immatriculation",
+    "vehicleMake": "Marque (Optionnel)",
+    "odometer": "Kilométrage",
+    "internalChecks": "Contrôles internes",
+    "externalChecks": "Contrôles externes",
+    "defectReporting": "Signalement de défauts",
+    "defectPlaceholder": "Décrivez le défaut et toute mesure prise...",
+    "submitReport": "Soumettre le rapport",
+    "updateReport": "Mettre à jour le rapport",
+    "currentShiftVehicles": "Véhicules du service actuel",
+    "swapVehicle": "Changer de véhicule",
+    "newVehicleTitle": "Nouveau véhicule",
+    "newVehicleMessage": "Ceci démarrera un nouveau contrôle pour un véhicule différent. Continuer ?",
+    "startNew": "Démarrer nouveau",
+    "success": "Succès",
+    "checkRecorded": "Contrôle enregistré.",
+    "error": "Erreur",
+    "failedToSave": "Échec de l'enregistrement.",
+    "missingReg": "Entrez l'immatriculation.",
+    "incomplete": "Répondez à tous les points.",
+    "missingDefectDetails": "Décrivez le problème.",
+    "hintLabel": "Astuce",
+    "items": {
+      "mirrors": "Rétroviseurs et vitres",
+      "mirrorsHint": "Vérifiez les fissures/autocollants ; assurez-vous que les rétros sont alignés.",
+      "wipers": "Essuie-glaces et lave-glace",
+      "wipersHint": "Vérifiez le fonctionnement et les niveaux de liquide.",
+      "front_view": "Vue avant",
+      "front_viewHint": "Visibilité totale à travers le pare-brise.",
+      "warning_lamps": "Témoins d'alerte",
+      "warning_lampsHint": "Assurez-vous que les voyants du tableau de bord fonctionnent.",
+      "steering": "Direction",
+      "steeringHint": "Mouvement fluide et fonctionnement correct.",
+      "horn": "Avertisseur sonore",
+      "hornHint": "Testez le son, il doit être clair et fonctionnel.",
+      "brakes_air": "Freins et pression d'air",
+      "brakes_airHint": "Vérifiez le freinage et la montée en pression d'air.",
+      "height_marker": "Indicateur de hauteur",
+      "height_markerHint": "L'indicateur de hauteur correct doit être affiché.",
+      "seatbelts": "Ceintures de sécurité",
+      "seatbeltsHint": "Vérifiez que toutes les ceintures fonctionnent.",
+      "lights_ind": "Feux et clignotants",
+      "lights_indHint": "Tous les feux/clignotants doivent fonctionner.",
+      "leaks": "Fuites carburant/huile",
+      "leaksHint": "Vérifiez toute présence de liquide au sol ou sur le châssis.",
+      "battery": "Sécurité batterie",
+      "batteryHint": "Vérifiez que la batterie est fixée et en bon état.",
+      "adblue": "Liquide AdBlue",
+      "adblueHint": "Niveau de liquide d'échappement suffisant.",
+      "smoke": "Fumée d'échappement excessive",
+      "smokeHint": "Vérifiez l'absence d'émissions de fumée lourde.",
+      "body_wings": "Sécurité carrosserie/ailes",
+      "body_wingsHint": "Assurez-vous qu'aucune pièce n'est desserrée.",
+      "spray": "Dispositif anti-projections",
+      "sprayHint": "Fixé solidement et conforme à la législation.",
+      "tyres_wheels": "Pneus et fixation des roues",
+      "tyres_wheelsHint": "Écrous serrés. Usure et pression conformes.",
+      "brake_line": "Conduites de frein",
+      "brake_lineHint": "Vérifiez les dommages ou fuites d'air.",
+      "electrical": "Connexions électriques",
+      "electricalHint": "Tests individuels pour toutes les connexions.",
+      "coupling": "Sécurité de l'attelage",
+      "couplingHint": "Vérifiez que le véhicule est bien attaché à la charge.",
+      "load_security": "Sécurité de la charge",
+      "load_securityHint": "Poids bien réparti et charge arrimée.",
+      "number_plate": "Plaque d'immatriculation",
+      "number_plateHint": "Fixe et parfaitement visible.",
+      "reflectors": "Réflecteurs et feux",
+      "reflectorsHint": "Solidement fixés et visibles.",
+      "markers": "Marquages",
+      "markersHint": "Tous les marquages requis doivent être fixés."
+    }
+  },
+  "vehicleManagement": {
+    "title": "Gestion du véhicule",
+    "sections": {
+      "identity": "Identité du véhicule",
+      "compliance": "Conformité & Sécurité"
+    },
+    "fields": {
+      "registration": {
+        "label": "Numéro d'immatriculation *",
+        "placeholder": "EX: AB-123-CD"
+      },
+      "make": {
+        "label": "Marque",
+        "placeholder": "Scania"
+      },
+      "model": {
+        "label": "Modèle",
+        "placeholder": "R450"
+      },
+      "type": "Type de véhicule",
+      "odometer": {
+        "label": "Kilométrage actuel",
+        "unit": "KM"
+      },
+      "motDate": "Date du contrôle technique",
+      "pmiDate": "Prochaine révision (PMI)",
+      "tachoDate": "Étalonnage tachygraphe",
+      "lolerDate": "Contrôle levage (Hayon)",
+      "insuranceDate": "Expiration assurance"
+    },
+    "complianceNotice": "Les dates de conformité activent le système de feux du tableau de bord. Les éléments en retard seront signalés.",
+    "saveButton": "Enregistrer les détails",
+    "selectDate": "Choisir une date",
+    "alerts": {
+      "regRequired": "L'immatriculation est requise",
+      "saveSuccess": "Détails du véhicule enregistrés",
+      "duplicateReg": "Ce numéro d'immatriculation est déjà enregistré.",
+      "saveError": "Échec de l'enregistrement des détails"
+    }
   },
   "shiftSummary": {
     "title": "Service actuel",
-    "totalWork": "Travail total",
-    "totalDriving": "Conduite totale",
-    "totalBreaks": "Pauses totales",
-    "totalPOA": "Disponibilité totale"
+    "totalWork": "Total Travail",
+    "totalDriving": "Total Conduite",
+    "totalBreaks": "Total Pauses",
+    "totalPOA": "Total Dispo (POA)"
+  },
+  "endShiftConfirmation": {
+    "title": "Confirmation fin de service",
+    "shiftSummary": "Résumé final du service",
+    "violationsFound": "Infractions trouvées",
+    "greatJob": "Bon travail !",
+    "noViolations": "Aucune infraction pour ce service.",
+    "confirmEnd": "Confirmer et terminer"
   },
   "menu": {
     "instructions": "Instructions",
     "privacyInfo": "Confidentialité",
     "euWorkingTimeRules": "Règles UE",
-    "tachoGuide": "Guide Chronotachygraphe",
+    "tachoGuide": "Guide Tacho",
     "compliance": "Conformité",
     "workHistory": "Historique",
+    "addExpense": "Ajouter frais",
     "downloadReport": "Télécharger rapport"
   },
   "workHistory": {
     "title": "Historique de travail",
     "daySummary": "Résumé de la journée",
     "recordedShifts": "Services enregistrés",
-    "totalWork": "Travail total",
-    "totalBreaks": "Pauses totales",
-    "totalPOA": "Dispo. totale",
+    "totalWork": "Total Travail",
+    "totalDriving": "Total Conduite",
+    "totalBreaks": "Total Pauses",
+    "totalPOA": "Total Dispo",
     "estimatedEarnings": "Gains estimés",
     "ongoing": "En cours",
     "workTime": "Temps de travail",
@@ -68,55 +237,58 @@
     "noShiftsRecordedForDate": "Aucun service enregistré pour cette date.",
     "addShift": "Ajouter service",
     "editShift": "Modifier service",
-    "updateShift": "Mettre à jour",
-    "totalBreakTime": "Temps de pause total",
-    "totalPOATime": "Temps de dispo. total",
+    "updateShift": "Mettre à jour service",
+    "totalBreakTime": "Total temps de pause",
+    "totalPOATime": "Total temps dispo",
     "noShiftsTitle": "Jour de repos"
   },
   "calendar": {
     "dayDetailsTitle": "Détails du jour",
     "timeSummaryTitle": "Résumé du temps",
-    "paySummaryTitle": "Résumé de paie",
+    "paySummaryTitle": "Résumé des gains",
     "period": "Période",
     "worked": "Travaillé",
     "breaks": "Pauses",
     "violations": "Infractions",
-    "estimatedPay": "Paie est.",
+    "estimatedPay": "Salaire est.",
     "lastCompletedWeek": "Semaine précédente",
     "currentWeek": "Semaine actuelle",
     "monthToDate": "Mois en cours",
     "selectedMonthSummary": "Mois sélectionné",
-    "lastWeekOfSelectedMonth": "Dernière semaine du mois"
+    "lastWeekOfSelectedMonth": "Dernière semaine du mois",
+    "complianceReminders": "Rappels de conformité",
+    "renewalDue": "Renouvellement {{type}} dû"
   },
   "fatigue": {
-    "title": "Index de fatigue et vigilance",
-    "fullyAlert": "Parfaitement alerte",
+    "title": "Indice de fatigue & vigilance",
+    "fullyAlert": "Parfaitement vigilant",
     "freshAndFocused": "Frais et concentré",
     "mild": "Fatigue légère",
     "moderate": "Fatigue modérée",
     "high": "Fatigue élevée",
     "critical": "Fatigue critique",
-    "approaching13h": "Approche des 13h d'amplitude. Planifiez le repos.",
+    "approaching13h": "Approche des 13h d'amplitude. Prévoyez un repos.",
     "over10h": "Plus de 10h de travail aujourd'hui.",
     "need45minBreak": "Pause de 45 min requise pour les services > 9h.",
     "need30minBreak": "Pause de 30 min requise pour les services > 6h.",
-    "drivingExceeded10h": "Plus de 10h de conduite aujourd'hui.",
-    "drivingOver9h": "Conduite > 9h (utilisation de l'extension).",
-    "dailyRestBelow9h": "Le repos journalier est inférieur au minimum de 9h.",
-    "reducedDailyRest": "Repos journalier réduit pris (< 11h)."
+    "drivingExceeded10h": "Dépassement de 10h de conduite aujourd'hui.",
+    "drivingOver9h": "Plus de 9h de conduite (utilisation extension).",
+    "dailyRestBelow9h": "Repos quotidien inférieur au minimum légal de 9h.",
+    "reducedDailyRest": "Repos quotidien réduit pris (moins de 11h).",
+    "workTimeExceeded": "Limite de temps de travail dépassée de {{time}}."
   },
   "complianceScorecard": {
-    "title": "Score de conformité journalier",
+    "title": "Bilan de conformité quotidien",
     "outOf100": "sur 100",
     "violationsRecorded": "Infractions enregistrées :",
-    "greatJob": "Beau travail !",
-    "noViolations": "Aucune infraction enregistrée pour cette journée."
+    "greatJob": "Excellent travail !",
+    "noViolations": "Aucune infraction n'a été enregistrée pour cette journée."
   },
   "dailyReport": {
     "title": "Rapport d'hier",
     "violationsFound": "Infractions trouvées",
-    "greatJob": "Beau travail !",
-    "noViolations": "Aucune infraction enregistrée hier."
+    "greatJob": "Bien joué !",
+    "noViolations": "Aucune infraction pour le service d'hier."
   },
   "day": {
     "mon": "Lun",
@@ -129,134 +301,139 @@
   },
   "safetyWarning": {
     "title": "Avertissement de sécurité",
-    "body": "N'interagissez pas avec l'application en conduisant. Arrêtez-vous en sécurité pour toute modification.",
+    "body": "N'utilisez pas l'application en conduisant. Arrêtez-vous en toute sécurité avant d'effectuer des changements.",
     "acknowledge": "Je comprends"
+  },
+  "firstTimeSetup": {
+    "title": "Bienvenue sur HourWise !",
+    "subtitle": "Quelques étapes pour bien démarrer :",
+    "step1_new": "D'abord, configurez votre profil conducteur et vos détails de paie.",
+    "step2_new": "Ensuite, ajoutez votre dernier service pour que le repos quotidien soit calculé correctement.",
+    "step3_new": "Nous demanderons les autorisations pour suivre votre travail précisément.",
+    "step4_new": "Enfin, vous pourrez commencer à suivre vos services et gains.",
+    "button": "C'est parti !"
   },
   "settingsMenu": {
     "manageSubscription": "Gérer l'abonnement",
     "businessProfile": "Profil d'entreprise",
     "driverSettings": "Paramètres conducteur",
     "selectLanguage": "Choisir la langue",
+    "vehicleManagement": "Gestion du véhicule",
     "timezone": {
       "label": "Fuseau horaire"
     },
     "signOut": {
-      "action": "Déconnexion"
+      "action": "Se déconnecter"
     }
   },
   "driverSetup": {
-    "header": {
-      "welcomeSetup": "Configuration",
-      "driverSettings": "Paramètres conducteur"
-    },
-    "sections": {
-      "personalInformation": "Informations personnelles",
-      "companyLink": "Lien entreprise",
-      "payConfiguration": "Configuration de la paie"
-    },
-    "fields": {
-      "driverNameLabel": "Nom du conducteur",
-      "basicHourlyRate": "Taux horaire de base",
-      "unpaidBreakDuration": "Durée pause non payée (min)"
-    },
-    "placeholders": {
-      "enterFullName": "Nom complet",
-      "hourlyRate": "ex: 15,00",
-      "unpaidBreak": "ex: 45"
-    },
-    "company": {
-      "codeOptionalLabel": "Code entreprise (optionnel)",
-      "codePlaceholder": "Entrez le code",
-      "helperText": "Entrez le code fourni par votre entreprise pour rejoindre leur flotte.",
-      "linkedToCompany": "Lié à l'entreprise"
-    },
-    "allowances": {
-      "title": "Indemnités de service",
-      "addAllowance": "Ajouter indemnité"
-    },
-    "overtime": {
-      "title": "Règles d'heures supp.",
-      "thresholdLabel": "Seuil d'heures supp.",
-      "thresholdPlaceholder": "ex: 40",
-      "rateMultiplierLabel": "Multiplicateur",
-      "rateMultiplierPlaceholder": "ex: 1,5",
-      "additional": {
-        "addTier": "Ajouter un niveau"
-      }
-    },
-    "units": {
-      "overtime": {
-        "day": "par jour",
-        "week": "par semaine",
-        "month": "par mois"
-      },
-      "allowance": {
-        "hour": "par heure",
-        "day": "par jour",
-        "week": "par semaine",
-        "month": "par mois",
-        "shift": "par service"
-      }
-    }
+    "title": "Configuration conducteur",
+    "notAuthenticated": "Utilisateur non authentifié. Veuillez redémarrer.",
+    "hourlyRate": "Taux horaire",
+    "unpaidBreak": "Pause non payée",
+    "minutes": "Minutes",
+    "overtimeThreshold": "Seuil d'heures suppl.",
+    "hours": "Heures par semaine",
+    "overtimeMultiplier": "Multiplicateur taux suppl.",
+    "shiftAllowances": "Primes de service",
+    "additionalOvertime": "Paliers suppl. additionnels",
+    "threshold": "Seuil (Heures)",
+    "rate": "Taux (€)",
+    "addTier": "Ajouter palier",
+    "skip": "Passer pour l'instant",
+    "save": "Enregistrer & Continuer",
+    "validationError": "Erreur de validation",
+    "pleaseEnterName": "Veuillez entrer votre nom."
   },
   "instructions": {
     "title": "Comment utiliser HourWise",
     "disclaimer": {
-      "title": "La réglementation d'abord",
-      "body": "Cette application est un outil d'aide, pas un substitut aux conseils juridiques. Référez-vous toujours aux règlements de l'UE et à votre entreprise."
+      "title": "Directives officielles d'abord",
+      "body": "Cette application est un outil d'aide à la conformité, mais ne remplace pas une formation officielle. Référez-vous toujours aux réglementations UE et à la politique de votre entreprise."
     },
     "initialSetup": {
-      "title": "Premiers pas",
+      "title": "Vos premières étapes",
       "step1": {
-        "title": "1. Saisir votre dernier service",
-        "body": "Pour calculer le repos journalier, vous DEVEZ saisir manuellement votre dernier service. Menu -> Historique -> Ajouter service."
+        "title": "1. Complétez votre profil",
+        "body": "Pour les conducteurs Solo, vous DEVEZ configurer votre paie (taux, pauses) lors de la configuration initiale pour activer les rapports de gains."
       },
       "step2": {
-        "title": "2. Profil conducteur",
-        "body": "Allez dans Paramètres -> Configuration conducteur. Le nom est requis pour les rapports."
+        "title": "2. Entrez votre dernier service (Crucial !)",
+        "body": "Pour un calcul correct du 'Repos Quotidien', vous DEVEZ entrer manuellement les détails de votre dernier service terminé."
       },
       "step3": {
-        "title": "3. Détails entreprise (Optionnel)",
-        "body": "Pour la facturation : Paramètres -> Profil entreprise. Les détails apparaîtront sur les factures PDF."
+        "title": "3. Détails d'entreprise (Optionnel)",
+        "body": "Pour la facturation, allez dans Paramètres -> Profil d'entreprise. Vos détails apparaîtront sur les factures PDF."
       }
     },
     "workflow": {
       "title": "Flux quotidien",
       "step1": {
-        "title": "1. Démarrer et Terminer",
-        "body": "Utilisez les boutons principaux. L'application calcule tout automatiquement."
+        "title": "1. Débuter & Terminer le service",
+        "body": "Utilisez les boutons principaux. À la fin, un écran de confirmation affichera vos totaux et infractions."
+      },
+      "step5": {
+        "title": "2. Contrôle de sécurité quotidien",
+        "body": "Effectuez votre tour du véhicule via le bouton 'Vérifier véhicule'. Obligatoire pour les conducteurs de flotte."
       },
       "step2": {
-        "title": "2. Détection de conduite",
-        "body": "L'app détecte la conduite via la vitesse. À l'arrêt, elle repasse en 'Travail'."
+        "title": "3. Détection automatique de conduite",
+        "body": "L'app détecte la conduite via la vitesse et le mouvement, passant le statut en 'Conduite'. À l'arrêt, elle repasse en 'Travail'."
       },
       "step3": {
-        "title": "3. Prendre une pause",
-        "body": "Appuyez sur 'Démarrer pause'. Une pause de 45 min réinitialise le cycle de conduite de 4h30."
+        "title": "4. Prendre une pause",
+        "body": "Appuyez sur 'Débuter pause'. Une pause continue d'au moins 45 minutes réinitialisera votre minuteur de conduite de 4h30."
       },
       "step4": {
-        "title": "4. Disponibilité (POA)",
-        "body": "Utilisez 'Disponibilité' pour les attentes (ex: quai de chargement). Suivi séparément du travail."
+        "title": "5. Temps de disponibilité (Dispo)",
+        "body": "Utilisez 'Disponibilité' pour les périodes d'attente (ex: quai de chargement). Ce temps est suivi séparément du travail et des pauses."
       }
     },
     "keyFeatures": {
       "title": "Fonctionnalités clés",
       "fatigue": {
         "title": "Moniteur de fatigue",
-        "body": "Alertes en temps réel sur le repos insuffisant et les limites de conduite.",
-        "audioWarning": "L'app émet des alertes sonores. Vérifiez le volume de votre appareil."
+        "body": "S'affiche sur l'écran principal, fournissant des alertes en temps réel sur le repos insuffisant et les limites de conduite."
+      },
+      "messaging": {
+        "title": "Mises à jour & Alertes",
+        "body": "Recevez des annonces système et des messages de votre gestionnaire directement dans l'application."
+      },
+      "compliance": {
+        "title": "Calendrier de conformité",
+        "body": "Affiche votre score de conformité quotidien. Appuyez pour voir le détail mensuel."
       },
       "history": {
-        "title": "Historique et modifications",
-        "body": "Dans le menu, gérez vos services passés :",
-        "bullets": [
-          "Appuyez sur un jour pour le détail.",
-          "Ajoutez ou modifiez manuellement à tout moment."
-        ]
+        "title": "Historique & Édition",
+        "body": "Consultez, ajoutez ou modifiez manuellement vos services passés pour corriger vos dossiers."
+      },
+      "expenses": {
+        "title": "Suivi des frais",
+        "body": "Enregistrez vos frais (carburant, repas). Scannez vos reçus pour un remplissage automatique."
       },
       "reports": {
-        "title": "Télécharger rapports",
-        "body": "Générez des rapports PDF professionnels ou des factures pour n'importe quelle période."
+        "title": "Téléchargement de rapports",
+        "body": "Générez des rapports PDF pour la conformité, les factures clients ou l'historique des contrôles véhicule."
+      },
+      "dailyReport": {
+        "title": "Rapport quotidien",
+        "body": "Chaque matin, un résumé des infractions éventuelles de la veille s'affiche."
+      },
+      "qualifications": {
+        "title": "Qualifications professionnelles",
+        "body": "Gérez vos permis, FIMO/FCO et carte tacho avec alertes d'expiration."
+      },
+      "vehicles": {
+        "title": "Gestion flotte Solo",
+        "body": "Suivez les dates critiques (contrôle technique, révision) avec un système d'alertes par couleurs."
+      },
+      "safetyChecks": {
+        "title": "Check-lists numériques",
+        "body": "Réalisez vos contrôles de départ complets et conservez un historique numérique des défauts."
+      },
+      "invoicing": {
+        "title": "Facturation",
+        "body": "Générez des factures PDF professionnelles incluant vos coordonnées bancaires et gains calculés."
       }
     },
     "footer": {
@@ -264,7 +441,7 @@
     }
   },
   "euRules": {
-    "title": "Règles UE et Conduite",
+    "title": "Règles UE & Temps de conduite",
     "closeButton": "Fermer",
     "accessibility": {
       "closeRules": "Fermer les règles",
@@ -272,113 +449,113 @@
     },
     "about": {
       "title": "À propos de ces règles",
-      "description": "Résumé des directives européennes sur les temps de conduite et de repos."
+      "description": "Ce résumé présente les directives UE sur les temps de conduite et de repos. Suivez toujours les règlements officiels."
     },
     "overview": {
       "title": "Aperçu",
-      "point1": "Suivez précisément travail, repos, dispo et conduite.",
-      "point2": "Planifiez vos pauses pour éviter les infractions.",
-      "point3": "Utilisez les repos réduits avec précaution."
+      "point1": "Suivez précisément travail, pauses, dispo et conduite.",
+      "point2": "Planifiez vos pauses tôt pour éviter les infractions.",
+      "point3": "Utilisez les repos réduits et extensions avec prudence."
     },
     "drivingLimits": {
       "title": "Limites de conduite",
       "daily": {
-        "label": "Limite journalière :",
-        "description": "9h (extensible à 10h deux fois par semaine)."
+        "label": "Limite quotidienne :",
+        "description": "9 heures (peut être porté à 10h deux fois par semaine)."
       },
       "weekly": {
         "label": "Limite hebdomadaire :",
-        "description": "56h."
+        "description": "56 heures."
       },
       "fortnightly": {
-        "label": "Limite bihebdomadaire :",
-        "description": "90h."
+        "label": "Limite sur deux semaines :",
+        "description": "90 heures."
       },
       "breaks": {
         "label": "Pauses de conduite :",
-        "description": "Après 4,5h de conduite, prenez 45 min de pause."
+        "description": "Après 4h30 de conduite, prenez 45 minutes de pause."
       },
-      "breaksSplitExample": "Les 45 min peuvent être fractionnées en 15 min + 30 min (dans cet ordre)."
+      "breaksSplitExample": "Les 45 min peuvent être scindées en 15 min + 30 min (dans cet ordre)."
     },
     "restPeriods": {
       "title": "Périodes de repos",
       "daily": {
-        "title": "Repos journalier :",
-        "regular": "Régulier : au moins 11h.",
-        "reduced": "Réduit : au moins 9h (usage limité).",
-        "split": "Fractionné : total 12h (ex: 3h + 9h)."
+        "title": "Repos quotidien :",
+        "regular": "Repos régulier : au moins 11 heures.",
+        "reduced": "Repos réduit : au moins 9 heures (usage limité).",
+        "split": "Repos fractionné : total de 12h minimum (ex: 3h + 9h)."
       },
       "weekly": {
         "title": "Repos hebdomadaire :",
-        "regular": "Régulier : au moins 45h.",
-        "reduced": "Réduit : au moins 24h (compensation requise).",
-        "frequency": "Doit être pris dans les délais requis."
+        "regular": "Repos régulier : au moins 45 heures.",
+        "reduced": "Repos réduit : au moins 24 heures (compensation requise).",
+        "frequency": "Le repos hebdomadaire doit être pris selon les périodes roulantes requises."
       }
     },
     "workingTimeLimits": {
-      "title": "Limites de temps de travail",
+      "title": "Limites temps de travail",
       "maxWeekly": {
-        "label": "Travail hebdo max :",
-        "description": "60h (plafond absolu)."
+        "label": "Temps de travail max hebdo :",
+        "description": "60 heures (limite absolue)."
       },
       "avgWeekly": {
         "label": "Moyenne hebdo :",
-        "description": "48h en moyenne sur la période de référence."
+        "description": "48 heures en moyenne sur la période de référence."
       },
       "nightWork": {
-        "label": "Travail de nuit :",
-        "description": "Généralement 10h par période de 24h."
+        "label": "Limite travail de nuit :",
+        "description": "Généralement 10 heures par période de 24h (selon règles)."
       }
     },
     "workBreaks": {
-      "title": "Pauses de temps de travail",
+      "title": "Pauses temps de travail",
       "intro": "Les pauses dépendent du total d'heures travaillées.",
       "rules": {
-        "sixToNine": "Plus de 6h de travail : au moins 30 min de pause.",
-        "ninePlus": "Plus de 9h de travail : au moins 45 min de pause."
+        "sixToNine": "Si vous travaillez plus de 6h : au moins 30 min de pause.",
+        "ninePlus": "Si vous travaillez plus de 9h : au moins 45 min de pause."
       },
-      "noteDriving": "Les pauses de conduite (règle des 4,5h) sont distinctes."
+      "noteDriving": "Les pauses de conduite (règle 4h30) sont distinctes et doivent être respectées."
     },
     "interaction": {
       "title": "Suivi par l'application",
-      "point1": "Les minuteurs tournent pendant l'activité ; la dispo met en pause le cycle de travail.",
-      "point2": "Une pause valide réinitialise le cycle de conduite de 4h30."
+      "point1": "Les minuteurs tournent quand vous êtes actif ; la Dispo suspend le cycle de travail.",
+      "point2": "Une pause qualifiante peut réinitialiser votre cycle de conduite de 4h30."
     }
   },
   "tachoGuide": {
-    "title": "Saisie Manuelle Tachygraphe",
+    "title": "Guide de saisie manuelle Tachygraphe",
     "prepare": {
-      "title": "Préparer",
-      "point1": "Carte conducteur prête.",
-      "point2": "Tachygraphe en mode saisie manuelle.",
-      "point3": "Vérifier heure et fuseau horaire."
+      "title": "Préparation",
+      "point1": "Préparez votre carte conducteur.",
+      "point2": "Assurez-vous que le tacho est en mode saisie manuelle.",
+      "point3": "Vérifiez l'heure et le fuseau horaire de l'unité."
     },
     "confirmManualEntry": {
-      "title": "Confirmer la saisie",
-      "point1": "Confirmez l'ajout des activités depuis le dernier retrait."
+      "title": "Confirmer saisie manuelle",
+      "point1": "Confirmez l'ajout d'activités depuis le dernier retrait de carte."
     },
     "enterActivities": {
       "title": "Entrer les activités",
-      "point1": "Choisir le type (repos/travail/dispo).",
-      "point2": "Heures de début et fin précises.",
-      "point3": "Répéter pour chaque période.",
-      "point4": "Vérifier la chronologie."
+      "point1": "Sélectionnez le type d'activité (repos/travail/dispo).",
+      "point2": "Entrez les heures de début et de fin précisément.",
+      "point3": "Répétez pour chaque période manquante.",
+      "point4": "Vérifiez que la séquence correspond à la réalité."
     },
     "adjustTimes": {
-      "title": "Ajuster",
-      "point1": "Corriger si nécessaire.",
-      "point2": "Pas de chevauchement ou de trou.",
-      "point3": "Confirmer chaque entrée."
+      "title": "Ajuster les temps",
+      "point1": "Si les heures sont erronées, revenez en arrière.",
+      "point2": "Assurez-vous qu'il n'y a ni chevauchement ni trou.",
+      "point3": "Confirmez chaque entrée avant de continuer."
     },
     "confirm": {
       "title": "Confirmer",
-      "point1": "Revoir le résumé sur l'écran.",
-      "point2": "Valider pour enregistrer."
+      "point1": "Relisez le résumé sur l'écran du tachygraphe.",
+      "point2": "Acceptez pour enregistrer les entrées manuelles."
     },
     "finalCheck": {
       "title": "Vérification finale",
-      "point1": "Vérifier la chronologie des activités.",
-      "point2": "Démarrer le service uniquement si tout est correct."
+      "point1": "Vérifiez que la chronologie est correcte.",
+      "point2": "Commencez votre service seulement si tout est juste."
     },
     "closeButton": "Fermer"
   },
@@ -387,7 +564,7 @@
     "german": "Deutsch",
     "french": "Français",
     "spanish": "Español",
-    "italian": "Italiano",
+    "italic": "Italiano",
     "polish": "Polski",
     "romanian": "Română",
     "dutch": "Nederlands",
@@ -406,119 +583,155 @@
   "confirmSignOut": "Êtes-vous sûr de vouloir vous déconnecter ?",
   "manageSubscription": "Gérer l'abonnement",
   "validation": {
-    "invalidTimeFormat": "Format HH:MM invalide."
+    "invalidTimeFormat": "Veuillez entrer une heure valide au format HH:MM."
   },
   "validationError": "Erreur de validation",
   "pleaseEnterName": "Veuillez entrer votre nom.",
   "driverSettings": "Paramètres conducteur",
-  "welcomeSetup": "Configuration",
-  "personalInformation": "Infos personnelles",
+  "welcomeSetup": "Configuration de bienvenue",
+  "personalInformation": "Informations personnelles",
   "driverName": "Nom du conducteur",
-  "enterFullName": "Nom complet",
+  "enterFullName": "Entrez votre nom complet",
   "companyLink": "Lien entreprise",
   "linkedToCompany": "Lié à l'entreprise",
   "companyLinkCodeOptional": "Code entreprise (optionnel)",
-  "enterCodeToJoinFleet": "Entrez le code pour rejoindre la flotte.",
-  "payConfiguration": "Configuration paie",
+  "enterCodeToJoinFleet": "Entrez le code fourni par votre entreprise pour rejoindre leur flotte.",
+  "payConfiguration": "Configuration de la paie",
   "basicHourlyRate": "Taux horaire de base",
-  "unpaidBreakDuration": "Durée pause non payée (min)",
-  "shiftAllowances": "Indemnités",
-  "addAllowance": "Ajouter indemnité",
-  "overtimeRules": "Heures supplémentaires",
-  "overtimeThreshold": "Seuil d'heures supp.",
-  "rateMultiplier": "Multiplicateur",
-  "addAnotherTier": "Ajouter un palier",
+  "unpaidBreakDuration": "Durée pause non payée (minutes)",
+  "shiftAllowances": "Primes de service",
+  "addAllowance": "Ajouter prime",
+  "overtimeRules": "Règles d'heures suppl.",
+  "overtimeThreshold": "Seuil d'heures suppl.",
+  "rateMultiplier": "Multiplicateur de taux",
+  "addAnotherTier": "Ajouter un autre palier",
   "invalidCode": "Code invalide",
   "companyCodeNotFound": "Code entreprise introuvable.",
   "expiredCodeTitle": "Code expiré",
-  "expiredCodeMessage": "Ce code a expiré.",
-  "privacyTitle": "Confidentialité",
+  "expiredCodeMessage": "Ce code a expiré. Demandez-en un nouveau.",
+  "privacyTitle": "Confidentialité & Données",
   "privacySubtitle": "Vos données, votre contrôle",
-  "privacyIntro": "Cette politique explique les données collectées par HourWise.",
-  "privacyDataCollectedTitle": "Données stockées",
-  "privacyDataCollectedDesc": "Pour calculer vos heures :",
+  "privacyIntro": "Nous protégeons votre vie privée. Cette politique explique quelles données HourWise collecte et comment elles sont stockées.",
+  "privacyWhyTitle": "Pourquoi collecter des données",
+  "privacyWhyDesc": "Uniquement pour les fonctions essentielles : calcul d'heures, conformité UE et génération de rapports.",
+  "privacyDataCollectedTitle": "Ce que nous stockons",
+  "privacyDataCollectedDesc": "Pour activer les fonctionnalités, nous stockons en sécurité :",
   "privacyDataPoints": [
-    "Nom (pour les rapports)",
-    "Services enregistrés",
-    "Totaux travail, repos, dispo",
-    "Scores et infractions",
-    "Paramètres de paie (optionnel)"
+    "Votre nom (pour les rapports)",
+    "Vos services (heures, conduite, travail, pauses, dispo)",
+    "Localisation (uniquement pour la détection de conduite)",
+    "Scores de conformité et infractions",
+    "Détails de frais et photos de reçus",
+    "Paramètres de paie (optionnel)",
+    "Profil d'entreprise et coordonnées bancaires (optionnel)"
   ],
   "privacyStorageTitle": "Stockage Cloud sécurisé",
-  "privacyStorageDesc": "Données cryptées et synchronisées sur vos appareils.",
+  "privacyStorageDesc": "Vos données sont chiffrées selon les standards de l'industrie.",
   "privacyControlTitle": "Vous avez le contrôle",
-  "privacyControlDesc": "Modifiez ou supprimez vos données à tout moment.",
+  "privacyControlDesc": "Vous pouvez consulter, modifier ou supprimer définitivement vos données à tout moment.",
+  "privacyThirdPartyTitle": "Services tiers",
+  "privacyThirdPartyDesc": "Pour le scan de reçus (OCR), nous pouvons envoyer des images à des prestataires spécialisés. Pas de partage marketing.",
+  "privacyThirdPartyDesc_new": "Les images de reçus sont traitées par un service tiers pour l'extraction de texte. Aucune donnée n'est vendue.",
   "privacyDisclaimerTitle": "Important",
-  "privacyDisclaimer": "La sécurité absolue n'existe pas sur le web, mais nous protégeons vos données au mieux.",
-  "notification": {
-    "trackingTitle": "Suivi conduite",
-    "trackingBody": "HourWise suit votre position pour la conduite."
+  "privacyDisclaimer": "Aucune méthode de transmission n'est sûre à 100%, mais nous nous engageons à une protection maximale.",
+  "privacy": {
+    "gdprRightsTitle": "Vos droits RGPD",
+    "gdprRightsDesc": "Vous avez le droit d'accéder, de rectifier ou d'effacer vos données personnelles directement via l'application."
   },
-  "enableComplianceNotifications": "Activez les notifications pour les alertes.",
-  "locationPermissionRequired": "Accès position requis pour la conduite.",
-  "backgroundLocationPermissionRequired": "Accès position en arrière-plan requis.",
-  "failedToResumeShift": "Échec de reprise du service.",
-  "startShiftError": "Échec du démarrage.",
-  "endShiftError": "Échec de fin de service. Vérifiez la connexion.",
-  "cannotGoToPoaFromBreak": "Impossible de passer en dispo pendant une pause.",
-  "proactiveNotificationTitle": "Revue du dernier service",
-  "proactiveNotificationBody": "Conseil du jour :",
-  "workTimeWarningTitle": "Alerte temps de travail",
-  "drivingTimeWarningTitle": "Alerte temps de conduite",
-  "workTime30minLeft": "30 min restantes de travail.",
-  "workTime15minLeft": "15 min restantes de travail.",
-  "workTime5minLeft": "5 min restantes de travail.",
-  "workTimeLimitReached": "Limite de travail atteinte.",
-  "drivingTime30minLeft": "30 min restantes de conduite.",
-  "drivingTime15minLeft": "15 min restantes de conduite.",
-  "drivingTime5minLeft": "5 min restantes de conduite.",
+  "account": {
+    "title": "Gestion du compte",
+    "manageMyData": "Gérer mes données",
+    "profileSection": "Profil",
+    "editName": "Modifier nom complet",
+    "changeEmail": "Modifier E-mail",
+    "changePassword": "Modifier mot de passe",
+    "dataSection": "Gestion des données",
+    "exportData": "Exporter mes données",
+    "manageSubscription": "Gérer mon abonnement",
+    "dangerZone": "Zone de danger",
+    "delete": {
+      "title": "Supprimer mon compte",
+      "confirmTitle": "Supprimer le compte ?",
+      "confirmMessage": "Ceci effacera définitivement votre historique et profil. Action irréversible.",
+      "confirmButton": "Tout supprimer",
+      "successTitle": "Compte supprimé",
+      "successMessage": "Votre compte et vos données ont été retirés.",
+      "errorMessage": "Échec de suppression. Contactez le support."
+    }
+  },
+  "notification": {
+    "trackingTitle": "Suivi du temps de conduite",
+    "trackingBody": "HourWise surveille votre position pour la conduite.",
+    "shiftStartedTitle": "Service démarré",
+    "shiftStartedBody": "Votre service a officiellement commencé.",
+    "shiftEndedTitle": "Service terminé",
+    "shiftEndedBody": "Votre service a été clôturé avec succès."
+  },
+  "enableComplianceNotifications": "Activez les notifications pour les alertes de conformité.",
+  "locationPermissionRequired": "Localisation requise pour la détection de conduite.",
+  "backgroundLocationPermissionRequired": "Localisation en arrière-plan requise pour un suivi fiable.",
+  "failedToResumeShift": "Échec de reprise du service depuis le serveur.",
+  "startShiftError": "Échec du démarrage de service.",
+  "endShiftError": "Échec de clôture de service sur le serveur.",
+  "cannotGoToPoaFromBreak": "Impossible de passer en Dispo pendant une pause.",
+  "proactiveNotificationTitle": "Revue de votre dernier service",
+  "proactiveNotificationBody": "Un conseil pour aujourd'hui :",
+  "workTimeWarningTitle": "Alerte Temps de Travail",
+  "drivingTimeWarningTitle": "Alerte Temps de Conduite",
+  "workTime30minLeft": "30 minutes restantes dans votre cycle de travail.",
+  "workTime15minLeft": "15 minutes restantes dans votre cycle de travail.",
+  "workTime5minLeft": "5 minutes restantes dans votre cycle de travail.",
+  "workTimeLimitReached": "Limite de temps de travail atteinte.",
+  "drivingTime30minLeft": "30 minutes de conduite restantes.",
+  "drivingTime15minLeft": "15 minutes de conduite restantes.",
+  "drivingTime5minLeft": "5 minutes de conduite restantes.",
   "drivingTimeLimitReached": "Limite de conduite atteinte.",
-  "audioShiftStarted": "Service commencé.",
+  "audioShiftStarted": "Service démarré.",
   "audioShiftEnded": "Service terminé.",
   "audioBreakStarted": "Pause commencée.",
   "audioResumeWork": "Reprise du travail.",
   "audioPoaStarted": "Disponibilité commencée.",
   "audioDrivingTimeReset": "Temps de conduite réinitialisé.",
   "audioDrivingLimitReached": "Limite de conduite atteinte.",
-  "audioDriving5minLeft": "5 min de conduite restantes.",
-  "audioDriving15minLeft": "15 min de conduite restantes.",
-  "audioDriving30minLeft": "30 min de conduite restantes.",
-  "audioWork5h15": "15 min de travail restantes.",
-  "audioWork5h30": "30 min de travail restantes.",
-  "audioWork5h55": "5 min de travail restantes.",
-  "safetyWarningTitle": "Sécurité",
-  "safetyWarningBody": "Ne pas manipuler en conduisant.",
-  "acknowledge": "Valider",
+  "audioDriving5minLeft": "5 minutes de conduite restantes.",
+  "audioDriving15minLeft": "15 minutes de conduite restantes.",
+  "audioDriving30minLeft": "30 minutes de conduite restantes.",
+  "audioWork5h15": "15 minutes restantes dans votre cycle de travail.",
+  "audioWork5h30": "30 minutes restantes dans votre cycle de travail.",
+  "audioWork5h55": "5 minutes restantes dans votre cycle de travail.",
+  "safetyWarningTitle": "Avertissement sécurité",
+  "safetyWarningBody": "N'utilisez pas l'app en conduisant. Arrêtez-vous avant tout changement.",
+  "acknowledge": "Accepter",
   "auth": {
     "title": {
       "signIn": "Connexion",
       "signUp": "Créer un compte"
     },
     "subtitle": {
-      "signIn": "Ravi de vous revoir !",
-      "signUp": "Rejoignez-nous."
+      "signIn": "Bon retour ! Connectez-vous.",
+      "signUp": "Rejoignez-nous pour suivre vos heures."
     },
     "fields": {
       "email": {
-        "label": "E-mail",
-        "placeholder": "email@exemple.com"
+        "label": "Adresse E-mail",
+        "placeholder": "votre.email@exemple.com"
       },
       "password": {
         "label": "Mot de passe",
         "placeholder": "Entrez votre mot de passe"
       },
       "driverName": {
-        "label": "Nom complet",
+        "label": "Nom complet du conducteur",
         "placeholder": "ex: Jean Dupont"
       },
       "companyCode": {
         "label": "Code entreprise",
-        "placeholder": "Code de votre entreprise"
+        "placeholder": "Code fourni par votre entreprise"
       }
     },
     "buttons": {
-      "signIn": "Connexion",
-      "createAccount": "Créer compte"
+      "signIn": "Se connecter",
+      "createAccount": "Créer le compte"
     },
     "switchTo": {
       "signUp": "Pas de compte ? S'inscrire",
@@ -526,180 +739,223 @@
     },
     "accountType": {
       "solo": {
-        "title": "Indépendant",
-        "subtitle": "Professionnel solo"
+        "title": "Conducteur Solo",
+        "subtitle": "Professionnel indépendant"
       },
       "fleet": {
-        "title": "Flotte",
-        "subtitle": "Membre d'entreprise"
+        "title": "Membre de flotte",
+        "subtitle": "Salarié d'entreprise"
       }
     },
     "alerts": {
       "missingInfo": {
         "title": "Infos manquantes",
-        "body": "Remplissez tous les champs."
+        "body": "Veuillez remplir tous les champs."
       },
       "companyCodeRequired": {
-        "title": "Code requis",
-        "body": "Entrez le code entreprise."
+        "title": "Code entreprise requis",
+        "body": "Veuillez entrer le code entreprise pour continuer en flotte."
       },
       "invalidCode": {
         "title": "Code invalide",
-        "expired": "Code expiré.",
-        "notFound": "Code introuvable."
+        "expired": "Ce code entreprise a expiré.",
+        "notFound": "Le code entré n'est pas valide."
       },
       "signUpError": {
-        "title": "Erreur inscription"
+        "title": "Erreur d'inscription"
       },
       "signUpFailed": {
         "title": "Échec inscription",
-        "body": "Réessayez plus tard."
+        "body": "Nous ne pouvons pas créer votre compte actuellement."
       },
       "profileCreationFailed": {
-        "title": "Échec profil",
-        "body": "Compte créé, mais erreur profil. Contactez le support."
+        "title": "Échec création profil",
+        "body": "Compte créé, mais échec de configuration du profil. Contactez le support."
       },
       "checkEmail": {
         "title": "Vérifiez vos e-mails",
-        "body": "Un lien de confirmation a été envoyé."
+        "body": "Un lien de confirmation a été envoyé. Veuillez vérifier votre compte."
       },
       "signInMissing": {
         "title": "Infos manquantes",
-        "body": "Email et mot de passe requis."
+        "body": "Entrez votre e-mail et votre mot de passe."
       },
       "signInError": {
-        "title": "Erreur connexion"
+        "title": "Erreur de connexion"
       }
     }
   },
   "paywall": {
-    "title": "Débloquez HourWise Pro",
-    "subtitle": "Accès illimité et rapports.",
-    "subscribeNow": "S'abonner",
-    "restorePurchases": "Restaurer achats",
-    "loading": "Chargement...",
+    "title": "Débloquer HourWise Pro",
+    "subtitle": "Accédez à toutes les fonctions premium, suivi et rapports illimités.",
+    "subscribeNow": "S'abonner maintenant",
+    "restorePurchases": "Restaurer les achats",
+    "loading": "Ouverture...",
     "restoring": "Restauration...",
     "alert": {
       "successTitle": "Succès",
       "purchased": "Achat terminé !",
       "restored": "Achats restaurés !",
       "paywallError": "Une erreur est survenue.",
-      "couldNotDisplay": "Impossible d'afficher la page.",
-      "restoreSuccess": "Achats restaurés.",
-      "noPurchasesTitle": "Aucun achat",
-      "noPurchasesBody": "Aucun abonnement trouvé.",
-      "restoreError": "Erreur restauration."
+      "couldNotDisplay": "Impossible d'afficher la page d'abonnement.",
+      "restoreSuccess": "Vos achats ont été restaurés.",
+      "noPurchasesTitle": "Aucun achat trouvé",
+      "noPurchasesBody": "Aucun abonnement actif trouvé à restaurer.",
+      "restoreError": "Échec de restauration."
     }
   },
   "settings": {
     "subscription": {
-      "openError": "Impossible d'ouvrir la page d'abonnement.",
+      "openError": "Impossible d'ouvrir la gestion d'abonnement.",
       "opening": "Ouverture..."
     }
   },
   "businessProfile": {
-    "title": "Profil entreprise",
+    "title": "Profil d'entreprise",
     "subtitle": "Pour factures et rapports",
     "alerts": {
-      "profileSaved": "Profil enregistré."
+      "profileSaved": "Profil d'entreprise enregistré."
     },
     "sections": {
-      "companyDetails": "Détails entreprise",
-      "bankDetails": "Coordonnées bancaires"
+      "companyDetails": "Détails de l'entreprise",
+      "bankDetails": "Coordonnées bancaires",
+      "companyLogo": "Logo de l'entreprise",
+      "clients": "Gestion des clients"
     },
     "fields": {
       "legalName": {
-        "label": "Raison sociale",
-        "placeholder": "ex: Ma Société SARL"
+        "label": "Raison sociale / Nom",
+        "placeholder": "ex: Entreprise Transport SAS"
       },
       "address": {
-        "label": "Adresse",
+        "label": "Adresse professionnelle",
         "placeholder": "Adresse complète"
       },
       "email": {
-        "label": "E-mail contact",
-        "placeholder": "contact@societe.fr"
+        "label": "E-mail de contact",
+        "placeholder": "ex: contact@entreprise.com"
       },
       "phone": {
         "label": "Téléphone",
-        "placeholder": "+33 6 12 34 56 78"
+        "placeholder": "ex: +33 6 12 34 56 78"
       },
       "taxId": {
-        "label": "TVA / SIRET",
+        "label": "N° TVA / SIRET",
         "placeholder": "ex: FR123456789"
       },
+      "vatNumber": {
+        "label": "Numéro de TVA",
+        "placeholder": "ex: FR123456789"
+      },
+      "paymentTerms": {
+        "label": "Conditions de paiement",
+        "placeholder": "ex: Paiement à 30 jours"
+      },
       "accountName": {
-        "label": "Nom du compte",
-        "placeholder": "Titulaire"
+        "label": "Nom du titulaire du compte",
+        "placeholder": "Nom figurant sur le RIB"
       },
       "sortCode": {
         "label": "Code banque",
-        "placeholder": "Code"
+        "placeholder": "Code banque/guichet"
       },
       "accountNumber": {
         "label": "Numéro de compte",
-        "placeholder": "Numéro"
+        "placeholder": "Numéro de compte"
       },
       "iban": {
         "label": "IBAN",
-        "placeholder": "FR76..."
+        "placeholder": "ex: FR76 1234 5678..."
+      }
+    },
+    "clients": {
+      "title": "Clients",
+      "addClient": "Ajouter client",
+      "editClient": "Modifier client",
+      "noClients": "Aucun client ajouté.",
+      "deleteConfirm": "Supprimer ce client ?",
+      "fields": {
+        "name": "Nom du client",
+        "address": "Adresse du client",
+        "email": "E-mail du client"
       }
     }
   },
   "violation": {
     "EXCEEDED_6H_WORK": {
-      "title": "6h de travail sans pause dépassées",
-      "tip": "Pause de 30 min requise après 6h de travail."
+      "title": "Plus de 6h de travail sans pause",
+      "tip": "Une pause de 30 min est requise après 6h de travail. Planifiez vos pauses."
     },
     "INSUFFICIENT_BREAK_FOR_9H_WORK": {
-      "title": "Pause insuffisante (>9h de travail)",
-      "tip": "Total de 45 min de pause requis."
+      "title": "Pause insuffisante pour > 9h de travail",
+      "tip": "Pour les services de plus de 9h, un total de 45 min de pause est requis."
     },
     "INSUFFICIENT_DAILY_REST": {
-      "title": "Repos journalier insuffisant",
-      "tip": "Au moins 11h de repos (réductible à 9h)."
+      "title": "Repos quotidien insuffisant",
+      "tip": "Prenez au moins 11h de repos entre les services (réductible à 9h trois fois par semaine)."
     },
     "REDUCED_DAILY_REST_TAKEN": {
-      "title": "Repos journalier réduit pris",
-      "tip": "Limité à 3 fois par semaine."
+      "title": "Repos quotidien réduit pris",
+      "tip": "Vous avez pris un repos réduit. Limité à 3 fois entre deux repos hebdomadaires."
     },
     "EXCEEDED_4_5H_DRIVING": {
-      "title": "4h30 de conduite dépassées",
-      "tip": "Pause de 45 min requise après 4h30."
+      "title": "Dépassement 4h30 de conduite",
+      "tip": "Vous devez prendre 45 min de pause après 4h30 de conduite continue."
     },
     "EXCEEDED_DAILY_DRIVING_LIMIT": {
-      "title": "Limite de conduite dépassée",
-      "tip": "Max 9h (10h deux fois par semaine)."
+      "title": "Limite conduite quotidienne dépassée",
+      "tip": "Conduite limitée à 9h (10h possible deux fois par semaine)."
     },
     "USED_10H_DRIVING_EXTENSION": {
-      "title": "Extension de 10h utilisée",
-      "tip": "Une de vos deux extensions hebdo."
+      "title": "Extension conduite 10h utilisée",
+      "tip": "Vous avez utilisé l'une de vos deux extensions hebdomadaires à 10h."
     },
     "EXCEEDED_WEEKLY_DRIVING_LIMIT": {
       "title": "Limite conduite hebdo dépassée",
-      "tip": "Max 56h par semaine."
+      "tip": "Maximum 56h par semaine de conduite."
     },
     "EXCEEDED_WEEKLY_WORK_LIMIT": {
       "title": "Limite travail hebdo dépassée",
-      "tip": "Max 60h par semaine."
+      "tip": "Maximum 60h de travail par semaine. Prenez du repos."
+    },
+    "WORK_TIME_LIMIT_EXCEEDED": {
+      "title": "Limite temps de travail atteinte",
+      "tip": "Vous avez dépassé votre cycle de travail. Le surplus de {{time}} a été enregistré."
+    },
+    "FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED": {
+      "title": "Limite conduite bihebdomadaire dépassée",
+      "tip": "Le maximum sur deux semaines consécutives est de 90 heures."
     },
     "default": {
-      "title": "Infraction",
-      "tip": "Une règle de conformité a été brisée."
+      "title": "Infraction de conformité",
+      "tip": "Une règle a été enfreinte. Vérifiez les détails du service."
     }
   },
-  "dateRangeError": "La fin doit être après le début.",
-  "noDataForRange": "Aucune donnée.",
-  "failedToGenerate": "Échec génération.",
+  "dateRangeError": "La date de fin doit être après le début.",
+  "noDataForRange": "Aucune donnée trouvée pour cette période.",
+  "failedToGenerate": "Échec de génération du rapport.",
   "workReport": "Rapport de travail",
   "reportFrom": "Du",
   "to": "Au",
   "summary": "Résumé",
-  "totalWorkTime": "Travail total",
-  "totalBreakTime": "Pauses totales",
+  "totalWorkTime": "Total Temps Travail",
+  "totalBreakTime": "Total Temps Pause",
   "estimatedEarnings": "Gains estimés",
   "previousWeek": "Semaine précédente",
   "lastMonth": "Mois dernier",
   "customRange": "Période personnalisée",
-  "generateReport": "Générer rapport"
+  "generateReport": "Générer rapport",
+  "alerts": {
+    "lowRestWarning": "Alerte : Moins de 9h de repos depuis le dernier service.",
+    "spreadTitle": "Alerte limite d'amplitude",
+    "spread30m": "30 minutes avant d'atteindre votre limite d'amplitude de 13h."
+  },
+  "invoiceGeneration": {
+    "title": "Générer facture",
+    "selectClient": "Choisir client",
+    "description": "Description facture",
+    "includeExpenses": "Inclure les frais",
+    "vatRate": "Taux TVA (%)",
+    "noVat": "Sans TVA"
+  }
 }

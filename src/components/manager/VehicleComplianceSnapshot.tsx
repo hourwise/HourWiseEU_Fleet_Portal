@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Truck, AlertTriangle, Calendar, ChevronRight } from 'lucide-react';
+import { Truck, AlertTriangle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface VehicleWarning {
   id: string;
@@ -12,6 +13,7 @@ interface VehicleWarning {
 }
 
 export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }) {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [warnings, setWarnings] = useState<VehicleWarning[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,17 +109,17 @@ export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }
       <div className="p-4 border-b border-brand-border flex items-center justify-between">
         <h3 className="font-bold text-white flex items-center gap-2">
           <Truck className="w-5 h-5 text-brand-accent" />
-          Fleet Compliance Alerts
+          {t('vehicleCompliance.title')}
         </h3>
         <span className="bg-red-500/10 text-red-500 text-xs font-black px-2 py-1 rounded">
-          {warnings.length} URGENT
+          {t('vehicleCompliance.urgent', { count: warnings.length })}
         </span>
       </div>
 
       <div className="p-2 max-h-[300px] overflow-y-auto">
         {warnings.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-400 text-sm">No urgent vehicle alerts.</p>
+            <p className="text-slate-400 text-sm">{t('vehicleCompliance.noAlerts')}</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -134,7 +136,11 @@ export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }
                   <div className="text-left">
                     <p className="text-sm font-bold text-white">{w.reg_number}</p>
                     <p className="text-xs text-slate-400">
-                      {w.type === 'VOR' ? 'Vehicle Off Road' : `${w.type} Due ${w.days_remaining! < 0 ? 'OVERDUE' : `in ${w.days_remaining} days`}`}
+                      {w.type === 'VOR'
+                        ? t('vehicleCompliance.offRoad')
+                        : w.days_remaining! < 0
+                          ? t('vehicleCompliance.dueOverdue', { type: w.type })
+                          : t('vehicleCompliance.dueInDays', { type: w.type, days: w.days_remaining })}
                     </p>
                   </div>
                 </div>
@@ -149,7 +155,7 @@ export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }
         onClick={onAction}
         className="w-full p-3 text-xs font-bold text-slate-400 hover:text-white hover:bg-brand-dark/50 border-t border-brand-border transition uppercase tracking-widest"
       >
-        View Full Fleet List
+        {t('vehicleCompliance.viewFullList')}
       </button>
     </div>
   );

@@ -1,0 +1,1165 @@
+{
+  "app": {
+    "name": "HourWise EU",
+    "tagline": "Slim wagenparkbeheer eenvoudig gemaakt",
+    "description": "Slim wagenparkbeheer en nalevingsregistratie voor Europese transportbedrijven. Blijf compliant, blijf efficiënt."
+  },
+  "navigation": {
+    "home": "Home",
+    "howTo": "Handleiding",
+    "privacy": "Privacybeleid",
+    "terms": "Algemene voorwaarden",
+    "contact": "Contact",
+    "privacyRequest": "Gegevensverzoeken (AVG)",
+    "signIn": "Inloggen",
+    "getStarted": "Aan de slag",
+    "dashboard": "Dashboard",
+    "drivers": "Chauffeurs",
+    "compliance": "Naleving",
+    "training": "Training",
+    "fleet": "Wagenpark",
+    "safetyChecks": "Veiligheidscontroles",
+    "supervisors": "Toezichthouders",
+    "payroll": "Loonadministratie",
+    "expenses": "Onkosten",
+    "reports": "Rapporten",
+    "auditTrail": "Controlespoor",
+    "settings": "Instellingen",
+    "signOut": "Uitloggen"
+  },
+  "footer": {
+    "company": "Bedrijf",
+    "account": "Account",
+    "createAccount": "Account aanmaken",
+    "allRightsReserved": "Alle rechten voorbehouden."
+  },
+  "auth": {
+    "login": "Inloggen",
+    "signup": "Registreren",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "createAccount": "Wagenparkbeheerder account aanmaken",
+    "managerSignup": "Beheerder registratie",
+    "companyName": "Bedrijfsnaam",
+    "fullName": "Volledige naam",
+    "alreadyHaveAccount": "Heeft u al een account? Log in",
+    "signInSubtitle": "Log in op uw wagenpark dashboard",
+    "forgotPasswordSubtitle": "Stel uw wachtwoord opnieuw in",
+    "magicLinkSubtitle": "Ontvang een magische link om in te loggen",
+    "magicLink": "Inloggen met Magische Link",
+    "sendMagicLink": "Magische link verzenden",
+    "sendResetLink": "Resetlink verzenden",
+    "backToSignIn": "Terug naar inloggen",
+    "newToApp": "Nieuw bij HourWise?",
+    "createCompanyAccountSubtitle": "Maak uw bedrijfsaccount aan",
+    "billingNotice": "Voltooi de facturering op de website na registratie",
+    "codeNotice": "U ontvangt een bedrijfscode om te delen met uw chauffeurs",
+    "creatingAccount": "Account aanmaken...",
+    "createFleetAccount": "Wagenpark account aanmaken",
+    "messages": {
+      "resetSent": "Een link om uw wachtwoord te resetten is naar uw e-mail verzonden.",
+      "magicLinkSent": "Controleer uw e-mail voor de inloglink."
+    }
+  },
+  "dashboard": {
+    "manager": {
+      "title": "Wagenparkbeheer Portaal",
+      "welcome": "Welkom terug, {{name}}",
+      "snapshots": {
+        "compliance": "Nalevingsscore wagenpark",
+        "vehicle": "Voertuig nalevingswaarschuwingen",
+        "driver": "Kwalificatie waarschuwingen chauffeur",
+        "viewAll": "Bekijk alles",
+        "avgScore": "Gemiddelde score",
+        "sevenDayInfringements": "Overtredingen (7 dagen)",
+        "openBoard": "Open nalevingsbord",
+        "urgent": "{{count}} DRINGEND",
+        "noVehicleAlerts": "Geen dringende voertuigmeldingen.",
+        "viewFleetList": "Bekijk volledige vlootlijst",
+        "noDriverAlerts": "Alle chauffeursdocumenten zijn up-to-date.",
+        "manageDocs": "Beheer chauffeursdocumenten",
+        "alerts": "{{count}} MELDINGEN",
+        "alertSingle": "1 MELDING"
+      },
+      "alerts": {
+        "title": "Actievere meldingen",
+        "urgent": "DRINGEND",
+        "trainingMode": "Trainingsmodus actief",
+        "discrepancy": "Gegevensafwijking gevonden",
+        "allClear": "Alles in orde!",
+        "noIssues": "Geen problemen gedetecteerd.",
+        "shiftAlert": "Melding voor dienst op {{date}}",
+        "issueDetected": "Probleem gedetecteerd dat beoordeling vereist."
+      },
+      "auditReadiness": {
+        "title": "Klaar voor inspectie",
+        "status": "Uw vlootgegevens worden momenteel gesynchroniseerd volgens de auditstandaarden."
+      }
+    }
+  },
+  "fleet": {
+    "title": "Wagenparkbeheer",
+    "totalAssets": "{{count}} Totaal aantal middelen",
+    "addVehicle": "Voertuig toevoegen",
+    "backToList": "Terug naar vlootlijst",
+    "vehicleDetails": "Voertuiggegevens",
+    "complianceBoard": "Nalevingsbord",
+    "maintenanceActions": "Onderhoudsacties",
+    "statusNotes": "Statusnotities",
+    "noNotes": "Geen actieve meldingen of notities voor dit voertuig.",
+    "markVor": "Markeren als VOR (buiten gebruik)",
+    "returnToService": "Terug in gebruik (Veilig)",
+    "maintenanceCalled": "Onderhoud aangevraagd",
+    "bookedWithGarage": "Geboekt bij garage",
+    "logRepair": "Reparatie/PMI registreren",
+    "recordWork": "Werk registreren en blad uploaden",
+    "noVehicles": "Nog geen voertuigen geregistreerd in uw wagenpark.",
+    "addFirst": "Voeg uw eerste voertuig toe",
+    "status": {
+      "vor": "VOR / Buiten gebruik",
+      "active": "Actief",
+      "critical": "Kritieke termijn (14 d)",
+      "operational": "Operationeel",
+      "requiresAttention": "Vereist onmiddellijke aandacht",
+      "compliancePending": "Nalevingsinspecties in afwachting",
+      "ready": "Gereed voor inzet",
+      "overdue": "OVERTIJD",
+      "expiresIn": "over {{days}} dagen"
+    },
+    "labels": {
+      "regType": "Voertuiggegevens",
+      "status": "Status",
+      "motDue": "APK vervaldatum",
+      "pmiDue": "PMI vervaldatum",
+      "tachoCal": "Tacho cal.",
+      "odometer": "Kilometerstand",
+      "year": "Jaar",
+      "vin": "VIN",
+      "added": "Toegevoegd",
+      "actions": "Acties"
+    },
+    "modal": {
+      "title": "Nieuw voertuig toevoegen",
+      "identity": "Voertuigidentiteit",
+      "compliance": "Naleving & Veiligheid",
+      "regNumber": "Kenteken *",
+      "make": "Merk *",
+      "model": "Model",
+      "type": "Voertuigtype *",
+      "vinNumber": "VIN-nummer",
+      "initialOdo": "Initiële kilometerstand (km)",
+      "currentOdo": "Huidige kilometerstand (km)",
+      "motDue": "APK vervaldatum",
+      "pmiDue": "Volgende PMI-datum",
+      "tachoDue": "Tachograaf ijking vervaldatum",
+      "insuranceExpiry": "Verzekering vervaldatum",
+      "footnote": "Nalevingsdatums activeren het stoplichtsysteem op het dashboard. Items die over de datum zijn, worden ROOD gemarkeerd.",
+      "register": "Voertuig registreren",
+      "adding": "Voertuig toevoegen...",
+      "errors": {
+        "companyId": "Bedrijfs-ID niet gevonden. Ververs de pagina en probeer het opnieuw.",
+        "duplicate": "Er bestaat al een voertuig met dit kenteken.",
+        "generic": "Er is een onverwachte fout opgetreden bij het toevoegen van het voertuig."
+      }
+    }
+  },
+  "compliance": {
+    "title": "Nalevingsbord",
+    "subtitle": "Overzicht naleving chauffeurs over de laatste 7 dagen.",
+    "stats": {
+      "avgScore": "Gemiddelde vlootscore",
+      "totalInfringements": "Totaal aantal overtredingen",
+      "driversInViolation": "Chauffeurs met overtredingen"
+    },
+    "details": {
+      "title": "Details naleving chauffeur",
+      "noDrivers": "Geen actieve chauffeurs met recente gegevens",
+      "noDriversSubtitle": "Nodig chauffeurs uit om hun nalevingsscores hier te zien.",
+      "headers": {
+        "driver": "Chauffeur",
+        "score": "Nalevingsscore",
+        "infringements": "Overtredingen (Laatste 7 dagen)"
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Onderhoudshistorie",
+    "logWork": "Werk registreren",
+    "noRecords": "Geen officiële onderhoudsgegevens gevonden.",
+    "complianceRequired": "Wettelijke naleving vereist",
+    "labels": {
+      "date": "DATUM",
+      "odo": "STAND",
+      "cost": "KOSTEN",
+      "eventType": "Type gebeurtenis",
+      "completedAt": "Datum voltooid",
+      "provider": "Dienstverlener / Garage",
+      "description": "Werkomschrijving",
+      "evidence": "Wettelijk bewijs (PMI-blad/APK-certificaat)"
+    },
+    "modal": {
+      "title": "Onderhoud registreren",
+      "providerPlaceholder": "bijv. Scania Werkplaats",
+      "descriptionPlaceholder": "bijv. 6-wekelijkse inspectie uitgevoerd. Nieuwe remblokken gemonteerd op vooras.",
+      "confirm": "Werk bevestigen",
+      "saving": "Opslaan..."
+    },
+    "eventTypes": {
+      "pmi": "PMI (Onderhoud)",
+      "repair": "Reparatie defect",
+      "mot": "APK / Keuring",
+      "tacho": "Tacho ijking",
+      "other": "Overig"
+    }
+  },
+  "training": {
+    "title": "Training & Tacho Sync",
+    "subtitle": "Vergelijk wettelijke tachograafgegevens met chauffeursinvoer",
+    "import": {
+      "title": "Tacho-gegevens importeren",
+      "selectDriver": "Selecteer chauffeur",
+      "selectPlaceholder": "Kies een chauffeur...",
+      "uploadLabel": "Upload .CSV van Tachomaster",
+      "browse": "Bestanden zoeken",
+      "runButton": "Afwijkingscontrole uitvoeren",
+      "analyzing": "Analyseren..."
+    },
+    "suggestion": {
+      "title": "Trainingssuggestie",
+      "description": "Als een chauffeur vaak 'Mode Switch Errors' vertoont, zal de app hem automatisch de gids 'Tacho Best Practices' tonen bij de volgende dienst."
+    },
+    "analysis": {
+      "title": "Analyseresultaten",
+      "conflictsFound": "{{count}} Conflicten gevonden",
+      "noData": "Geen gegevens geanalyseerd.",
+      "noDataSubtitle": "Selecteer een chauffeur en upload een tacho-bestand om te beginnen.",
+      "tacho": "Tacho",
+      "app": "App",
+      "priorities": {
+        "high": "Hoge prioriteit",
+        "low": "Lage prioriteit"
+      },
+      "activities": {
+        "driving": "Rijden",
+        "break": "Pauze",
+        "work": "Werk",
+        "rest": "Rust"
+      },
+      "insightTitle": "Trainingsinzicht",
+      "assignButton": "Opfriscursus toewijzen"
+    }
+  },
+  "payroll": {
+    "title": "Salarisoverzicht",
+    "startDate": "Startdatum",
+    "endDate": "Einddatum",
+    "exportPayroll": "Exporteer salaris-CSV",
+    "exportExpenses": "Exporteer onkosten-CSV",
+    "headers": {
+      "driver": "Chauffeur",
+      "hours": "Totaal uren (Normaal/Overwerk)",
+      "grossPay": "Brutoloon (incl. onkosten)"
+    },
+    "labels": {
+      "wages": "Loon",
+      "expenses": "Onkosten",
+      "normal": "Normaal",
+      "overtime": "Overwerk",
+      "payrollNumber": "Personeelsnummer",
+      "grossPayAmount": "Brutoloon (€)",
+      "wagesAmount": "Basissalaris (€)"
+    },
+    "noData": "Geen salarisgegevens gevonden voor deze periode.",
+    "loading": "Salarisgegevens laden..."
+  },
+  "vehicleChecklist": {
+    "title": "Dagelijkse voertuigcontrole",
+    "success": {
+      "title": "Checklist ingediend",
+      "message": "Dagelijkse veiligheidscontrole van voertuig succesvol geregistreerd."
+    },
+    "manager": {
+      "title": "Voertuigcontroles",
+      "subtitle": "Bekijk dagelijkse inspecties en gemelde defecten",
+      "searchPlaceholder": "Zoek chauffeur of kenteken...",
+      "noChecks": "Geen controles gevonden",
+      "selectCheck": "Selecteer een controle voor details",
+      "selectCheckSubtitle": "Dagelijkse inspecties van uw chauffeurs verschijnen hier",
+      "printExport": "Afdrukken / Exporteren",
+      "details": {
+        "vehicleType": "VOERTUIGTYPE",
+        "vehicleMake": "MERK",
+        "odometer": "KILOMETERSTAND",
+        "status": "STATUS",
+        "timeRecorded": "TIJDSTIP REGISTRATIE",
+        "defectsTitle": "GEMELDE DEFECTEN / ONDERNOMEN ACTIE",
+        "noDefects": "Geen aanvullende details verstrekt."
+      },
+      "status": {
+        "pass": "GOEDGEKEURD",
+        "fail": "AFGEKEURD",
+        "defect": "DEFECT"
+      }
+    },
+    "sections": {
+      "internal": "INTERNE CONTROLES",
+      "external": "EXTERNE CONTROLES",
+      "vehicleDetails": "Voertuiggegevens",
+      "defects": "DEFECTMELDING / ONDERNOMEN ACTIE"
+    },
+    "items": {
+      "mirrors": "Spiegels en glas",
+      "mirrorsHint": "Controleer op barsten/stickers; zorg dat spiegels goed staan.",
+      "wipers": "Wissers en sproeiers",
+      "wipersHint": "Controleer werking en vloeistofniveau.",
+      "front_view": "Zicht naar voren",
+      "front_viewHint": "Volledig zicht door de voorruit.",
+      "warning_lamps": "Waarschuwingslampen",
+      "warning_lampsHint": "Zorg dat dashboardlampjes correct werken.",
+      "steering": "Stuurinrichting",
+      "steeringHint": "Soepele beweging en correcte werking.",
+      "horn": "Claxon",
+      "hornHint": "Test op een helder, werkend geluid.",
+      "brakes_air": "Remmen en luchtdruk",
+      "brakes_airHint": "Controleer remwerking en opbouw van luchtdruk.",
+      "height_marker": "Hoogte-indicator",
+      "height_markerHint": "Correcte hoogte-indicator zichtbaar.",
+      "seatbelts": "Veiligheidsgordels",
+      "seatbeltsHint": "Controleer of alle gordels goed werken.",
+      "lights_ind": "Lichten en richtingaanwijzers",
+      "lights_indHint": "Alle lichten/richtingaanwijzers werken correct.",
+      "leaks": "Brandstof/olielekken",
+      "leaksHint": "Controleer op vloeistoffen op de grond of het chassis.",
+      "battery": "Accu bevestiging",
+      "batteryHint": "Controleer of de accu vastzit en in goede staat is.",
+      "adblue": "AdBlue vloeistof",
+      "adblueHint": "Voldoende niveau van AdBlue.",
+      "smoke": "Overmatige rookuitstoot",
+      "smokeHint": "Controleer op zware rookontwikkeling.",
+      "body_wings": "Carrosserie/spatborden",
+      "body_wingsHint": "Zorg dat er geen onderdelen loszitten.",
+      "spray": "Spatlappen",
+      "sprayHint": "Veilig bevestigd en conform wetgeving.",
+      "tyres_wheels": "Banden en wielbevestiging",
+      "tyres_wheelsHint": "Moeren vast. Profiel en spanning op peil.",
+      "brake_line": "Remleidingen",
+      "brake_lineHint": "Controleer op schade of luchtlekken.",
+      "electrical": "Elektrische aansluitingen",
+      "electricalHint": "Individuele tests voor alle verbindingen.",
+      "coupling": "Koppelingsveiligheid",
+      "couplingHint": "Controleer of voertuig goed is aangekoppeld.",
+      "load_security": "Ladingzekering",
+      "load_securityHint": "Gewicht gelijkmatig verdeeld en lading vastgezet.",
+      "number_plate": "Kentekenplaat",
+      "number_plateHint": "Vastgezet en volledig zichtbaar.",
+      "reflectors": "Reflectoren en lichten",
+      "reflectorsHint": "Veilig bevestigd en zichtbaar.",
+      "markers": "Markeringen",
+      "markersHint": "Alle vereiste markeringen veilig bevestigd."
+    },
+    "labels": {
+      "regNumber": "KENTEKEN",
+      "vehicleType": "VOERTUIGTYPE",
+      "vehicleMake": "MERK (OPTIONEEL)",
+      "hint": "Tip",
+      "submitting": "Verzenden...",
+      "submit": "Checklist indienen",
+      "defectPlaceholder": "Beschrijf het defect en eventueel direct genomen actie..."
+    },
+    "errors": {
+      "incomplete": "Vul alle 24 veiligheidscontroles in voordat u verzendt.",
+      "missingReg": "Kenteken is verplicht."
+    }
+  },
+  "infractions": {
+    "title": "Overtredingsrapporten",
+    "subtitle": "Volg en analyseer nalevingsproblemen",
+    "export": "Exporteer CSV",
+    "filterAll": "Alle ({{count}})",
+    "filterViolations": "Overtredingen ({{count}})",
+    "filterWarnings": "Waarschuwingen ({{count}})",
+    "noInfractions": "Geen overtredingen gevonden",
+    "noInfractionsSubtitle": "Uw wagenpark houdt zich uitstekend aan de regels",
+    "issue": "Nalevingsprobleem",
+    "activity": "{{type}} Activiteit",
+    "labels": {
+      "driver": "Chauffeur",
+      "dateTime": "Datum & Tijd",
+      "location": "Locatie",
+      "duration": "Duur",
+      "notes": "Notities:",
+      "notRecorded": "Niet geregistreerd",
+      "ongoing": "Lopend",
+      "min": "min"
+    },
+    "csvHeaders": {
+      "date": "Datum",
+      "driver": "Chauffeur",
+      "activity": "Activiteit",
+      "status": "Status",
+      "infractionType": "Type overtreding",
+      "duration": "Duur (min)",
+      "locationStart": "Locatie start",
+      "notes": "Notities"
+    }
+  },
+  "audit": {
+    "title": "Export controlespoor",
+    "subtitle": "Genereer nalevingsrapporten voor wettelijke controles",
+    "filtersTitle": "Rapportfilters",
+    "labels": {
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "driver": "Chauffeur",
+      "allDrivers": "Alle chauffeurs"
+    },
+    "trailCard": {
+      "title": "Volledig controlespoor",
+      "subtitle": "Alle chauffeurslogboeken met volledige details",
+      "item1": "Activiteitenlogboeken chauffeurs",
+      "item2": "Tijdstempels en duur",
+      "item3": "Locatiegegevens",
+      "item4": "Voertuiginformatie",
+      "button": "Download controlespoor",
+      "generating": "Genereren..."
+    },
+    "summaryCard": {
+      "title": "Nalevingssamenvatting",
+      "subtitle": "Geaggregeerde nalevingsstatistieken",
+      "item1": "Nalevingspercentages per chauffeur",
+      "item2": "Aantal overtredingen en waarschuwingen",
+      "item3": "Totaaloverzicht activiteiten",
+      "item4": "Snel auditoverzicht",
+      "button": "Download samenvatting"
+    },
+    "footerNotice": "Klaar voor Audit: Deze rapporten zijn geformatteerd voor wettelijke naleving en kunnen rechtstreeks aan autoriteiten worden overlegd voor urenverificatie.",
+    "csvHeaders": {
+      "date": "Datum",
+      "driverName": "Naam chauffeur",
+      "license": "Rijbewijsnummer",
+      "activity": "Type activiteit",
+      "start": "Starttijd",
+      "end": "Eindtijd",
+      "duration": "Duur (min)",
+      "status": "Status",
+      "infraction": "Type overtreding",
+      "vehicle": "Voertuig ID",
+      "locationStart": "Locatie start",
+      "locationEnd": "Locatie eind",
+      "notes": "Notities",
+      "totalLogs": "Totaal aantal logs",
+      "violations": "Overtredingen",
+      "warnings": "Waarschuwingen",
+      "complianceRate": "Nalevingspercentage"
+    },
+    "ongoing": "Lopend",
+    "none": "Geen",
+    "unknown": "Onbekend"
+  },
+  "expensesManager": {
+    "title": "Goedkeuring onkosten",
+    "subtitle": "{{count}} openstaande onkosten vereisen uw beoordeling.",
+    "loading": "Openstaande onkosten laden...",
+    "allClear": "Alles afgehandeld!",
+    "noPending": "Er zijn geen openstaande onkosten om te beoordelen.",
+    "headers": {
+      "driver": "Chauffeur",
+      "date": "Datum",
+      "amount": "Bedrag",
+      "description": "Omschrijving",
+      "receipt": "Bon",
+      "actions": "Acties"
+    },
+    "viewReceipt": "Bekijken",
+    "approve": "Goedkeuren",
+    "reject": "Afwijzen",
+    "errors": {
+      "actionFailed": "Niet gelukt om de onkosten te {{action}}.",
+      "noPath": "Geen pad naar bon gevonden.",
+      "downloadFailed": "Niet gelukt om bon te downloaden."
+    }
+  },
+  "supervisorsManager": {
+    "title": "Beheer toezichthouders",
+    "subtitle": "{{count}} toezichthouders in totaal",
+    "notice": "Let op: Toezichthouders melden zich aan met uw bedrijfsautorisatiecode. In deze sectie kunt u hun status en profielgegevens beheren.",
+    "searchPlaceholder": "Zoek op naam of e-mail...",
+    "filters": {
+      "all": "Alle",
+      "active": "Actief",
+      "inactive": "Inactief"
+    },
+    "noSupervisors": "Geen toezichthouders gevonden",
+    "labels": {
+      "supervisor": "Toezichthouder",
+      "email": "E-mail",
+      "status": "Status",
+      "phone": "Telefoonnummer",
+      "name": "Volledige naam",
+      "emailReadOnly": "E-mail (alleen-lezen)"
+    },
+    "status": {
+      "active": "Actief",
+      "inactive": "Inactief"
+    },
+    "modal": {
+      "title": "Details toezichthouder",
+      "save": "Wijzigingen opslaan",
+      "cancel": "Annuleren",
+      "errors": {
+        "updateFailed": "Niet gelukt om details toezichthouder bij te werken."
+      },
+      "editTitle": "Details bewerken"
+    }
+  },
+  "driverDetails": {
+    "title": "Chauffeursdossier: {{name}}",
+    "sections": {
+      "profile": "Kernprofiel & Salaris",
+      "compliance": "Professionele kwalificaties",
+      "activity": "Recente diensten",
+      "locations": "Startlocatie clusters"
+    },
+    "labels": {
+      "fullName": "Volledige naam",
+      "payrollNo": "Personeelsnummer",
+      "niNumber": "BSN / Fiscaal nummer",
+      "dob": "Geboortedatum",
+      "phone": "Contacttelefoon",
+      "emergencyName": "Contactpersoon nood",
+      "emergencyPhone": "Telefoon nood",
+      "status": "Status",
+      "address": "Woonadres",
+      "licence": "Rijbewijs (Voorzijde)",
+      "licenceNo": "Rijbewijsnummer",
+      "entitlements": "Bevoegdheden (bijv. C, C+E)",
+      "dvlaCode": "Check-code (indien van toepassing)",
+      "cpc": "Code 95 kaart",
+      "cpcNo": "Nummer Code 95 kaart",
+      "qualStart": "Startdatum kwalificatie",
+      "qualExpiry": "Vervaldatum kwalificatie",
+      "tacho": "Digitale tachograafkaart",
+      "tachoNo": "Nummer tacho-kaart",
+      "cardExpiry": "Vervaldatum kaart",
+      "duration": "Duur: {{hours}} uur",
+      "noShifts": "Geen recente diensten geregistreerd.",
+      "loadingMap": "Kaart laden...",
+      "noMapData": "Geen locatiegegevens voor heatmap.",
+      "ref": "REF: {{ref}}"
+    },
+    "status": {
+      "active": "ACTIEF",
+      "inactive": "INACTIEF (VOR)",
+      "missingExpiry": "Vervaldatum ontbreekt",
+      "expired": "Verlopen op {{date}}",
+      "expiresIn": "Verloopt over {{days}} dagen",
+      "expiresOn": "Verloopt op {{date}}"
+    },
+    "buttons": {
+      "uploadLicence": "Upload rijbewijs",
+      "uploadCpc": "Upload Code 95",
+      "uploadTacho": "Upload tacho-kaart",
+      "commit": "Wijzigingen doorvoeren",
+      "saving": "Opslaan..."
+    },
+    "errors": {
+      "fillAll": "Vul alle documentvelden in.",
+      "uploadError": "Fout: {{message}}",
+      "updateFailed": "Niet gelukt om chauffeursgegevens bij te werken."
+    }
+  },
+  "shiftEdit": {
+    "title": "Dienst handmatig bewerken",
+    "labels": {
+      "start": "Starttijd (alleen-lezen)",
+      "end": "Eindtijd",
+      "reason": "Reden voor wijziging (verplicht)",
+      "reasonPlaceholder": "bijv. Chauffeur bevestigde dat telefoon op dit moment leeg was."
+    },
+    "errors": {
+      "endRequired": "Eindtijd is verplicht.",
+      "reasonRequired": "Een auditnotitie die de wijziging uitlegt is verplicht.",
+      "invalidEnd": "Eindtijd moet na starttijd liggen.",
+      "updateFailed": "Niet gelukt om de dienst bij te werken."
+    },
+    "buttons": {
+      "save": "Opslaan en herberekenen",
+      "saving": "Opslaan..."
+    },
+    "auditNotePrefix": "(Bewerkt door beheerder) "
+  },
+  "settings": {
+    "company": {
+      "title": "Bedrijfsidentiteit",
+      "subscriptionActive": "ABONNEMENT ACTIEF",
+      "inactive": "INACTIEF",
+      "nameLabel": "Bedrijfsnaam",
+      "refIdLabel": "Intern referentie-ID",
+      "authCodeLabel": "Bedrijfsautorisatiecode",
+      "authCodeFootnote": "Geef deze code aan nieuwe chauffeurs en toezichthouders om ze aan uw vloot te koppelen.",
+      "complianceTitle": "Handhaving naleving",
+      "complianceSubtitle": "Handhaaf hoge veiligheidsnormen in het hele wagenpark.",
+      "mandatoryChecks": "Verplichte voertuigcontroles",
+      "mandatoryChecksSubtitle": "Blokkeer chauffeurs om diensten te starten zonder controle.",
+      "mandatoryChecksFootnote": "Indien ingeschakeld, moeten chauffeurs een inspectie uitvoeren voordat ze uren registreren.",
+      "usageMetrics": "Gebruiksstatistieken vloot",
+      "usageMetricsSubtitle": "Kilometerstand en inspectiegegevens worden automatisch vastgelegd. Bekijk rapporten in de tab **Veiligheidscontroles**.",
+      "dataStatus": "Gegevensstatus",
+      "activeMonitoring": "Actieve monitoring ingeschakeld",
+      "fleetRegistered": "VLOOT GEREGISTREERD: {{date}}",
+      "errors": {
+        "updateFailed": "Niet gelukt om bedrijfsnaam bij te werken.",
+        "settingUpdateFailed": "Niet gelukt om instelling bij te werken: {{message}}"
+      }
+    },
+    "profile": {
+      "title": "Mijn profiel",
+      "success": "Profiel bijgewerkt",
+      "nameLabel": "Volledige naam",
+      "emailLabel": "E-mailadres (Login)",
+      "phoneLabel": "Contacttelefoon",
+      "updateButton": "Mijn gegevens bijwerken",
+      "updating": "Opslaan...",
+      "securityTitle": "Beveiliging & Wachtwoord",
+      "securitySubtitle": "Wachtwoord wijzigen of MFA inschakelen?",
+      "resetPassword": "Wachtwoord herinstellen",
+      "resetSent": "Link voor wachtwoordherstel verzonden naar uw e-mail."
+    },
+    "mfa": {
+      "title": "Multi-Factor Authenticatie (MFA)",
+      "subtitle": "Voeg een extra beveiligingslaag toe aan uw account door een code van een authenticator-app te vereisen.",
+      "enabled": "MFA is momenteel ingeschakeld.",
+      "step1": "1. Scan deze QR-code met uw authenticator-app (bijv. Google Authenticator).",
+      "step2": "2. Voer de 6-cijferige code uit de app hieronder in.",
+      "placeholder": "123456",
+      "verifyButton": "Verifiëren & Inschakelen",
+      "verifying": "Verifiëren...",
+      "enableButton": "MFA inschakelen",
+      "starting": "Starten...",
+      "disableButton": "Uitschakelen",
+      "disabling": "Uitschakelen...",
+      "confirmDisable": "Weet u zeker dat u MFA wilt uitschakelen?",
+      "successEnabled": "MFA is succesvol ingeschakeld!",
+      "successDisabled": "MFA is uitgeschakeld."
+    }
+  },
+  "common": {
+    "save": "Wijzigingen opslaan",
+    "cancel": "Annuleren",
+    "loading": "Laden...",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "refresh": "Lijst verversen",
+    "viewAll": "Bekijk alles",
+    "success": "Succes",
+    "error": "Fout",
+    "lastUpdated": "Laatst bijgewerkt: {{date}}",
+    "details": "Details",
+    "syncing": "Rooster synchroniseren...",
+    "search": "Zoek op naam of e-mail...",
+    "confirmDelete": "Weet u zeker dat u {{name}} wilt verwijderen? Dit verwijdert definitief het account en de gegevens.",
+    "selectFile": "Bestand selecteren"
+  },
+  "errors": {
+    "profileNotFound": {
+      "title": "Profiel niet gevonden",
+      "message": "We hebben uw account gevonden, maar konden de profielgegevens niet laden.",
+      "retry": "Probeer profiel opnieuw te laden",
+      "signOut": "Uitloggen en opnieuw beginnen"
+    }
+  },
+  "howTo": {
+    "title": "Hoe HourWise EU te gebruiken",
+    "subtitle": "Alles wat u moet weten om aan de slag te gaan met wagenparkbeheer",
+    "sections": {
+      "gettingStarted": {
+        "title": "Aan de slag",
+        "step1": {
+          "title": "Stap 1: Maak uw account aan",
+          "description": "Begin met het aanmaken van een beheerderaccount. Geef bedrijfsinformatie op en kies een veilig wachtwoord."
+        },
+        "step2": {
+          "title": "Stap 2: Voeg chauffeurs toe",
+          "description": "Ga naar sectie Chauffeursbeheer om accounts aan te maken voor uw chauffeurs.",
+          "list": [
+            "Voer naam en e-mail van chauffeur in",
+            "Systeem genereert inloggegevens",
+            "Chauffeur ontvangt een welkomstmail"
+          ]
+        },
+        "step3": {
+          "title": "Stap 3: Dagelijkse uren volgen",
+          "description": "Chauffeurs loggen in op hun dashboard om uren in te dienen. Het systeem houdt totalen bij en waarschuwt bij limieten.",
+          "list": [
+            "Chauffeurs voeren rij-uren in",
+            "Realtime berekening van weektotalen",
+            "Automatische waarschuwingen bij naderen limieten"
+          ]
+        }
+      },
+      "managers": {
+        "title": "Voor beheerders",
+        "compliance": {
+          "title": "Naleving monitoren",
+          "description": "Bekijk de status van de hele vloot. Het nalevingsbord toont welke chauffeurs aandacht nodig hebben."
+        },
+        "violations": {
+          "title": "Overtredingen beheren",
+          "description": "Wanneer limieten worden overschreden, logt het systeem dit automatisch. Bekijk details in de overtredingsrapporten."
+        },
+        "audit": {
+          "title": "Controlespoor",
+          "description": "Elke actie wordt gelogd. Dit zorgt voor volledige verantwoording bij wettelijke inspecties."
+        }
+      },
+      "drivers": {
+        "title": "Voor chauffeurs",
+        "workflow": {
+          "title": "Dagelijkse workflow",
+          "step1": {
+            "title": "Log in op het chauffeur-dashboard",
+            "description": "Gebruik de gegevens van uw beheerder"
+          },
+          "step2": {
+            "title": "Dien uw rij-uren in",
+            "description": "Voer de totaal gereden uren van de dag in"
+          },
+          "step3": {
+            "title": "Check uw nalevingsstatus",
+            "description": "Bekijk uw week- en tweeweekse totalen"
+          },
+          "step4": {
+            "title": "Let op waarschuwingen",
+            "description": "Het systeem waarschuwt u bij het naderen van limieten"
+          }
+        }
+      },
+      "regulations": {
+        "title": "EU-regelgeving begrijpen",
+        "limits": {
+          "title": "Kernlimieten",
+          "weekly": "Wekelijkse limiet:",
+          "weeklyValue": "Maximaal 56 uur rijden per week",
+          "fortnightly": "Tweeweekse limiet:",
+          "fortnightlyValue": "Maximaal 90 uur over twee opeenvolgende weken",
+          "footnote": "HourWise EU monitort beide limieten automatisch."
+        }
+      },
+      "help": {
+        "title": "Hulp nodig?",
+        "subtitle": "Neem contact op met ons supportteam voor persoonlijke assistentie",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacybeleid",
+    "sections": {
+      "intro": {
+        "title": "1. Inleiding",
+        "p1": "HourWise EU biedt een platform om transportbedrijven te helpen bij naleving. Dit beleid legt uit hoe we gegevens verzamelen.",
+        "p2": "Door onze diensten te gebruiken, gaat u akkoord met dit beleid."
+      },
+      "collect": {
+        "title": "2. Welke informatie we verzamelen",
+        "managers": {
+          "title": "2.1 Informatie verstrekt door beheerders",
+          "items": [
+            "Beheerdersaccount: naam, bedrijf, e-mail.",
+            "Chauffeursgegevens: personeelsnummer, geboortedatum, BSN, adres.",
+            "Nalevingsdetails: rijbewijs, Code 95 nummers, vervaldatums."
+          ]
+        },
+        "drivers": {
+          "title": "2.2 Informatie verstrekt door chauffeurs",
+          "items": [
+            "Profieldata: naam, e-mail.",
+            "Werksessies: tijdstempels werk, pauze, rust.",
+            "Onkosten: bedrag, omschrijving, foto van bon."
+          ]
+        },
+        "app": {
+          "title": "2.3 App-permissies & Gegevens",
+          "description": "De app vraagt de volgende permissies:",
+          "items": [
+            "Camera: voor het uploaden van documenten en bonnen.",
+            "Locatie: we leggen GPS-coördinaten TIKAI vast bij start/eind van een dienst voor auditaudoeleinden. Geen continue achtergrondtracking."
+          ]
+        }
+      },
+      "use": {
+        "title": "3. Hoe we uw informatie gebruiken",
+        "items": [
+          "Nalevingsbeheer: urenregistratie en vervaldata documenten.",
+          "Salaris: berekenen brutoloon en overzichten voor boekhouding.",
+          "Onkosten: verwerken van ingediende bonnen.",
+          "Controlespoor: bijhouden van wettelijk vereiste gegevens."
+        ]
+      },
+      "security": {
+        "title": "4. Beveiliging & Opslag",
+        "p1": "Alle gegevens zijn beveiligd. Documenten staan in versleutelde, private opslag."
+      },
+      "retention": {
+        "title": "5. Bewaartermijn",
+        "p1": "Loon- en werksessiegegevens worden minimaal 3 tot 6 jaar bewaard conform wetgeving."
+      },
+      "rights": {
+        "title": "6. Uw rechten (AVG)",
+        "p1": "U heeft recht op inzage, correctie of verwijdering van uw gegevens."
+      },
+      "contact": {
+        "title": "7. Contact",
+        "team": "HourWise EU Privacy Team",
+        "emailLabel": "E-mail:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Algemene Voorwaarden",
+    "sections": {
+      "agreement": {
+        "title": "1. Overeenkomst",
+        "p1": "Door HourWise EU te gebruiken, gaat u akkoord met deze voorwaarden."
+      },
+      "license": {
+        "title": "2. Gebruikslicentie",
+        "p1": "U krijgt toestemming de Service te gebruiken voor zakelijke doeleinden.",
+        "items": [
+          "Niet kopiëren of aanpassen;",
+          "Geen reverse-engineering;",
+          "Geen auteursrechten verwijderen."
+        ]
+      },
+      "accuracy": {
+        "title": "3. Gegevens & Naleving",
+        "p1": "HourWise biedt hulpmiddelen, maar:",
+        "items": [
+          "Gebruikersverantwoordelijkheid: u bent zelf verantwoordelijk voor de juistheid van logs.",
+          "Wettelijke naleving: gebruik garandeert geen automatische goedkeuring door instanties.",
+          "Invoerfouten: wij zijn niet aansprakelijk voor foutieve invoer."
+        ]
+      },
+      "subscriptions": {
+        "title": "4. Abonnementen",
+        "p1": "Toegang tot professionele functies vereist een abonnement via Stripe.",
+        "solo": {
+          "title": "4.1 Solo Chauffeur",
+          "p1": "Facturatie verloopt per maand via de app."
+        },
+        "fleet": {
+          "title": "4.2 Wagenpark Plan",
+          "p1": "Bedrijven betalen op basis van het aantal actieve chauffeurs."
+        },
+        "general": {
+          "title": "4.3 Algemene factuurvoorwaarden",
+          "items": [
+            "Vergoedingen worden niet gerestitueerd.",
+            "Wanbetaling kan leiden tot opschorting van de dienst."
+          ]
+        }
+      },
+      "liability": {
+        "title": "5. Beperking van aansprakelijkheid",
+        "p1": "De service wordt geleverd 'as is'. Wij zijn niet aansprakelijk voor indirecte schade of gegevensverlies."
+      },
+      "law": {
+        "title": "6. Toepasselijk recht",
+        "p1": "Deze voorwaarden vallen onder de wetgeving van het Verenigd Koninkrijk (of de relevante lokale jurisdictie)."
+      },
+      "changes": {
+        "title": "7. Wijzigingen",
+        "p1": "Wij mogen voorwaarden wijzigen met een aankondiging van 30 dagen."
+      },
+      "contact": {
+        "title": "8. Contact",
+        "team": "HourWise EU Legal Team",
+        "emailLabel": "E-pasts:"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "We zijn er om te helpen. Kies de beste manier om contact op te nemen.",
+    "general": {
+      "title": "Algemene vragen",
+      "description": "Voor algemene zaken of partnerschappen kunt u contact opnemen met ons info-team."
+    },
+    "technical": {
+      "title": "Technische ondersteuning",
+      "description": "Bij technische problemen met de app staat ons supportteam voor u klaar."
+    },
+    "cta": "E-mail verzenden"
+  },
+  "privacyRequest": {
+    "title": "Gegevens- & Privacyverzoek",
+    "form": {
+      "labels": {
+        "fullName": "Volledige naam",
+        "email": "Geverifieerd e-mailadres",
+        "requestType": "Type verzoek",
+        "additionalInfo": "Aanvullende informatie"
+      },
+      "placeholders": {
+        "fullName": "Zoals in de app",
+        "email": "het.email@dat-u-gebruikt.nl",
+        "details": "Optioneel: specifieke details over uw verzoek"
+      },
+      "requestTypes": {
+        "download": "Kopie van mijn gegevens opvragen (Inzage)",
+        "deletion": "Mijn account en alle gegevens verwijderen (Verwijdering)"
+      },
+      "cta": "Privacy-mail genereren",
+      "notices": {
+        "fleet": "Let op voor vlootchauffeurs: neem eerst contact op met uw beheerder om te zorgen dat de laatste salarisverwerking is afgerond.",
+        "security": "Voor uw veiligheid verifiëren we uw identiteit. We verwerken het verzoek binnen 30 dagen."
+      },
+      "success": {
+        "title": "Verzoek voorbereid",
+        "message": "Uw e-mailprogramma is geopend. Klik op **'Verzenden'** om het verzoek in te dienen.",
+        "submitAnother": "Nog een verzoek indienen"
+      }
+    }
+  },
+  "driverManagement": {
+    "title": "Chauffeursbeheer",
+    "activeDrivers": "actieve chauffeurs",
+    "pendingInvites": "openstaande uitnodigingen",
+    "inviteDriver": "Chauffeur uitnodigen",
+    "labels": {
+      "name": "Naam",
+      "email": "E-mail",
+      "compliance": "Naleving",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Actief",
+      "inviteSent": "Uitnodiging verzonden",
+      "noDocuments": "Geen documenten",
+      "expired": "Document verlopen",
+      "compliant": "Compliant",
+      "checkExpiry": "Check vervaldatum",
+      "expiresIn": "Verloopt over {{days}} dagen",
+      "lost": "Verbinding verbroken",
+      "linkMismatch": "Link-fout"
+    },
+    "lostInviteNotice": "Uitnodiging geaccepteerd, maar profielkoppeling mislukt. Update company_id in Supabase.",
+    "noDrivers": "Geen chauffeurs of uitnodigingen gevonden",
+    "incompleteSetup": "Onvolledige installatie"
+  },
+  "inviteDriver": {
+    "modal": {
+      "title": "Nieuwe chauffeur uitnodigen",
+      "fullName": "Volledige naam *",
+      "email": "E-mailadres *",
+      "payConfig": "Loonconfiguratie",
+      "hourlyRate": "Uurloon (€)",
+      "unpaidBreak": "Onbetaalde pauze (min)",
+      "allowances": "Toeslagen",
+      "allowanceAmount": "Bedrag (€)",
+      "unit": "Eenheid",
+      "units": {
+        "hour": "Per uur",
+        "day": "Per dag",
+        "week": "Per week",
+        "month": "Per maand",
+        "shift": "Per dienst",
+        "daily": "Dagelijks",
+        "weekly": "Wekelijks",
+        "monthly": "Maandelijks"
+      },
+      "addAllowance": "Toeslag toevoegen",
+      "overtime": "Overwerk",
+      "otThreshold": "Overwerkgrens (uur)",
+      "otUnit": "Overwerkeenheid",
+      "otMultiplier": "Loonfactor overwerk",
+      "additionalTiers": "Extra niveaus",
+      "afterHours": "Na (uren)",
+      "newMultiplier": "Nieuwe loonfactor",
+      "addOtTier": "Overwerkniveau toevoegen",
+      "submit": "Uitnodiging verzenden",
+      "submitting": "Verzenden..."
+    },
+    "errors": {
+      "noCompany": "U bent niet gekoppeld aan een bedrijf.",
+      "generic": "Er is een onbekende fout opgetreden."
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "trialExpired": "Proefperiode verlopen",
+      "unlockAccess": "Volledige toegang ontgrendelen",
+      "expiredSubtitle": "Abonneren om HourWise te blijven gebruiken",
+      "accessSubtitle": "Krijg onbeperkt toegang tot alle functies",
+      "features": {
+        "invoicing": "Factuurgeneratie",
+        "invoicingDesc": "Professionele facturen voor klanten",
+        "expenses": "Onkosten bijhouden",
+        "expensesDesc": "Monitor al uw bedrijfsuitgaven",
+        "compliance": "Uren naleving",
+        "complianceDesc": "Blijf binnen wettelijke urenlimieten",
+        "reports": "Belastingrapporten",
+        "reportsDesc": "Exporteer rapporten voor aangiften"
+      },
+      "perMonth": "/maand",
+      "cancelAnytime": "Altijd opzegbaar. Geen langdurige verplichting.",
+      "subscribeNow": "Nu abonneren",
+      "cancelSettings": "Zelf opzeggen in uw accountinstellingen",
+      "securePayment": "Veilige betaling via Apple/Google",
+      "instantAccess": "Direct toegang na abonneren"
+    },
+    "manager": {
+      "fleetMember": "Vlootlid",
+      "partOf": "U bent onderdeel van {{company}}",
+      "fleetAccess": "Volledige toegang via uw bedrijf",
+      "soloTitle": "Solo Chauffeur Abonnement",
+      "manageDesc": "Beheer uw abonnement",
+      "status": {
+        "active": "Actief",
+        "trial": "Proefperiode",
+        "inactive": "Inactief"
+      },
+      "trialPeriod": "Proefperiode",
+      "trialDays": "Nog {{count}} dagen in uw proefperiode",
+      "trialEnded": "Uw proefperiode is afgelopen",
+      "activeSub": "Actief abonnement",
+      "renewsOn": "Vernieuwt op {{date}}",
+      "noActiveSub": "Geen actief abonnement",
+      "subscribeAccess": "Abonneren voor volledige toegang",
+      "planLabel": "Plan",
+      "soloPlan": "Solo Chauffeur",
+      "priceLabel": "Prijs",
+      "priceValue": "€9.99/maand",
+      "paymentLabel": "Betaalmethode",
+      "nativePay": "Apple/Google Pay",
+      "notSetUp": "Niet ingesteld",
+      "manageButton": "Abonnement beheren",
+      "resubscribe": "Opnieuw abonneren",
+      "subscribeNow": "Nu abonneren",
+      "manageAlert": "Bezoek de instellingen van uw apparaat om uw abonnement te beheren.",
+      "demoAlert": "In-app aankoop-flow wordt hier geactiveerd."
+    },
+    "banner": {
+      "daysLeft": "Nog {{count}} dagen",
+      "lastDay": "Laatste dag",
+      "trialSuffix": " van uw gratis proefperiode!",
+      "endsIn": "Uw gratis proefperiode eindigt over {{count}} dagen",
+      "cta": "Abonneren voor slechts €9.99/maand",
+      "subscribeNow": "Nu abonneren"
+    }
+  },
+  "reports": {
+    "title": "Vlootrapportage",
+    "exportPdf": "PDF exporteren / Printen",
+    "tabs": {
+      "payroll": "Salaris",
+      "efficiency": "Efficiëntie",
+      "vehicleChecks": "Controles",
+      "infractions": "Overtredingen",
+      "driving": "Rijgedrag"
+    },
+    "filters": {
+      "title": "Filters",
+      "driver": "Chauffeur",
+      "allDrivers": "Alle chauffeurs",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum"
+    },
+    "payroll": {
+      "title": "Salarisoverzicht",
+      "headers": {
+        "driver": "Chauffeur",
+        "workHours": "Werkuren",
+        "breakHours": "Pauze-uren",
+        "sessions": "Sessies"
+      }
+    },
+    "vehicleChecks": {
+      "title": "Voertuiginspectie rapport",
+      "headers": {
+        "dateTime": "Datum/Tijd",
+        "inspector": "Inspecteur",
+        "vehicle": "Voertuig",
+        "status": "Status",
+        "defects": "Defecten"
+      },
+      "status": {
+        "pass": "GOED",
+        "defect": "DEFECT"
+      },
+      "noneReported": "Geen gemeld"
+    },
+    "infractions": {
+      "moduleReady": "Overtredingsmodule gereed."
+    },
+    "driving": {
+      "moduleReady": "Rijgedraganalyse module gereed."
+    }
+  },
+  "broadcast": {
+    "title": "Bericht naar vloot verzenden",
+    "placeholder": "Typ hier uw bericht naar alle chauffeurs...",
+    "button": "Verzenden naar alle chauffeurs",
+    "sending": "Verzenden...",
+    "success": "Bericht succesvol verzonden!",
+    "errors": {
+      "empty": "Bericht mag niet leeg zijn.",
+      "notLoaded": "Profiel of Bedrijfs-ID niet geladen.",
+      "failed": "Verzenden bericht mislukt."
+    }
+  },
+  "mfa": {
+    "title": "Multi-Factor Authenticatie (MFA)",
+    "subtitle": "Voeg extra beveiliging toe met een code van een authenticator-app.",
+    "enabled": "MFA is momenteel ingeschakeld.",
+    "disableButton": "Uitschakelen",
+    "disabling": "Uitschakelen...",
+    "step1": "1. Scan de QR-code met uw app.",
+    "step2": "2. Voer de 6-cijferige code in.",
+    "placeholder": "123456",
+    "verifyButton": "Verifiëren & Inschakelen",
+    "verifying": "Verifiëren...",
+    "enableButton": "MFA inschakelen",
+    "starting": "Starten...",
+    "confirmDisable": "Weet u zeker dat u MFA wilt uitschakelen?",
+    "successEnabled": "MFA is succesvol ingeschakeld!",
+    "successDisabled": "MFA is uitgeschakeld."
+  },
+  "supervisor": {
+    "management": {
+      "title": "Beheer toezichthouders",
+      "count": "{{count}} toezichthouders in totaal",
+      "notice": "Let op: Toezichthouders gebruiken uw bedrijfscode om te koppelen.",
+      "searchPlaceholder": "Zoeken...",
+      "noSupervisors": "Geen toezichthouders gevonden",
+      "labels": {
+        "supervisor": "Toezichthouder",
+        "email": "E-mail",
+        "status": "Status",
+        "edit": "Details bewerken"
+      }
+    },
+    "modal": {
+      "title": "Details toezichthouder",
+      "nameLabel": "Volledige naam",
+      "emailLabel": "E-mail (alleen-lezen)",
+      "phoneLabel": "Telefoonnummer",
+      "saveButton": "Wijzigingen opslaan",
+      "errorUpdate": "Bijwerken details mislukt."
+    }
+  },
+  "location": {
+    "notRecorded": "Locatie niet vastgelegd",
+    "mapAlt": "Kaart gecentreerd op {{lat}}, {{lng}}"
+  },
+  "vehicleCompliance": {
+    "title": "Nalevingsmeldingen voertuigen",
+    "urgent": "{{count}} DRINGEND",
+    "noAlerts": "Geen dringende voertuigmeldingen.",
+    "offRoad": "Voertuig buiten gebruik",
+    "dueOverdue": "{{type}} vervaldatum OVERTIJD",
+    "dueInDays": "{{type}} verloopt over {{days}} dagen",
+    "viewFullList": "Volledige vlootlijst bekijken"
+  }
+}
