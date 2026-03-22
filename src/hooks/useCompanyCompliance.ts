@@ -5,15 +5,22 @@ import type { Database } from '../lib/database.types';
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
-interface DriverComplianceSummary {
+export interface DriverViolation {
+  date: string;
+  violations: string[];
+  score: number;
+  sessionId: string;
+}
+
+export interface DriverComplianceSummary {
   driverId: string;
   driverName: string;
   averageScore: number;
   totalViolations: number;
-  violations: string[];
+  violations: string[]; // Unique list of all violation types
+  recentViolations: DriverViolation[];
 }
 
-// This hook now fetches data for all drivers in a company and calculates compliance.
 export const useCompanyCompliance = (companyId: string | undefined, days = 7) => {
   const [data, setData] = useState<{ profiles: Profile[], sessions: WorkSession[] }>({ profiles: [], sessions: [] });
   const [loading, setLoading] = useState(true);
@@ -32,7 +39,6 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
       const startDateString = startDate.toISOString().split('T')[0];
 
       try {
-        // First, get all drivers for the company
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name')
@@ -47,12 +53,12 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
 
         const driverIds = profiles.map(p => p.id);
 
-        // Then, get all relevant sessions for those drivers
         const { data: sessions, error: sessionsError } = await supabase
           .from('work_sessions')
-          .select('user_id, compliance_score, compliance_violations')
-          .in('user_id', driverIds) // Correctly filter by user IDs
-          .gte('date', startDateString);
+          .select('id, user_id, date, compliance_score, compliance_violations')
+          .in('user_id', driverIds)
+          .gte('date', startDateString)
+          .order('date', { ascending: false });
 
         if (sessionsError) throw sessionsError;
 
@@ -76,10 +82,11 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
       if (!driverSessions.length) {
         return {
           driverId: driver.id,
-          driverName: driver.full_name,
+          driverName: driver.full_name || 'Unnamed Driver',
           averageScore: 100,
           totalViolations: 0,
           violations: [],
+          recentViolations: [],
         };
       }
 
@@ -89,12 +96,22 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
       const allViolations = driverSessions.flatMap(s => s.compliance_violations || []);
       const uniqueViolations = [...new Set(allViolations)];
 
+      const recentViolations: DriverViolation[] = driverSessions
+        .filter(s => (s.compliance_violations?.length ?? 0) > 0)
+        .map(s => ({
+          date: s.date,
+          violations: s.compliance_violations || [],
+          score: s.compliance_score ?? 100,
+          sessionId: s.id
+        }));
+
       return {
         driverId: driver.id,
         driverName: driver.full_name || 'Unnamed Driver',
         averageScore,
         totalViolations: allViolations.length,
         violations: uniqueViolations,
+        recentViolations,
       };
     });
   }, [data]);
