@@ -217,9 +217,10 @@ export function DriverManagement() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('driverManagement.noDrivers')}</h3>
                     <p className="text-gray-600">{t('driverManagement.noDriversSubtitle', 'Invite drivers or click the refresh icon.')}</p>
                 </div>
-            ) : combinedList.map((item) => {
+            ) : combinedList.map((item: any) => {
               const isInvite = item.type === 'invite';
-              const isGhost = isInvite && (item as any).isGhost;
+              const isGhost = isInvite && item.isGhost;
+              const ComplianceIcon = !isInvite ? item.compliance.Icon : null;
 
               return (
                 <div key={item.id} className={`flex items-center justify-between p-4 border rounded-xl transition ${
@@ -229,7 +230,7 @@ export function DriverManagement() {
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.name')}</label>
-                      <p className="font-bold text-slate-900">{(item as any).full_name || t('driverManagement.incompleteSetup')}</p>
+                      <p className="font-bold text-slate-900">{item.full_name || t('driverManagement.incompleteSetup')}</p>
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.email')}</label>
@@ -241,9 +242,9 @@ export function DriverManagement() {
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.compliance')}</label>
                       {!isInvite ? (
-                        <div className={`flex items-center gap-2 font-black text-[10px] uppercase ${(item as any).compliance.color}`}>
-                          {(item as any).compliance.Icon && <(item as any).compliance.Icon className="w-4 h-4" />}
-                          <span>{(item as any).compliance.text}</span>
+                        <div className={`flex items-center gap-2 font-black text-[10px] uppercase ${item.compliance.color}`}>
+                          {ComplianceIcon && <ComplianceIcon className="w-4 h-4" />}
+                          <span>{item.compliance.text}</span>
                         </div>
                       ) : (
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
@@ -273,7 +274,7 @@ export function DriverManagement() {
                         <Edit className="w-3.5 h-3.5" />
                         <span>{t('common.details')}</span>
                       </button>
-                      <button onClick={() => handleRemoveDriver(item.id, (item as any).full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 transition border border-red-100">
+                      <button onClick={() => handleRemoveDriver(item.id, item.full_name ?? 'this driver')} disabled={removingDriverId === item.id} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 transition border border-red-100">
                         {removingDriverId === item.id ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
