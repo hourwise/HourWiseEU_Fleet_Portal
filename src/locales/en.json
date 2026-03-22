@@ -167,7 +167,8 @@
       "errors": {
         "companyId": "Company ID not found. Please refresh and try again.",
         "duplicate": "A vehicle with this registration number already exists.",
-        "generic": "An unexpected error occurred while adding the vehicle."
+        "generic": "An unexpected error occurred while adding the vehicle.",
+        "updateFailed": "Failed to update vehicle details."
       }
     },
     "types": {
@@ -177,7 +178,6 @@
       "class1": "Class 1 (Tractor)",
       "trailer": "Trailer"
     },
-    "maintenanceCalled": "Maintenance Called",
     "docTypes": {
       "v5c": "V5C Logbook",
       "insurance": "Insurance Certificate",
@@ -670,6 +670,23 @@
       "securitySubtitle": "Need to change your login password or enable MFA?",
       "resetPassword": "Reset Password",
       "resetSent": "Password reset link sent to your email."
+    },
+    "mfa": {
+      "title": "Multi-Factor Authentication (MFA)",
+      "subtitle": "Add an extra layer of security to your account by requiring a code from an authenticator app.",
+      "enabled": "MFA is currently enabled.",
+      "step1": "1. Scan this QR code with your app (e.g., Google Authenticator).",
+      "step2": "2. Enter the 6-digit code below to complete setup.",
+      "placeholder": "123456",
+      "verifyButton": "Verify & Enable",
+      "verifying": "Verifying...",
+      "enableButton": "Enable MFA",
+      "starting": "Starting...",
+      "disableButton": "Disable",
+      "disabling": "Disabling...",
+      "confirmDisable": "Are you sure you want to disable MFA?",
+      "successEnabled": "MFA enabled successfully!",
+      "successDisabled": "MFA disabled."
     }
   },
   "common": {
@@ -956,6 +973,32 @@
         "submitAnother": "Submit another request"
       }
     }
+  },
+  "driverManagement": {
+    "title": "Driver Management",
+    "activeDrivers": "active drivers",
+    "pendingInvites": "pending invites",
+    "inviteDriver": "Invite Driver",
+    "labels": {
+      "name": "Name",
+      "email": "Email",
+      "compliance": "Compliance",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "inviteSent": "Invite Sent",
+      "noDocuments": "No Documents",
+      "expired": "Document Expired",
+      "compliant": "Compliant",
+      "checkExpiry": "Check Expiry",
+      "expiresIn": "Expires in {{days}} days",
+      "lost": "Link Lost",
+      "linkMismatch": "Association Error"
+    },
+    "lostInviteNotice": "Invite accepted but profile link failed. Update company_id in Supabase.",
+    "noDrivers": "No drivers or invites found",
+    "incompleteSetup": "Incomplete Setup"
   },
   "inviteDriver": {
     "modal": {
