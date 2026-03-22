@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTranslation } from 'react-i18next'; // Import
+import { useTranslation } from 'react-i18next';
 import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck, Activity, GraduationCap } from 'lucide-react';
 import { ComplianceScoreboard } from './ComplianceScoreboard';
 import { DriverManagement } from './DriverManagement';
@@ -26,7 +26,7 @@ type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'vehi
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
-  const { t } = useTranslation(); // Use hook
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   const tabs = [
@@ -140,7 +140,7 @@ export function ManagerDashboard() {
           )}
 
           {activeTab === 'drivers' && <DriverManagement />}
-          {activeTab === 'compliance' && <ComplianceScoreboard />}
+          {activeTab === 'compliance' && <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />}
           {activeTab === 'training' && <TachoTrainingModule />}
           {activeTab === 'fleet' && <VehicleManagement />}
           {activeTab === 'vehicle_checks' && <VehicleChecksModule />}

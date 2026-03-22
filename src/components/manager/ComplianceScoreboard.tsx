@@ -4,16 +4,19 @@ import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 import { Activity, Users, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Calendar, ExternalLink, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+interface ComplianceScoreboardProps {
+  onViewSession?: (driverId: string, date: string) => void;
+}
+
 const getScoreColor = (score: number): { text: string; bg: string; border: string; lightBg: string } => {
   if (score >= 90) return { text: 'text-emerald-700', bg: 'bg-emerald-500', border: 'border-emerald-200', lightBg: 'bg-emerald-50' };
   if (score >= 70) return { text: 'text-amber-700', bg: 'bg-amber-500', border: 'border-amber-200', lightBg: 'bg-amber-50' };
   return { text: 'text-rose-700', bg: 'bg-rose-500', border: 'border-rose-200', lightBg: 'bg-rose-50' };
 };
 
-export function ComplianceScoreboard() {
+export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProps) {
   const { profile } = useAuth();
   const { t } = useTranslation();
-  // Fetch data for the last 14 days to provide more context on violations
   const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id, 14);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
 
@@ -52,7 +55,6 @@ export function ComplianceScoreboard() {
         </div>
       </div>
       
-      {/* Overall Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-4">
@@ -85,7 +87,6 @@ export function ComplianceScoreboard() {
           </div>
       </div>
 
-      {/* Driver List with Expansion for Details */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <h3 className="text-lg font-bold text-slate-900">{t('compliance.details.title', 'Driver Breakdown')}</h3>
@@ -176,13 +177,13 @@ export function ComplianceScoreboard() {
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('compliance.dayScore', 'Day Score')}</p>
                                     <p className={`font-bold ${getScoreColor(v.score).text}`}>{v.score}%</p>
                                   </div>
-                                  <a
-                                    href={`/manager/work-logs?driver=${driver.driverId}&date=${v.date}`}
+                                  <button
+                                    onClick={() => onViewSession?.(driver.driverId, v.date)}
                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
                                     title={t('compliance.viewSession', 'View Session')}
                                   >
                                     <ExternalLink className="w-4 h-4" />
-                                  </a>
+                                  </button>
                                 </div>
                               </div>
                             ))}
