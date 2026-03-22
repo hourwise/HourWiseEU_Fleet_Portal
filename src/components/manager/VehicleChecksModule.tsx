@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Search, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge } from 'lucide-react';
+import { ShieldCheck, Search, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {
@@ -16,6 +16,10 @@ interface VehicleCheck {
   items: Record<string, boolean>;
   odometer_reading: number | null;
   created_at: string;
+  defect_lifecycle_status?: 'reported' | 'in_progress' | 'fixed';
+  resolution_notes?: string;
+  resolved_at?: string;
+  resolved_by?: string;
   profiles: {
     full_name: string;
   };
@@ -28,6 +32,8 @@ export function VehicleChecksModule() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCheck, setSelectedCheck] = useState<VehicleCheck | null>(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [updatingLifecycle, setUpdatingLifecycle] = useState(false);
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -48,10 +54,44 @@ export function VehicleChecksModule() {
 
       if (error) throw error;
       setChecks(data || []);
+
+      if (selectedCheck) {
+        const updated = data?.find(c => c.id === selectedCheck.id);
+        if (updated) setSelectedCheck(updated);
+      }
     } catch (error) {
       console.error('Error loading vehicle checks:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateDefectStatus = async (newStatus: 'in_progress' | 'fixed') => {
+    if (!selectedCheck) return;
+    setUpdatingLifecycle(true);
+    try {
+      const updates: any = {
+        defect_lifecycle_status: newStatus,
+        resolution_notes: resolutionNotes || selectedCheck.resolution_notes
+      };
+
+      if (newStatus === 'fixed') {
+        updates.resolved_at = new Date().toISOString();
+        updates.resolved_by = profile?.id;
+      }
+
+      const { error } = await supabase
+        .from('vehicle_checks')
+        .update(updates)
+        .eq('id', selectedCheck.id);
+
+      if (error) throw error;
+      await loadVehicleChecks();
+      setResolutionNotes('');
+    } catch (err: any) {
+      alert("Status update failed: " + err.message);
+    } finally {
+      setUpdatingLifecycle(false);
     }
   };
 
@@ -89,7 +129,7 @@ export function VehicleChecksModule() {
               placeholder={t('vehicleChecklist.manager.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
             />
           </div>
 
@@ -107,7 +147,18 @@ export function VehicleChecksModule() {
                     }`}
                   >
                     <div>
-                      <p className="font-semibold text-gray-900">{check.profiles.full_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900">{check.profiles.full_name}</p>
+                        {check.check_status === 'defect' && (
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
+                            check.defect_lifecycle_status === 'fixed' ? 'bg-green-100 text-green-700' :
+                            check.defect_lifecycle_status === 'in_progress' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {check.defect_lifecycle_status || 'REPORTED'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs font-bold text-blue-600 uppercase">{check.reg_number}</p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                         <Calendar size={14} />
@@ -146,7 +197,7 @@ export function VehicleChecksModule() {
                 </div>
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
                 >
                   <FileText size={16} />
                   {t('vehicleChecklist.manager.printExport')}
@@ -183,12 +234,72 @@ export function VehicleChecksModule() {
                 </div>
 
                 {selectedCheck.check_status === 'defect' && (
-                  <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <h4 className="text-amber-800 font-bold flex items-center gap-2 mb-2">
-                      <AlertTriangle size={20} />
-                      {t('vehicleChecklist.manager.details.defectsTitle')}
-                    </h4>
-                    <p className="text-amber-900 whitespace-pre-wrap">{selectedCheck.defect_details || t('vehicleChecklist.manager.details.noDefects')}</p>
+                  <div className="mb-8 space-y-6">
+                    <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
+                      <h4 className="text-red-800 font-bold flex items-center gap-2 mb-2">
+                        <AlertTriangle size={20} />
+                        {t('vehicleChecklist.manager.details.defectsTitle')}
+                      </h4>
+                      <p className="text-red-900 whitespace-pre-wrap font-medium">{selectedCheck.defect_details || t('vehicleChecklist.manager.details.noDefects')}</p>
+                    </div>
+
+                    {/* DEFECT LIFECYCLE MANAGEMENT */}
+                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-6 shadow-sm">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Wrench size={14}/> Defect Resolution Tracking
+                      </h4>
+
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-tight">{t('vehicleChecklist.manager.details.defectStatus')}</label>
+                            <div className="flex gap-2">
+                              {['reported', 'in_progress', 'fixed'].map((status) => (
+                                <span key={status} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                                  selectedCheck.defect_lifecycle_status === status
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-slate-50 text-slate-400 border-slate-200'
+                                }`}>
+                                  {status.replace('_', ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          {selectedCheck.resolved_at && (
+                            <div className="flex items-center gap-2 text-xs text-green-600 font-bold">
+                              <CheckCircle size={14} /> {t('vehicleChecklist.manager.details.fixedBy', { date: new Date(selectedCheck.resolved_at).toLocaleDateString() })}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-tight">{t('vehicleChecklist.manager.details.resolutionNotes')}</label>
+                          <textarea
+                            value={resolutionNotes}
+                            onChange={(e) => setResolutionNotes(e.target.value)}
+                            placeholder={selectedCheck.resolution_notes || "Workshop notes, parts used, or mechanic name..."}
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUpdateDefectStatus('in_progress')}
+                              disabled={updatingLifecycle || selectedCheck.defect_lifecycle_status === 'in_progress'}
+                              className="flex-1 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-black transition disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              <Clock size={14} /> {t('vehicleChecklist.manager.details.markInProgress')}
+                            </button>
+                            <button
+                              onClick={() => handleUpdateDefectStatus('fixed')}
+                              disabled={updatingLifecycle || selectedCheck.defect_lifecycle_status === 'fixed'}
+                              className="flex-1 py-2.5 bg-green-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              <Check size={14} /> {t('vehicleChecklist.manager.details.markFixed')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

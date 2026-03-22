@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Paperclip, Trash2, AlertTriangle, CheckCircle, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Upload } from 'lucide-react';
+import { X, Save, Paperclip, Trash2, AlertTriangle, CheckCircle, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Upload, Check, Ban } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
@@ -78,7 +78,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
   }, [driver.id]);
 
   const fetchDocuments = async () => {
-    const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id);
+    const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id).order('uploaded_at', { ascending: false });
     setDocuments(data || []);
   };
 
@@ -89,11 +89,24 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    // Special handling for boolean status
     if (name === 'is_active') {
       setFormData(prev => ({ ...prev, is_active: value === 'true' }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value || null }));
+    }
+  };
+
+  const handleDocumentStatus = async (docId: string, status: 'verified' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('driver_documents')
+        .update({ verified_at: status === 'verified' ? new Date().toISOString() : null })
+        .eq('id', docId);
+
+      if (error) throw error;
+      fetchDocuments();
+    } catch (err: any) {
+      alert("Verification failed: " + err.message);
     }
   };
 
@@ -288,6 +301,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3">
                 {documents.map(doc => {
                   const status = getDocumentStatus(doc.expiry_date, t);
+                  const isVerified = !!doc.verified_at;
                   return (
                     <div key={doc.id} className="flex justify-between items-center p-4 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-blue-200 transition">
                       <div className="flex items-center gap-3">
@@ -300,9 +314,39 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
                           <p className={`text-[10px] flex items-center gap-1 font-black uppercase mt-1 ${status.color}`}>
                             <status.Icon size={10}/> {status.text}
                           </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            {isVerified ? (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase">
+                                <Check size={10}/> {t('driverDetails.labels.verified')}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase">
+                                <Clock size={10}/> {t('driverDetails.labels.pending')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <button className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
+                      <div className="flex flex-col gap-1">
+                        {!isVerified ? (
+                          <button
+                            onClick={() => handleDocumentStatus(doc.id, 'verified')}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title={t('driverDetails.labels.verify')}
+                          >
+                            <Check size={16}/>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDocumentStatus(doc.id, 'rejected')}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title={t('driverDetails.labels.reject')}
+                          >
+                            <Ban size={16}/>
+                          </button>
+                        )}
+                        <button className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
+                      </div>
                     </div>
                   );
                 })}

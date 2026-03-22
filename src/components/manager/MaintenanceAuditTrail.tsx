@@ -18,12 +18,13 @@ interface MaintenanceLog {
 
 interface MaintenanceAuditTrailProps {
   vehicleId: string;
+  isTrailer?: boolean;
   onUpdate?: () => void;
   triggerAddLog?: boolean;
   onModalClose?: () => void;
 }
 
-export function MaintenanceAuditTrail({ vehicleId, onUpdate, triggerAddLog, onModalClose }: MaintenanceAuditTrailProps) {
+export function MaintenanceAuditTrail({ vehicleId, isTrailer, onUpdate, triggerAddLog, onModalClose }: MaintenanceAuditTrailProps) {
   const { t } = useTranslation();
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +119,7 @@ export function MaintenanceAuditTrail({ vehicleId, onUpdate, triggerAddLog, onMo
                 <p className="text-sm text-slate-700 font-medium leading-snug">{log.description}</p>
                 <div className="text-[10px] text-slate-400 font-black flex gap-4 mt-1.5">
                   <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(log.completed_at).toLocaleDateString()}</span>
-                  <span>{t('maintenance.labels.odo')}: {log.odometer_at_service?.toLocaleString()} km</span>
+                  {!isTrailer && <span>{t('maintenance.labels.odo')}: {log.odometer_at_service?.toLocaleString()} km</span>}
                   {log.cost > 0 && <span className="text-green-600">{t('maintenance.labels.cost')}: £{Number(log.cost).toFixed(2)}</span>}
                 </div>
               </div>
@@ -142,6 +143,7 @@ export function MaintenanceAuditTrail({ vehicleId, onUpdate, triggerAddLog, onMo
       {showAddModal && (
         <AddLogModal
           vehicleId={vehicleId}
+          isTrailer={isTrailer}
           onClose={handleModalClose}
           onSuccess={() => {
             handleModalClose();
@@ -154,7 +156,7 @@ export function MaintenanceAuditTrail({ vehicleId, onUpdate, triggerAddLog, onMo
   );
 }
 
-export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: string, onClose: () => void, onSuccess: () => void }) {
+export function AddLogModal({ vehicleId, isTrailer, onClose, onSuccess }: { vehicleId: string, isTrailer?: boolean, onClose: () => void, onSuccess: () => void }) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -210,7 +212,7 @@ export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: stri
           company_id: profile?.company_id,
           event_type: formData.event_type,
           service_provider: formData.service_provider.trim(),
-          odometer_at_service: formData.odometer_at_service,
+          odometer_at_service: isTrailer ? 0 : formData.odometer_at_service,
           cost: parseFloat(formData.cost) || 0,
           description: formData.description.trim(),
           document_url,
@@ -222,9 +224,12 @@ export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: stri
 
       // 4. AUTOMATED COMPLIANCE: Update Vehicle Master
       const updates: any = {
-        current_odometer: formData.odometer_at_service,
         updated_at: new Date().toISOString()
       };
+
+      if (!isTrailer) {
+        updates.current_odometer = formData.odometer_at_service;
+      }
 
       // If repair/pmi done, vehicle is likely safe
       if (formData.event_type === 'PMI' || formData.event_type === 'Defect Repair') {
@@ -248,7 +253,7 @@ export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: stri
       }
 
       // If Tacho, set 2 years
-      if (formData.event_type === 'Tacho Calibration') {
+      if (!isTrailer && formData.event_type === 'Tacho Calibration') {
         const nextTacho = new Date(formData.completed_at);
         nextTacho.setFullYear(nextTacho.getFullYear() + 2);
         updates.tacho_calibration_due = nextTacho.toISOString().split('T')[0];
@@ -296,8 +301,8 @@ export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: stri
               >
                 <option value="PMI">{t('maintenance.eventTypes.pmi')}</option>
                 <option value="Defect Repair">{t('maintenance.eventTypes.repair')}</option>
-                <option value="MOT">{t('maintenance.eventTypes.mot')}</option>
-                <option value="Tacho Calibration">{t('maintenance.eventTypes.tacho')}</option>
+                <option value="MOT">{isTrailer ? 'Annual Test' : t('maintenance.eventTypes.mot')}</option>
+                {!isTrailer && <option value="Tacho Calibration">{t('maintenance.eventTypes.tacho')}</option>}
                 <option value="Other">{t('maintenance.eventTypes.other')}</option>
               </select>
             </div>
@@ -327,14 +332,18 @@ export function AddLogModal({ vehicleId, onClose, onSuccess }: { vehicleId: stri
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('maintenance.labels.odo')} (km)</label>
-              <input
-                type="number"
-                required
-                className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 text-sm font-bold transition-all"
-                value={formData.odometer_at_service || ''}
-                onChange={e => setFormData({...formData, odometer_at_service: parseInt(e.target.value) || 0})}
-              />
+              {!isTrailer && (
+                <>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('maintenance.labels.odo')} (km)</label>
+                  <input
+                    type="number"
+                    required
+                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 text-sm font-bold transition-all"
+                    value={formData.odometer_at_service || ''}
+                    onChange={e => setFormData({...formData, odometer_at_service: parseInt(e.target.value) || 0})}
+                  />
+                </>
+              )}
             </div>
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('maintenance.labels.cost')} (£)</label>

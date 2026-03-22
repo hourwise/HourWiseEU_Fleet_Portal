@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save } from 'lucide-react';
+import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container } from 'lucide-react';
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
 
@@ -54,7 +54,6 @@ export function VehicleManagement() {
       const vehicleList = data || [];
       setVehicles(vehicleList);
 
-      // Update selected vehicle if in details view to reflect fresh dates
       if (selectedVehicle) {
         const updated = vehicleList.find(v => v.id === selectedVehicle.id);
         if (updated) setSelectedVehicle(updated);
@@ -73,8 +72,8 @@ export function VehicleManagement() {
     today.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return 'text-red-600 font-bold'; // Overdue
-    if (diffDays < 14) return 'text-amber-500 font-bold'; // Due soon
+    if (diffDays < 0) return 'text-red-600 font-bold';
+    if (diffDays < 14) return 'text-amber-500 font-bold';
     return 'text-green-600 font-medium';
   };
 
@@ -116,6 +115,8 @@ export function VehicleManagement() {
   }
 
   if (view === 'details' && selectedVehicle) {
+    const isTrailer = selectedVehicle.vehicle_type === 'Trailer';
+
     return (
       <div className="space-y-6">
         <button
@@ -127,12 +128,18 @@ export function VehicleManagement() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Vehicle Header */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedVehicle.reg_number}</h2>
-                  <p className="text-slate-500 font-medium uppercase">{selectedVehicle.make} {selectedVehicle.model} • {selectedVehicle.vehicle_type}</p>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-slate-100 rounded-xl">
+                    {isTrailer ? <Container size={32} className="text-blue-600" /> : <Truck size={32} className="text-blue-600" />}
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedVehicle.reg_number}</h2>
+                    <p className="text-slate-500 font-medium uppercase">
+                      {selectedVehicle.make} {selectedVehicle.model} • {isTrailer ? t('fleet.labels.trailer') : selectedVehicle.vehicle_type}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {selectedVehicle.maintenance_called && (
@@ -151,13 +158,15 @@ export function VehicleManagement() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('fleet.labels.odometer')}</p>
-                  <div className="flex items-center gap-2 text-slate-900 font-bold">
-                    <Gauge size={16} className="text-blue-600" />
-                    {selectedVehicle.current_odometer.toLocaleString()} km
+                {!isTrailer && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('fleet.labels.odometer')}</p>
+                    <div className="flex items-center gap-2 text-slate-900 font-bold">
+                      <Gauge size={16} className="text-blue-600" />
+                      {selectedVehicle.current_odometer.toLocaleString()} km
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('fleet.labels.year')}</p>
                   <p className="text-slate-900 font-bold">{selectedVehicle.year || 'N/A'}</p>
@@ -173,7 +182,6 @@ export function VehicleManagement() {
               </div>
             </div>
 
-            {/* Compliance Matrix */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wide text-sm">
@@ -188,7 +196,7 @@ export function VehicleManagement() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
-                  <p className="text-xs font-bold text-slate-500 uppercase">{t('fleet.labels.motDue')}</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase">{isTrailer ? 'Annual Test' : t('fleet.labels.motDue')}</p>
                   <div className={`text-lg font-black ${getStatusColor(selectedVehicle.mot_due_date)}`}>
                     {selectedVehicle.mot_due_date || 'NOT SET'}
                   </div>
@@ -199,12 +207,14 @@ export function VehicleManagement() {
                     {selectedVehicle.pmi_due_date || 'NOT SET'}
                   </div>
                 </div>
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
-                  <p className="text-xs font-bold text-slate-500 uppercase">{t('fleet.labels.tachoCal')}</p>
-                  <div className={`text-lg font-black ${getStatusColor(selectedVehicle.tacho_calibration_due)}`}>
-                    {selectedVehicle.tacho_calibration_due || 'NOT SET'}
+                {!isTrailer && (
+                  <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
+                    <p className="text-xs font-bold text-slate-500 uppercase">{t('fleet.labels.tachoCal')}</p>
+                    <div className={`text-lg font-black ${getStatusColor(selectedVehicle.tacho_calibration_due)}`}>
+                      {selectedVehicle.tacho_calibration_due || 'NOT SET'}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
                   <p className="text-xs font-bold text-slate-500 uppercase">LOLER (Tail-lift)</p>
                   <div className={`text-lg font-black ${getStatusColor(selectedVehicle.loler_due_date)}`}>
@@ -220,7 +230,6 @@ export function VehicleManagement() {
               </div>
             </div>
 
-            {/* Audit Trail */}
             <MaintenanceAuditTrail
               vehicleId={selectedVehicle.id}
               onUpdate={loadVehicles}
@@ -230,7 +239,6 @@ export function VehicleManagement() {
           </div>
 
           <div className="space-y-6">
-            {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
               <h3 className="font-bold text-slate-900 mb-2 uppercase tracking-wide text-sm">{t('fleet.maintenanceActions')}</h3>
 
@@ -278,7 +286,6 @@ export function VehicleManagement() {
               </div>
             </div>
 
-            {/* Status Notes */}
             <div className="bg-slate-900 rounded-xl p-6 text-white space-y-3 shadow-xl">
               <div className="flex items-center gap-2 text-amber-400">
                 <Info size={18} />
@@ -389,8 +396,13 @@ export function VehicleManagement() {
                     onClick={() => handleVehicleClick(v)}
                   >
                     <td className="p-4">
-                      <div className="font-black text-slate-900 text-lg tracking-tight">{v.reg_number}</div>
-                      <div className="text-xs text-slate-500 font-bold uppercase">{v.make} • {v.vehicle_type}</div>
+                      <div className="flex items-center gap-3">
+                        {v.vehicle_type === 'Trailer' ? <Container size={20} className="text-slate-400" /> : <Truck size={20} className="text-slate-400" />}
+                        <div>
+                          <div className="font-black text-slate-900 text-lg tracking-tight">{v.reg_number}</div>
+                          <div className="text-xs text-slate-500 font-bold uppercase">{v.make} • {v.vehicle_type}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1 items-center">
@@ -410,7 +422,7 @@ export function VehicleManagement() {
                     </td>
                     <td className={`p-4 text-sm font-mono ${getStatusColor(v.mot_due_date)}`}>{v.mot_due_date || '-'}</td>
                     <td className={`p-4 text-sm font-mono ${getStatusColor(v.pmi_due_date)}`}>{v.pmi_due_date || '-'}</td>
-                    <td className={`p-4 text-sm font-mono ${getStatusColor(v.tacho_calibration_due)}`}>{v.tacho_calibration_due || '-'}</td>
+                    <td className={`p-4 text-sm font-mono ${getStatusColor(v.tacho_calibration_due)}`}>{v.vehicle_type === 'Trailer' ? 'N/A' : (v.tacho_calibration_due || '-')}</td>
                     <td className="p-4 text-right">
                       <button className="text-slate-400 hover:text-blue-600 p-2 transition">
                         <PenSquare size={18} />
@@ -440,6 +452,7 @@ export function VehicleManagement() {
 function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehicle, onClose: () => void, onSuccess: () => void }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const isTrailer = vehicle.vehicle_type === 'Trailer';
   const [formData, setFormData] = useState({
     mot_due_date: vehicle.mot_due_date || '',
     pmi_due_date: vehicle.pmi_due_date || '',
@@ -459,7 +472,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
         .update({
           mot_due_date: formData.mot_due_date || null,
           pmi_due_date: formData.pmi_due_date || null,
-          tacho_calibration_due: formData.tacho_calibration_due || null,
+          tacho_calibration_due: isTrailer ? null : (formData.tacho_calibration_due || null),
           loler_due_date: formData.loler_due_date || null,
           insurance_expiry: formData.insurance_expiry || null,
           current_odometer: formData.current_odometer,
@@ -483,23 +496,25 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <Calendar className="text-blue-600" /> Edit Compliance Dates
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition"><X /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition" type="button"><X /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.motDue')}</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{isTrailer ? 'Annual Test Due' : t('fleet.labels.motDue')}</label>
               <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
             </div>
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.pmiDue')}</label>
               <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
             </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.tachoCal')}</label>
-              <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
-            </div>
+            {!isTrailer && (
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.tachoCal')}</label>
+                <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
+              </div>
+            )}
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">LOLER (Tail-lift)</label>
               <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.loler_due_date} onChange={e => setFormData({...formData, loler_due_date: e.target.value})} />
@@ -508,10 +523,12 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Insurance Expiry</label>
               <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.insurance_expiry} onChange={e => setFormData({...formData, insurance_expiry: e.target.value})} />
             </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.odometer')} (km)</label>
-              <input type="number" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.current_odometer} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
-            </div>
+            {!isTrailer && (
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.odometer')} (km)</label>
+                <input type="number" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.current_odometer} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
+              </div>
+            )}
           </div>
 
           <div className="pt-4 flex gap-3">
@@ -549,6 +566,8 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
     current_odometer: 0
   });
 
+  const isTrailer = formData.vehicle_type === 'Trailer';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -570,7 +589,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
           vin_number: formData.vin_number.trim() || null,
           mot_due_date: formData.mot_due_date || null,
           pmi_due_date: formData.pmi_due_date || null,
-          tacho_calibration_due: formData.tacho_calibration_due || null,
+          tacho_calibration_due: isTrailer ? null : (formData.tacho_calibration_due || null),
           insurance_expiry: formData.insurance_expiry || null
         });
 
@@ -607,7 +626,6 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Identity */}
             <div className="space-y-5">
               <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] border-b border-blue-50 pb-2">{t('fleet.modal.identity')}</h3>
               <div>
@@ -641,7 +659,8 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                   <option value="Van">Van</option>
                   <option value="7.5t">7.5t Truck</option>
                   <option value="Class 2">Class 2 (Rigid)</option>
-                  <option value="Class 1">Class 1 (Artic)</option>
+                  <option value="Class 1">Class 1 (Tractor)</option>
+                  <option value="Trailer">Trailer</option>
                 </select>
               </div>
               <div>
@@ -650,26 +669,29 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
               </div>
             </div>
 
-            {/* Compliance */}
             <div className="space-y-5">
               <h3 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] border-b border-amber-50 pb-2">{t('fleet.modal.compliance')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.motDue')}</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{isTrailer ? 'Annual Test Due' : t('fleet.modal.motDue')}</label>
                   <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.mot_due_date} onChange={e => setFormData({...formData, mot_due_date: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.pmiDue')}</label>
                   <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.pmi_due_date} onChange={e => setFormData({...formData, pmi_due_date: e.target.value})} />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.tachoDue')}</label>
-                  <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.currentOdo')}</label>
-                  <input type="number" placeholder="0" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.current_odometer || ''} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
-                </div>
+                {!isTrailer && (
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.tachoDue')}</label>
+                    <input type="date" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.tacho_calibration_due} onChange={e => setFormData({...formData, tacho_calibration_due: e.target.value})} />
+                  </div>
+                )}
+                {!isTrailer && (
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.currentOdo')}</label>
+                    <input type="number" placeholder="0" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.current_odometer || ''} onChange={e => setFormData({...formData, current_odometer: parseInt(e.target.value) || 0})} />
+                  </div>
+                )}
               </div>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3">
                 <Shield className="text-slate-400 mt-0.5 shrink-0" size={16} />

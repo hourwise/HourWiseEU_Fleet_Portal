@@ -34,11 +34,18 @@ const EXTERNAL_CHECKS = [
   { id: 'markers' },
 ];
 
+const TRAILER_CHECKS = [
+  { id: 'landing_legs' },
+  { id: 'trailer_brakes' },
+  { id: 'curtains_doors' },
+];
+
 export function OfficialVehicleChecklist() {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [regNumber, setRegNumber] = useState('');
+  const [trailerReg, setTrailerReg] = useState('');
   const [vehicleType, setVehicleType] = useState('Van');
   const [vehicleMake, setVehicleMake] = useState('');
   const [showHints, setShowHints] = useState<string | null>(null);
@@ -47,9 +54,15 @@ export function OfficialVehicleChecklist() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const isTractor = vehicleType === 'HGV' || vehicleType === 'Class 1' || vehicleType === 'Class 2';
+
   const handleSubmit = async () => {
-    const totalItems = INTERNAL_CHECKS.length + EXTERNAL_CHECKS.length;
-    if (Object.keys(answers).length < totalItems) {
+    const requiredItems = [...INTERNAL_CHECKS, ...EXTERNAL_CHECKS];
+    if (isTractor) {
+      requiredItems.push(...TRAILER_CHECKS);
+    }
+
+    if (Object.keys(answers).length < requiredItems.length) {
       setError(t('vehicleChecklist.errors.incomplete'));
       return;
     }
@@ -73,7 +86,10 @@ export function OfficialVehicleChecklist() {
           vehicle_type: vehicleType,
           vehicle_make: vehicleMake.trim(),
           check_status: hasDefects ? 'defect' : 'pass',
-          items: answers,
+          items: {
+            ...answers,
+            trailer_reg: trailerReg.toUpperCase().trim() || null
+          },
           defect_details: hasDefects ? defectDetails : null,
         });
 
@@ -94,6 +110,12 @@ export function OfficialVehicleChecklist() {
           <ShieldCheck className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-green-900 mb-2">{t('vehicleChecklist.success.title')}</h2>
           <p className="text-green-700">{t('vehicleChecklist.success.message')}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition"
+          >
+            Start New Check
+          </button>
         </div>
       </div>
     );
@@ -101,7 +123,7 @@ export function OfficialVehicleChecklist() {
 
   const renderSection = (titleKey: string, items: { id: string }[]) => (
     <div className="mb-8">
-      <h3 className="text-lg font-black text-slate-800 mb-4 border-b border-slate-100 pb-2 tracking-wide">{t(titleKey)}</h3>
+      <h3 className="text-lg font-black text-slate-800 mb-4 border-b border-slate-100 pb-2 tracking-wide uppercase">{t(titleKey)}</h3>
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:border-blue-200">
@@ -163,8 +185,8 @@ export function OfficialVehicleChecklist() {
         <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-slate-50 pb-2">
           <Truck size={14} className="text-blue-600" /> {t('vehicleChecklist.sections.vehicleDetails')}
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('vehicleChecklist.labels.regNumber')}</label>
             <input
               type="text"
@@ -183,25 +205,40 @@ export function OfficialVehicleChecklist() {
             >
               <option value="Van">Van</option>
               <option value="7.5t">7.5t Truck</option>
-              <option value="HGV">HGV</option>
-              <option value="Other">Other</option>
+              <option value="HGV">HGV (Artic)</option>
+              <option value="Class 2">Class 2 (Rigid)</option>
+              <option value="Trailer">Trailer Only</option>
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('vehicleChecklist.labels.vehicleMake')}</label>
             <input
               type="text"
-              placeholder="E.G. FORD, IVECO"
+              placeholder="E.G. SCANIA, DAF"
               className="w-full p-3 border border-slate-200 rounded-xl uppercase font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all bg-slate-50"
               value={vehicleMake}
               onChange={(e) => setVehicleMake(e.target.value)}
             />
           </div>
+          {isTractor && (
+            <div className="animate-in slide-in-from-left-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('vehicleChecklist.labels.trailerReg')}</label>
+              <input
+                type="text"
+                placeholder="E.G. T12345"
+                className="w-full p-3 border border-amber-200 rounded-xl uppercase font-black text-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all shadow-sm bg-amber-50/30"
+                value={trailerReg}
+                onChange={(e) => setTrailerReg(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {renderSection("vehicleChecklist.sections.internal", INTERNAL_CHECKS)}
       {renderSection("vehicleChecklist.sections.external", EXTERNAL_CHECKS)}
+
+      {isTractor && renderSection("vehicleChecklist.sections.trailer", TRAILER_CHECKS)}
 
       {/* DEFECT REPORTING BOX */}
       {Object.values(answers).some(a => a === false) && (

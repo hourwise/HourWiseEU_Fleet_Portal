@@ -137,7 +137,14 @@
       "year": "Year",
       "vin": "VIN",
       "added": "Added",
-      "actions": "Actions"
+      "actions": "Actions",
+      "trailer": "Trailer",
+      "tractor": "Tractor",
+      "documents": "Asset Documentation",
+      "uploadDoc": "Upload New Document",
+      "docType": "Document Type",
+      "refNo": "Ref / Policy No",
+      "expiry": "Expiry Date"
     },
     "modal": {
       "title": "Add New Fleet Asset",
@@ -162,6 +169,21 @@
         "duplicate": "A vehicle with this registration number already exists.",
         "generic": "An unexpected error occurred while adding the vehicle."
       }
+    },
+    "types": {
+      "van": "Van",
+      "7.5t": "7.5t Truck",
+      "class2": "Class 2 (Rigid)",
+      "class1": "Class 1 (Tractor)",
+      "trailer": "Trailer"
+    },
+    "maintenanceCalled": "Maintenance Called",
+    "docTypes": {
+      "v5c": "V5C Logbook",
+      "insurance": "Insurance Certificate",
+      "lease": "Lease/Finance Agreement",
+      "inspection": "Plating Certificate",
+      "other": "Other Document"
     }
   },
   "compliance": {
@@ -294,17 +316,27 @@
         "status": "STATUS",
         "timeRecorded": "TIME RECORDED",
         "defectsTitle": "REPORTED DEFECTS / ACTION TAKEN",
-        "noDefects": "No additional details provided."
+        "noDefects": "No additional details provided.",
+        "defectStatus": "DEFECT STATUS",
+        "resolutionNotes": "RESOLUTION NOTES",
+        "markFixed": "Mark as Fixed",
+        "markInProgress": "Mark In Progress",
+        "fixedBy": "Fixed by {{name}} on {{date}}",
+        "trailerReg": "TRAILER REG"
       },
       "status": {
         "pass": "PASS",
         "fail": "FAIL",
-        "defect": "DEFECT"
+        "defect": "DEFECT",
+        "reported": "REPORTED",
+        "in_progress": "IN PROGRESS",
+        "fixed": "FIXED"
       }
     },
     "sections": {
       "internal": "INTERNAL CHECKS",
       "external": "EXTERNAL CHECKS",
+      "trailer": "TRAILER CHECKS",
       "vehicleDetails": "Vehicle Details",
       "defects": "FAULT REPORTING / ACTION TAKEN"
     },
@@ -356,7 +388,13 @@
       "reflectors": "Reflectors and Lights",
       "reflectorsHint": "Securely attached and visible.",
       "markers": "Markers",
-      "markersHint": "All required markers securely attached."
+      "markersHint": "All required markers securely attached.",
+      "landing_legs": "Landing Legs",
+      "landing_legsHint": "Check landing legs are secure and operational.",
+      "trailer_brakes": "Trailer Brakes",
+      "trailer_brakesHint": "Check trailer parking brake and service brake operation.",
+      "curtains_doors": "Curtains and Doors",
+      "curtains_doorsHint": "Check curtains are secure and doors lock correctly."
     },
     "labels": {
       "regNumber": "REGISTRATION NO.",
@@ -365,7 +403,8 @@
       "hint": "Hint",
       "submitting": "Submitting...",
       "submit": "Submit Checklist",
-      "defectPlaceholder": "Describe the fault and any immediate action taken..."
+      "defectPlaceholder": "Describe the fault and any immediate action taken...",
+      "trailerReg": "TRAILER REG (OPTIONAL)"
     },
     "errors": {
       "incomplete": "Please complete all 24 safety checks before submitting.",
@@ -546,7 +585,13 @@
       "noShifts": "No recent shifts recorded.",
       "loadingMap": "Loading map...",
       "noMapData": "No location data for heatmap.",
-      "ref": "REF: {{ref}}"
+      "ref": "REF: {{ref}}",
+      "verificationStatus": "Verification Status",
+      "verify": "Verify",
+      "reject": "Reject",
+      "verified": "Verified",
+      "rejected": "Rejected",
+      "pending": "Pending Verification"
     },
     "status": {
       "active": "ACTIVE",
@@ -625,23 +670,6 @@
       "securitySubtitle": "Need to change your login password or enable MFA?",
       "resetPassword": "Reset Password",
       "resetSent": "Password reset link sent to your email."
-    },
-    "mfa": {
-      "title": "Multi-Factor Authentication (MFA)",
-      "subtitle": "Add an extra layer of security to your account by requiring a code from an authenticator app on your phone.",
-      "enabled": "MFA is currently enabled.",
-      "step1": "1. Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).",
-      "step2": "2. Enter the 6-digit code from the app below to verify and complete setup.",
-      "placeholder": "123456",
-      "verifyButton": "Verify & Enable",
-      "verifying": "Verifying...",
-      "enableButton": "Enable MFA",
-      "starting": "Starting...",
-      "disableButton": "Disable",
-      "disabling": "Disabling...",
-      "confirmDisable": "Are you sure you want to disable Multi-Factor Authentication?",
-      "successEnabled": "Multi-Factor Authentication has been successfully enabled!",
-      "successDisabled": "Multi-Factor Authentication has been disabled."
     }
   },
   "common": {
@@ -928,32 +956,6 @@
         "submitAnother": "Submit another request"
       }
     }
-  },
-  "driverManagement": {
-    "title": "Driver Management",
-    "activeDrivers": "active drivers",
-    "pendingInvites": "pending invites",
-    "inviteDriver": "Invite Driver",
-    "labels": {
-      "name": "Name",
-      "email": "Email",
-      "compliance": "Compliance",
-      "status": "Status"
-    },
-    "status": {
-      "active": "Active",
-      "inviteSent": "Invite Sent",
-      "noDocuments": "No Documents",
-      "expired": "Document Expired",
-      "compliant": "Compliant",
-      "checkExpiry": "Check Expiry",
-      "expiresIn": "Expires in {{days}} days",
-      "lost": "Connection Broken",
-      "linkMismatch": "Link Mismatch"
-    },
-    "lostInviteNotice": "Invite accepted but profile link failed. Update the driver's company_id in Supabase to fix.",
-    "noDrivers": "No drivers or invites found",
-    "incompleteSetup": "Incomplete Setup"
   },
   "inviteDriver": {
     "modal": {
