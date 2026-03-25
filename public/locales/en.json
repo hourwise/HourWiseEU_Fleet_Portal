@@ -1001,6 +1001,11 @@
     "weeklyDrive1h": "1 hour remaining of your 56-hour weekly driving limit.",
     "weeklyDriveLimit": "Weekly driving limit of 56 hours reached."
   },
+  "digitalClock": {
+    "title": "Current Time",
+    "timeFormat": "HH:mm:ss",
+    "dateFormat": "dddd, MMMM Do YYYY"
+  },
   "invoiceGeneration": {
     "title": "Generate Invoice",
     "selectClient": "Select Client",
