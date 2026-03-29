@@ -15,6 +15,12 @@ type ViolationDetail = {
   tip: string;
 };
 
+export interface ComplianceViolation {
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  date: string;
+}
+
 export const VIOLATION_KEYS = {
   EXCEEDED_6H_WORK: 'EXCEEDED_6H_WORK',
   INSUFFICIENT_BREAK_FOR_9H_WORK: 'INSUFFICIENT_BREAK_FOR_9H_WORK',

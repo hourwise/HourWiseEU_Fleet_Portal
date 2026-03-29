@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/database.types';
 import { Zap, Download } from 'lucide-react';
@@ -21,11 +21,7 @@ const PRODUCTIVE_TYPES = ['driving', 'work'];
 export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportProps) {
   const [logs, setLogs] = useState<(DriverLog & { profile: Profile })[]>([]);
 
-  useEffect(() => {
-    loadEfficiencyData();
-  }, [selectedDriver, startDate, endDate]);
-
-  const loadEfficiencyData = async () => {
+  const loadEfficiencyData = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -53,7 +49,11 @@ export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyId, selectedDriver, startDate, endDate, setLoading]);
+
+  useEffect(() => {
+    loadEfficiencyData();
+  }, [loadEfficiencyData]);
 
   const efficiencySummary = useMemo(() => {
     const driverMap = new Map<string, { name: string; totalMinutes: number; productiveMinutes: number; activities: Record<string, number> }>();

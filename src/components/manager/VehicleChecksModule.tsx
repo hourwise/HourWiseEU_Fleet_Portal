@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Search, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock } from 'lucide-react';
+import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {
@@ -35,13 +35,7 @@ export function VehicleChecksModule() {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadVehicleChecks();
-    }
-  }, [profile]);
-
-  const loadVehicleChecks = async () => {
+  const loadVehicleChecks = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('vehicle_checks')
@@ -64,7 +58,13 @@ export function VehicleChecksModule() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id, selectedCheck?.id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadVehicleChecks();
+    }
+  }, [loadVehicleChecks, profile?.company_id]);
 
   const handleUpdateDefectStatus = async (newStatus: 'in_progress' | 'fixed') => {
     if (!selectedCheck) return;

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Wrench, Download, Plus, X, Upload, AlertTriangle, Loader2, Calendar } from 'lucide-react';
+import { FileText, Wrench, Download, Plus, X, Upload, Loader2, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface MaintenanceLog {
@@ -30,19 +30,7 @@ export function MaintenanceAuditTrail({ vehicleId, isTrailer, onUpdate, triggerA
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  useEffect(() => {
-    if (vehicleId) {
-      fetchLogs();
-    }
-  }, [vehicleId]);
-
-  useEffect(() => {
-    if (triggerAddLog) {
-      setShowAddModal(true);
-    }
-  }, [triggerAddLog]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('maintenance_logs')
@@ -57,7 +45,19 @@ export function MaintenanceAuditTrail({ vehicleId, isTrailer, onUpdate, triggerA
     } finally {
       setLoading(false);
     }
-  };
+  }, [vehicleId]);
+
+  useEffect(() => {
+    if (vehicleId) {
+      fetchLogs();
+    }
+  }, [vehicleId, fetchLogs]);
+
+  useEffect(() => {
+    if (triggerAddLog) {
+      setShowAddModal(true);
+    }
+  }, [triggerAddLog]);
 
   const getEventTypeLabel = (type: string) => {
     const keyMap: Record<string, string> = {

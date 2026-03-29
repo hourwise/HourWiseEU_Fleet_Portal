@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Building2, Shield, Calendar, Copy, CheckCircle2, AlertCircle, Gauge, Edit, Save, X } from 'lucide-react';
@@ -18,18 +18,13 @@ export function CompanySettings() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadCompany();
-    }
-  }, [profile]);
-
-  const loadCompany = async () => {
+  const loadCompany = useCallback(async () => {
+    if (!profile?.company_id) return;
     try {
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .eq('id', profile!.company_id!)
+        .eq('id', profile.company_id)
         .single();
 
       if (error) throw error;
@@ -40,7 +35,13 @@ export function CompanySettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadCompany();
+    }
+  }, [loadCompany, profile?.company_id]);
 
   const handleUpdateCompany = async () => {
     if (!company || !editedName.trim()) return;

@@ -1,4 +1,4 @@
-// src/lib/payCalculations.ts
+import type { Database } from './database.types';
 
 // --- 1. Interfaces ---
 interface OvertimeTier {
@@ -27,6 +27,20 @@ export interface DailyPayDetails {
     normalHours: number;
     overtimeHours: number;
     shiftAllowance: number;
+}
+
+interface PayConfigInput {
+    hourly_rate?: number | null;
+    shift_allowance?: number | null;
+    overtime_threshold_hours?: number | null;
+    unpaid_break_minutes?: number | null;
+    overtime_rate_multiplier?: number | null;
+    overtime_rate_percentage?: number | null;
+    additional_overtime_tiers?: OvertimeTier[] | null;
+}
+
+interface WorkSessionInput {
+    total_work_minutes?: number | null;
 }
 
 // --- 2. Helper: Safe Rate Calculation ---
@@ -130,7 +144,7 @@ export const formatCurrency = (amount: number | undefined | null) => {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
 };
 
-export const calculateDailyPay = (rawSessions: any[], rawConfig: any): DailyPayDetails => {
+export const calculateDailyPay = (rawSessions: WorkSessionInput[], rawConfig: PayConfigInput): DailyPayDetails => {
     const emptyResult = { totalPay: 0, normalHours: 0, overtimeHours: 0, shiftAllowance: 0 };
     if (!rawConfig) {
         console.warn("[PAY CALC] No Pay Configuration found for sessions.");
@@ -141,7 +155,7 @@ export const calculateDailyPay = (rawSessions: any[], rawConfig: any): DailyPayD
         return { ...emptyResult, shiftAllowance, totalPay: shiftAllowance };
     }
 
-    const safeNum = (val: any, defaultVal = 0) => {
+    const safeNum = (val: number | null | undefined, defaultVal = 0) => {
         const n = Number(val);
         return isNaN(n) ? defaultVal : n;
     };

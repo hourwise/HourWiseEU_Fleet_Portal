@@ -1,21 +1,22 @@
-// src/App.tsx
-
-import React, { useCallback, useEffect, useMemo, useState, useContext, createContext } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useContext, createContext, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { LoginForm } from './components/auth/LoginForm';
-import { SignupForm } from './components/auth/SignupForm';
-import { ManagerDashboard } from './components/manager/ManagerDashboard';
-import { HomePage } from './components/public/HomePage';
-import { PrivacyPage } from './components/public/PrivacyPage';
-import { TermsPage } from './components/public/TermsPage';
-import { HowToPage } from './components/public/HowToPage';
-import { ContactPage } from './components/public/ContactPage';
 import { Header } from './components/public/Header';
 import { Footer } from './components/public/Footer';
-import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AlertTriangle } from 'lucide-react';
-import { PrivacyRequestPage } from './pages/PrivacyRequestPage';
-import { useTranslation } from 'react-i18next'; // Import
+import { useTranslation } from 'react-i18next';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
+// Lazy load components
+const LoginForm = lazy(() => import('./components/auth/LoginForm').then(m => ({ default: m.LoginForm })));
+const SignupForm = lazy(() => import('./components/auth/SignupForm').then(m => ({ default: m.SignupForm })));
+const ManagerDashboard = lazy(() => import('./components/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
+const HomePage = lazy(() => import('./components/public/HomePage').then(m => ({ default: m.HomePage })));
+const PrivacyPage = lazy(() => import('./components/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./components/public/TermsPage').then(m => ({ default: m.TermsPage })));
+const HowToPage = lazy(() => import('./components/public/HowToPage').then(m => ({ default: m.HowToPage })));
+const ContactPage = lazy(() => import('./components/public/ContactPage').then(m => ({ default: m.ContactPage })));
+const MfaChallengeScreen = lazy(() => import('./components/auth/MfaChallengeScreen').then(m => ({ default: m.MfaChallengeScreen })));
+const PrivacyRequestPage = lazy(() => import('./pages/PrivacyRequestPage').then(m => ({ default: m.PrivacyRequestPage })));
 
 type Route = '/' | '/login' | '/signup' | '/privacy' | '/terms' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
 
@@ -106,45 +107,19 @@ function AuthShell({ view }: { view: 'login' | 'signup' }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-dark via-slate-800 to-brand-card flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
-        {view === 'login' ? <LoginForm /> : <SignupForm />}
+        <Suspense fallback={<LoadingScreen />}>
+          {view === 'login' ? <LoginForm /> : <SignupForm />}
+        </Suspense>
       </div>
     </div>
   );
-}
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { error: any }
-> {
-  state = { error: null };
-
-  static getDerivedStateFromError(error: any) {
-    return { error };
-  }
-
-  componentDidCatch(error: any, info: any) {
-    console.error('ErrorBoundary caught:', error, info);
-  }
-
-  render() {
-    if (this.state.error) {
-      return (
-        <div className="min-h-screen bg-black text-white p-6">
-          <h1 className="text-xl font-bold mb-2">App crashed</h1>
-          <pre className="text-sm whitespace-pre-wrap opacity-90">
-            {String(this.state.error?.message ?? this.state.error)}
-          </pre>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 
 function AppContent() {
   const { user, profile, loading, isSigningUp, needsMfa, refreshSession, signOut } = useAuth();
   const { currentPath, navigate } = useRouter();
-  const { t } = useTranslation(); // Use hook
+  const { t } = useTranslation();
 
   const isPublic = useMemo(() => PUBLIC_ROUTES.includes(currentPath), [currentPath]);
   const isAuth = useMemo(() => AUTH_ROUTES.includes(currentPath), [currentPath]);
@@ -187,18 +162,24 @@ function AppContent() {
   }
 
   if (currentPath === '/privacy-request') {
-      return <PrivacyRequestPage />;
+      return (
+        <Suspense fallback={<LoadingScreen />}>
+          <PrivacyRequestPage />
+        </Suspense>
+      );
   }
 
   if (isPublic) {
     return (
       <>
         <PublicLayout>
-          {currentPath === '/' && <HomePage />}
-          {currentPath === '/privacy' && <PrivacyPage />}
-          {currentPath === '/terms' && <TermsPage />}
-          {currentPath === '/how-to' && <HowToPage />}
-          {currentPath === '/contact' && <ContactPage />}
+          <Suspense fallback={<LoadingScreen />}>
+            {currentPath === '/' && <HomePage />}
+            {currentPath === '/privacy' && <PrivacyPage />}
+            {currentPath === '/terms' && <TermsPage />}
+            {currentPath === '/how-to' && <HowToPage />}
+            {currentPath === '/contact' && <ContactPage />}
+          </Suspense>
         </PublicLayout>
         {debugOverlay}
       </>
@@ -258,7 +239,9 @@ function AppContent() {
   if (needsMfa) {
     return (
       <>
-        <MfaChallengeScreen onSuccess={refreshSession} />
+        <Suspense fallback={<LoadingScreen />}>
+          <MfaChallengeScreen onSuccess={refreshSession} />
+        </Suspense>
         {debugOverlay}
       </>
     );
@@ -275,7 +258,9 @@ function AppContent() {
 
   return (
     <>
-      <ManagerDashboard />
+      <Suspense fallback={<LoadingScreen />}>
+        <ManagerDashboard />
+      </Suspense>
       {debugOverlay}
     </>
   );
@@ -292,6 +277,5 @@ function App() {
     </AuthProvider>
   );
 }
-
 
 export default App;

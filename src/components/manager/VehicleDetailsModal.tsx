@@ -1,8 +1,8 @@
 // src/components/manager/VehicleDetailsModal.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Paperclip, Trash2, AlertTriangle, CheckCircle, Edit, ShieldCheck, Upload, FileText, Download } from 'lucide-react';
+import { X, Save, Trash2, Edit, ShieldCheck, FileText, Download } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -43,14 +43,14 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
 
   const docState = useDocumentUpload();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [vehicle.id]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     const { data } = await supabase.from('vehicle_documents').select('*').eq('vehicle_id', vehicle.id);
     setDocuments(data || []);
-  };
+  }, [vehicle.id]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

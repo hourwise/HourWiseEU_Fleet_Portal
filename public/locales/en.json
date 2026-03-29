@@ -21,7 +21,9 @@
     "gotIt": "Got It!",
     "logout": "Logout",
     "openSettings": "Open Settings",
-    "retry": "Retry"
+    "retry": "Retry",
+    "loading": "Loading...",
+    "tryAgain": "Try Again"
   },
   "permissions": {
     "notificationsTitle": "Notifications Permission",
@@ -1015,5 +1017,12 @@
     "noVat": "No VAT",
     "manualInvoiceNumber": "Invoice Number",
     "addManualLineItem": "+ Add Manual Line Item"
+  },
+  "navigation": {
+    "home": "Home"
+  },
+  "errors": {
+    "somethingWentWrong": "Something Went Wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again."
   }
 }

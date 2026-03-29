@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, AlertCircle, Download, Calendar, User, MapPin } from 'lucide-react';
@@ -19,13 +19,7 @@ export function InfractionReport() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'violation' | 'warning'>('all');
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadInfractions();
-    }
-  }, [profile]);
-
-  const loadInfractions = async () => {
+  const loadInfractions = useCallback(async () => {
     try {
       const { data: logs, error: logsError } = await supabase
         .from('driver_logs')
@@ -59,7 +53,13 @@ export function InfractionReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadInfractions();
+    }
+  }, [loadInfractions, profile?.company_id]);
 
   const exportReport = () => {
     const filtered = filter === 'all' ? infractions : infractions.filter((i) => i.status_code === filter);

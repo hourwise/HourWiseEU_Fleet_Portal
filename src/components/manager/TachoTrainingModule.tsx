@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap, ArrowRight, Info, Search } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap, ArrowRight, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Discrepancy {
@@ -20,20 +20,20 @@ export function TachoTrainingModule() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadDrivers();
-    }
-  }, [profile]);
-
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name')
       .eq('company_id', profile!.company_id)
       .eq('role', 'driver');
     setDrivers(data || []);
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadDrivers();
+    }
+  }, [loadDrivers, profile?.company_id]);
 
   const simulateComparison = () => {
     setLoading(true);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Download, ChevronsRight } from 'lucide-react';
@@ -35,13 +35,7 @@ export function PayrollModule() {
   });
   const [endDate, setEndDate] = useState<Date>(() => new Date());
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadPayrollData();
-    }
-  }, [profile, startDate, endDate]);
-
-  const loadPayrollData = async () => {
+  const loadPayrollData = useCallback(async () => {
     if (!startDate || !endDate || !profile?.company_id) return;
     
     setLoading(true);
@@ -77,8 +71,14 @@ export function PayrollModule() {
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, [profile?.company_id, startDate, endDate]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadPayrollData();
+    }
+  }, [loadPayrollData, profile?.company_id]);
+
   const payrollData = useMemo(() => {
     return drivers.map(driver => {
         let wagePay = 0;

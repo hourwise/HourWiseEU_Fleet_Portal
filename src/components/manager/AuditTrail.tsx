@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Download, FileDown, Calendar, Filter } from 'lucide-react';
@@ -16,23 +16,7 @@ export function AuditTrail() {
   const [drivers, setDrivers] = useState<Profile[]>([]);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadDrivers();
-      setDefaultDates();
-    }
-  }, [profile]);
-
-  const setDefaultDates = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
-  };
-
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -46,7 +30,23 @@ export function AuditTrail() {
     } catch (error) {
       console.error('Error loading drivers:', error);
     }
-  };
+  }, [profile?.company_id]);
+
+  const setDefaultDates = useCallback(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  }, []);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadDrivers();
+      setDefaultDates();
+    }
+  }, [profile?.company_id, loadDrivers, setDefaultDates]);
 
   const generateAuditReport = async () => {
     setGenerating(true);

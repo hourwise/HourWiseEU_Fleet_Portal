@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Truck, AlertTriangle, ChevronRight } from 'lucide-react';
@@ -18,13 +18,7 @@ export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }
   const [warnings, setWarnings] = useState<VehicleWarning[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadWarnings();
-    }
-  }, [profile]);
-
-  const loadWarnings = async () => {
+  const loadWarnings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('vehicles')
@@ -100,7 +94,13 @@ export function VehicleComplianceSnapshot({ onAction }: { onAction: () => void }
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadWarnings();
+    }
+  }, [loadWarnings, profile?.company_id]);
 
   if (loading) return <div className="animate-pulse bg-brand-card rounded-xl h-48 border border-brand-border" />;
 

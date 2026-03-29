@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container } from 'lucide-react';
@@ -36,13 +36,7 @@ export function VehicleManagement() {
   const [view, setView] = useState<'list' | 'details'>('list');
   const [triggerLogModal, setTriggerLogModal] = useState(false);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadVehicles();
-    }
-  }, [profile]);
-
-  const loadVehicles = async () => {
+  const loadVehicles = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('vehicles')
@@ -63,7 +57,13 @@ export function VehicleManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id, selectedVehicle?.id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadVehicles();
+    }
+  }, [loadVehicles, profile?.company_id]);
 
   const getStatusColor = (dateString: string | null) => {
     if (!dateString) return 'text-slate-400';

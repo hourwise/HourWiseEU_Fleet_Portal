@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Receipt, Search, Check, X, Download, AlertTriangle } from 'lucide-react';
+import { Receipt, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
@@ -16,14 +16,11 @@ export function ExpenseApproval() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadPendingExpenses();
+  const loadPendingExpenses = useCallback(async () => {
+    if (!profile?.company_id) {
+      setLoading(false);
+      return;
     }
-  }, [profile]);
-
-  const loadPendingExpenses = async () => {
-    if (!profile?.company_id) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -40,7 +37,13 @@ export function ExpenseApproval() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadPendingExpenses();
+    }
+  }, [loadPendingExpenses, profile?.company_id]);
 
   const handleUpdateStatus = async (expenseId: string, newStatus: 'approved' | 'rejected') => {
     setActionLoading(expenseId);

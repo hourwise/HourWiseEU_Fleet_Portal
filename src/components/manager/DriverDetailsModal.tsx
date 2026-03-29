@@ -1,8 +1,8 @@
 // src/components/manager/DriverDetailsModal.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Paperclip, Trash2, AlertTriangle, CheckCircle, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Upload, Check, Ban } from 'lucide-react';
+import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,12 @@ interface DriverDetailsModalProps {
   onSave: () => void;
 }
 
+interface DocumentSubmitPayload {
+  file: File | null;
+  idNumber: string;
+  expiryDate: string;
+}
+
 const useDocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [idNumber, setIdNumber] = useState('');
@@ -26,13 +32,13 @@ const useDocumentUpload = () => {
 };
 
 const getDocumentStatus = (expiryDate: string | null | undefined, t: any) => {
-  if (!expiryDate) return { text: t('driverDetails.status.missingExpiry'), color: 'text-gray-500', Icon: AlertTriangle };
+  if (!expiryDate) return { text: t('driverDetails.status.missingExpiry'), color: 'text-gray-500', Icon: () => null };
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const expiry = new Date(expiryDate);
   const daysDiff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
-  if (daysDiff < 0) return { text: t('driverDetails.status.expired', { date: expiry.toLocaleDateString() }), color: 'text-red-600 font-bold', Icon: AlertTriangle };
-  if (daysDiff <= 30) return { text: t('driverDetails.status.expiresIn', { days: daysDiff }), color: 'text-orange-500 font-semibold', Icon: AlertTriangle };
-  return { text: t('driverDetails.status.expiresOn', { date: expiry.toLocaleDateString() }), color: 'text-green-600', Icon: CheckCircle };
+  if (daysDiff < 0) return { text: t('driverDetails.status.expired', { date: expiry.toLocaleDateString() }), color: 'text-red-600 font-bold', Icon: () => null };
+  if (daysDiff <= 30) return { text: t('driverDetails.status.expiresIn', { days: daysDiff }), color: 'text-orange-500 font-semibold', Icon: () => null };
+  return { text: t('driverDetails.status.expiresOn', { date: expiry.toLocaleDateString() }), color: 'text-green-600', Icon: () => null };
 };
 
 const LocationAnalysisMap = ({ driverId }: { driverId: string }) => {
@@ -72,20 +78,20 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
   const cpcState = useDocumentUpload();
   const tachoState = useDocumentUpload();
 
+  const fetchDocuments = useCallback(async () => {
+    const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id).order('uploaded_at', { ascending: false });
+    setDocuments(data || []);
+  }, [driver.id]);
+
+  const fetchRecentShifts = useCallback(async () => {
+    const { data } = await supabase.from('work_sessions').select('*').eq('user_id', driver.id).order('start_time', { ascending: false }).limit(10);
+    setShifts(data || []);
+  }, [driver.id]);
+
   useEffect(() => {
     fetchDocuments();
     fetchRecentShifts();
-  }, [driver.id]);
-
-  const fetchDocuments = async () => {
-    const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id).order('uploaded_at', { ascending: false });
-    setDocuments(data || []);
-  };
-
-  const fetchRecentShifts = async () => {
-    const { data } = await supabase.from('work_sessions').select('*').eq('user_id', driver.id).order('start_time', { ascending: false }).limit(10);
-    setShifts(data || []);
-  };
+  }, [fetchDocuments, fetchRecentShifts]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -105,12 +111,13 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
 
       if (error) throw error;
       fetchDocuments();
-    } catch (err: any) {
-      alert("Verification failed: " + err.message);
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      alert("Verification failed: " + errorMessage);
     }
   };
 
-  const handleDocumentSubmit = async (state: any, type: string) => {
+  const handleDocumentSubmit = async (state: DocumentSubmitPayload, type: string) => {
     if (!state.file || !state.idNumber || !state.expiryDate) return alert(t('driverDetails.errors.fillAll'));
     setIsUploading(true);
     const filePath = `${driver.company_id}/${driver.id}/${type}_${Date.now()}`;
@@ -130,7 +137,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
       if (dbError) throw dbError;
 
       // Update profile master fields automatically
-      const profileUpdates: any = {};
+      const profileUpdates: Partial<Profile> = {};
       if (type === 'HGV_Licence') {
         profileUpdates.driving_licence_number = state.idNumber;
         profileUpdates.driving_licence_expiry = state.expiryDate;
@@ -147,7 +154,8 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
 
       state.reset();
       fetchDocuments();
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       alert(t('driverDetails.errors.uploadError', { message: err.message }));
     } finally { setIsUploading(false); }
   };

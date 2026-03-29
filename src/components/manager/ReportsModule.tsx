@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Download, Calendar, Filter, PieChart, DollarSign, Zap, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileText, Download, PieChart, DollarSign, Zap, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { EfficiencyReport } from './reports/EfficiencyReport';
 import { useTranslation } from 'react-i18next';
@@ -10,67 +10,60 @@ type ReportType = 'payroll' | 'efficiency' | 'vehicle_checks' | 'infractions' | 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 
-// --- Helper Sub-components ---
-
-function FilterSection({ drivers, selectedDriver, setSelectedDriver, startDate, setStartDate, endDate, setEndDate }: any) {
-  const { t } = useTranslation();
-  return (
-    <div className="bg-gray-50 rounded-lg p-4 mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Filter className="w-5 h-5 text-gray-600" />
-        <h3 className="font-semibold text-gray-900">{t('reports.filters.title')}</h3>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.driver')}</label>
-          <select
-            value={selectedDriver}
-            onChange={(e) => setSelectedDriver(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-900"
-          >
-            <option value="all">{t('reports.filters.allDrivers')}</option>
-            {drivers.map((driver: any) => (
-              <option key={driver.id} value={driver.id}>{driver.full_name || driver.email}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.startDate')}</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.filters.endDate')}</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-slate-900"/>
-        </div>
-      </div>
-    </div>
-  );
+interface PayrollReportRow {
+  name: string;
+  totalHours: number;
+  totalBreakHours: number;
+  totalDrivingHours: number;
+  sessions: number;
 }
 
-function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+interface VehicleCheck {
+  id: string;
+  created_at: string;
+  reg_number: string;
+  vehicle_type: string;
+  check_status: 'pass' | 'defect';
+  defect_details: string | null;
+  driver_id: string;
+  profiles: {
+    full_name: string;
+  };
+}
+
+interface ReportComponentProps {
+  companyId: string;
+  selectedDriver: string;
+  startDate: string;
+  endDate: string;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+}
+
+function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
   const { t } = useTranslation();
   const [sessions, setSessions] = useState<(WorkSession & { profile: Profile })[]>([]);
 
-  useEffect(() => { loadPayrollData(); }, [selectedDriver, startDate, endDate]);
-
-  const loadPayrollData = async () => {
+  const loadPayrollData = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase.from('work_sessions').select('*, profile:user_id(*)').gte('date', startDate).lte('date', endDate).not('end_time', 'is', null);
       if (selectedDriver !== 'all') query = query.eq('user_id', selectedDriver);
       const { data, error } = await query;
       if (error) throw error;
-      setSessions((data || []).map((s: any) => ({ ...s, profile: Array.isArray(s.profile) ? s.profile[0] : s.profile })).filter((s: any) => s.profile?.id));
+      setSessions((data || []).map((s: WorkSession & { profile: Profile | Profile[] }) => ({ ...s, profile: Array.isArray(s.profile) ? s.profile[0] : s.profile })).filter((s: WorkSession & { profile: Profile | undefined }) => s.profile?.id));
     } catch (error) { console.error('Error loading payroll:', error); } finally { setLoading(false); }
-  };
+  }, [selectedDriver, startDate, endDate, setLoading]);
+
+  useEffect(() => { loadPayrollData(); }, [loadPayrollData]);
 
   const payrollSummary = useMemo(() => {
-    const driverMap = new Map<string, any>();
+    const driverMap = new Map<string, PayrollReportRow>();
     sessions.forEach((s) => {
       const current = driverMap.get(s.user_id) || { name: s.profile.full_name, totalHours: 0, totalBreakHours: 0, totalDrivingHours: 0, sessions: 0 };
       current.totalHours += (s.total_work_minutes || 0) / 60;
       current.totalBreakHours += (s.total_break_minutes || 0) / 60;
-      current.totalDrivingHours += ((s.other_data as any)?.driving || 0) / 60;
+      current.totalDrivingHours += ((s.other_data as { driving?: number } | null)?.driving || 0) / 60;
       current.sessions += 1;
       driverMap.set(s.user_id, current);
     });
@@ -99,22 +92,22 @@ function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading,
   );
 }
 
-function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
   const { t } = useTranslation();
-  const [checks, setChecks] = useState<any[]>([]);
+  const [checks, setChecks] = useState<VehicleCheck[]>([]);
 
-  useEffect(() => { loadChecks(); }, [selectedDriver, startDate, endDate]);
-
-  const loadChecks = async () => {
+  const loadChecks = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase.from('vehicle_checks').select('*, profiles:driver_id(full_name)').gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59');
       if (selectedDriver !== 'all') query = query.eq('driver_id', selectedDriver);
       const { data, error } = await query;
       if (error) throw error;
-      setChecks(data || []);
+      setChecks((data as VehicleCheck[]) || []);
     } catch (error) { console.error('Error loading checks:', error); } finally { setLoading(false); }
-  };
+  }, [selectedDriver, startDate, endDate, setLoading]);
+
+  useEffect(() => { loadChecks(); }, [loadChecks]);
 
   return (
     <div className="space-y-4">

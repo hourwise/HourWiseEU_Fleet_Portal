@@ -1,26 +1,36 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck, Activity, GraduationCap } from 'lucide-react';
-import { ComplianceScoreboard } from './ComplianceScoreboard';
-import { DriverManagement } from './DriverManagement';
-import { ReportsModule } from './ReportsModule';
-import { AuditTrail } from './AuditTrail';
-import { CompanySettings } from './CompanySettings';
-import { SupervisorManagement } from './SupervisorManagement';
-import { AlertsFeed } from './AlertsFeed';
-import { PayrollModule } from './PayrollModule';
-import { MfaSettings } from './MfaSettings';
-import { BillingManager } from './BillingManager';
-import { ExpenseApproval } from './ExpenseApproval';
-import { BroadcastMessage } from './BroadcastMessage';
-import { VehicleChecksModule } from './VehicleChecksModule';
-import { VehicleManagement } from './VehicleManagement';
-import { VehicleComplianceSnapshot } from './VehicleComplianceSnapshot';
-import { DriverComplianceSnapshot } from './DriverComplianceSnapshot';
-import { ComplianceSnapshot } from './ComplianceSnapshot';
-import { TachoTrainingModule } from './TachoTrainingModule';
-import { UserProfileSettings } from './UserProfileSettings';
+
+// Lazy load dashboard components
+const ComplianceScoreboard = lazy(() => import('./ComplianceScoreboard').then(m => ({ default: m.ComplianceScoreboard })));
+const DriverManagement = lazy(() => import('./DriverManagement').then(m => ({ default: m.DriverManagement })));
+const ReportsModule = lazy(() => import('./ReportsModule').then(m => ({ default: m.ReportsModule })));
+const AuditTrail = lazy(() => import('./AuditTrail').then(m => ({ default: m.AuditTrail })));
+const CompanySettings = lazy(() => import('./CompanySettings').then(m => ({ default: m.CompanySettings })));
+const SupervisorManagement = lazy(() => import('./SupervisorManagement').then(m => ({ default: m.SupervisorManagement })));
+const AlertsFeed = lazy(() => import('./AlertsFeed').then(m => ({ default: m.AlertsFeed })));
+const PayrollModule = lazy(() => import('./PayrollModule').then(m => ({ default: m.PayrollModule })));
+const MfaSettings = lazy(() => import('./MfaSettings').then(m => ({ default: m.MfaSettings })));
+const BillingManager = lazy(() => import('./BillingManager').then(m => ({ default: m.BillingManager })));
+const ExpenseApproval = lazy(() => import('./ExpenseApproval').then(m => ({ default: m.ExpenseApproval })));
+const BroadcastMessage = lazy(() => import('./BroadcastMessage').then(m => ({ default: m.BroadcastMessage })));
+const VehicleChecksModule = lazy(() => import('./VehicleChecksModule').then(m => ({ default: m.VehicleChecksModule })));
+const VehicleManagement = lazy(() => import('./VehicleManagement').then(m => ({ default: m.VehicleManagement })));
+const VehicleComplianceSnapshot = lazy(() => import('./VehicleComplianceSnapshot').then(m => ({ default: m.VehicleComplianceSnapshot })));
+const DriverComplianceSnapshot = lazy(() => import('./DriverComplianceSnapshot').then(m => ({ default: m.DriverComplianceSnapshot })));
+const ComplianceSnapshot = lazy(() => import('./ComplianceSnapshot').then(m => ({ default: m.ComplianceSnapshot })));
+const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m => ({ default: m.TachoTrainingModule })));
+const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
+
+function TabLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent" />
+    </div>
+  );
+}
 
 type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
 
@@ -96,67 +106,69 @@ export function ManagerDashboard() {
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ComplianceSnapshot onAction={() => setActiveTab('compliance')} />
-                <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
-                <DriverComplianceSnapshot onAction={() => setActiveTab('drivers')} />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <AlertsFeed title={t('dashboard.manager.alerts.title')} />
+          <Suspense fallback={<TabLoading />}>
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <ComplianceSnapshot onAction={() => setActiveTab('compliance')} />
+                  <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
+                  <DriverComplianceSnapshot onAction={() => setActiveTab('drivers')} />
                 </div>
-                <div className="lg:col-span-1 space-y-6">
-                  <BroadcastMessage />
-                  <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl shadow-blue-900/20">
-                    <div className="flex items-center gap-2 mb-4">
-                      <GraduationCap className="text-blue-200" size={20} />
-                      <h4 className="font-black uppercase tracking-widest text-xs opacity-80">{t('dashboard.manager.alerts.trainingMode')}</h4>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t('dashboard.manager.alerts.discrepancy')}</span>
-                        <span className="font-bold text-amber-300">2 Alerts</span>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <AlertsFeed title={t('dashboard.manager.alerts.title')} />
+                  </div>
+                  <div className="lg:col-span-1 space-y-6">
+                    <BroadcastMessage />
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl shadow-blue-900/20">
+                      <div className="flex items-center gap-2 mb-4">
+                        <GraduationCap className="text-blue-200" size={20} />
+                        <h4 className="font-black uppercase tracking-widest text-xs opacity-80">{t('dashboard.manager.alerts.trainingMode')}</h4>
                       </div>
-                      <div className="w-full bg-white/20 rounded-full h-1.5">
-                        <div className="bg-amber-400 h-1.5 rounded-full" style={{ width: '60%' }}></div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t('dashboard.manager.alerts.discrepancy')}</span>
+                          <span className="font-bold text-amber-300">2 Alerts</span>
+                        </div>
+                        <div className="w-full bg-white/20 rounded-full h-1.5">
+                          <div className="bg-amber-400 h-1.5 rounded-full" style={{ width: '60%' }}></div>
+                        </div>
+                        <p className="text-[10px] leading-relaxed opacity-70">
+                          Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
+                        </p>
+                        <button
+                          onClick={() => setActiveTab('training')}
+                          className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition"
+                        >
+                          Open Training Center
+                        </button>
                       </div>
-                      <p className="text-[10px] leading-relaxed opacity-70">
-                        Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
-                      </p>
-                      <button
-                        onClick={() => setActiveTab('training')}
-                        className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition"
-                      >
-                        Open Training Center
-                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'drivers' && <DriverManagement />}
-          {activeTab === 'compliance' && <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />}
-          {activeTab === 'training' && <TachoTrainingModule />}
-          {activeTab === 'fleet' && <VehicleManagement />}
-          {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
-          {activeTab === 'supervisors' && <SupervisorManagement />}
-          {activeTab === 'payroll' && <PayrollModule />}
-          {activeTab === 'expenses' && <ExpenseApproval />}
-          {activeTab === 'reports' && <ReportsModule />}
-          {activeTab === 'audit' && <AuditTrail />}
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-                <UserProfileSettings />
-                <BillingManager />
-                <CompanySettings />
-                <MfaSettings />
-            </div>
-          )}
+            {activeTab === 'drivers' && <DriverManagement />}
+            {activeTab === 'compliance' && <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />}
+            {activeTab === 'training' && <TachoTrainingModule />}
+            {activeTab === 'fleet' && <VehicleManagement />}
+            {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
+            {activeTab === 'supervisors' && <SupervisorManagement />}
+            {activeTab === 'payroll' && <PayrollModule />}
+            {activeTab === 'expenses' && <ExpenseApproval />}
+            {activeTab === 'reports' && <ReportsModule />}
+            {activeTab === 'audit' && <AuditTrail />}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                  <UserProfileSettings />
+                  <BillingManager />
+                  <CompanySettings />
+                  <MfaSettings />
+              </div>
+            )}
+          </Suspense>
         </div>
       </div>
     </div>

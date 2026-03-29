@@ -704,7 +704,8 @@
     "syncing": "Syncing roster...",
     "search": "Search by name or email...",
     "confirmDelete": "Are you sure you want to remove {{name}}? This will permanently delete their account and data.",
-    "selectFile": "Select File"
+    "selectFile": "Select File",
+    "tryAgain": "Try Again"
   },
   "errors": {
     "profileNotFound": {
@@ -712,7 +713,9 @@
       "message": "We found your account, but couldn't load your profile details. This might be a temporary connection issue.",
       "retry": "Retry Loading Profile",
       "signOut": "Sign Out and Start Over"
-    }
+    },
+    "somethingWentWrong": "Something Went Wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again."
   },
   "howTo": {
     "title": "How to Use HourWise EU",
@@ -1213,5 +1216,8 @@
     "dueOverdue": "{{type}} Due OVERDUE",
     "dueInDays": "{{type}} Due in {{days}} days",
     "viewFullList": "View Full Fleet List"
+  },
+  "navigation": {
+    "home": "Home"
   }
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { AlertTriangle, Bell, CheckCircle, Clock } from 'lucide-react';
+import { Bell, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
@@ -13,13 +13,7 @@ export function AlertsFeed() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      loadAlerts();
-    }
-  }, [profile]);
-
-  const loadAlerts = async () => {
+  const loadAlerts = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
@@ -58,7 +52,13 @@ export function AlertsFeed() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      loadAlerts();
+    }
+  }, [loadAlerts, profile?.company_id]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
