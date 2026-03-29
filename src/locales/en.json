@@ -27,6 +27,82 @@
     "settings": "Settings",
     "signOut": "Sign Out"
   },
+  "home": {
+    "hero": {
+      "title": "Smart Fleet Management for European Transport",
+      "subtitle": "Streamline your operations, ensure driver compliance, and manage payroll with ease. Built specifically for EU transport regulations.",
+      "cta": {
+        "primary": "Get Started Free",
+        "secondary": "Manager Sign In"
+      },
+      "video": {
+        "title": "See HourWise in Action",
+        "placeholder": "2-minute platform overview"
+      }
+    },
+    "gdpr": {
+      "status": "GDPR Compliant",
+      "storage": "Encrypted EU Storage",
+      "deletion": "Right to be Forgotten"
+    },
+    "howItWorks": {
+      "title": "How HourWise EU Works",
+      "subtitle": "A complete ecosystem for transport managers and professional drivers.",
+      "step1": {
+        "title": "Connect Your Fleet",
+        "description": "Invite drivers to your fleet using a unique company code. They'll use the HourWise mobile app to log shifts."
+      },
+      "step2": {
+        "title": "Monitor Compliance",
+        "description": "View real-time driver hours, HOS violations, and vehicle safety checks on your manager dashboard."
+      },
+      "step3": {
+        "title": "Automate Payroll",
+        "description": "Generate accurate payroll reports based on actual shift data, including breaks and expenses."
+      }
+    },
+    "features": {
+      "title": "Powerful Features",
+      "subtitle": "Everything you need to run a compliant and efficient transport business.",
+      "feature1": {
+        "title": "Real-time Tracking",
+        "description": "Monitor driver hours and shift status as they happen. Stay ahead of potential infringements."
+      },
+      "feature2": {
+        "title": "Compliance First",
+        "description": "Built-in EU driver hours rules and WTD tracking to keep your fleet on the right side of the law."
+      },
+      "feature3": {
+        "title": "Fleet Analytics",
+        "description": "Deep insights into fleet efficiency, vehicle maintenance, and driver performance trends."
+      }
+    },
+    "testimonials": {
+      "title": "Trusted by Transport Managers",
+      "subtitle": "Join hundreds of companies across Europe using HourWise EU.",
+      "testimonial1": {
+        "text": "HourWise has completely transformed how we handle our driver hours. The automated compliance checks save us hours of manual work every week.",
+        "name": "David Smith",
+        "company": "EuroLogistics Ltd"
+      },
+      "testimonial2": {
+        "text": "The payroll integration is a game-changer. We now have 100% accuracy in our driver payments based on verified shift data.",
+        "name": "Maria Garcia",
+        "company": "Iberia Transport"
+      },
+      "testimonial3": {
+        "text": "As a manager, the peace of mind knowing we're audit-ready at any moment is invaluable. Highly recommended for any EU fleet.",
+        "name": "Hans Müller",
+        "company": "Alpine Freight"
+      }
+    },
+    "cta": {
+      "title": "Ready to Modernize Your Fleet?",
+      "subtitle": "Join HourWise EU today and take control of your transport operations.",
+      "primary": "Create Fleet Account",
+      "secondary": "View Setup Guide"
+    }
+  },
   "footer": {
     "company": "Company",
     "account": "Account",
@@ -1088,7 +1164,7 @@
       "priceValue": "£9.99/month",
       "paymentLabel": "Payment Method",
       "nativePay": "Apple/Google Pay",
-      "notSetUp": "Not set up",
+      "not setUp": "Not set up",
       "manageButton": "Manage Subscription",
       "resubscribe": "Resubscribe",
       "subscribeNow": "Subscribe Now",
@@ -1216,8 +1292,5 @@
     "dueOverdue": "{{type}} Due OVERDUE",
     "dueInDays": "{{type}} Due in {{days}} days",
     "viewFullList": "View Full Fleet List"
-  },
-  "navigation": {
-    "home": "Home"
   }
 }
