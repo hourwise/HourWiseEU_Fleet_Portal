@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Building2, Shield, Calendar, Copy, CheckCircle2, AlertCircle, Gauge, Edit, Save, X } from 'lucide-react';
+import { Building2, Calendar, Copy, CheckCircle2, Gauge, Edit, Save, X, RefreshCw, Lock, ShieldAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
@@ -14,6 +14,7 @@ export function CompanySettings() {
   const [loading, setLoading] = useState(true);
   const [copying, setCopying] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -63,6 +64,28 @@ export function CompanySettings() {
     }
   };
 
+  const regenerateAuthCode = async () => {
+    if (!company || !window.confirm('Are you sure? Drivers or Supervisors currently trying to join with the old code will be blocked.')) return;
+    setRegenerating(true);
+    try {
+      // Generate a secure 8-character random code
+      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      const { error } = await supabase
+        .from('companies')
+        .update({ auth_code: newCode })
+        .eq('id', company.id);
+
+      if (error) throw error;
+      setCompany({ ...company, auth_code: newCode });
+    } catch (error) {
+      console.error('Error regenerating code:', error);
+      alert('Failed to regenerate code.');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const copyAuthCode = async () => {
     if (!company?.auth_code) return;
     await navigator.clipboard.writeText(company.auth_code);
@@ -70,34 +93,27 @@ export function CompanySettings() {
     setTimeout(() => setCopying(false), 2000);
   };
 
-  const toggleChecklistMandatory = async () => {
-    if (!company) return;
-    setUpdating(true);
-    try {
-      const newValue = !company.require_vehicle_checklist;
-
-      const { error } = await supabase
-        .from('companies')
-        .update({ require_vehicle_checklist: newValue })
-        .eq('id', company.id);
-
-      if (error) {
-        alert(t('settings.company.errors.settingUpdateFailed', { message: error.message }));
-        throw error;
-      }
-
-      setCompany({ ...company, require_vehicle_checklist: newValue });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Security Check: Only the primary manager (creator) can edit company settings
+  const isPrimaryManager = profile?.id === company?.created_by;
+
+  if (!isPrimaryManager) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+        <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <ShieldAlert className="text-red-600 w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Access Restricted</h2>
+        <p className="text-slate-500 max-w-sm mx-auto">
+          Only the primary fleet administrator can modify company settings or view the secure authorization code.
+        </p>
       </div>
     );
   }
@@ -169,7 +185,8 @@ export function CompanySettings() {
             <div className="pt-4 border-t border-gray-50">
               <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">{t('settings.company.authCodeLabel')}</label>
               <div className="flex items-center gap-2">
-                <div className="bg-blue-50 px-4 py-2 rounded-lg font-mono font-black text-blue-700 border border-blue-100">
+                <div className="bg-blue-50 px-4 py-2 rounded-lg font-mono font-black text-blue-700 border border-blue-100 flex items-center gap-2">
+                  <Lock size={12} className="opacity-40" />
                   {company?.auth_code || '------'}
                 </div>
                 <button
@@ -179,6 +196,14 @@ export function CompanySettings() {
                 >
                   {copying ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5" />}
                 </button>
+                <button
+                  onClick={regenerateAuthCode}
+                  disabled={regenerating}
+                  className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition border border-slate-100 shadow-sm ml-auto"
+                  title="Regenerate Code"
+                >
+                  <RefreshCw className={`w-5 h-5 ${regenerating ? 'animate-spin' : ''}`} />
+                </button>
               </div>
               <p className="mt-2 text-[10px] text-slate-500 font-medium italic">
                 {t('settings.company.authCodeFootnote')}
@@ -187,43 +212,6 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 space-y-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-blue-600" />
-                    {t('settings.company.complianceTitle')}
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {t('settings.company.complianceSubtitle')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">{t('settings.company.mandatoryChecks')}</p>
-                  <p className="text-[10px] text-slate-500">{t('settings.company.mandatoryChecksSubtitle')}</p>
-                </div>
-                <button
-                  onClick={toggleChecklistMandatory}
-                  disabled={updating}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                    company?.require_vehicle_checklist ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                    company?.require_vehicle_checklist ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-100 font-medium">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>{t('settings.company.mandatoryChecksFootnote')}</span>
-              </div>
-            </div>
-
             <div className="bg-slate-900 p-6 rounded-xl text-white space-y-4 shadow-xl">
               <h3 className="font-bold text-xs uppercase tracking-widest flex items-center gap-2 text-blue-400">
                 <Gauge className="w-4 h-4" />

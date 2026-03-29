@@ -729,6 +729,10 @@
       "dataStatus": "Data Status",
       "activeMonitoring": "Active Monitoring Enabled",
       "fleetRegistered": "FLEET REGISTERED: {{date}}",
+      "regenerateButton": "Regenerate Code",
+      "regenerating": "Regenerating...",
+      "accessRestrictedTitle": "Access Restricted",
+      "accessRestrictedDesc": "Only the primary fleet administrator can modify company settings or view the secure authorization code.",
       "errors": {
         "updateFailed": "Failed to update company name.",
         "settingUpdateFailed": "Failed to update setting: {{message}}"
