@@ -154,7 +154,7 @@ export function ManagerDashboard() {
             {activeTab === 'compliance' && <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />}
             {activeTab === 'training' && <TachoTrainingModule />}
             {activeTab === 'fleet' && <VehicleManagement />}
-            {activeTab === 'vehicle_checks' && <VehicleChecksModule />}
+            {activeTab === 'vehicle_checks' && <VehicleChecksModule onNavigateToFleet={() => setActiveTab('fleet')} />}
             {activeTab === 'supervisors' && <SupervisorManagement />}
             {activeTab === 'payroll' && <PayrollModule />}
             {activeTab === 'expenses' && <ExpenseApproval />}

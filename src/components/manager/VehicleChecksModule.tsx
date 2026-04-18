@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock, Search, Check } from 'lucide-react';
+import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Search, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {
@@ -16,24 +16,32 @@ interface VehicleCheck {
   items: Record<string, boolean>;
   odometer_reading: number | null;
   created_at: string;
-  defect_lifecycle_status?: 'reported' | 'in_progress' | 'fixed';
-  resolution_notes?: string;
-  resolved_at?: string;
-  resolved_by?: string;
   profiles: {
     full_name: string;
   };
 }
 
-export function VehicleChecksModule() {
+interface FleetVehicle {
+  is_vor: boolean;
+  maintenance_called: boolean;
+  status_notes: string | null;
+  make: string;
+  model: string | null;
+}
+
+interface Props {
+  onNavigateToFleet: () => void;
+}
+
+export function VehicleChecksModule({ onNavigateToFleet }: Props) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [checks, setChecks] = useState<VehicleCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCheck, setSelectedCheck] = useState<VehicleCheck | null>(null);
-  const [resolutionNotes, setResolutionNotes] = useState('');
-  const [updatingLifecycle, setUpdatingLifecycle] = useState(false);
+  // undefined = loading, null = not registered in fleet tab, object = found
+  const [fleetVehicle, setFleetVehicle] = useState<FleetVehicle | null | undefined>(undefined);
 
   const loadVehicleChecks = useCallback(async () => {
     try {
@@ -66,34 +74,21 @@ export function VehicleChecksModule() {
     }
   }, [loadVehicleChecks, profile?.company_id]);
 
-  const handleUpdateDefectStatus = async (newStatus: 'in_progress' | 'fixed') => {
-    if (!selectedCheck) return;
-    setUpdatingLifecycle(true);
-    try {
-      const updates: any = {
-        defect_lifecycle_status: newStatus,
-        resolution_notes: resolutionNotes || selectedCheck.resolution_notes
-      };
-
-      if (newStatus === 'fixed') {
-        updates.resolved_at = new Date().toISOString();
-        updates.resolved_by = profile?.id;
-      }
-
-      const { error } = await supabase
-        .from('vehicle_checks')
-        .update(updates)
-        .eq('id', selectedCheck.id);
-
-      if (error) throw error;
-      await loadVehicleChecks();
-      setResolutionNotes('');
-    } catch (err: any) {
-      alert("Status update failed: " + err.message);
-    } finally {
-      setUpdatingLifecycle(false);
+  // When a check is selected, look up the matching vehicle in the fleet tab
+  useEffect(() => {
+    if (!selectedCheck || !profile?.company_id) {
+      setFleetVehicle(undefined);
+      return;
     }
-  };
+    setFleetVehicle(undefined); // show loading
+    supabase
+      .from('vehicles')
+      .select('is_vor, maintenance_called, status_notes, make, model')
+      .eq('reg_number', selectedCheck.reg_number)
+      .eq('company_id', profile.company_id)
+      .maybeSingle()
+      .then(({ data }) => setFleetVehicle(data ?? null));
+  }, [selectedCheck?.id, profile?.company_id]);
 
   const filteredChecks = checks.filter(check =>
     check.profiles.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -150,12 +145,8 @@ export function VehicleChecksModule() {
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900">{check.profiles.full_name}</p>
                         {check.check_status === 'defect' && (
-                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
-                            check.defect_lifecycle_status === 'fixed' ? 'bg-green-100 text-green-700' :
-                            check.defect_lifecycle_status === 'in_progress' ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {check.defect_lifecycle_status || 'REPORTED'}
+                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-100 text-red-700">
+                            DEFECT
                           </span>
                         )}
                       </div>
@@ -243,62 +234,55 @@ export function VehicleChecksModule() {
                       <p className="text-red-900 whitespace-pre-wrap font-medium">{selectedCheck.defect_details || t('vehicleChecklist.manager.details.noDefects')}</p>
                     </div>
 
-                    {/* DEFECT LIFECYCLE MANAGEMENT */}
-                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-6 shadow-sm">
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Wrench size={14}/> Defect Resolution Tracking
+                    {/* FLEET STATUS — mirrors the Fleet tab for this vehicle */}
+                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Truck size={14} className="text-blue-600" /> Fleet Status — {selectedCheck.reg_number}
                       </h4>
 
-                      <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-tight">{t('vehicleChecklist.manager.details.defectStatus')}</label>
-                            <div className="flex gap-2">
-                              {['reported', 'in_progress', 'fixed'].map((status) => (
-                                <span key={status} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
-                                  selectedCheck.defect_lifecycle_status === status
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-slate-50 text-slate-400 border-slate-200'
-                                }`}>
-                                  {status.replace('_', ' ')}
-                                </span>
-                              ))}
+                      {fleetVehicle === undefined ? (
+                        <div className="flex justify-center py-6">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                        </div>
+                      ) : fleetVehicle === null ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-500">
+                          <p className="font-bold text-slate-700 mb-1">{selectedCheck.reg_number} is not registered in the Fleet tab.</p>
+                          <p>Add it to the Fleet tab to track VOR status, maintenance, and repairs.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className={`p-4 rounded-xl border ${fleetVehicle.is_vor ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-100'}`}>
+                              <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-slate-500">VOR Status</p>
+                              <p className={`font-black text-sm ${fleetVehicle.is_vor ? 'text-red-700' : 'text-green-700'}`}>
+                                {fleetVehicle.is_vor ? '🔴 Vehicle Off Road' : '🟢 Operational'}
+                              </p>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${fleetVehicle.maintenance_called ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'}`}>
+                              <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-slate-500">Maintenance</p>
+                              <p className={`font-black text-sm ${fleetVehicle.maintenance_called ? 'text-amber-700' : 'text-slate-400'}`}>
+                                {fleetVehicle.maintenance_called ? '⚠ Booked with Garage' : 'Not booked'}
+                              </p>
                             </div>
                           </div>
-                          {selectedCheck.resolved_at && (
-                            <div className="flex items-center gap-2 text-xs text-green-600 font-bold">
-                              <CheckCircle size={14} /> {t('vehicleChecklist.manager.details.fixedBy', { date: new Date(selectedCheck.resolved_at).toLocaleDateString() })}
+                          {fleetVehicle.status_notes && (
+                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fleet Notes</p>
+                              <p className="text-sm text-slate-600 italic">{fleetVehicle.status_notes}</p>
                             </div>
                           )}
+                          <p className="text-xs text-slate-400 leading-relaxed">
+                            To mark VOR, book maintenance, or log a repair — manage this vehicle in the Fleet tab.
+                          </p>
                         </div>
+                      )}
 
-                        <div className="space-y-4">
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-tight">{t('vehicleChecklist.manager.details.resolutionNotes')}</label>
-                          <textarea
-                            value={resolutionNotes}
-                            onChange={(e) => setResolutionNotes(e.target.value)}
-                            placeholder={selectedCheck.resolution_notes || "Workshop notes, parts used, or mechanic name..."}
-                            className="w-full p-3 border border-slate-200 rounded-xl text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
-                            rows={3}
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUpdateDefectStatus('in_progress')}
-                              disabled={updatingLifecycle || selectedCheck.defect_lifecycle_status === 'in_progress'}
-                              className="flex-1 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-black transition disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                              <Clock size={14} /> {t('vehicleChecklist.manager.details.markInProgress')}
-                            </button>
-                            <button
-                              onClick={() => handleUpdateDefectStatus('fixed')}
-                              disabled={updatingLifecycle || selectedCheck.defect_lifecycle_status === 'fixed'}
-                              className="flex-1 py-2.5 bg-green-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                              <Check size={14} /> {t('vehicleChecklist.manager.details.markFixed')}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <button
+                        onClick={onNavigateToFleet}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition"
+                      >
+                        Go to Fleet Tab <ArrowRight size={14} />
+                      </button>
                     </div>
                   </div>
                 )}
