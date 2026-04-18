@@ -468,6 +468,64 @@ export interface Database {
           }
         ];
       };
+      training_records: {
+        Row: {
+          id: string;
+          company_id: string;
+          driver_id: string;
+          training_type: string;
+          module_id: string | null;
+          title: string;
+          hours_credited: number;
+          status: 'assigned' | 'in_progress' | 'complete';
+          assigned_by: string | null;
+          assigned_at: string;
+          completed_at: string | null;
+          notes: string | null;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          driver_id: string;
+          training_type: string;
+          module_id?: string | null;
+          title: string;
+          hours_credited?: number;
+          status?: 'assigned' | 'in_progress' | 'complete';
+          assigned_by?: string | null;
+          assigned_at?: string;
+          completed_at?: string | null;
+          notes?: string | null;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          driver_id?: string;
+          training_type?: string;
+          module_id?: string | null;
+          title?: string;
+          hours_credited?: number;
+          status?: 'assigned' | 'in_progress' | 'complete';
+          assigned_by?: string | null;
+          assigned_at?: string;
+          completed_at?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "training_records_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "training_records_driver_id_fkey";
+            columns: ["driver_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       driver_documents: {
         Row: {
           id: string;
