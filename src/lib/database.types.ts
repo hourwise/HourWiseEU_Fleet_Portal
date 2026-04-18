@@ -292,6 +292,10 @@ export interface Database {
           defect_details: string | null;
           odometer_reading: number | null;
           created_at: string;
+          defect_lifecycle_status: 'reported' | 'in_progress' | 'fixed' | null;
+          resolution_notes: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
         };
         Insert: {
           id?: string;
@@ -305,6 +309,10 @@ export interface Database {
           defect_details?: string | null;
           odometer_reading?: number | null;
           created_at?: string;
+          defect_lifecycle_status?: 'reported' | 'in_progress' | 'fixed' | null;
+          resolution_notes?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
         };
         Update: {
           id?: string;
@@ -318,6 +326,10 @@ export interface Database {
           defect_details?: string | null;
           odometer_reading?: number | null;
           created_at?: string;
+          defect_lifecycle_status?: 'reported' | 'in_progress' | 'fixed' | null;
+          resolution_notes?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
         };
         Relationships: [
           {

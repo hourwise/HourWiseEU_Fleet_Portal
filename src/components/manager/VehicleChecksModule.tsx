@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock } from 'lucide-react';
+import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Wrench, Clock, Search, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {

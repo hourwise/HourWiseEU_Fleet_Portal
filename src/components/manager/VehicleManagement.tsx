@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container } from 'lucide-react';
+import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
 
@@ -35,6 +35,8 @@ export function VehicleManagement() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [view, setView] = useState<'list' | 'details'>('list');
   const [triggerLogModal, setTriggerLogModal] = useState(false);
+  // reg_number -> true if there is an open (not fixed) defect walkaround check
+  const [openDefectRegs, setOpenDefectRegs] = useState<Set<string>>(new Set());
 
   const loadVehicles = useCallback(async () => {
     try {
@@ -52,6 +54,15 @@ export function VehicleManagement() {
         const updated = vehicleList.find(v => v.id === selectedVehicle.id);
         if (updated) setSelectedVehicle(updated);
       }
+
+      // Fetch open (not-yet-fixed) defect checks so we can badge the list
+      const { data: defectData } = await supabase
+        .from('vehicle_checks')
+        .select('reg_number')
+        .eq('company_id', profile!.company_id)
+        .eq('check_status', 'defect')
+        .neq('defect_lifecycle_status', 'fixed');
+      setOpenDefectRegs(new Set((defectData || []).map(d => d.reg_number)));
     } catch (error) {
       console.error('Error loading vehicles:', error);
     } finally {
@@ -286,6 +297,8 @@ export function VehicleManagement() {
               </div>
             </div>
 
+            <RecentChecksPanel regNumber={selectedVehicle.reg_number} />
+
             <div className="bg-slate-900 rounded-xl p-6 text-white space-y-3 shadow-xl">
               <div className="flex items-center gap-2 text-amber-400">
                 <Info size={18} />
@@ -405,7 +418,7 @@ export function VehicleManagement() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex gap-1 items-center">
+                      <div className="flex gap-1 items-center flex-wrap">
                         {v.maintenance_called && (
                           <div className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[9px] font-black uppercase border border-amber-200" title="Maintenance Called">
                             <Clock size={10} />
@@ -417,6 +430,11 @@ export function VehicleManagement() {
                           </span>
                         ) : (
                           <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black w-fit uppercase border border-green-200">{t('fleet.status.active')}</span>
+                        )}
+                        {openDefectRegs.has(v.reg_number) && (
+                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-orange-200" title="Walkaround check has open defect">
+                            <ShieldAlert size={10} /> Defect
+                          </span>
                         )}
                       </div>
                     </td>
@@ -444,6 +462,120 @@ export function VehicleManagement() {
             loadVehicles();
           }}
         />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recent walkaround checks panel — shown in the vehicle detail right column
+// ---------------------------------------------------------------------------
+
+interface RecentCheck {
+  id: string;
+  created_at: string;
+  check_status: 'pass' | 'defect';
+  defect_lifecycle_status: 'reported' | 'in_progress' | 'fixed' | null;
+  defect_details: string | null;
+  profiles: { full_name: string } | null;
+}
+
+function RecentChecksPanel({ regNumber }: { regNumber: string }) {
+  const { profile } = useAuth();
+  const [checks, setChecks] = useState<RecentCheck[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    setLoading(true);
+    supabase
+      .from('vehicle_checks')
+      .select('id, created_at, check_status, defect_lifecycle_status, defect_details, profiles:driver_id(full_name)')
+      .eq('reg_number', regNumber)
+      .eq('company_id', profile.company_id)
+      .order('created_at', { ascending: false })
+      .limit(6)
+      .then(({ data }) => {
+        setChecks((data as any) ?? []);
+        setLoading(false);
+      });
+  }, [regNumber, profile?.company_id]);
+
+  const lifecycleLabel: Record<string, string> = {
+    reported: 'Reported',
+    in_progress: 'In Progress',
+    fixed: 'Fixed',
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+      <h3 className="font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wide text-sm">
+        <ShieldCheck size={16} className="text-blue-600" /> Walkaround Checks
+      </h3>
+
+      {loading ? (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+        </div>
+      ) : checks.length === 0 ? (
+        <p className="text-xs text-slate-400 text-center py-4">No checks recorded for this vehicle yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {checks.map(c => {
+            const isDefect = c.check_status === 'defect';
+            const lifecycle = c.defect_lifecycle_status;
+            return (
+              <div
+                key={c.id}
+                className={`flex items-start justify-between p-3 rounded-lg border text-xs ${
+                  isDefect && lifecycle !== 'fixed'
+                    ? 'bg-orange-50 border-orange-200'
+                    : isDefect
+                    ? 'bg-slate-50 border-slate-100'
+                    : 'bg-green-50/50 border-green-100'
+                }`}
+              >
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-800">
+                    {(c.profiles as any)?.full_name ?? 'Unknown driver'}
+                  </p>
+                  <p className="text-slate-400">
+                    {new Date(c.created_at).toLocaleDateString()} {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  {isDefect && c.defect_details && (
+                    <p className="text-orange-700 font-medium mt-1 max-w-[180px] truncate" title={c.defect_details}>
+                      {c.defect_details}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                  {isDefect ? (
+                    <>
+                      <span className="flex items-center gap-1 font-black uppercase text-[9px] text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">
+                        <ShieldAlert size={9} /> Defect
+                      </span>
+                      {lifecycle && (
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
+                          lifecycle === 'fixed'
+                            ? 'bg-green-100 text-green-700 border-green-200'
+                            : lifecycle === 'in_progress'
+                            ? 'bg-amber-100 text-amber-700 border-amber-200'
+                            : 'bg-red-100 text-red-700 border-red-200'
+                        }`}>
+                          {lifecycleLabel[lifecycle] ?? lifecycle}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-1 font-black uppercase text-[9px] text-green-700 bg-green-100 px-2 py-0.5 rounded border border-green-200">
+                      <CheckCircle size={9} /> Pass
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
