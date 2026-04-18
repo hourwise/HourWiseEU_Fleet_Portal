@@ -37,7 +37,7 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
     setLoading(true);
     const { data } = await supabase
       .from('training_records')
-      .select('*, driver:profiles!training_records_driver_id_fkey(id, full_name, email, role, company_id, is_active, cpc_dqc_number, cpc_dqc_expiry, cpc_training_hours_done, created_at, driver_license_number)')
+      .select('*, driver:profiles!training_records_driver_id_fkey(id, full_name, email, role, company_id, is_active, cpc_dqc_number, cpc_dqc_expiry, created_at)')
       .eq('company_id', profile.company_id)
       .order('assigned_at', { ascending: false });
     setRecords((data ?? []) as RecordWithDriver[]);
@@ -52,28 +52,17 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
       .from('training_records')
       .update({ status: 'complete', completed_at: new Date().toISOString() })
       .eq('id', record.id);
-
-    // If module type, also update driver's cpc_training_hours_done
-    if (record.training_type === 'module' && record.driver) {
-      const current = record.driver.cpc_training_hours_done ?? 0;
-      await supabase
-        .from('profiles')
-        .update({ cpc_training_hours_done: current + record.hours_credited })
-        .eq('id', record.driver_id);
-    }
-
     setUpdatingId(null);
     fetchRecords();
   };
 
   const exportCsv = () => {
-    const header = 'Driver,Type,Module,Hours,Status,Assigned,Completed\n';
+    const header = 'Driver,Type,Module,Status,Assigned,Completed\n';
     const rows = records.map(r =>
       [
         r.driver?.full_name ?? r.driver_id,
         TYPE_LABEL[r.training_type] ?? r.training_type,
         r.title,
-        r.hours_credited,
         r.status,
         new Date(r.assigned_at).toLocaleDateString(),
         r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '',
@@ -91,8 +80,6 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
   const filtered = statusFilter === 'all'
     ? records
     : records.filter(r => r.status === statusFilter);
-
-  const totalHours = records.filter(r => r.status === 'complete').reduce((s, r) => s + r.hours_credited, 0);
 
   return (
     <div className="space-y-5">
@@ -113,9 +100,6 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
           <span className="text-xs text-slate-400 ml-2">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500 font-bold">
-            Total completed: <span className="text-emerald-600">{totalHours.toFixed(1)} hrs</span>
-          </span>
           <button
             onClick={exportCsv}
             className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition"
@@ -142,7 +126,7 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
             <table className="min-w-full divide-y divide-slate-100">
               <thead className="bg-slate-50">
                 <tr>
-                  {['Driver', 'Type', 'Module / Session', 'Hours', 'Status', 'Assigned', 'Action'].map(h => (
+                  {['Driver', 'Type', 'Module / Session', 'Status', 'Assigned', 'Action'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
@@ -153,7 +137,6 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
                     <td className="px-4 py-3 text-sm font-bold text-slate-900">{r.driver?.full_name ?? '—'}</td>
                     <td className="px-4 py-3 text-xs text-slate-500">{TYPE_LABEL[r.training_type] ?? r.training_type}</td>
                     <td className="px-4 py-3 text-sm text-slate-700 max-w-[220px] truncate">{r.title}</td>
-                    <td className="px-4 py-3 text-sm font-bold text-slate-700">{r.hours_credited.toFixed(1)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${STATUS_STYLES[r.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.assigned}`}>
                         {r.status.replace('_', ' ')}

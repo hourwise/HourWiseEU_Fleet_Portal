@@ -175,7 +175,7 @@ export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
       training_type: 'tacho_refresher',
       module_id: mod.id,
       title: mod.title,
-      hours_credited: mod.hours,
+      hours_credited: 0,
       status: 'assigned',
       assigned_by: profile.id,
     });
@@ -200,7 +200,7 @@ export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
               id="tacho-driver"
               value={selectedDriver}
               onChange={e => { setSelectedDriver(e.target.value); setDiscrepancies(null); }}
-              className="w-full p-2.5 border border-slate-200 rounded-lg bg-slate-50 text-sm font-medium"
+              className="w-full p-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 text-sm font-medium"
             >
               <option value="">Choose driver…</option>
               {activeDrivers.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}

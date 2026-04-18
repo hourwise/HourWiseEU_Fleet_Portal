@@ -10,7 +10,6 @@ export interface TrainingModule {
   id: string;
   title: string;
   duration: string;
-  hours: number;
   category: string;
   summary: string;
   sections: { heading: string; body: string; callout?: string }[];
@@ -21,7 +20,6 @@ export const TRAINING_MODULES: TrainingModule[] = [
     id: 'eu-hours',
     title: "EU Drivers' Hours Rules",
     duration: '20 min',
-    hours: 0.33,
     category: 'Compliance',
     summary: 'EC 561/2006 daily and weekly driving limits, mandatory break rules, and rest period requirements.',
     sections: [
@@ -54,7 +52,6 @@ export const TRAINING_MODULES: TrainingModule[] = [
     id: 'tacho-modes',
     title: 'Tachograph Mode Switching',
     duration: '15 min',
-    hours: 0.25,
     category: 'Tachograph',
     summary: 'When and how to switch tachograph modes correctly — the most common source of infringement notices.',
     sections: [
@@ -82,7 +79,6 @@ export const TRAINING_MODULES: TrainingModule[] = [
     id: 'walkaround',
     title: 'Daily Walkaround Checks',
     duration: '15 min',
-    hours: 0.25,
     category: 'Vehicle Safety',
     summary: 'What to inspect, how to record it, and what to do when you find a defect.',
     sections: [
@@ -109,7 +105,6 @@ export const TRAINING_MODULES: TrainingModule[] = [
     id: 'infraction-consequences',
     title: 'Infraction Consequences',
     duration: '15 min',
-    hours: 0.25,
     category: 'Compliance',
     summary: "What happens when hours rules are broken — fines, prohibitions, and impact on the operator's licence.",
     sections: [
@@ -136,7 +131,6 @@ export const TRAINING_MODULES: TrainingModule[] = [
     id: 'weekly-rest',
     title: 'Weekly & Fortnightly Rest Rules',
     duration: '15 min',
-    hours: 0.25,
     category: 'Compliance',
     summary: 'Regular and reduced weekly rest explained clearly, including compensatory rest obligations.',
     sections: [
@@ -184,7 +178,7 @@ export function TrainingLibrary({ drivers, onAssigned }: TrainingLibraryProps) {
       training_type: 'module',
       module_id: mod.id,
       title: mod.title,
-      hours_credited: mod.hours,
+      hours_credited: 0,
       status: 'assigned',
       assigned_by: profile.id,
     });
@@ -204,7 +198,7 @@ export function TrainingLibrary({ drivers, onAssigned }: TrainingLibraryProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Select a module to read, then assign it to a driver. Each module credits CPC-equivalent hours to their training record once completed.
+        Select a module to read, then assign it to a driver as a remedial action. Completed modules form a due-diligence paper trail for the fleet operator's licence.
       </p>
 
       {TRAINING_MODULES.map(mod => {
@@ -230,7 +224,6 @@ export function TrainingLibrary({ drivers, onAssigned }: TrainingLibraryProps) {
                   <p className="text-sm text-slate-500">{mod.summary}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="flex items-center gap-1 text-xs text-slate-400"><Clock size={12} /> {mod.duration}</span>
-                    <span className="text-xs text-slate-400">{mod.hours} hr credited</span>
                   </div>
                 </div>
               </div>
@@ -260,7 +253,7 @@ export function TrainingLibrary({ drivers, onAssigned }: TrainingLibraryProps) {
                   <select
                     value={assignDriver}
                     onChange={e => setAssignDriver(e.target.value)}
-                    className="flex-1 p-2 border border-slate-200 rounded-lg text-sm bg-white font-medium"
+                    className="flex-1 p-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 font-medium"
                   >
                     <option value="">Assign to a driver…</option>
                     {activeDrivers.map(d => (

@@ -10,7 +10,7 @@ import { TachoChecker } from './training/TachoChecker';
 type Tab = 'cpc' | 'library' | 'tacho' | 'records';
 
 const TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
-  { id: 'cpc',     label: 'CPC Dashboard', Icon: Award },
+  { id: 'cpc',     label: 'DQC Status', Icon: Award },
   { id: 'library', label: 'Training Library', Icon: BookOpen },
   { id: 'tacho',   label: 'Tacho Checker', Icon: FileSearch },
   { id: 'records', label: 'Records', Icon: ClipboardList },
@@ -31,7 +31,7 @@ export function TachoTrainingModule() {
         <GraduationCap className="w-8 h-8 text-blue-600" />
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Training Centre</h2>
-          <p className="text-gray-600 text-sm">CPC tracking, compliance modules, tacho analysis, and training records</p>
+          <p className="text-gray-600 text-sm">DQC expiry monitoring, remedial training modules, tacho analysis, and due-diligence records</p>
         </div>
       </div>
 

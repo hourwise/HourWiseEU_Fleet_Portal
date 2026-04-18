@@ -6,7 +6,6 @@
  *   1. Updates the driver's profiles row with all personal/compliance fields
  *   2. Uploads any documents provided (licence, CPC, tacho) to Supabase Storage
  *   3. Inserts corresponding driver_documents rows
- *   4. Inserts a training_records row if CPC hours at start are provided
  */
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
@@ -53,7 +52,6 @@ interface ComplianceData {
   // CPC / DQC
   cpc_dqc_number: string;
   cpc_dqc_expiry: string;
-  cpc_hours_at_start: string;
   cpc_file: File | null;
   // Tacho Card
   tacho_number: string;
@@ -168,9 +166,6 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
     licence_file: null,
     cpc_dqc_number: driver.cpc_dqc_number ?? '',
     cpc_dqc_expiry: driver.cpc_dqc_expiry ?? '',
-    cpc_hours_at_start: driver.cpc_training_hours_done
-      ? String(driver.cpc_training_hours_done)
-      : '',
     cpc_file: null,
     tacho_number: '',
     tacho_expiry: '',
@@ -229,9 +224,6 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
         driving_licence_expiry: compliance.driving_licence_expiry || null,
         cpc_dqc_number: compliance.cpc_dqc_number || null,
         cpc_dqc_expiry: compliance.cpc_dqc_expiry || null,
-        cpc_training_hours_done: compliance.cpc_hours_at_start
-          ? parseFloat(compliance.cpc_hours_at_start)
-          : 0,
       };
 
       const { error: profileErr } = await supabase
@@ -264,23 +256,6 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
           compliance.tacho_number,
           compliance.tacho_expiry,
         );
-      }
-
-      // 3. Log CPC hours at start as a training record if provided
-      if (compliance.cpc_hours_at_start && driver.company_id) {
-        await supabase.from('training_records').insert({
-          company_id: driver.company_id,
-          driver_id: driver.id,
-          training_type: 'external_cpc',
-          title: 'CPC Hours at Employment Start',
-          hours_credited: parseFloat(compliance.cpc_hours_at_start),
-          status: 'complete' as const,
-          assigned_by: user?.id ?? null,
-          completed_at: employment.employment_start_date
-            ? new Date(employment.employment_start_date).toISOString()
-            : new Date().toISOString(),
-          notes: 'Carried over from Check My CPC / previous employer at onboarding.',
-        });
       }
 
       onComplete();
@@ -383,7 +358,7 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
         <div className="flex items-center gap-2 text-amber-700 font-black text-xs uppercase tracking-widest">
           <GraduationCap size={15} /> CPC / DQC Card
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FieldInput id="ob-cpc-num" label="DQC Card Number"
             value={compliance.cpc_dqc_number}
             onChange={v => setCompliance(p => ({ ...p, cpc_dqc_number: v.toUpperCase() }))}
@@ -391,14 +366,9 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
           <FieldInput id="ob-cpc-exp" label="DQC Expiry Date" type="date"
             value={compliance.cpc_dqc_expiry}
             onChange={v => setCompliance(p => ({ ...p, cpc_dqc_expiry: v }))} />
-          <FieldInput id="ob-cpc-hrs" label="Hours done in current 5yr cycle"
-            type="number"
-            value={compliance.cpc_hours_at_start}
-            onChange={v => setCompliance(p => ({ ...p, cpc_hours_at_start: v }))}
-            placeholder="e.g. 14" />
         </div>
         <div className="bg-amber-100/60 rounded-lg px-3 py-2 text-xs text-amber-800 font-medium">
-          ℹ️ Check the driver's <strong>Check My CPC</strong> record (gov.uk) for their current hours total. This populates their CPC progress bar in the Training Centre.
+          ℹ️ The DQC expiry date is tracked in the <strong>CPC Dashboard</strong> tab of the Training Centre and will alert you when renewal is approaching.
         </div>
         <FileUploadSlot id="ob-cpc-file" label="Upload Check My CPC PDF" colour="amber"
           file={compliance.cpc_file}
@@ -472,7 +442,6 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
               <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2">CPC / DQC</p>
               <ReviewRow label="DQC Number" value={compliance.cpc_dqc_number} />
               <ReviewRow label="Expiry" value={compliance.cpc_dqc_expiry ? new Date(compliance.cpc_dqc_expiry).toLocaleDateString() : null} />
-              <ReviewRow label="Hours at Start" value={compliance.cpc_hours_at_start ? `${compliance.cpc_hours_at_start} hrs` : null} />
               <ReviewRow label="Document" value={compliance.cpc_file?.name ?? null} />
             </div>
             <div>
