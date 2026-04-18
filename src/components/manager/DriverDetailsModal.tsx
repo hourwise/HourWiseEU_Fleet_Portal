@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban } from 'lucide-react';
+import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban, Paperclip } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
