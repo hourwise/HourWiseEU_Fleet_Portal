@@ -5,6 +5,7 @@ import { Users, Search, UserCheck, Mail, Clock, UserPlus, Trash2, Edit, AlertTri
 import type { Database } from '../../lib/database.types';
 import { InviteDriverModal } from './InviteDriverModal';
 import { DriverDetailsModal } from './DriverDetailsModal';
+import { DriverOnboardingModal } from './DriverOnboardingModal';
 import { useTranslation } from 'react-i18next';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -64,6 +65,10 @@ export function DriverManagement() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
+  const [onboardingDriver, setOnboardingDriver] = useState<Profile | null>(null);
+
+  const isOnboardingIncomplete = (driver: Profile) =>
+    !driver.phone_number || !driver.driving_licence_number || !driver.date_of_birth;
 
   const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
@@ -269,7 +274,16 @@ export function DriverManagement() {
                     </div>
                   </div>
                   {!isInvite && (
-                    <div className="ml-4 flex gap-2">
+                    <div className="ml-4 flex gap-2 items-center">
+                      {isOnboardingIncomplete(item as Profile) && (
+                        <button
+                          onClick={() => setOnboardingDriver(item as Profile)}
+                          className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition tracking-widest shadow-sm shadow-amber-200"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Onboard</span>
+                        </button>
+                      )}
                       <button onClick={() => setSelectedDriver(item as Profile)} className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition tracking-widest">
                         <Edit className="w-3.5 h-3.5" />
                         <span>{t('common.details')}</span>
@@ -305,6 +319,7 @@ export function DriverManagement() {
 
       {showInviteModal && (<InviteDriverModal onClose={() => setShowInviteModal(false)} onInviteSent={loadData} />)}
       {selectedDriver && (<DriverDetailsModal driver={selectedDriver} onClose={() => setSelectedDriver(null)} onSave={() => { setSelectedDriver(null); loadData(); }} />)}
+      {onboardingDriver && (<DriverOnboardingModal driver={onboardingDriver} onClose={() => setOnboardingDriver(null)} onComplete={() => { setOnboardingDriver(null); loadData(); }} />)}
     </div>
   );
 }
