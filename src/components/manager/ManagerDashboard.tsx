@@ -1,28 +1,30 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { LogOut, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Shield, DollarSign, Receipt, ShieldCheck, Truck, Activity, GraduationCap } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, FileBarChart2, Settings, Shield, ShieldCheck, Truck, Activity, GraduationCap, MessageSquare, Fuel } from 'lucide-react';
 
 // Lazy load dashboard components
 const ComplianceScoreboard = lazy(() => import('./ComplianceScoreboard').then(m => ({ default: m.ComplianceScoreboard })));
 const DriverManagement = lazy(() => import('./DriverManagement').then(m => ({ default: m.DriverManagement })));
-const ReportsModule = lazy(() => import('./ReportsModule').then(m => ({ default: m.ReportsModule })));
-const AuditTrail = lazy(() => import('./AuditTrail').then(m => ({ default: m.AuditTrail })));
+const ReportsAndExports = lazy(() => import('./ReportsAndExports').then(m => ({ default: m.ReportsAndExports })));
 const CompanySettings = lazy(() => import('./CompanySettings').then(m => ({ default: m.CompanySettings })));
 const SupervisorManagement = lazy(() => import('./SupervisorManagement').then(m => ({ default: m.SupervisorManagement })));
 const AlertsFeed = lazy(() => import('./AlertsFeed').then(m => ({ default: m.AlertsFeed })));
-const PayrollModule = lazy(() => import('./PayrollModule').then(m => ({ default: m.PayrollModule })));
 const MfaSettings = lazy(() => import('./MfaSettings').then(m => ({ default: m.MfaSettings })));
 const BillingManager = lazy(() => import('./BillingManager').then(m => ({ default: m.BillingManager })));
-const ExpenseApproval = lazy(() => import('./ExpenseApproval').then(m => ({ default: m.ExpenseApproval })));
 const BroadcastMessage = lazy(() => import('./BroadcastMessage').then(m => ({ default: m.BroadcastMessage })));
 const VehicleChecksModule = lazy(() => import('./VehicleChecksModule').then(m => ({ default: m.VehicleChecksModule })));
 const VehicleManagement = lazy(() => import('./VehicleManagement').then(m => ({ default: m.VehicleManagement })));
+const FuelMileageTracker = lazy(() => import('./FuelMileageTracker').then(m => ({ default: m.FuelMileageTracker })));
+const MessagingHub = lazy(() => import('./MessagingHub').then(m => ({ default: m.MessagingHub })));
 const VehicleComplianceSnapshot = lazy(() => import('./VehicleComplianceSnapshot').then(m => ({ default: m.VehicleComplianceSnapshot })));
 const DriverComplianceSnapshot = lazy(() => import('./DriverComplianceSnapshot').then(m => ({ default: m.DriverComplianceSnapshot })));
 const ComplianceSnapshot = lazy(() => import('./ComplianceSnapshot').then(m => ({ default: m.ComplianceSnapshot })));
 const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m => ({ default: m.TachoTrainingModule })));
 const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
+const DriverRiskSnapshot = lazy(() => import('./DriverRiskSnapshot').then(m => ({ default: m.DriverRiskSnapshot })));
+const InfringementManagement = lazy(() => import('./InfringementManagement').then(m => ({ default: m.InfringementManagement })));
 
 function TabLoading() {
   return (
@@ -32,12 +34,37 @@ function TabLoading() {
   );
 }
 
-type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'vehicle_checks' | 'supervisors' | 'payroll' | 'expenses' | 'reports' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'fuel' | 'vehicle_checks' | 'supervisors' | 'messages' | 'reports' | 'settings';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Live unread count — messages sent to this manager that haven't been read
+  useEffect(() => {
+    if (!profile?.id || !profile?.company_id) return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', profile.company_id)
+        .eq('recipient_id', profile.id)
+        .is('read_at', null);
+      setUnreadMessages(count ?? 0);
+    };
+
+    fetchUnread();
+
+    const channel = supabase
+      .channel('dashboard:unread')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `company_id=eq.${profile.company_id}` }, fetchUnread)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id, profile?.company_id]);
 
   const tabs = [
     { id: 'dashboard' as Tab, label: t('navigation.dashboard'), icon: LayoutDashboard },
@@ -45,12 +72,11 @@ export function ManagerDashboard() {
     { id: 'compliance' as Tab, label: t('navigation.compliance'), icon: Activity },
     { id: 'training' as Tab, label: t('navigation.training'), icon: GraduationCap },
     { id: 'fleet' as Tab, label: t('navigation.fleet'), icon: Truck },
+    { id: 'fuel' as Tab, label: 'Fuel & Mileage', icon: Fuel },
     { id: 'vehicle_checks' as Tab, label: t('navigation.safetyChecks'), icon: ShieldCheck },
     { id: 'supervisors' as Tab, label: t('navigation.supervisors'), icon: Shield },
-    { id: 'payroll' as Tab, label: t('navigation.payroll'), icon: DollarSign },
-    { id: 'expenses' as Tab, label: t('navigation.expenses'), icon: Receipt },
-    { id: 'reports' as Tab, label: t('navigation.reports'), icon: FileText },
-    { id: 'audit' as Tab, label: t('navigation.auditTrail'), icon: AlertTriangle },
+    { id: 'messages' as Tab, label: 'Messages', icon: MessageSquare },
+    { id: 'reports' as Tab, label: 'Reports & Exports', icon: FileBarChart2 },
     { id: 'settings' as Tab, label: t('navigation.settings'), icon: Settings },
   ];
 
@@ -99,6 +125,11 @@ export function ManagerDashboard() {
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
+                  {tab.id === 'messages' && unreadMessages > 0 && (
+                    <span className="ml-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                      {unreadMessages}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -114,6 +145,9 @@ export function ManagerDashboard() {
                   <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
                   <DriverComplianceSnapshot onAction={() => setActiveTab('drivers')} />
                 </div>
+
+                {/* Driver Risk Scores — full width row */}
+                <DriverRiskSnapshot onAction={() => setActiveTab('compliance')} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
@@ -151,15 +185,19 @@ export function ManagerDashboard() {
             )}
 
             {activeTab === 'drivers' && <DriverManagement />}
-            {activeTab === 'compliance' && <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />}
+            {activeTab === 'compliance' && (
+              <div className="space-y-8">
+                <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />
+                <InfringementManagement />
+              </div>
+            )}
             {activeTab === 'training' && <TachoTrainingModule />}
             {activeTab === 'fleet' && <VehicleManagement />}
+            {activeTab === 'fuel' && <FuelMileageTracker />}
             {activeTab === 'vehicle_checks' && <VehicleChecksModule onNavigateToFleet={() => setActiveTab('fleet')} />}
             {activeTab === 'supervisors' && <SupervisorManagement />}
-            {activeTab === 'payroll' && <PayrollModule />}
-            {activeTab === 'expenses' && <ExpenseApproval />}
-            {activeTab === 'reports' && <ReportsModule />}
-            {activeTab === 'audit' && <AuditTrail />}
+            {activeTab === 'messages' && <MessagingHub />}
+            {activeTab === 'reports' && <ReportsAndExports />}
             {activeTab === 'settings' && (
               <div className="space-y-6">
                   <UserProfileSettings />

@@ -22,7 +22,8 @@ export interface Database {
           subscription_period_end: string | null;
           created_at: string;
           created_by: string | null;
-          require_vehicle_checklist: boolean; // ADDED
+          require_vehicle_checklist: boolean;
+          default_fuel_cost_per_litre: number | null; // ADDED — run: ALTER TABLE companies ADD COLUMN IF NOT EXISTS default_fuel_cost_per_litre numeric(6,3);
         };
         Insert: {
           id?: string;
@@ -36,7 +37,8 @@ export interface Database {
           subscription_period_end?: string | null;
           created_at?: string;
           created_by?: string | null;
-          require_vehicle_checklist?: boolean; // ADDED
+          require_vehicle_checklist?: boolean;
+          default_fuel_cost_per_litre?: number | null;
         };
         Update: {
           id?: string;
@@ -50,7 +52,8 @@ export interface Database {
           subscription_period_end?: string | null;
           created_at?: string;
           created_by?: string | null;
-          require_vehicle_checklist?: boolean; // ADDED
+          require_vehicle_checklist?: boolean;
+          default_fuel_cost_per_litre?: number | null;
         };
         Relationships: [];
       };
@@ -586,6 +589,218 @@ export interface Database {
             foreignKeyName: "driver_documents_company_id_fkey";
             columns: ["company_id"];
             referencedRelation: "companies";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      infringements: {
+        Row: {
+          id: string;
+          company_id: string;
+          driver_id: string;
+          session_id: string | null;
+          violation_type: string;
+          regulation: 'REG_561' | 'WTD' | 'DOMESTIC' | 'OTHER';
+          severity: 'minor' | 'serious' | 'very_serious';
+          occurred_at: string;
+          status: 'open' | 'debriefed' | 'closed';
+          driver_statement: string | null;
+          manager_notes: string | null;
+          debriefed_at: string | null;
+          debriefed_by: string | null;
+          training_record_id: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          driver_id: string;
+          session_id?: string | null;
+          violation_type: string;
+          regulation?: 'REG_561' | 'WTD' | 'DOMESTIC' | 'OTHER';
+          severity?: 'minor' | 'serious' | 'very_serious';
+          occurred_at: string;
+          status?: 'open' | 'debriefed' | 'closed';
+          driver_statement?: string | null;
+          manager_notes?: string | null;
+          debriefed_at?: string | null;
+          debriefed_by?: string | null;
+          training_record_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          driver_id?: string;
+          session_id?: string | null;
+          violation_type?: string;
+          regulation?: 'REG_561' | 'WTD' | 'DOMESTIC' | 'OTHER';
+          severity?: 'minor' | 'serious' | 'very_serious';
+          occurred_at?: string;
+          status?: 'open' | 'debriefed' | 'closed';
+          driver_statement?: string | null;
+          manager_notes?: string | null;
+          debriefed_at?: string | null;
+          debriefed_by?: string | null;
+          training_record_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Relationships: [];
+      };
+      defect_photos: {
+        Row: {
+          id: string;
+          vehicle_check_id: string;
+          storage_path: string;
+          uploaded_at: string;
+        };
+        Insert: {
+          id?: string;
+          vehicle_check_id: string;
+          storage_path: string;
+          uploaded_at?: string;
+        };
+        Update: {
+          id?: string;
+          vehicle_check_id?: string;
+          storage_path?: string;
+          uploaded_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "defect_photos_vehicle_check_id_fkey";
+            columns: ["vehicle_check_id"];
+            referencedRelation: "vehicle_checks";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      fuel_logs: {
+        Row: {
+          id: string;
+          company_id: string | null;
+          reg_number: string;
+          vehicle_id: string | null;
+          driver_id: string; // references auth.users(id) — same uuid as profiles.id
+          vehicle_check_id: string | null;
+          log_date: string;
+          start_odometer: number | null;
+          end_odometer: number | null;
+          distance_covered: number | null; // GENERATED ALWAYS AS (end_odometer - start_odometer) STORED
+          fuel_added_litres: number;
+          fuel_type: 'diesel' | 'petrol' | 'hvo' | 'adblue' | 'electric_kwh' | 'other';
+          fuel_cost_per_litre: number | null;
+          total_fuel_cost: number | null;
+          mpg: number | null;
+          notes: string | null;
+          source: 'driver_app' | 'manual_entry';
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id?: string | null;
+          reg_number: string;
+          vehicle_id?: string | null;
+          driver_id: string;
+          vehicle_check_id?: string | null;
+          log_date?: string;
+          start_odometer?: number | null;
+          end_odometer?: number | null;
+          // distance_covered is GENERATED — do not include in Insert
+          fuel_added_litres?: number;
+          fuel_type: string;
+          fuel_cost_per_litre?: number | null;
+          total_fuel_cost?: number | null;
+          mpg?: number | null;
+          notes?: string | null;
+          source?: 'driver_app' | 'manual_entry';
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          company_id?: string | null;
+          reg_number?: string;
+          vehicle_id?: string | null;
+          driver_id?: string;
+          vehicle_check_id?: string | null;
+          log_date?: string;
+          start_odometer?: number | null;
+          end_odometer?: number | null;
+          fuel_added_litres?: number;
+          fuel_type?: string;
+          fuel_cost_per_litre?: number | null;
+          total_fuel_cost?: number | null;
+          mpg?: number | null;
+          notes?: string | null;
+          source?: 'driver_app' | 'manual_entry';
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fuel_logs_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fuel_logs_vehicle_id_fkey";
+            columns: ["vehicle_id"];
+            referencedRelation: "vehicles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      messages: {
+        Row: {
+          id: string;
+          company_id: string;
+          sender_id: string | null;
+          recipient_id: string | null;
+          body: string;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          sender_id?: string | null;
+          recipient_id?: string | null;
+          body: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          sender_id?: string | null;
+          recipient_id?: string | null;
+          body?: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_recipient_id_fkey";
+            columns: ["recipient_id"];
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           }
         ];

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Search, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Search, ArrowRight, Camera, X, ZoomIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface VehicleCheck {
@@ -29,6 +29,12 @@ interface FleetVehicle {
   model: string | null;
 }
 
+interface DefectPhoto {
+  id: string;
+  storage_path: string;
+  publicUrl: string;
+}
+
 interface Props {
   onNavigateToFleet: () => void;
 }
@@ -42,6 +48,9 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
   const [selectedCheck, setSelectedCheck] = useState<VehicleCheck | null>(null);
   // undefined = loading, null = not registered in fleet tab, object = found
   const [fleetVehicle, setFleetVehicle] = useState<FleetVehicle | null | undefined>(undefined);
+  const [defectPhotos, setDefectPhotos] = useState<DefectPhoto[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const loadVehicleChecks = useCallback(async () => {
     try {
@@ -90,6 +99,29 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
       .then(({ data }) => setFleetVehicle(data ?? null));
   }, [selectedCheck?.id, profile?.company_id]);
 
+  // Fetch defect photos when a defect check is selected
+  useEffect(() => {
+    if (!selectedCheck || selectedCheck.check_status !== 'defect') {
+      setDefectPhotos([]);
+      return;
+    }
+    setPhotosLoading(true);
+    supabase
+      .from('defect_photos')
+      .select('id, storage_path, uploaded_at')
+      .eq('vehicle_check_id', selectedCheck.id)
+      .order('uploaded_at')
+      .then(({ data }) => {
+        const photos: DefectPhoto[] = (data ?? []).map(row => ({
+          id: row.id,
+          storage_path: row.storage_path,
+          publicUrl: supabase.storage.from('defect-photos').getPublicUrl(row.storage_path).data.publicUrl,
+        }));
+        setDefectPhotos(photos);
+        setPhotosLoading(false);
+      });
+  }, [selectedCheck?.id]);
+
   const filteredChecks = checks.filter(check =>
     check.profiles.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     check.reg_number.toLowerCase().includes(searchQuery.toLowerCase())
@@ -105,6 +137,27 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <X size={20} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Defect photo"
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-8 h-8 text-blue-600" />
@@ -232,6 +285,42 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
                         {t('vehicleChecklist.manager.details.defectsTitle')}
                       </h4>
                       <p className="text-red-900 whitespace-pre-wrap font-medium">{selectedCheck.defect_details || t('vehicleChecklist.manager.details.noDefects')}</p>
+                    </div>
+
+                    {/* DEFECT PHOTOS */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Camera size={13} /> Defect Photos
+                        {defectPhotos.length > 0 && (
+                          <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-black">{defectPhotos.length}</span>
+                        )}
+                      </h4>
+                      {photosLoading ? (
+                        <div className="flex gap-2">
+                          {[1,2,3].map(i => <div key={i} className="w-24 h-24 bg-slate-100 rounded-lg animate-pulse" />)}
+                        </div>
+                      ) : defectPhotos.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">No photos attached to this defect report.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {defectPhotos.map(photo => (
+                            <button
+                              key={photo.id}
+                              onClick={() => setLightboxUrl(photo.publicUrl)}
+                              className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-slate-200 hover:border-blue-400 transition group"
+                            >
+                              <img
+                                src={photo.publicUrl}
+                                alt="Defect photo"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
+                                <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition" />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* FLEET STATUS — mirrors the Fleet tab for this vehicle */}
