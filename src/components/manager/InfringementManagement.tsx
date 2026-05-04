@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   AlertTriangle, ChevronDown, ChevronUp, CheckCircle,
-  ClipboardCheck, X, RefreshCw, Filter, GraduationCap, BookOpen,
+  ClipboardCheck, X, RefreshCw, Filter, GraduationCap, BookOpen, Activity, Layout
 } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -19,10 +19,16 @@ interface InfringementWithDriver extends Infringement {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const REGULATION_LABELS: Record<string, string> = {
-  REG_561: 'EU Reg 561',
-  WTD:     'WTD',
+  REG_561: 'EU Reg 561 (Tacho)',
+  WTD:     'WTD (App)',
   DOMESTIC:'Domestic',
   OTHER:   'Other',
+};
+
+const SOURCE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  tacho: { label: 'Tacho', icon: Activity, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  app:   { label: 'App',   icon: Layout,   color: 'text-brand-accent bg-brand-accent/10 border-brand-accent/20' },
+  csv:   { label: 'CSV',   icon: BookOpen, color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; colour: string }> = {
@@ -358,6 +364,11 @@ export function InfringementManagement() {
 
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {(inf as any).source && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border flex items-center gap-1 ${SOURCE_CONFIG[(inf as any).source]?.color}`}>
+                          {SOURCE_CONFIG[(inf as any).source]?.label}
+                        </span>
+                      )}
                       <span className="hidden sm:block text-[10px] font-black text-slate-400">{REGULATION_LABELS[inf.regulation]}</span>
                       <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${sev?.colour}`}>{sev?.label}</span>
                       <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${sta?.colour}`}>{sta?.label}</span>
@@ -400,8 +411,8 @@ export function InfringementManagement() {
                       )}
 
                       {/* Actions */}
-                      {inf.status !== 'closed' && (
-                        <div className="flex gap-2 pt-1">
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {inf.status !== 'closed' && (
                           <button
                             onClick={() => setDebriefTarget(inf)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent hover:bg-brand-accent-dark text-white rounded-lg text-xs font-black transition"
@@ -409,8 +420,21 @@ export function InfringementManagement() {
                             <ClipboardCheck size={12} />
                             {inf.status === 'open' ? 'Record Debrief' : 'Update & Close'}
                           </button>
-                        </div>
-                      )}
+                        )}
+
+                        {(inf as any).source === 'tacho' && (
+                          <button
+                            onClick={() => {
+                              // We could navigate to a tacho specific view or open a modal
+                              // For now, let's signal this is a tacho record
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg text-xs font-black border border-blue-500/20 transition"
+                          >
+                            <Activity size={12} /> View Tacho Timeline
+                          </button>
+                        )}
+                      </div>
+
                       {inf.status === 'closed' && (
                         <p className="text-xs text-green-400 flex items-center gap-1.5 pt-1">
                           <CheckCircle size={12} /> Infringement closed — no further action required.

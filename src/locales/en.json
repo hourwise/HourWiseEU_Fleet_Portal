@@ -738,6 +738,63 @@
         "settingUpdateFailed": "Failed to update setting: {{message}}"
       }
     },
+    "incidents": {
+      "title": "Incident & Accident Reporting",
+      "subtitle": "Comprehensive logs for insurance, RIDDOR compliance, and fleet safety auditing.",
+      "list": {
+        "title": "Incident History",
+        "searchPlaceholder": "Search by driver, location, or police ref...",
+        "noRecords": "No incident reports found.",
+        "headers": {
+          "date": "Date",
+          "driver": "Driver",
+          "vehicle": "Vehicle",
+          "type": "Type",
+          "status": "Status"
+        }
+      },
+      "form": {
+        "title": "Report New Incident",
+        "reportingFor": "Reporting for {{reg}}",
+        "workplaceInjury": "Workplace Injury (Non-Vehicle)",
+        "type": {
+          "label": "Incident Type",
+          "accident": "Road Traffic Accident (RTA)",
+          "incident": "Minor Incident / Near Miss",
+          "injury": "Workplace Injury"
+        },
+        "dateTime": "Date & Time of Occurrence",
+        "location": "Location (e.g. Depot, Postcode, Road Name)",
+        "description": "Full Description of Event",
+        "injuryDetails": {
+          "label": "Was anyone injured?",
+          "placeholder": "Describe injuries, RIDDOR status, and first aid provided..."
+        },
+        "thirdParty": {
+          "label": "Third Party Involved?",
+          "name": "Third Party Name",
+          "contact": "Contact Number",
+          "reg": "Vehicle Reg",
+          "insurance": "Insurance Company & Policy"
+        },
+        "police": "Police Reference Number (if applicable)",
+        "photos": "Incident Photos",
+        "notes": "Manager Investigative Notes",
+        "submit": "Submit Report",
+        "submitting": "Submitting...",
+        "success": "Incident report submitted successfully."
+      },
+      "status": {
+        "reported": "Reported",
+        "investigating": "Investigating",
+        "closed": "Closed"
+      },
+      "types": {
+        "accident": "Accident",
+        "incident": "Incident",
+        "injury": "Injury"
+      }
+    },
     "profile": {
       "title": "My Profile",
       "success": "Profile Updated",

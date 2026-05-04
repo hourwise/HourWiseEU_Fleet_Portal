@@ -22,8 +22,12 @@
     "logout": "Logout",
     "openSettings": "Open Settings",
     "retry": "Retry",
-    "loading": "Loading...",
-    "tryAgain": "Try Again"
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "takePhoto": "Take Photo",
+    "fromLibrary": "From Library",
+    "clear": "Clear",
+    "ready": "Ready"
   },
   "permissions": {
     "notificationsTitle": "Notifications Permission",
@@ -113,6 +117,19 @@
     "incomplete": "Answer all items.",
     "missingDefectDetails": "Describe the issue.",
     "hintLabel": "Hint",
+    "photoLimitTitle": "Photo Limit",
+    "photoLimitMessage": "You can attach a maximum of 3 photos per defect report.",
+    "defectPhotosCount": "Defect Photos ({{count}}/3)",
+    "openingOdo": "Opening Odometer",
+    "closingOdo": "Closing Odometer",
+    "odoError": "Closing odometer cannot be less than opening odometer.",
+    "driverConfirmation": "Driver Confirmation",
+    "tapToSign": "Tap to provide digital signature",
+    "signTitle": "Digital Signature",
+    "signDescription": "Please sign above",
+    "inspecting": "Inspecting...",
+    "timerActiveTitle": "Inspection in Progress",
+    "timerActiveMessage": "A thorough safety inspection requires at least 15 minutes. Please ensure you have completed all checks correctly before submitting.",
     "items": {
       "mirrors": "Mirrors and Glass",
       "mirrorsHint": "Check for cracks/stickers; ensure mirrors are aligned.",
@@ -222,6 +239,34 @@
       "saveError": "Failed to save vehicle details"
     }
   },
+  "expenses": {
+    "title": "Add Expense",
+    "amount": "Amount",
+    "currency": "Currency",
+    "merchant": "Merchant",
+    "category": "Category",
+    "notes": "Notes",
+    "optionalNotes": "Optional notes...",
+    "saveExpense": "Save Expense",
+    "scanResult": "Scan Result",
+    "scanError": "Image uploaded, but could not automatically read details. You can still fill the form manually.",
+    "cameraError": "Camera Error",
+    "cameraErrorMessage": "Could not open the camera. Please try selecting from your library instead.",
+    "libraryError": "Library Error",
+    "libraryErrorMessage": "Could not open the photo library.",
+    "invalidAmount": "Invalid amount",
+    "invalidAmountMessage": "Please enter a valid amount.",
+    "saveFailed": "Save failed",
+    "categories": {
+      "Fuel": "Fuel",
+      "Tolls": "Tolls",
+      "Parking": "Parking",
+      "Meals": "Meals",
+      "Accommodation": "Accommodation",
+      "Supplies": "Supplies",
+      "Other": "Other"
+    }
+  },
   "shiftSummary": {
     "title": "Current Shift",
     "totalWork": "Total Work",
@@ -244,8 +289,13 @@
     "tachoGuide": "Tacho Guide",
     "compliance": "Compliance",
     "workHistory": "Work History",
+    "mySchedule": "My Schedule",
     "addExpense": "Add Expenses",
     "downloadReport": "Download Report"
+  },
+  "schedule": {
+    "title": "My Schedule",
+    "emptyState": "No upcoming shifts assigned. Please check back later or contact your manager."
   },
   "workHistory": {
     "title": "Work History",
@@ -724,12 +774,16 @@
   "drivingTimeWarningTitle": "Driving Time Warning",
   "workTime30minLeft": "30 minutes remaining in your work cycle.",
   "workTime15minLeft": "15 minutes remaining in your work cycle.",
-  "workTime5minLeft": "15 minutes remaining in your work cycle.",
+  "workTime5minLeft": "5 minutes remaining in your work cycle.",
   "workTimeLimitReached": "Work time limit reached.",
   "drivingTime30minLeft": "30 minutes remaining in your driving cycle.",
-  "drivingTime15minLeft": "15 minutes of driving remaining.",
-  "drivingTime5minLeft": "5 minutes of driving remaining.",
+  "drivingTime15minLeft": "15 minutes remaining in your driving cycle.",
+  "drivingTime5minLeft": "5 minutes remaining in your driving cycle.",
   "drivingTimeLimitReached": "Driving time limit reached.",
+  "drivingExtension30minLeft": "30 minutes remaining in your 10-hour driving extension.",
+  "drivingExtension15minLeft": "15 minutes remaining in your 10-hour driving extension.",
+  "drivingExtension5minLeft": "5 minutes remaining in your 10-hour driving extension.",
+  "drivingExtensionLimitReached": "10-hour daily driving limit reached.",
   "audioShiftStarted": "Shift started.",
   "audioShiftEnded": "Shift ended.",
   "audioBreakStarted": "Break started.",
@@ -737,12 +791,17 @@
   "audioPoaStarted": "P. O. A. started.",
   "audioDrivingTimeReset": "Driving time reset.",
   "audioDrivingLimitReached": "Driving limit reached.",
-  "audioDriving5minLeft": "5 minutes of driving remaining.",
-  "audioDriving15minLeft": "15 minutes of driving remaining.",
-  "audioDriving30minLeft": "30 minutes of driving remaining.",
-  "audioWork5h15": "15 minutes remaining in your work cycle.",
-  "audioWork5h30": "30 minutes remaining in your work cycle.",
-  "audioWork5h55": "5 minutes remaining in your work cycle.",
+  "audioDriving5minLeft": "5 minutes remaining in your driving cycle.",
+  "audioDriving15minLeft": "15 minutes remaining in your driving cycle.",
+  "audioDriving30minLeft": "30 minutes remaining in your driving cycle.",
+  "audioDrivingExtension5minLeft": "5 minutes remaining in your 10-hour driving extension.",
+  "audioDrivingExtension15minLeft": "15 minutes remaining in your 10-hour driving extension.",
+  "audioDrivingExtension30minLeft": "30 minutes remaining in your 10-hour driving extension.",
+  "audioDrivingExtensionLimitReached": "10-hour daily driving limit reached.",
+  "audioWork30minLeft": "30 minutes remaining in your work cycle.",
+  "audioWork15minLeft": "15 minutes remaining in your work cycle.",
+  "audioWork5minLeft": "5 minutes remaining in your work cycle.",
+  "audioWorkLimitReached": "Work time limit reached.",
   "safetyWarningTitle": "Safety Warning",
   "safetyWarningBody": "Do not interact with the app while driving. Stop safely before making changes.",
   "acknowledge": "Acknowledge",
@@ -999,9 +1058,9 @@
     "reducedRestWarning": "Warning: You have had less than 11 hours rest. This will count as a reduced daily rest.",
     "spreadTitle": "Shift Limit Warning",
     "spread30m": "30 minutes remaining before you reach your 13-hour shift limit.",
-    "weeklyDriveTitle": "Weekly Driving Warning",
     "weeklyDrive1h": "1 hour remaining of your 56-hour weekly driving limit.",
-    "weeklyDriveLimit": "Weekly driving limit of 56 hours reached."
+    "weeklyDriveLimit": "Weekly driving limit of 56 hours reached.",
+    "weeklyDriveTitle": "Weekly Driving Warning"
   },
   "digitalClock": {
     "title": "Current Time",
@@ -1017,12 +1076,5 @@
     "noVat": "No VAT",
     "manualInvoiceNumber": "Invoice Number",
     "addManualLineItem": "+ Add Manual Line Item"
-  },
-  "navigation": {
-    "home": "Home"
-  },
-  "errors": {
-    "somethingWentWrong": "Something Went Wrong",
-    "unexpectedError": "An unexpected error occurred. Please try again."
   }
 }

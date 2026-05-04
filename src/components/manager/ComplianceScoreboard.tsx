@@ -4,9 +4,13 @@ import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 import { supabase } from '../../lib/supabase';
 import {
   Activity, Users, TrendingUp, AlertTriangle, ChevronDown, ChevronUp,
-  Calendar, ExternalLink, ShieldCheck, Plus, X, ClipboardList,
+  Calendar, ExternalLink, ShieldCheck, Plus, X, ClipboardList, Upload,
+  Clock, Navigation, MapPin, AlertCircle
 } from 'lucide-react';
+import { TachoUploadZone } from './tachograph/TachoUploadZone';
+import { TachoActivityTimeline } from './tachograph/TachoActivityTimeline';
 import { useTranslation } from 'react-i18next';
+import { format, startOfDay } from 'date-fns';
 
 interface ComplianceScoreboardProps {
   onViewSession?: (driverId: string, date: string) => void;
@@ -178,6 +182,8 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
   } | null>(null);
   const [raisedSessions, setRaisedSessions] = useState<Set<string>>(new Set());
 
+  const [showUpload, setShowUpload] = useState(false);
+
   const overallStats = React.useMemo(() => {
     const totalDrivers = complianceSummary.length;
     if (totalDrivers === 0) return { avgScore: 100, totalViolations: 0, driversInViolation: 0 };
@@ -197,15 +203,34 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-50 rounded-lg">
-          <Activity className="w-8 h-8 text-blue-600" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <Activity className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">{t('compliance.title')}</h2>
+            <p className="text-slate-500 font-medium">{t('compliance.subtitle', 'Monitor driver performance and EU regulation compliance')}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">{t('compliance.title')}</h2>
-          <p className="text-slate-500 font-medium">{t('compliance.subtitle', 'Monitor driver performance and EU regulation compliance')}</p>
-        </div>
+        <button
+          onClick={() => setShowUpload(!showUpload)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all ${
+            showUpload
+              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-200'
+          }`}
+        >
+          {showUpload ? <X size={18} /> : <Upload size={18} />}
+          {showUpload ? 'Close Upload' : 'Import Tacho Data'}
+        </button>
       </div>
+
+      {showUpload && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <TachoUploadZone />
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -289,76 +314,154 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
 
                   {isExpanded && (
                     <div className="px-6 pb-6 bg-slate-50/50 animate-in slide-in-from-top duration-200">
-                      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                          <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">
-                            {t('compliance.recentActivity', 'Recent Infringements (14 Days)')}
-                          </h4>
-                        </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Column 1: Infringements */}
+                        <div className="space-y-4">
+                          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                              <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">
+                                {t('compliance.recentActivity', 'Recent Infringements (14 Days)')}
+                              </h4>
+                              {driver.source === 'tacho' && (
+                                <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter">Verified Tacho Data</span>
+                              )}
+                            </div>
 
-                        {driver.recentViolations.length === 0 ? (
-                          <div className="p-8 text-center">
-                            <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-50" />
-                            <p className="text-slate-500 font-medium">{t('compliance.noRecentViolations', 'No recorded infringements in the last 14 days.')}</p>
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-slate-100">
-                            {driver.recentViolations.map((v, idx) => {
-                              const alreadyRaised = raisedSessions.has(v.sessionId);
-                              return (
-                                <div key={`${v.sessionId}-${idx}`} className="p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
-                                  <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-rose-50 rounded-lg">
-                                      <Calendar className="w-4 h-4 text-rose-600" />
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-800">
-                                        {new Date(v.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
-                                      </p>
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {v.violations.map((vText, i) => (
-                                          <span key={i} className="text-[10px] font-black bg-rose-100 text-rose-700 px-2 py-0.5 rounded uppercase tracking-tighter">
-                                            {vText}
-                                          </span>
-                                        ))}
+                            {driver.recentViolations.length === 0 ? (
+                              <div className="p-8 text-center">
+                                <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-50" />
+                                <p className="text-slate-500 font-medium">{t('compliance.noRecentViolations', 'No recorded infringements in the last 14 days.')}</p>
+                              </div>
+                            ) : (
+                              <div className="divide-y divide-slate-100">
+                                {driver.recentViolations.map((v, idx) => {
+                                  const alreadyRaised = raisedSessions.has(v.sessionId);
+                                  return (
+                                    <div key={`${v.sessionId}-${idx}`} className="p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                                      <div className="flex items-center gap-4">
+                                        <div className={`p-2 rounded-lg ${v.source === 'tacho' ? 'bg-blue-50' : 'bg-rose-50'}`}>
+                                          <Calendar className={`w-4 h-4 ${v.source === 'tacho' ? 'text-blue-600' : 'text-rose-600'}`} />
+                                        </div>
+                                        <div>
+                                          <p className="font-bold text-slate-800">
+                                            {new Date(v.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                                          </p>
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {v.violations.map((vText, i) => (
+                                              <span key={i} className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+                                                v.source === 'tacho' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'
+                                              }`}>
+                                                {vText}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <div className="text-right hidden sm:block">
+                                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('compliance.dayScore', 'Day Score')}</p>
+                                          <p className={`font-bold ${getScoreColor(v.score).text}`}>{v.score}%</p>
+                                        </div>
+                                        <button
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            setRaiseTarget({ driverId: driver.driverId, driverName: driver.driverName, sessionId: v.sessionId, date: v.date, violations: v.violations });
+                                          }}
+                                          disabled={alreadyRaised}
+                                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black border transition ${
+                                            alreadyRaised
+                                              ? 'bg-green-50 border-green-200 text-green-600 cursor-default'
+                                              : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+                                          }`}
+                                        >
+                                          {alreadyRaised ? <><ShieldCheck size={11} /> Raised</> : <><Plus size={11} /> Raise</>}
+                                        </button>
                                       </div>
                                     </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-right hidden sm:block">
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('compliance.dayScore', 'Day Score')}</p>
-                                      <p className={`font-bold ${getScoreColor(v.score).text}`}>{v.score}%</p>
-                                    </div>
-                                    {/* Raise infringement button */}
-                                    <button
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        setRaiseTarget({ driverId: driver.driverId, driverName: driver.driverName, sessionId: v.sessionId, date: v.date, violations: v.violations });
-                                      }}
-                                      disabled={alreadyRaised}
-                                      title={alreadyRaised ? 'Infringement already raised for this session' : 'Raise as formal infringement'}
-                                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black border transition ${
-                                        alreadyRaised
-                                          ? 'bg-green-50 border-green-200 text-green-600 cursor-default'
-                                          : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
-                                      }`}
-                                    >
-                                      {alreadyRaised ? <><ShieldCheck size={11} /> Raised</> : <><Plus size={11} /> Raise</>}
-                                    </button>
-                                    <button
-                                      onClick={() => onViewSession?.(driver.driverId, v.date)}
-                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
-                                      title={t('compliance.viewSession', 'View Session')}
-                                    >
-                                      <ExternalLink className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          {/* Missing Mileage Alerts */}
+                          {driver.missingMileage && driver.missingMileage.length > 0 && (
+                            <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                <AlertCircle className="w-5 h-5 text-rose-600" />
+                                <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">Missing Mileage Alerts</h4>
+                              </div>
+                              <div className="space-y-2">
+                                {driver.missingMileage.map((gap, i) => (
+                                  <div key={i} className="bg-white/80 rounded p-2 flex items-center justify-between border border-rose-100">
+                                    <div className="flex items-center gap-3">
+                                      <Navigation className="w-4 h-4 text-rose-500" />
+                                      <div>
+                                        <p className="text-[11px] font-bold text-slate-800">
+                                          {format(new Date(gap.start), 'HH:mm')} - {format(new Date(gap.end), 'HH:mm')}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500">{gap.durationMins} mins · {gap.distanceKm} km</p>
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] font-black text-rose-600 uppercase tracking-tighter">No App Session</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Column 2: Tacho Timeline */}
+                        <div className="space-y-4">
+                          <div className="bg-white rounded-lg border border-slate-200 p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                              <Clock className="w-5 h-5 text-blue-600" />
+                              <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Digital Tachograph View</h4>
+                            </div>
+
+                            {driver.tachoActivities && driver.tachoActivities.length > 0 ? (
+                              <div className="space-y-6">
+                                {/* Only show most recent day with data for now */}
+                                {(() => {
+                                  const lastActivity = driver.tachoActivities[0];
+                                  const lastDate = startOfDay(new Date(lastActivity.start_time));
+                                  const dayActivities = driver.tachoActivities.filter(a =>
+                                    startOfDay(new Date(a.start_time)).getTime() === lastDate.getTime()
+                                  );
+                                  return (
+                                    <TachoActivityTimeline
+                                      activities={dayActivities}
+                                      date={lastDate}
+                                    />
+                                  );
+                                })()}
+
+                                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin size={14} className="text-slate-400" />
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Tacho Source: Digital Card .DDD</span>
+                                  </div>
+                                  <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">
+                                    View Full 28-Day Analysis
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-lg">
+                                <Upload className="w-10 h-10 text-slate-200 mx-auto mb-2" />
+                                <p className="text-slate-400 text-xs font-medium">No tachograph data available.<br/>Upload files to see analysis.</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="bg-blue-600 rounded-lg p-4 text-white shadow-sm shadow-blue-200">
+                            <h4 className="text-xs font-black uppercase tracking-widest mb-1 opacity-80">Compliance Tip</h4>
+                            <p className="text-xs font-medium leading-relaxed">
+                              Always compare tacho driving time against work sessions to ensure drivers are using the mobile app correctly.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -61,6 +61,7 @@ export function DriverManagement() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'direct' | 'agency'>('all');
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
@@ -163,9 +164,22 @@ export function DriverManagement() {
       const name = (item as any).full_name || '';
       const email = item.email || '';
       const query = searchQuery.toLowerCase();
-      return name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
+
+      const matchesSearch = name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+
+      if (item.type === 'driver') {
+        const isAgency = (item as any).is_contractor;
+        if (filterType === 'direct') return !isAgency;
+        if (filterType === 'agency') return isAgency;
+      } else {
+        // Invites are usually for direct drivers unless marked otherwise (future-proofing)
+        if (filterType === 'agency') return false;
+      }
+
+      return true;
     });
-  }, [drivers, invites, documents, searchQuery, t]);
+  }, [drivers, invites, documents, searchQuery, filterType, t]);
 
   return (
     <div className="space-y-6">
@@ -207,6 +221,21 @@ export function DriverManagement() {
               className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white font-medium"
             />
           </div>
+          <div className="flex bg-slate-100 p-1 rounded-lg">
+            {(['all', 'direct', 'agency'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${
+                  filterType === type
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {type === 'all' ? 'All' : type === 'direct' ? 'Direct' : 'Agency'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading && combinedList.length === 0 ? (
@@ -236,6 +265,11 @@ export function DriverManagement() {
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.name')}</label>
                       <p className="font-bold text-slate-900">{item.full_name || t('driverManagement.incompleteSetup')}</p>
+                      {item.is_contractor && (
+                        <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                          Agency: {item.agency_name || 'Unspecified'}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.email')}</label>

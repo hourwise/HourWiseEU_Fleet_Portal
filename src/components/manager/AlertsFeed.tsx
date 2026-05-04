@@ -1,51 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, CheckCircle } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Clock, X, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
-type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
+type Alert = Database['public']['Tables']['alerts']['Row'];
 
 export function AlertsFeed() {
   const { profile } = useAuth();
   const { t } = useTranslation();
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAlerts = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data: drivers, error: driversError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('company_id', profile.company_id);
-
-      if (driversError) throw driversError;
-      const driverIds = drivers.map(d => d.id);
-
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('work_sessions')
+      const { data, error } = await supabase
+        .from('alerts')
         .select('*')
-        .in('user_id', driverIds)
+        .eq('company_id', profile.company_id)
+        .eq('is_dismissed', false)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(10);
 
-      if (sessionsError) throw sessionsError;
-
-      const fifteenHoursMs = 15 * 60 * 60 * 1000;
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-      const processedAlerts = (sessions || []).filter(session => {
-        const hasViolations = session.compliance_violations && session.compliance_violations.length > 0;
-        const isStuckRunning = session.status === 'working' && new Date(session.start_time) < twentyFourHoursAgo;
-        const isTooLong = session.status === 'ended' && session.duration_ms && session.duration_ms > fifteenHoursMs;
-        return hasViolations || isStuckRunning || isTooLong;
-      });
-
-      setAlerts(processedAlerts.slice(0, 5));
-
+      if (error) throw error;
+      setAlerts(data || []);
     } catch (err) {
       console.error("Error loading alerts:", err);
       setAlerts([]);
@@ -60,28 +41,100 @@ export function AlertsFeed() {
     }
   }, [loadAlerts, profile?.company_id]);
 
+  const dismissAlert = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ is_dismissed: true, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      setAlerts(prev \u003d\u003e prev.filter(a \u003d\u003e a.id !== id));
+    } catch (err) {
+      console.error("Error dismissing alert:", err);
+    }
+  };
+
+  const getAlertIcon \u003d (severity: string) \u003d\u003e {
+    switch (severity) {
+      case 'critical': return <AlertTriangle className="text-red-500" size={20} />;
+      case 'warning': return <Clock className="text-amber-500" size={20} />;
+      default: return <Info className="text-blue-500" size={20} />;
+    }
+  };
+
+  const getAlertStyles \u003d (severity: string) \u003d\u003e {
+    switch (severity) {
+      case 'critical': return 'bg-red-50 border-red-100';
+      case 'warning': return 'bg-amber-50 border-amber-100';
+      default: return 'bg-blue-50 border-blue-100';
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <Bell className="w-6 h-6 text-gray-700" />
-        <h3 className="text-lg font-bold text-gray-900">{t('dashboard.manager.alerts.title')}</h3>
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <Bell className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">{t('dashboard.manager.alerts.title')}</h3>
+        </div>
+        {alerts.length \u003e 0 && (
+          <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+            {alerts.length} NEW
+          </span>
+        )}
       </div>
+
       {loading ? (
-        <div className="text-center py-8">{t('common.loading')}</div>
-      ) : alerts.length === 0 ? (
-        <div className="text-center py-8">
-          <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
-          <p className="font-medium text-gray-700">{t('dashboard.manager.alerts.allClear')}</p>
-          <p className="text-sm text-gray-500">{t('dashboard.manager.alerts.noIssues')}</p>
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" \u003e\u003c/div\u003e
+           <p className="text-sm text-slate-400 font-medium">{t('common.loading')}</p>
+        </div>
+      ) : alerts.length \u003d\u003d\u003d 0 ? (
+        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <div className="p-3 bg-white rounded-full w-fit mx-auto mb-3 shadow-sm">
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
+          <p className="font-bold text-slate-900">{t('dashboard.manager.alerts.allClear')}</p>
+          <p className="text-sm text-slate-500 mt-1">{t('dashboard.manager.alerts.noIssues')}</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {alerts.map((alert) => (
-             <div key={alert.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="font-semibold text-gray-800">{t('dashboard.manager.alerts.shiftAlert', { date: new Date(alert.start_time).toLocaleDateString() })}</p>
-                <p className="text-sm text-gray-600">{t('dashboard.manager.alerts.issueDetected')}</p>
+             <div
+               key={alert.id}
+               className={`group relative p-4 rounded-xl border transition-all hover:shadow-md ${getAlertStyles(alert.severity)}`}
+             >
+                <div className="flex gap-4">
+                  <div className="mt-0.5">{getAlertIcon(alert.severity)}</div>
+                  <div className="flex-1 pr-6">
+                    <p className="text-sm font-bold text-slate-900 leading-tight mb-1">
+                      {alert.message}
+                    </p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {new Date(alert.created_at).toLocaleDateString()} • {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() \u003d\u003e dismissAlert(alert.id)}
+                  className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-lg transition-colors"
+                  title="Dismiss alert"
+                >
+                  <X size={14} />
+                </button>
              </div>
           ))}
+          {alerts.length \u003e 0 && (
+            <button
+              onClick={loadAlerts}
+              className="w-full py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mt-2"
+            >
+              Refresh Feed
+            </button>
+          )}
         </div>
       )}
     </div>

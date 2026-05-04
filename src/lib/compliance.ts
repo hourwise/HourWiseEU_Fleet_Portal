@@ -10,6 +10,13 @@ export type WorkSession = {
   [key: string]: any;
 };
 
+export type TachoActivity = {
+  start_time: string;
+  end_time: string;
+  activity_type: 'driving' | 'work' | 'poa' | 'rest';
+  distance_km?: number;
+};
+
 type ViolationDetail = {
   title: string;
   tip: string;
@@ -33,6 +40,8 @@ export const VIOLATION_KEYS = {
   EXCEEDED_WEEKLY_WORK_LIMIT: 'EXCEEDED_WEEKLY_WORK_LIMIT',
   WORK_TIME_LIMIT_EXCEEDED: 'WORK_TIME_LIMIT_EXCEEDED',
   FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED: 'FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED',
+  INSUFFICIENT_WEEKLY_REST: 'INSUFFICIENT_WEEKLY_REST',
+  REDUCED_WEEKLY_REST_TAKEN: 'REDUCED_WEEKLY_REST_TAKEN',
 };
 
 export const VIOLATION_DETAILS: Record<string, ViolationDetail> = {
@@ -47,6 +56,8 @@ export const VIOLATION_DETAILS: Record<string, ViolationDetail> = {
   [VIOLATION_KEYS.EXCEEDED_WEEKLY_WORK_LIMIT]: { title: 'Exceeded Weekly Work Limit', tip: 'The weekly working time limit of 60 hours has been exceeded.' },
   [VIOLATION_KEYS.WORK_TIME_LIMIT_EXCEEDED]: { title: 'Work Time Limit Exceeded', tip: 'Generic work time limit violation.' },
   [VIOLATION_KEYS.FORTNIGHTLY_DRIVING_LIMIT_EXCEEDED]: { title: 'Fortnightly Driving Limit Exceeded', tip: 'The two-week driving limit of 90 hours has been exceeded.' },
+  [VIOLATION_KEYS.INSUFFICIENT_WEEKLY_REST]: { title: 'Insufficient Weekly Rest', tip: 'A minimum of 45 hours (or 24h reduced) of weekly rest is required.' },
+  [VIOLATION_KEYS.REDUCED_WEEKLY_REST_TAKEN]: { title: 'Reduced Weekly Rest Taken', tip: 'A reduced weekly rest (24-45 hours) was taken. Compensation is required.' },
   default: { title: 'Unknown Violation', tip: 'An unspecified compliance violation has occurred.' },
 };
 
@@ -54,17 +65,104 @@ export const VIOLATION_DETAILS: Record<string, ViolationDetail> = {
 const VIOLATION_RULES = {
   MAX_DAILY_DRIVING_HOURS_REGULAR: 9,
   MAX_DAILY_DRIVING_HOURS_EXTENDED: 10,
+  MAX_WEEKLY_DRIVING_HOURS: 56,
   MAX_FORTNIGHTLY_DRIVING_HOURS: 90,
   MIN_DAILY_REST_HOURS_REGULAR: 11,
   MIN_DAILY_REST_HOURS_REDUCED: 9,
+  MIN_WEEKLY_REST_HOURS_REGULAR: 45,
+  MIN_WEEKLY_REST_HOURS_REDUCED: 24,
+  MAX_CONTINUOUS_DRIVING_MINS: 270, // 4.5 hours
+  REQUIRED_BREAK_AFTER_DRIVING_MINS: 45,
   BREAK_AFTER_6_HOURS_WORK_MINS: 30,
   BREAK_AFTER_9_HOURS_WORK_MINS: 45,
 };
 
 interface ComplianceResult {
   score: number;
-  violations: string[];
+  violations: { type: string; date: string; metadata?: any }[];
 }
+
+/**
+ * Analyzes granular Tachograph activities for EU 561/2006 violations.
+ * This is the high-precision engine used for .DDD file analysis.
+ */
+export const analyzeTachoCompliance = (activities: TachoActivity[]): ComplianceResult => {
+  const violations: { type: string; date: string; metadata?: any }[] = [];
+  if (!activities || activities.length === 0) return { score: 100, violations: [] };
+
+  // Sort activities by start time
+  const sorted = [...activities].sort((a, b) =>
+    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
+
+  let continuousDrivingMins = 0;
+  let dailyDrivingMins = 0;
+  let currentDay = new Date(sorted[0].start_time).toDateString();
+
+  for (let i = 0; i < sorted.length; i++) {
+    const act = sorted[i];
+    const duration = (new Date(act.end_time).getTime() - new Date(act.start_time).getTime()) / 60000;
+    const actDay = new Date(act.start_time).toDateString();
+
+    if (actDay !== currentDay) {
+      dailyDrivingMins = 0;
+      currentDay = actDay;
+    }
+
+    if (act.activity_type === 'driving') {
+      continuousDrivingMins += duration;
+      dailyDrivingMins += duration;
+
+      // 4.5h Continuous Driving Rule
+      if (continuousDrivingMins > VIOLATION_RULES.MAX_CONTINUOUS_DRIVING_MINS) {
+        violations.push({
+          type: VIOLATION_KEYS.EXCEEDED_4_5H_DRIVING,
+          date: act.start_time,
+          metadata: { value: Math.round(continuousDrivingMins) }
+        });
+        continuousDrivingMins = 0; // Reset after flagging
+      }
+
+      // Daily Driving Limit (simplified - doesn't track 10h extensions yet)
+      if (dailyDrivingMins > VIOLATION_RULES.MAX_DAILY_DRIVING_HOURS_EXTENDED * 60) {
+        violations.push({
+          type: VIOLATION_KEYS.EXCEEDED_DAILY_DRIVING_LIMIT,
+          date: act.start_time,
+          metadata: { value: Math.round(dailyDrivingMins) }
+        });
+      }
+    } else if (act.activity_type === 'rest' || act.activity_type === 'poa') {
+      // If break is >= 45 mins, reset continuous driving
+      if (duration >= VIOLATION_RULES.REQUIRED_BREAK_AFTER_DRIVING_MINS) {
+        continuousDrivingMins = 0;
+      }
+      // Note: split breaks (15+30) should be handled in a more advanced version
+    }
+
+    // Daily Rest Rule: Gap between shifts
+    if (i > 0 && act.activity_type !== 'rest') {
+      const prev = sorted[i-1];
+      if (prev.activity_type === 'rest') {
+        const restDuration = (new Date(act.start_time).getTime() - new Date(prev.start_time).getTime()) / 3600000;
+        if (restDuration > 1 && restDuration < VIOLATION_RULES.MIN_DAILY_REST_HOURS_REDUCED) {
+          violations.push({
+            type: VIOLATION_KEYS.INSUFFICIENT_DAILY_REST,
+            date: act.start_time,
+            metadata: { value: restDuration.toFixed(1) }
+          });
+        }
+      }
+    }
+  }
+
+  // Calculate score based on number of violations
+  const score = Math.max(0, 100 - violations.length * 10);
+
+  return {
+    score,
+    violations
+  };
+};
 
 export const calculateCompliance = (
   daySessions: WorkSession[],

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container, ShieldCheck, ShieldAlert, LifeBuoy, Bell, FileWarning } from 'lucide-react';
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,7 @@ interface Vehicle {
   model: string | null;
   year: number | null;
   vehicle_type: string;
+  vehicle_class: 'rigid' | 'artic_unit' | 'trailer' | 'van';
   vin_number: string | null;
   is_vor: boolean;
   status_notes: string | null;
@@ -34,9 +35,13 @@ export function VehicleManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [view, setView] = useState<'list' | 'details'>('list');
+  const [activeIncidentVehicle, setActiveIncidentVehicle] = useState<string | null>(null);
+  const [filterClass, setFilterClass] = useState<'all' | Vehicle['vehicle_class']>('all');
   const [triggerLogModal, setTriggerLogModal] = useState(false);
   // reg_number -> true if there is an open (not fixed) defect walkaround check
   const [openDefectRegs, setOpenDefectRegs] = useState<Set<string>>(new Set());
+  const [complianceAlertsCount, setComplianceAlertsCount] = useState<Record<string, number>>({});
+  const [pendingDocsCount, setPendingDocsCount] = useState<Record<string, number>>({});
 
   const loadVehicles = useCallback(async () => {
     try {
@@ -63,6 +68,39 @@ export function VehicleManagement() {
         .eq('check_status', 'defect')
         .neq('defect_lifecycle_status', 'fixed');
       setOpenDefectRegs(new Set((defectData || []).map(d => d.reg_number)));
+
+      // Fetch active compliance alerts from the alerts table
+      const { data: alertsData } = await supabase
+        .from('alerts')
+        .select('metadata')
+        .eq('company_id', profile!.company_id)
+        .eq('is_dismissed', false)
+        .in('type', ['pmi', 'mot', 'tacho', 'loler', 'insurance']);
+
+      const counts: Record<string, number> = {};
+      (alertsData || []).forEach(alert => {
+        const reg = (alert.metadata as any)?.reg_number;
+        if (reg) {
+          counts[reg] = (counts[reg] || 0) + 1;
+        }
+      });
+      setComplianceAlertsCount(counts);
+
+      // Fetch pending documents (those without verified_at)
+      // Note: vehicle_documents doesn't exist in the current database.types.ts snippet
+      // but is used in VehicleDetailsModal. Assuming it exists in the actual DB.
+      const { data: docData } = await supabase
+        .from('vehicle_documents' as any)
+        .select('vehicle_id')
+        .is('verified_at' as any, null);
+
+      const docCounts: Record<string, number> = {};
+      (docData || []).forEach((doc: any) => {
+        const vId = doc.vehicle_id;
+        docCounts[vId] = (docCounts[vId] || 0) + 1;
+      });
+      setPendingDocsCount(docCounts);
+
     } catch (error) {
       console.error('Error loading vehicles:', error);
     } finally {
@@ -126,7 +164,7 @@ export function VehicleManagement() {
   }
 
   if (view === 'details' && selectedVehicle) {
-    const isTrailer = selectedVehicle.vehicle_type === 'Trailer';
+    const isTrailer = selectedVehicle.vehicle_class === 'trailer';
 
     return (
       <div className="space-y-6">
@@ -148,7 +186,7 @@ export function VehicleManagement() {
                   <div>
                     <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedVehicle.reg_number}</h2>
                     <p className="text-slate-500 font-medium uppercase">
-                      {selectedVehicle.make} {selectedVehicle.model} • {isTrailer ? t('fleet.labels.trailer') : selectedVehicle.vehicle_type}
+                      {selectedVehicle.make} {selectedVehicle.model} • {selectedVehicle.vehicle_class.replace('_', ' ')}
                     </p>
                   </div>
                 </div>
@@ -332,7 +370,24 @@ export function VehicleManagement() {
           <Truck className="w-8 h-8 text-blue-600" />
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{t('fleet.title')}</h2>
-            <p className="text-gray-600">{t('fleet.totalAssets', { count: vehicles.length })}</p>
+            <div className="flex items-center gap-4">
+              <p className="text-gray-600">{t('fleet.totalAssets', { count: vehicles.length })}</p>
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                {(['all', 'rigid', 'artic_unit', 'trailer', 'van'] as const).map((cls) => (
+                  <button
+                    key={cls}
+                    onClick={() => setFilterClass(cls)}
+                    className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                      filterClass === cls
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {cls === 'all' ? 'All' : cls.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <button
@@ -391,7 +446,7 @@ export function VehicleManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {vehicles.length === 0 ? (
+              {vehicles.filter(v => filterClass === 'all' || v.vehicle_class === filterClass).length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-12 text-center text-slate-400">
                     <Truck className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -402,21 +457,23 @@ export function VehicleManagement() {
                   </td>
                 </tr>
               ) : (
-                vehicles.map(v => (
-                  <tr
-                    key={v.id}
-                    className="hover:bg-slate-50/50 transition cursor-pointer"
-                    onClick={() => handleVehicleClick(v)}
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        {v.vehicle_type === 'Trailer' ? <Container size={20} className="text-slate-400" /> : <Truck size={20} className="text-slate-400" />}
-                        <div>
-                          <div className="font-black text-slate-900 text-lg tracking-tight">{v.reg_number}</div>
-                          <div className="text-xs text-slate-500 font-bold uppercase">{v.make} • {v.vehicle_type}</div>
+                vehicles
+                  .filter(v => filterClass === 'all' || v.vehicle_class === filterClass)
+                  .map(v => (
+                    <tr
+                      key={v.id}
+                      className="hover:bg-slate-50/50 transition cursor-pointer"
+                      onClick={() => handleVehicleClick(v)}
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {v.vehicle_class === 'trailer' ? <Container size={20} className="text-slate-400" /> : <Truck size={20} className="text-slate-400" />}
+                          <div>
+                            <div className="font-black text-slate-900 text-lg tracking-tight">{v.reg_number}</div>
+                            <div className="text-xs text-slate-500 font-bold uppercase">{v.make} • {v.vehicle_class.replace('_', ' ')}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
                     <td className="p-4">
                       <div className="flex gap-1 items-center flex-wrap">
                         {v.maintenance_called && (
@@ -436,16 +493,36 @@ export function VehicleManagement() {
                             <ShieldAlert size={10} /> Defect
                           </span>
                         )}
+                        {complianceAlertsCount[v.reg_number] > 0 && (
+                          <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-red-200" title="Active compliance alert">
+                            <Bell size={10} /> {complianceAlertsCount[v.reg_number]} Alert{complianceAlertsCount[v.reg_number] > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {pendingDocsCount[v.id] > 0 && (
+                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-blue-200" title="Pending document verification">
+                            <FileWarning size={10} /> Review
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className={`p-4 text-sm font-mono ${getStatusColor(v.mot_due_date)}`}>{v.mot_due_date || '-'}</td>
                     <td className={`p-4 text-sm font-mono ${getStatusColor(v.pmi_due_date)}`}>{v.pmi_due_date || '-'}</td>
-                    <td className={`p-4 text-sm font-mono ${getStatusColor(v.tacho_calibration_due)}`}>{v.vehicle_type === 'Trailer' ? 'N/A' : (v.tacho_calibration_due || '-')}</td>
-                    <td className="p-4 text-right">
-                      <button className="text-slate-400 hover:text-blue-600 p-2 transition">
-                        <PenSquare size={18} />
-                      </button>
-                    </td>
+                    <td className={`p-4 text-sm font-mono ${getStatusColor(v.tacho_calibration_due)}`}>{v.vehicle_class === 'trailer' ? 'N/A' : (v.tacho_calibration_due || '-')}</td>
+                      <td className="p-4 text-right flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveIncidentVehicle(v.id);
+                          }}
+                          className="text-slate-400 hover:text-red-500 p-2 transition"
+                          title="Report Incident"
+                        >
+                          <LifeBuoy size={18} />
+                        </button>
+                        <button className="text-slate-400 hover:text-blue-600 p-2 transition">
+                          <PenSquare size={18} />
+                        </button>
+                      </td>
                   </tr>
                 ))
               )}
@@ -463,6 +540,102 @@ export function VehicleManagement() {
           }}
         />
       )}
+
+      {activeIncidentVehicle && (
+        <IncidentReportQuickModal
+          vehicleId={activeIncidentVehicle}
+          onClose={() => setActiveIncidentVehicle(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function IncidentReportQuickModal({ vehicleId, onClose }: { vehicleId: string, onClose: () => void }) {
+  const { profile } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    type: 'accident',
+    occurred_at: new Date().toISOString().slice(0, 16),
+    location: '',
+    description: '',
+    driver_id: '',
+    has_injury: false,
+  });
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, full_name').eq('company_id', profile!.company_id).then(({data}) => setDrivers(data || []));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from('incidents').insert({
+      ...formData,
+      vehicle_id: vehicleId,
+      company_id: profile!.company_id,
+      status: 'reported'
+    });
+    if (error) alert(error.message);
+    else onClose();
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div className="bg-brand-card border border-brand-border w-full max-w-lg rounded-2xl shadow-2xl p-6">
+        <h3 className="text-xl font-black text-white uppercase tracking-tight mb-6">Quick Incident Report</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Type</label>
+              <select
+                className="w-full bg-brand-dark border border-brand-border rounded-lg p-2 text-sm text-white"
+                value={formData.type}
+                onChange={e => setFormData({...formData, type: e.target.value})}
+              >
+                <option value="accident">Accident</option>
+                <option value="incident">Minor Incident</option>
+                <option value="injury">Injury</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Driver</label>
+              <select
+                required
+                className="w-full bg-brand-dark border border-brand-border rounded-lg p-2 text-sm text-white"
+                value={formData.driver_id}
+                onChange={e => setFormData({...formData, driver_id: e.target.value})}
+              >
+                <option value="">Select...</option>
+                {drivers.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+              </select>
+            </div>
+          </div>
+          <input
+            type="text"
+            placeholder="Location"
+            className="w-full bg-brand-dark border border-brand-border rounded-lg p-2 text-sm text-white"
+            value={formData.location}
+            onChange={e => setFormData({...formData, location: e.target.value})}
+          />
+          <textarea
+            placeholder="What happened?"
+            className="w-full bg-brand-dark border border-brand-border rounded-lg p-2 text-sm text-white h-24"
+            value={formData.description}
+            onChange={e => setFormData({...formData, description: e.target.value})}
+          />
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={formData.has_injury} onChange={e => setFormData({...formData, has_injury: e.target.checked})} />
+            <span className="text-xs text-slate-400 font-bold uppercase">Injury involved?</span>
+          </div>
+          <div className="flex gap-2 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 py-3 border border-brand-border rounded-xl text-xs font-black uppercase text-slate-400">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 py-3 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-widest">{loading ? 'Saving...' : 'Log Incident'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -584,14 +757,15 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
 function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehicle, onClose: () => void, onSuccess: () => void }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const isTrailer = vehicle.vehicle_type === 'Trailer';
+  const isTrailer = vehicle.vehicle_class === 'trailer';
   const [formData, setFormData] = useState({
     mot_due_date: vehicle.mot_due_date || '',
     pmi_due_date: vehicle.pmi_due_date || '',
     tacho_calibration_due: vehicle.tacho_calibration_due || '',
     loler_due_date: vehicle.loler_due_date || '',
     insurance_expiry: vehicle.insurance_expiry || '',
-    current_odometer: vehicle.current_odometer
+    current_odometer: vehicle.current_odometer,
+    vehicle_class: vehicle.vehicle_class
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -608,6 +782,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
           loler_due_date: formData.loler_due_date || null,
           insurance_expiry: formData.insurance_expiry || null,
           current_odometer: formData.current_odometer,
+          vehicle_class: formData.vehicle_class,
           updated_at: new Date().toISOString()
         })
         .eq('id', vehicle.id);
@@ -655,6 +830,19 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Insurance Expiry</label>
               <input type="date" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.insurance_expiry} onChange={e => setFormData({...formData, insurance_expiry: e.target.value})} />
             </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Vehicle Class</label>
+              <select
+                className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white"
+                value={formData.vehicle_class}
+                onChange={e => setFormData({...formData, vehicle_class: e.target.value as any})}
+              >
+                <option value="van">Van</option>
+                <option value="rigid">Rigid</option>
+                <option value="artic_unit">Artic Unit</option>
+                <option value="trailer">Trailer</option>
+              </select>
+            </div>
             {!isTrailer && (
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.odometer')} (km)</label>
@@ -690,6 +878,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
     model: '',
     year: new Date().getFullYear(),
     vehicle_type: 'Van',
+    vehicle_class: 'van' as Vehicle['vehicle_class'],
     vin_number: '',
     mot_due_date: '',
     pmi_due_date: '',
@@ -698,7 +887,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
     current_odometer: 0
   });
 
-  const isTrailer = formData.vehicle_type === 'Trailer';
+  const isTrailer = formData.vehicle_class === 'trailer';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -782,18 +971,21 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.type')}</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Vehicle Class</label>
                 <select
                   className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 transition-all shadow-sm appearance-none cursor-pointer"
-                  value={formData.vehicle_type}
-                  onChange={e => setFormData({...formData, vehicle_type: e.target.value})}
+                  value={formData.vehicle_class}
+                  onChange={e => setFormData({...formData, vehicle_class: e.target.value as any})}
                 >
-                  <option value="Van">Van</option>
-                  <option value="7.5t">7.5t Truck</option>
-                  <option value="Class 2">Class 2 (Rigid)</option>
-                  <option value="Class 1">Class 1 (Tractor)</option>
-                  <option value="Trailer">Trailer</option>
+                  <option value="van">Van</option>
+                  <option value="rigid">Rigid</option>
+                  <option value="artic_unit">Artic Unit</option>
+                  <option value="trailer">Trailer</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.type')}</label>
+                <input required type="text" placeholder="e.g. 3.5t Panel Van" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.vehicle_type} onChange={e => setFormData({...formData, vehicle_type: e.target.value})} />
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.vinNumber')}</label>

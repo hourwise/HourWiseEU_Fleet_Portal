@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useDriverRiskScores } from '../../hooks/useDriverRiskScores';
 import type { RiskColour, RiskLabel } from '../../hooks/useDriverRiskScores';
-import { ShieldAlert, ChevronRight, AlertTriangle, Clock, GraduationCap, FileWarning } from 'lucide-react';
+import { ShieldAlert, ChevronRight, AlertTriangle, Clock, GraduationCap, FileWarning, Activity, MapPin } from 'lucide-react';
 
 const COLOUR_CLASSES: Record<RiskColour, { bar: string; badge: string; text: string; bg: string }> = {
   green:  { bar: 'bg-green-500',  badge: 'bg-green-500/10 text-green-400',   text: 'text-green-400',  bg: 'bg-green-500/5'  },
@@ -89,10 +89,12 @@ export function DriverRiskSnapshot({ onAction }: { onAction: () => void }) {
                 </div>
                 <div className="flex flex-wrap gap-1 mt-1">
                   <FactorPill icon={AlertTriangle} value={f.openInfringements}  label="infringement"   warn={f.openInfringements > 0} />
+                  <FactorPill icon={Activity}      value={f.tachoViolations}    label="tacho violation" warn={f.tachoViolations > 0} />
+                  <FactorPill icon={MapPin}        value={f.missingMileageCount} label="missing mileage" warn={f.missingMileageCount > 0} />
                   <FactorPill icon={FileWarning}   value={f.documentsExpiring}   label="doc expiring"   warn={f.documentsExpiring > 0} />
                   <FactorPill icon={GraduationCap} value={f.incompleteTraining}  label="training due"   warn={f.incompleteTraining > 0} />
                   <FactorPill icon={Clock}          value={f.openDefects}         label="open defect"    warn={f.openDefects > 0} />
-                  {f.openInfringements === 0 && f.documentsExpiring === 0 && f.incompleteTraining === 0 && f.openDefects === 0 && (
+                  {f.openInfringements === 0 && f.tachoViolations === 0 && f.missingMileageCount === 0 && f.documentsExpiring === 0 && f.incompleteTraining === 0 && f.openDefects === 0 && (
                     <span className="text-[10px] text-slate-600 italic">No active flags</span>
                   )}
                 </div>

@@ -2,9 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Trash2, Edit, ShieldCheck, FileText, Download } from 'lucide-react';
+import { X, Save, Trash2, Edit, ShieldCheck, FileText, Download, ShieldAlert, AlertTriangle, LifeBuoy, Scan, Check, Clock, Ban } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { scanDocument } from '../../lib/ocr';
 
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 
@@ -17,6 +19,17 @@ interface VehicleDocument {
   id_number: string | null;
   expiry_date: string | null;
   uploaded_at: string;
+  verified_at: string | null;
+}
+
+interface VehicleIncident {
+  id: string;
+  type: string;
+  occurred_at: string;
+  description: string;
+  has_injury: boolean;
+  status: string;
+  profiles: { full_name: string };
 }
 
 interface VehicleDetailsModalProps {
@@ -29,8 +42,24 @@ const useDocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [idNumber, setIdNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
-  const reset = () => { setFile(null); setIdNumber(''); setExpiryDate(''); };
-  return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset };
+  const [isScanning, setIsScanning] = useState(false);
+  const reset = () => { setFile(null); setIdNumber(''); setExpiryDate(''); setIsScanning(false); };
+
+  const handleScan = async (selectedFile: File) => {
+    setFile(selectedFile);
+    setIsScanning(true);
+    try {
+      const result = await scanDocument(selectedFile);
+      if (result.data.idNumber) setIdNumber(result.data.idNumber);
+      if (result.data.expiryDate) setExpiryDate(result.data.expiryDate);
+    } catch (err) {
+      console.error('OCR Scanning failed:', err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset, isScanning, handleScan };
 };
 
 export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetailsModalProps) {
@@ -38,23 +67,42 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
   const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Vehicle>>(vehicle);
   const [documents, setDocuments] = useState<VehicleDocument[]>([]);
+  const [incidents, setIncidents] = useState<VehicleIncident[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const docState = useDocumentUpload();
 
-  const fetchDocuments = useCallback(async () => {
-    const { data } = await supabase.from('vehicle_documents').select('*').eq('vehicle_id', vehicle.id);
-    setDocuments(data || []);
+  const fetchData = useCallback(async () => {
+    const [docsRes, incRes] = await Promise.all([
+      supabase.from('vehicle_documents').select('*').eq('vehicle_id', vehicle.id),
+      supabase.from('incidents').select('*, profiles:driver_id(full_name)').eq('vehicle_id', vehicle.id).order('occurred_at', { ascending: false })
+    ]);
+    setDocuments(docsRes.data || []);
+    setIncidents(incRes.data || []);
   }, [vehicle.id]);
 
   useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
+    fetchData();
+  }, [fetchData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value || null }));
+  };
+
+  const handleDocumentStatus = async (docId: string, status: 'verified' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('vehicle_documents')
+        .update({ verified_at: status === 'verified' ? new Date().toISOString() : null })
+        .eq('id', docId);
+
+      if (error) throw error;
+      fetchData();
+    } catch (err: any) {
+      alert("Verification failed: " + err.message);
+    }
   };
 
   const handleDocumentSubmit = async (type: string) => {
@@ -77,7 +125,7 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
       if (dbError) throw dbError;
 
       docState.reset();
-      fetchDocuments();
+      fetchData();
     } catch (err: any) {
       alert("Error: " + err.message);
     } finally { setIsUploading(false); }
@@ -146,7 +194,12 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm">
-                <p className="text-xs font-black text-slate-900 uppercase">Upload New Document</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-slate-900 uppercase">Upload New Document</p>
+                  {docState.isScanning && (
+                    <span className="text-[10px] font-black text-blue-600 animate-pulse uppercase tracking-widest">Scanning...</span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <select
                     className="col-span-2 w-full p-2 border border-slate-200 rounded text-sm font-bold bg-slate-50"
@@ -172,13 +225,25 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                     className="w-full p-2 border border-slate-200 rounded text-sm font-bold"
                   />
                 </div>
-                <input type="file" onChange={e => docState.setFile(e.target.files?.[0] || null)} className="text-[10px] text-slate-500 w-full" />
+                <input
+                  type="file"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) docState.handleScan(file);
+                  }}
+                  className="text-[10px] text-slate-500 w-full"
+                />
                 <button
                   onClick={() => handleDocumentSubmit((document.getElementById('doc-type-select') as HTMLSelectElement).value)}
-                  disabled={isUploading}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition"
+                  disabled={isUploading || docState.isScanning}
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition flex items-center justify-center gap-2"
                 >
-                  {isUploading ? 'Uploading...' : 'Store Document'}
+                  {isUploading ? 'Uploading...' : (
+                    <>
+                      {docState.isScanning && <Scan size={14} className="animate-spin" />}
+                      Store Document
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -192,10 +257,38 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                         <div className="p-2 bg-slate-50 rounded-lg"><FileText className="w-4 h-4 text-slate-400" /></div>
                         <div>
                           <p className="text-xs font-black text-slate-900 uppercase">{doc.document_type}</p>
-                          {doc.expiry_date && <p className="text-[10px] font-bold text-amber-600 uppercase">Expires: {new Date(doc.expiry_date).toLocaleDateString()}</p>}
+                          <div className="flex items-center gap-2 mt-1">
+                            {doc.expiry_date && <p className="text-[10px] font-bold text-slate-500 uppercase">Expires: {new Date(doc.expiry_date).toLocaleDateString()}</p>}
+                            {doc.verified_at ? (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase">
+                                <Check size={10}/> Verified
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase">
+                                <Clock size={10}/> Pending
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        {!doc.verified_at ? (
+                          <button
+                            onClick={() => handleDocumentStatus(doc.id, 'verified')}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Verify Document"
+                          >
+                            <Check size={16}/>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDocumentStatus(doc.id, 'rejected')}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Unverify Document"
+                          >
+                            <Ban size={16}/>
+                          </button>
+                        )}
                         <button className="p-2 text-slate-300 hover:text-blue-600 transition"><Download size={16}/></button>
                         <button className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
                       </div>
@@ -204,6 +297,48 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                 )}
               </div>
             </div>
+          </section>
+
+          {/* 3. INCIDENT HISTORY */}
+          <section className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+            <h3 className="text-xs font-black text-red-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2 border-b border-red-100 pb-2">
+              <ShieldAlert size={14}/> Incident & Accident History
+            </h3>
+
+            {incidents.length === 0 ? (
+              <p className="text-xs text-slate-400 italic p-8 text-center bg-white rounded-xl border border-dashed">No incidents recorded for this asset.</p>
+            ) : (
+              <div className="space-y-3">
+                {incidents.map(incident => (
+                  <div key={incident.id} className="flex justify-between items-center p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${incident.type === 'accident' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {incident.type === 'accident' ? <AlertTriangle size={18} /> : <LifeBuoy size={18} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-black text-slate-900 uppercase">{incident.type}</p>
+                          <span className="text-[10px] font-bold text-slate-400">•</span>
+                          <p className="text-[10px] font-bold text-slate-500">{format(new Date(incident.occurred_at), 'PPp')}</p>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1 line-clamp-1">{incident.description}</p>
+                        <p className="text-[10px] font-bold text-blue-600 uppercase mt-1">Driver: {incident.profiles.full_name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {incident.has_injury && (
+                        <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black uppercase">Injury</span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                        incident.status === 'closed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {incident.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 

@@ -2,10 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban, Paperclip } from 'lucide-react';
+import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban, Paperclip, Scan } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
+import { scanDocument } from '../../lib/ocr';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Document = Database['public']['Tables']['driver_documents']['Row'];
@@ -27,8 +28,24 @@ const useDocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [idNumber, setIdNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
-  const reset = () => { setFile(null); setIdNumber(''); setExpiryDate(''); };
-  return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset };
+  const [isScanning, setIsScanning] = useState(false);
+  const reset = () => { setFile(null); setIdNumber(''); setExpiryDate(''); setIsScanning(false); };
+
+  const handleScan = async (selectedFile: File) => {
+    setFile(selectedFile);
+    setIsScanning(true);
+    try {
+      const result = await scanDocument(selectedFile);
+      if (result.data.idNumber) setIdNumber(result.data.idNumber);
+      if (result.data.expiryDate) setExpiryDate(result.data.expiryDate);
+    } catch (err) {
+      console.error('OCR Scanning failed:', err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset, isScanning, handleScan };
 };
 
 const getDocumentStatus = (expiryDate: string | null | undefined, t: any) => {
@@ -172,6 +189,8 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
       emergency_contact_name: formData.emergency_contact_name,
       emergency_contact_phone: formData.emergency_contact_phone,
       is_active: formData.is_active,
+      is_contractor: formData.is_contractor,
+      agency_name: formData.is_contractor ? formData.agency_name : null,
       full_address: formData.full_address,
       driving_licence_number: formData.driving_licence_number,
       driving_licence_expiry: formData.driving_licence_expiry,
@@ -243,6 +262,30 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
                     <option value="false">{t('driverDetails.status.inactive')}</option>
                   </select>
                 </div>
+                <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-6">
+                  <div className="flex items-center gap-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agency Driver</label>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, is_contractor: !prev.is_contractor }))}
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${formData.is_contractor ? 'bg-blue-600' : 'bg-slate-200'}`}
+                    >
+                      <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${formData.is_contractor ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {formData.is_contractor && (
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        name="agency_name"
+                        placeholder="Agency Name (e.g. Manpower)"
+                        value={formData.agency_name || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-900 font-bold"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* QUICK COMPLIANCE EDIT */}
@@ -271,37 +314,84 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* A. DRIVING LICENCE */}
                 <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
-                    <BadgeCheck size={16} className="text-blue-600" /> {t('driverDetails.labels.licence')}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
+                      <BadgeCheck size={16} className="text-blue-600" /> {t('driverDetails.labels.licence')}
+                    </div>
+                    {licenceState.isScanning && (
+                      <span className="text-[10px] font-black text-blue-600 animate-pulse uppercase tracking-widest">Scanning...</span>
+                    )}
                   </div>
                   <input type="text" placeholder={t('driverDetails.labels.licenceNo')} value={licenceState.idNumber} onChange={e => licenceState.setIdNumber(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold uppercase" />
                   <input type="date" value={licenceState.expiryDate} onChange={e => licenceState.setExpiryDate(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold" />
-                  <input type="file" onChange={e => licenceState.setFile(e.target.files?.[0] || null)} className="text-[10px] text-slate-500 w-full" />
-                  <button onClick={() => handleDocumentSubmit(licenceState, 'HGV_Licence')} disabled={isUploading} className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100">{t('driverDetails.buttons.uploadLicence')}</button>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) licenceState.handleScan(file);
+                      }}
+                      className="text-[10px] text-slate-500 w-full"
+                    />
+                  </div>
+                  <button onClick={() => handleDocumentSubmit(licenceState, 'HGV_Licence')} disabled={isUploading || licenceState.isScanning} className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
+                    {licenceState.isScanning ? <Scan size={14} className="animate-spin" /> : null}
+                    {t('driverDetails.buttons.uploadLicence')}
+                  </button>
                 </div>
 
                 {/* B. CPC CARD */}
                 <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
-                    <GraduationCap size={16} className="text-amber-600" /> {t('driverDetails.labels.cpc')}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
+                      <GraduationCap size={16} className="text-amber-600" /> {t('driverDetails.labels.cpc')}
+                    </div>
+                    {cpcState.isScanning && (
+                      <span className="text-[10px] font-black text-amber-600 animate-pulse uppercase tracking-widest">Scanning...</span>
+                    )}
                   </div>
                   <input type="text" placeholder={t('driverDetails.labels.cpcNo')} value={cpcState.idNumber} onChange={e => cpcState.setIdNumber(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold uppercase" />
                   <input type="date" value={cpcState.expiryDate} onChange={e => cpcState.setExpiryDate(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold" />
-                  <input type="file" onChange={e => cpcState.setFile(e.target.files?.[0] || null)} className="text-[10px] text-slate-500 w-full" />
-                  <button onClick={() => handleDocumentSubmit(cpcState, 'CPC_Card')} disabled={isUploading} className="w-full py-2.5 bg-amber-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-amber-700 transition shadow-lg shadow-amber-100">{t('driverDetails.buttons.uploadCpc')}</button>
+                  <input
+                    type="file"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) cpcState.handleScan(file);
+                    }}
+                    className="text-[10px] text-slate-500 w-full"
+                  />
+                  <button onClick={() => handleDocumentSubmit(cpcState, 'CPC_Card')} disabled={isUploading || cpcState.isScanning} className="w-full py-2.5 bg-amber-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-amber-700 transition shadow-lg shadow-amber-100 flex items-center justify-center gap-2">
+                    {cpcState.isScanning ? <Scan size={14} className="animate-spin" /> : null}
+                    {t('driverDetails.buttons.uploadCpc')}
+                  </button>
                 </div>
 
                 {/* C. TACHO CARD */}
                 <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
-                    <CreditCard size={16} className="text-slate-900" /> {t('driverDetails.labels.tacho')}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
+                      <CreditCard size={16} className="text-slate-900" /> {t('driverDetails.labels.tacho')}
+                    </div>
+                    {tachoState.isScanning && (
+                      <span className="text-[10px] font-black text-slate-900 animate-pulse uppercase tracking-widest">Scanning...</span>
+                    )}
                   </div>
                   <input type="text" placeholder={t('driverDetails.labels.tachoNo')} value={tachoState.idNumber} onChange={e => tachoState.setIdNumber(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold uppercase" />
                   <input type="date" value={tachoState.expiryDate} onChange={e => tachoState.setExpiryDate(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold" />
                   <div className="pt-[76px]">
-                    <input type="file" onChange={e => tachoState.setFile(e.target.files?.[0] || null)} className="text-[10px] text-slate-500 w-full" />
+                    <input
+                      type="file"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) tachoState.handleScan(file);
+                      }}
+                      className="text-[10px] text-slate-500 w-full"
+                    />
                   </div>
-                  <button onClick={() => handleDocumentSubmit(tachoState, 'Tacho_Card')} disabled={isUploading} className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-black transition shadow-lg shadow-slate-200">{t('driverDetails.buttons.uploadTacho')}</button>
+                  <button onClick={() => handleDocumentSubmit(tachoState, 'Tacho_Card')} disabled={isUploading || tachoState.isScanning} className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-black transition shadow-lg shadow-slate-200 flex items-center justify-center gap-2">
+                    {tachoState.isScanning ? <Scan size={14} className="animate-spin" /> : null}
+                    {t('driverDetails.buttons.uploadTacho')}
+                  </button>
                 </div>
               </div>
 

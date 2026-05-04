@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap, Database as DbIcon, Calendar, Info } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Database } from '../../../lib/database.types';
 import { TRAINING_MODULES } from './TrainingLibrary';
+import { analyzeTachoCompliance, TachoActivity } from '../../../lib/compliance';
+import { detectMissingMileage } from '../../../lib/tachoAnalysis';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
@@ -104,6 +106,12 @@ interface TachoCheckerProps {
 export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
   const { profile } = useAuth();
   const [selectedDriver, setSelectedDriver] = useState('');
+  const [sourceMode, setSourceMode] = useState<'csv' | 'database'>('database');
+  const [dateRange, setDateRange] = useState({
+    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+
   const [analyzing, setAnalyzing] = useState(false);
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[] | null>(null);
   const [assigningFor, setAssigningFor] = useState<string | null>(null);
@@ -111,6 +119,68 @@ export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
   const [parseError, setParseError] = useState('');
 
   const activeDrivers = drivers.filter(d => d.role === 'driver' && d.is_active);
+
+  const fetchAndAnalyseFromDb = async () => {
+    if (!selectedDriver) return;
+    setAnalyzing(true);
+    setParseError('');
+
+    try {
+      const { data: tacho } = await supabase
+        .from('tachograph_activities')
+        .select('*')
+        .eq('driver_id', selectedDriver)
+        .gte('start_time', dateRange.start)
+        .lte('start_time', dateRange.end + 'T23:59:59');
+
+      const { data: sessions } = await supabase
+        .from('work_sessions')
+        .select('*')
+        .eq('user_id', selectedDriver)
+        .gte('date', dateRange.start)
+        .lte('date', dateRange.end);
+
+      if (!tacho || tacho.length === 0) {
+        setParseError('No tachograph data found for this driver in the selected date range. Try uploading a .DDD file first.');
+        setDiscrepancies(null);
+        return;
+      }
+
+      // Convert DB Tacho Activities to Discrepancy format
+      const tachoRows: TachoRow[] = tacho.map(t => ({
+        date: t.start_time.split('T')[0],
+        startTime: t.start_time.split('T')[1].slice(0, 5),
+        endTime: t.end_time.split('T')[1].slice(0, 5),
+        activity: t.activity_type
+      }));
+
+      const found = analyseDiscrepancies(tachoRows, (sessions as any) ?? []);
+
+      // Also add missing mileage detections
+      const missing = detectMissingMileage(tacho as any, (sessions as any) ?? []);
+      const missingDiscrepancies: Discrepancy[] = missing.map(m => ({
+        time: `${m.start.split('T')[1].slice(0, 5)} – ${m.end.split('T')[1].slice(0, 5)} (${m.start.split('T')[0]})`,
+        appActivity: 'No app session',
+        tachoActivity: 'Driving',
+        severity: 'high',
+        description: 'Unlogged Driving: Tachograph shows vehicle motion but no corresponding App session was active.',
+        suggestedModule: 'tacho-modes'
+      }));
+
+      setDiscrepancies([...found, ...missingDiscrepancies]);
+    } catch (err) {
+      console.error(err);
+      setParseError('An error occurred while fetching data.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sourceMode === 'database' && selectedDriver) {
+      fetchAndAnalyseFromDb();
+    }
+  }, [selectedDriver, sourceMode, dateRange]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,9 +260,24 @@ export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
       {/* Upload panel */}
       <div className="lg:col-span-1 space-y-5">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <h3 className="font-black text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest">
-            <Upload size={15} className="text-blue-600" /> Upload Tacho CSV
-          </h3>
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setSourceMode('database')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                sourceMode === 'database' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <DbIcon size={12} /> Stored Data
+            </button>
+            <button
+              onClick={() => setSourceMode('csv')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+                sourceMode === 'csv' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <Upload size={12} /> CSV Upload
+            </button>
+          </div>
 
           <div>
             <label htmlFor="tacho-driver" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Select Driver</label>
@@ -207,33 +292,68 @@ export function TachoChecker({ drivers, onAssigned }: TachoCheckerProps) {
             </select>
           </div>
 
-          <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors relative ${
-            selectedDriver ? 'border-blue-300 hover:border-blue-500 cursor-pointer' : 'border-slate-200 opacity-50'
-          }`}>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFile}
-              disabled={!selectedDriver || analyzing}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-            />
-            <div className="space-y-2 pointer-events-none">
-              <div className="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto">
-                <FileText className="text-blue-500" />
+          {sourceMode === 'database' ? (
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">From</label>
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="w-full p-2 text-xs border border-slate-300 rounded bg-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">To</label>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="w-full p-2 text-xs border border-slate-300 rounded bg-white font-bold"
+                  />
+                </div>
               </div>
-              <p className="text-sm font-bold text-slate-700">Drop CSV here or click to browse</p>
-              <p className="text-xs text-slate-400">Tachomaster · OPTAC3 · Disc-Check</p>
-              <p className="text-[10px] text-slate-400">Required columns: date, startTime, endTime, activity</p>
+              <button
+                onClick={fetchAndAnalyseFromDb}
+                disabled={!selectedDriver || analyzing}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-black text-xs uppercase tracking-widest transition"
+              >
+                {analyzing ? 'Checking Database...' : 'Run Analysis'}
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors relative ${
+              selectedDriver ? 'border-blue-300 hover:border-blue-500 cursor-pointer' : 'border-slate-200 opacity-50'
+            }`}>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFile}
+                disabled={!selectedDriver || analyzing}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              <div className="space-y-2 pointer-events-none">
+                <div className="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto">
+                  <FileText className="text-blue-500" />
+                </div>
+                <p className="text-sm font-bold text-slate-700">Drop CSV here or click to browse</p>
+                <p className="text-xs text-slate-400">Tachomaster · OPTAC3 · Disc-Check</p>
+              </div>
+            </div>
+          )}
 
           {parseError && <p className="text-xs text-red-600 bg-red-50 rounded-lg p-3">{parseError}</p>}
         </div>
 
         <div className="bg-blue-600 rounded-xl p-5 text-white text-sm space-y-2">
-          <p className="font-black uppercase tracking-widest text-xs opacity-80">How It Works</p>
+          <p className="font-black uppercase tracking-widest text-xs opacity-80 flex items-center gap-2">
+            <Info size={12} /> {sourceMode === 'database' ? 'Database Mode' : 'How It Works'}
+          </p>
           <p className="text-blue-100 leading-relaxed text-xs">
-            Export a CSV from your tacho analysis software. The checker cross-references each tacho activity window against the driver's portal work sessions to surface mode mismatches and missing records.
+            {sourceMode === 'database'
+              ? 'Automatically comparing stored Tachograph files (.DDD) against App sessions. To add more data, upload files in the Compliance Scoreboard.'
+              : 'Export a CSV from your tacho analysis software. The checker cross-references each tacho activity window against the driver\'s portal work sessions.'}
           </p>
         </div>
       </div>

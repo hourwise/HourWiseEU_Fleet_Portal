@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { LogOut, LayoutDashboard, Users, FileBarChart2, Settings, Shield, ShieldCheck, Truck, Activity, GraduationCap, MessageSquare, Fuel } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, FileBarChart2, Settings, Shield, ShieldCheck, ShieldAlert, Truck, Activity, GraduationCap, MessageSquare, Fuel, Calendar as CalendarIcon } from 'lucide-react';
 
 // Lazy load dashboard components
 const ComplianceScoreboard = lazy(() => import('./ComplianceScoreboard').then(m => ({ default: m.ComplianceScoreboard })));
@@ -25,6 +25,9 @@ const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m =>
 const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
 const DriverRiskSnapshot = lazy(() => import('./DriverRiskSnapshot').then(m => ({ default: m.DriverRiskSnapshot })));
 const InfringementManagement = lazy(() => import('./InfringementManagement').then(m => ({ default: m.InfringementManagement })));
+const ShiftPlanner = lazy(() => import('./ShiftPlanner').then(m => ({ default: m.ShiftPlanner })));
+const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
+const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
 
 function TabLoading() {
   return (
@@ -34,7 +37,7 @@ function TabLoading() {
   );
 }
 
-type Tab = 'dashboard' | 'drivers' | 'compliance' | 'training' | 'fleet' | 'fuel' | 'vehicle_checks' | 'supervisors' | 'messages' | 'reports' | 'settings';
+type Tab = 'dashboard' | 'drivers' | 'shifts' | 'incidents' | 'olicence' | 'compliance' | 'training' | 'fleet' | 'fuel' | 'vehicle_checks' | 'supervisors' | 'messages' | 'reports' | 'settings';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
@@ -69,12 +72,15 @@ export function ManagerDashboard() {
   const tabs = [
     { id: 'dashboard' as Tab, label: t('navigation.dashboard'), icon: LayoutDashboard },
     { id: 'drivers' as Tab, label: t('navigation.drivers'), icon: Users },
+    { id: 'incidents' as Tab, label: 'Incidents', icon: ShieldAlert },
+    { id: 'shifts' as Tab, label: 'Shifts', icon: CalendarIcon },
+    { id: 'olicence' as Tab, label: 'O-Licence Centre', icon: Shield },
     { id: 'compliance' as Tab, label: t('navigation.compliance'), icon: Activity },
     { id: 'training' as Tab, label: t('navigation.training'), icon: GraduationCap },
     { id: 'fleet' as Tab, label: t('navigation.fleet'), icon: Truck },
     { id: 'fuel' as Tab, label: 'Fuel & Mileage', icon: Fuel },
     { id: 'vehicle_checks' as Tab, label: t('navigation.safetyChecks'), icon: ShieldCheck },
-    { id: 'supervisors' as Tab, label: t('navigation.supervisors'), icon: Shield },
+    { id: 'supervisors' as Tab, label: t('navigation.supervisors'), icon: Users },
     { id: 'messages' as Tab, label: 'Messages', icon: MessageSquare },
     { id: 'reports' as Tab, label: 'Reports & Exports', icon: FileBarChart2 },
     { id: 'settings' as Tab, label: t('navigation.settings'), icon: Settings },
@@ -185,6 +191,9 @@ export function ManagerDashboard() {
             )}
 
             {activeTab === 'drivers' && <DriverManagement />}
+            {activeTab === 'incidents' && <IncidentReporting />}
+            {activeTab === 'shifts' && <ShiftPlanner />}
+            {activeTab === 'olicence' && <OLicenceComplianceCentre />}
             {activeTab === 'compliance' && (
               <div className="space-y-8">
                 <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />

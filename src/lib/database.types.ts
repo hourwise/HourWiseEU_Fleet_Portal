@@ -23,7 +23,17 @@ export interface Database {
           created_at: string;
           created_by: string | null;
           require_vehicle_checklist: boolean;
-          default_fuel_cost_per_litre: number | null; // ADDED — run: ALTER TABLE companies ADD COLUMN IF NOT EXISTS default_fuel_cost_per_litre numeric(6,3);
+          default_fuel_cost_per_litre: number | null;
+          pmi_alert_days: number;
+          olicence_number: string | null;
+          olicence_region: string | null;
+          olicence_type: 'standard_national' | 'standard_international' | 'restricted' | null;
+          olicence_status: 'valid' | 'surrendered' | 'continuation_not_sought' | 'revoked' | 'suspended' | 'curtailed' | null;
+          olicence_expiry: string | null;
+          auth_vehicles: number;
+          auth_trailers: number;
+          transport_manager_name: string | null;
+          transport_manager_cpc_expiry: string | null;
         };
         Insert: {
           id?: string;
@@ -39,6 +49,16 @@ export interface Database {
           created_by?: string | null;
           require_vehicle_checklist?: boolean;
           default_fuel_cost_per_litre?: number | null;
+          pmi_alert_days?: number;
+          olicence_number?: string | null;
+          olicence_region?: string | null;
+          olicence_type?: 'standard_national' | 'standard_international' | 'restricted' | null;
+          olicence_status?: 'valid' | 'surrendered' | 'continuation_not_sought' | 'revoked' | 'suspended' | 'curtailed' | null;
+          olicence_expiry?: string | null;
+          auth_vehicles?: number;
+          auth_trailers?: number;
+          transport_manager_name?: string | null;
+          transport_manager_cpc_expiry?: string | null;
         };
         Update: {
           id?: string;
@@ -54,8 +74,64 @@ export interface Database {
           created_by?: string | null;
           require_vehicle_checklist?: boolean;
           default_fuel_cost_per_litre?: number | null;
+          pmi_alert_days?: number;
+          olicence_number?: string | null;
+          olicence_region?: string | null;
+          olicence_type?: 'standard_national' | 'standard_international' | 'restricted' | null;
+          olicence_status?: 'valid' | 'surrendered' | 'continuation_not_sought' | 'revoked' | 'suspended' | 'curtailed' | null;
+          olicence_expiry?: string | null;
+          auth_vehicles?: number;
+          auth_trailers?: number;
+          transport_manager_name?: string | null;
+          transport_manager_cpc_expiry?: string | null;
         };
         Relationships: [];
+      };
+      alerts: {
+        Row: {
+          id: string;
+          company_id: string;
+          type: string;
+          severity: 'info' | 'warning' | 'critical';
+          message: string;
+          metadata: Json;
+          is_read: boolean;
+          is_dismissed: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          type: string;
+          severity?: 'info' | 'warning' | 'critical';
+          message: string;
+          metadata?: Json;
+          is_read?: boolean;
+          is_dismissed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          type?: string;
+          severity?: 'info' | 'warning' | 'critical';
+          message?: string;
+          metadata?: Json;
+          is_read?: boolean;
+          is_dismissed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "alerts_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       profiles: {
         Row: {

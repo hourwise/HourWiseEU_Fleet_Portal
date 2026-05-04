@@ -5,10 +5,11 @@ import {
   FileBarChart2, Download, Calendar, DollarSign, Receipt,
   Clock, AlertTriangle, ShieldCheck, Truck, GraduationCap,
   Check, X, ChevronDown, ChevronUp, Wrench, RefreshCw,
-  ClipboardList, Bell, FileText,
+  ClipboardList, Bell, FileText, LifeBuoy,
 } from 'lucide-react';
 import { calculateDailyPay, formatCurrency } from '../../lib/payCalculations';
 import type { Database } from '../../lib/database.types';
+import { CompliancePackGenerator } from './reports/compliance-pack/CompliancePackGenerator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,26 @@ type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
 type VehicleCheck = Database['public']['Tables']['vehicle_checks']['Row'];
 type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
 type DriverDocument = Database['public']['Tables']['driver_documents']['Row'];
+
+interface Incident {
+  id: string;
+  company_id: string;
+  driver_id: string;
+  vehicle_id: string | null;
+  type: string;
+  occurred_at: string;
+  location: string;
+  description: string;
+  has_injury: boolean;
+  injury_details: string | null;
+  is_third_party_involved: boolean;
+  third_party_details: any;
+  police_ref: string | null;
+  photo_urls: string[];
+  status: string;
+  manager_notes: string | null;
+  created_at: string;
+}
 
 // Inline interfaces for tables not yet in database.types.ts
 interface Expense {
@@ -966,6 +987,67 @@ function OpenDefectsCard() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// CARD 11 — Incident Log Export
+// ═════════════════════════════════════════════════════════════════════════════
+
+type IncidentWithProfiles = Incident & { profiles: { full_name: string } | null; vehicles: { reg_number: string } | null };
+
+function IncidentLogCard({ range }: { range: DateRange }) {
+  const { profile } = useAuth();
+  const [rows, setRows] = useState<IncidentWithProfiles[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const fetch = useCallback(async () => {
+    if (!profile?.company_id) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase.from('incidents').select('*, profiles:driver_id(full_name), vehicles(reg_number)')
+        .eq('company_id', profile.company_id)
+        .gte('occurred_at', range.start.toISOString()).lte('occurred_at', range.end.toISOString())
+        .order('occurred_at', { ascending: false });
+      setRows((data as any) ?? []);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  }, [profile?.company_id, range]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const download = () => downloadCSV(
+    ['Date', 'Driver', 'Vehicle', 'Type', 'Location', 'Injury?', 'Third Party?', 'Police Ref', 'Status', 'Description'],
+    rows.map(r => [
+      fmtDate(r.occurred_at),
+      r.profiles?.full_name ?? '—',
+      r.vehicles?.reg_number ?? 'N/A',
+      r.type.toUpperCase(),
+      r.location,
+      r.has_injury ? 'YES' : 'NO',
+      r.is_third_party_involved ? 'YES' : 'NO',
+      r.police_ref ?? '—',
+      r.status.toUpperCase(),
+      r.description
+    ]),
+    `incident_log_${toISO(range.start)}_${toISO(range.end)}.csv`,
+  );
+
+  return (
+    <ExportCard icon={LifeBuoy} title="Incident & Accident Log" description="Complete record of all accidents, road incidents, and workplace injuries."
+      loading={loading} rowCount={rows.length} onRefresh={fetch} onDownload={download}
+      expanded={expanded} onToggleExpand={() => setExpanded(v => !v)}>
+      <PreviewTable
+        headers={['Date', 'Driver', 'Vehicle', 'Type', 'Status']}
+        rows={rows.map(r => [
+          fmtDate(r.occurred_at),
+          r.profiles?.full_name ?? '—',
+          r.vehicles?.reg_number ?? <span className="text-slate-500">N/A</span>,
+          <span className="capitalize">{r.type}</span>,
+          <span className={`text-[10px] font-black ${r.status === 'closed' ? 'text-green-400' : 'text-amber-400'}`}>{r.status.toUpperCase()}</span>,
+        ])}
+      />
+    </ExportCard>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // ROOT — ReportsAndExports
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -1002,6 +1084,7 @@ export function ReportsAndExports() {
       {/* ── Section 2: Driver & Compliance ── */}
       <div className="space-y-4">
         <SectionHeader icon={ClipboardList} title="Driver & Compliance" subtitle="Hours audit, document renewals, and training records." />
+        <CompliancePackGenerator />
         <DriverHoursAuditCard range={range} />
         <UpcomingRenewalsCard />
         <TrainingRecordsCard range={range} />
@@ -1012,6 +1095,7 @@ export function ReportsAndExports() {
         <SectionHeader icon={Truck} title="Fleet & Safety" subtitle="Vehicle compliance schedules, safety checks, defects, and maintenance." />
         <FleetComplianceCard />
         <OpenDefectsCard />
+        <IncidentLogCard range={range} />
         <SafetyChecksLogCard range={range} />
         <MaintenanceHistoryCard range={range} />
       </div>

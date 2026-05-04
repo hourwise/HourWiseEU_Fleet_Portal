@@ -42,6 +42,8 @@ interface EmploymentData {
   employment_start_date: string;
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  is_contractor: boolean;
+  agency_name: string;
 }
 
 interface ComplianceData {
@@ -158,6 +160,8 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
     employment_start_date: '',
     emergency_contact_name: driver.emergency_contact_name ?? '',
     emergency_contact_phone: driver.emergency_contact_phone ?? '',
+    is_contractor: (driver as any).is_contractor ?? false,
+    agency_name: (driver as any).agency_name ?? '',
   });
 
   const [compliance, setCompliance] = useState<ComplianceData>({
@@ -220,6 +224,8 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
         payroll_number: employment.payroll_number || null,
         emergency_contact_name: employment.emergency_contact_name || null,
         emergency_contact_phone: employment.emergency_contact_phone || null,
+        is_contractor: employment.is_contractor,
+        agency_name: employment.is_contractor ? employment.agency_name : null,
         driving_licence_number: compliance.driving_licence_number || null,
         driving_licence_expiry: compliance.driving_licence_expiry || null,
         cpc_dqc_number: compliance.cpc_dqc_number || null,
@@ -303,6 +309,32 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
   const renderStep2 = () => (
     <div className="space-y-5">
       <p className="text-sm text-slate-500">Employment record and emergency contact information.</p>
+
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Agency / Contractor Driver?</label>
+          <button
+            type="button"
+            onClick={() => setEmployment(p => ({ ...p, is_contractor: !p.is_contractor }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${employment.is_contractor ? 'bg-blue-600' : 'bg-slate-200'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${employment.is_contractor ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+
+        {employment.is_contractor && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+            <FieldInput
+              id="ob-agency"
+              label="Agency Name"
+              value={employment.agency_name}
+              onChange={v => setEmployment(p => ({ ...p, agency_name: v }))}
+              placeholder="e.g. Manpower, Pertemps"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <FieldInput id="ob-payroll" label="Payroll / Employee Number"
           value={employment.payroll_number}
@@ -420,6 +452,7 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <Briefcase size={11} /> Employment
           </p>
+          <ReviewRow label="Type" value={employment.is_contractor ? `Agency (${employment.agency_name})` : 'Direct Employee'} />
           <ReviewRow label="Payroll No" value={employment.payroll_number} />
           <ReviewRow label="Start Date" value={employment.employment_start_date ? new Date(employment.employment_start_date).toLocaleDateString() : null} />
           <ReviewRow label="Emergency Contact" value={employment.emergency_contact_name} />
