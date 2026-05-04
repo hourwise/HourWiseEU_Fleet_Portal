@@ -1353,5 +1353,36 @@
     "dueOverdue": "{{type}} Due OVERDUE",
     "dueInDays": "{{type}} Due in {{days}} days",
     "viewFullList": "View Full Fleet List"
+  },
+  "tacho": {
+    "violations": "Tacho Violations",
+    "missingMileage": "Missing Mileage",
+    "dataSource": "Data Source",
+    "sourceApp": "App Log",
+    "sourceTacho": "Tacho (.DDD)",
+    "sourceCsv": "Manual CSV",
+    "viewTimeline": "View Tacho Timeline",
+    "databaseMode": "Database Mode",
+    "analysisResult": "Analysis Result",
+    "noDataFound": "No tacho data found for the selected range.",
+    "processingFile": "Processing Tacho File...",
+    "uploadSuccess": "Tacho file uploaded and processed successfully.",
+    "uploadError": "Failed to process tacho file.",
+    "discrepancyDetected": "Discrepancy Detected",
+    "missingMileagePoints": "-7 Points (Missing Mileage)",
+    "violationPoints": "-12 Points (Tacho Violation)"
+  },
+  "tachoTimeline": {
+    "title": "Tacho Timeline",
+    "activity": "Activity",
+    "duration": "Duration",
+    "vehicle": "Vehicle",
+    "reg": "VRM",
+    "odometer": "Odometer",
+    "driving": "Driving",
+    "work": "Work",
+    "rest": "Rest",
+    "poa": "POA",
+    "unknown": "Unknown"
   }
 }

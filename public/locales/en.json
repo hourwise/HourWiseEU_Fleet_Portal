@@ -1076,5 +1076,18 @@
     "noVat": "No VAT",
     "manualInvoiceNumber": "Invoice Number",
     "addManualLineItem": "+ Add Manual Line Item"
+  },
+  "tachoTimeline": {
+    "title": "Tacho Timeline",
+    "activity": "Activity",
+    "duration": "Duration",
+    "vehicle": "Vehicle",
+    "reg": "VRM",
+    "odometer": "Odometer",
+    "driving": "Driving",
+    "work": "Work",
+    "rest": "Rest",
+    "poa": "POA",
+    "unknown": "Unknown"
   }
 }
