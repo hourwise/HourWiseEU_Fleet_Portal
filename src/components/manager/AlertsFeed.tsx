@@ -49,13 +49,13 @@ export function AlertsFeed() {
         .eq('id', id);
 
       if (error) throw error;
-      setAlerts(prev \u003d\u003e prev.filter(a \u003d\u003e a.id !== id));
+      setAlerts(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       console.error("Error dismissing alert:", err);
     }
   };
 
-  const getAlertIcon \u003d (severity: string) \u003d\u003e {
+  const getAlertIcon = (severity: string) => {
     switch (severity) {
       case 'critical': return <AlertTriangle className="text-red-500" size={20} />;
       case 'warning': return <Clock className="text-amber-500" size={20} />;
@@ -63,7 +63,7 @@ export function AlertsFeed() {
     }
   };
 
-  const getAlertStyles \u003d (severity: string) \u003d\u003e {
+  const getAlertStyles = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-50 border-red-100';
       case 'warning': return 'bg-amber-50 border-amber-100';
@@ -80,7 +80,7 @@ export function AlertsFeed() {
           </div>
           <h3 className="text-lg font-bold text-slate-900">{t('dashboard.manager.alerts.title')}</h3>
         </div>
-        {alerts.length \u003e 0 && (
+        {alerts.length > 0 && (
           <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
             {alerts.length} NEW
           </span>
@@ -89,10 +89,10 @@ export function AlertsFeed() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
-           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" \u003e\u003c/div\u003e
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
            <p className="text-sm text-slate-400 font-medium">{t('common.loading')}</p>
         </div>
-      ) : alerts.length \u003d\u003d\u003d 0 ? (
+      ) : alerts.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
           <div className="p-3 bg-white rounded-full w-fit mx-auto mb-3 shadow-sm">
             <CheckCircle className="w-8 h-8 text-green-500" />
@@ -119,7 +119,7 @@ export function AlertsFeed() {
                   </div>
                 </div>
                 <button
-                  onClick={() \u003d\u003e dismissAlert(alert.id)}
+                  onClick={() => dismissAlert(alert.id)}
                   className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-lg transition-colors"
                   title="Dismiss alert"
                 >
@@ -127,7 +127,7 @@ export function AlertsFeed() {
                 </button>
              </div>
           ))}
-          {alerts.length \u003e 0 && (
+          {alerts.length > 0 && (
             <button
               onClick={loadAlerts}
               className="w-full py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mt-2"
