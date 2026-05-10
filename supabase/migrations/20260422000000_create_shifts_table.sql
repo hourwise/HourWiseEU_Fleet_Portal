@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS shifts (
 ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+DROP POLICY IF EXISTS "Managers can manage company shifts" ON shifts;
 CREATE POLICY "Managers can manage company shifts"
   ON shifts FOR ALL
   TO authenticated
@@ -36,6 +37,7 @@ CREATE POLICY "Managers can manage company shifts"
     )
   );
 
+DROP POLICY IF EXISTS "Drivers can view their own shifts" ON shifts;
 CREATE POLICY "Drivers can view their own shifts"
   ON shifts FOR SELECT
   TO authenticated
@@ -49,7 +51,14 @@ CREATE INDEX IF NOT EXISTS shifts_driver_id_idx ON shifts(driver_id);
 CREATE INDEX IF NOT EXISTS shifts_date_idx ON shifts(date);
 
 -- Trigger for updated_at
-CREATE TRIGGER update_shifts_updated_at
-  BEFORE UPDATE ON shifts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_shifts_updated_at'
+  ) THEN
+    CREATE TRIGGER update_shifts_updated_at
+      BEFORE UPDATE ON shifts
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END $$;

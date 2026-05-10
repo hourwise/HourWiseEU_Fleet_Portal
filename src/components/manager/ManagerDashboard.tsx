@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { LogOut, LayoutDashboard, Users, FileBarChart2, Settings, Shield, ShieldCheck, ShieldAlert, Truck, Activity, GraduationCap, MessageSquare, Fuel, Calendar as CalendarIcon } from 'lucide-react';
 
 // Lazy load dashboard components
-const ComplianceScoreboard = lazy(() => import('./ComplianceScoreboard').then(m => ({ default: m.ComplianceScoreboard })));
 const DriverManagement = lazy(() => import('./DriverManagement').then(m => ({ default: m.DriverManagement })));
 const ReportsAndExports = lazy(() => import('./ReportsAndExports').then(m => ({ default: m.ReportsAndExports })));
 const CompanySettings = lazy(() => import('./CompanySettings').then(m => ({ default: m.CompanySettings })));
@@ -24,10 +23,10 @@ const ComplianceSnapshot = lazy(() => import('./ComplianceSnapshot').then(m => (
 const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m => ({ default: m.TachoTrainingModule })));
 const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
 const DriverRiskSnapshot = lazy(() => import('./DriverRiskSnapshot').then(m => ({ default: m.DriverRiskSnapshot })));
-const InfringementManagement = lazy(() => import('./InfringementManagement').then(m => ({ default: m.InfringementManagement })));
 const ShiftPlanner = lazy(() => import('./ShiftPlanner').then(m => ({ default: m.ShiftPlanner })));
 const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
 const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
+const TachoComplianceWorkspace = lazy(() => import('./tachograph/TachoComplianceWorkspace').then(m => ({ default: m.TachoComplianceWorkspace })));
 
 function TabLoading() {
   return (
@@ -194,12 +193,7 @@ export function ManagerDashboard() {
             {activeTab === 'incidents' && <IncidentReporting />}
             {activeTab === 'shifts' && <ShiftPlanner />}
             {activeTab === 'olicence' && <OLicenceComplianceCentre />}
-            {activeTab === 'compliance' && (
-              <div className="space-y-8">
-                <ComplianceScoreboard onViewSession={() => setActiveTab('reports')} />
-                <InfringementManagement />
-              </div>
-            )}
+            {activeTab === 'compliance' && <TachoComplianceWorkspace onViewSession={() => setActiveTab('reports')} />}
             {activeTab === 'training' && <TachoTrainingModule />}
             {activeTab === 'fleet' && <VehicleManagement />}
             {activeTab === 'fuel' && <FuelMileageTracker />}

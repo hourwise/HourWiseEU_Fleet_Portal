@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS infringements (
 ALTER TABLE infringements ENABLE ROW LEVEL SECURITY;
 
 -- Managers: full access within their company
+DROP POLICY IF EXISTS "infringements_manager_all" ON infringements;
 CREATE POLICY "infringements_manager_all" ON infringements
   FOR ALL TO authenticated
   USING (
@@ -40,6 +41,7 @@ CREATE POLICY "infringements_manager_all" ON infringements
   );
 
 -- Drivers: read-only view of their own infringements (transparency / debrief copy)
+DROP POLICY IF EXISTS "infringements_driver_select" ON infringements;
 CREATE POLICY "infringements_driver_select" ON infringements
   FOR SELECT TO authenticated
   USING (driver_id = auth.uid());

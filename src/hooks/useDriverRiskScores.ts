@@ -1,10 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { analyzeTachoCompliance, TachoActivity } from '../lib/compliance';
-import { detectMissingMileage } from '../lib/tachoAnalysis';
+import { TachoActivity } from '../lib/compliance';
+import { fetchCompanyTachoSignals } from '../lib/tacho/api';
+import {
+  buildDriverTachoComplianceSignal,
+  buildDriverTachoRiskSignal,
+  type NormalizedDriverTachoRiskSignal,
+} from '../lib/tacho/normalizedSignals';
 
 export type RiskLabel = 'Low Risk' | 'Medium Risk' | 'High Risk' | 'Critical';
 export type RiskColour = 'green' | 'amber' | 'orange' | 'red';
+type TachoActivityRecord = TachoActivity & { driver_id?: string | null };
 
 export interface DriverRiskFactors {
   complianceScore: number;       // 0-100 avg over last 28 days
@@ -15,6 +21,28 @@ export interface DriverRiskFactors {
   openDefects: number;           // defects filed by this driver still unresolved
   tachoViolations: number;       // NEW: violations detected from .DDD files
   missingMileageCount: number;   // NEW: driving periods with no app session
+  appMismatchCount: number;      // NEW: mismatch/discrepancy count from normalized tacho findings
+}
+
+export interface DriverTachoRiskSummary {
+  driverId: string;
+  legalComplianceScore: number;
+  violationCount: number;
+  missingMileageCount: number;
+  appMismatchCount: number;
+  source: 'raw_activity' | 'normalized_findings';
+}
+
+export interface DriverRiskSourceBreakdown {
+  app: {
+    complianceScore: number;
+    openInfringements: number;
+    seriousInfringements: number;
+    documentsExpiring: number;
+    incompleteTraining: number;
+    openDefects: number;
+  };
+  tacho: DriverTachoRiskSummary;
 }
 
 export interface DriverRiskScore {
@@ -24,6 +52,7 @@ export interface DriverRiskScore {
   label: RiskLabel;
   colour: RiskColour;
   factors: DriverRiskFactors;
+  sourceBreakdown: DriverRiskSourceBreakdown;
 }
 
 function computeRisk(factors: DriverRiskFactors): { score: number; label: RiskLabel; colour: RiskColour } {
@@ -46,6 +75,9 @@ function computeRisk(factors: DriverRiskFactors): { score: number; label: RiskLa
   // Missing mileage penalties
   score -= factors.missingMileageCount * 7;
 
+  // App/tacho reconciliation penalties
+  score -= factors.appMismatchCount * 6;
+
   score = Math.max(0, Math.min(100, Math.round(score)));
 
   if (score >= 85) return { score, label: 'Low Risk',    colour: 'green'  };
@@ -54,7 +86,13 @@ function computeRisk(factors: DriverRiskFactors): { score: number; label: RiskLa
   return               { score, label: 'Critical',    colour: 'red'    };
 }
 
-export function useDriverRiskScores(companyId: string | undefined) {
+export function useDriverRiskScores(
+  companyId: string | undefined,
+  options?: {
+    tachoSignals?: NormalizedDriverTachoRiskSignal[];
+    normalizedFetch?: { enabled?: boolean };
+  }
+) {
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState<{
     drivers: { id: string; full_name: string; driving_licence_expiry: string | null; cpc_dqc_expiry: string | null }[];
@@ -63,8 +101,9 @@ export function useDriverRiskScores(companyId: string | undefined) {
     training: { driver_id: string; status: string }[];
     defects: { driver_id: string }[];
     documents: { user_id: string; expiry_date: string | null }[];
-    tachoActivities: TachoActivity[];
-  }>({ drivers: [], sessions: [], infringements: [], training: [], defects: [], documents: [], tachoActivities: [] });
+    tachoActivities: TachoActivityRecord[];
+    normalizedSignals: NormalizedDriverTachoRiskSignal[];
+  }>({ drivers: [], sessions: [], infringements: [], training: [], defects: [], documents: [], tachoActivities: [], normalizedSignals: [] });
 
   useEffect(() => {
     if (!companyId) { setLoading(false); return; }
@@ -77,7 +116,6 @@ export function useDriverRiskScores(companyId: string | undefined) {
       const horizon = new Date();
       horizon.setDate(horizon.getDate() + 30);
       const horizonStr = horizon.toISOString().split('T')[0];
-      const todayStr = new Date().toISOString().split('T')[0];
 
       try {
         const { data: profiles } = await supabase.from('profiles')
@@ -87,6 +125,15 @@ export function useDriverRiskScores(companyId: string | undefined) {
         if (!profiles) return;
         const driverIds = profiles.map(p => p.id);
 
+        const normalizedSignalsPromise = options?.normalizedFetch?.enabled
+          ? fetchCompanyTachoSignals(companyId, 28)
+              .then((result) => result.riskSignals)
+              .catch((error) => {
+                console.error('Error fetching normalized tacho risk signals:', error);
+                return [] as NormalizedDriverTachoRiskSignal[];
+              })
+          : Promise.resolve([] as NormalizedDriverTachoRiskSignal[]);
+
         const [
           { data: sessions },
           { data: infringements },
@@ -94,6 +141,7 @@ export function useDriverRiskScores(companyId: string | undefined) {
           { data: defects },
           { data: documents },
           { data: tacho },
+          normalizedSignals,
         ] = await Promise.all([
           supabase.from('work_sessions')
             .select('user_id, compliance_score, start_time, end_time')
@@ -125,7 +173,8 @@ export function useDriverRiskScores(companyId: string | undefined) {
           supabase.from('tachograph_activities')
             .select('*')
             .in('driver_id', driverIds)
-            .gte('start_time', sinceStr)
+            .gte('start_time', sinceStr),
+          normalizedSignalsPromise,
         ]);
 
         setRaw({
@@ -135,7 +184,8 @@ export function useDriverRiskScores(companyId: string | undefined) {
           training: training ?? [],
           defects: defects ?? [],
           documents: documents ?? [],
-          tachoActivities: (tacho as any) ?? []
+          tachoActivities: (tacho as any) ?? [],
+          normalizedSignals,
         });
       } catch (e) {
         console.error('useDriverRiskScores error:', e);
@@ -145,10 +195,9 @@ export function useDriverRiskScores(companyId: string | undefined) {
     };
 
     fetch();
-  }, [companyId]);
+  }, [companyId, options?.normalizedFetch?.enabled]);
 
   const riskScores = useMemo<DriverRiskScore[]>(() => {
-    const today = new Date().toISOString().split('T')[0];
     const horizon30 = new Date(); horizon30.setDate(horizon30.getDate() + 30);
 
     return raw.drivers.map(driver => {
@@ -176,18 +225,38 @@ export function useDriverRiskScores(companyId: string | undefined) {
       // Open defects
       const openDefects = raw.defects.filter(d => d.driver_id === driver.id).length;
 
-      // NEW: Tacho Factors
       const dTacho = raw.tachoActivities.filter(a => a.driver_id === driver.id);
-      const tachoAnalysis = analyzeTachoCompliance(dTacho);
-      const tachoViolations = tachoAnalysis.violations.length;
-
-      const missingMileage = detectMissingMileage(dTacho, dSessions as any);
-      const missingMileageCount = missingMileage.length;
+      const normalizedTacho =
+        options?.tachoSignals?.find(signal => signal.driverId === driver.id) ??
+        raw.normalizedSignals.find(signal => signal.driverId === driver.id);
+      const tachoSignals: DriverTachoRiskSummary =
+        normalizedTacho ??
+        buildDriverTachoRiskSignal(
+          buildDriverTachoComplianceSignal({
+            driverId: driver.id,
+            activities: dTacho,
+            workSessions: dSessions as any,
+          })
+        );
 
       const factors: DriverRiskFactors = {
         complianceScore, openInfringements, seriousInfringements,
         documentsExpiring, incompleteTraining, openDefects,
-        tachoViolations, missingMileageCount
+        tachoViolations: tachoSignals.violationCount,
+        missingMileageCount: tachoSignals.missingMileageCount,
+        appMismatchCount: tachoSignals.appMismatchCount,
+      };
+
+      const sourceBreakdown: DriverRiskSourceBreakdown = {
+        app: {
+          complianceScore,
+          openInfringements,
+          seriousInfringements,
+          documentsExpiring,
+          incompleteTraining,
+          openDefects,
+        },
+        tacho: tachoSignals,
       };
 
       return {
@@ -195,9 +264,10 @@ export function useDriverRiskScores(companyId: string | undefined) {
         driverName: driver.full_name,
         ...computeRisk(factors),
         factors,
+        sourceBreakdown,
       };
     }).sort((a, b) => a.score - b.score); // worst first
-  }, [raw]);
+  }, [options?.tachoSignals, raw]);
 
   return { riskScores, loading };
 }

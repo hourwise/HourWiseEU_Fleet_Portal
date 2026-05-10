@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 import { supabase } from '../../lib/supabase';
 import {
   Activity, Users, TrendingUp, AlertTriangle, ChevronDown, ChevronUp,
-  Calendar, ExternalLink, ShieldCheck, Plus, X, ClipboardList, Upload,
+  Calendar, ShieldCheck, Plus, X, ClipboardList, Upload,
   Clock, Navigation, MapPin, AlertCircle
 } from 'lucide-react';
 import { TachoUploadZone } from './tachograph/TachoUploadZone';
 import { TachoActivityTimeline } from './tachograph/TachoActivityTimeline';
 import { useTranslation } from 'react-i18next';
 import { format, startOfDay } from 'date-fns';
+import type { DriverComplianceSummary, DriverComplianceSourceSummary } from '../../hooks/useCompanyCompliance';
 
 interface ComplianceScoreboardProps {
   onViewSession?: (driverId: string, date: string) => void;
@@ -21,6 +22,12 @@ const getScoreColor = (score: number): { text: string; bg: string; border: strin
   if (score >= 70) return { text: 'text-amber-700',   bg: 'bg-amber-500',   border: 'border-amber-200',   lightBg: 'bg-amber-50'   };
   return                  { text: 'text-rose-700',    bg: 'bg-rose-500',    border: 'border-rose-200',    lightBg: 'bg-rose-50'    };
 };
+
+const getTruthSummary = (driver: DriverComplianceSummary): DriverComplianceSourceSummary =>
+  driver.tachoSummary.hasData ? driver.tachoSummary : driver.appSummary;
+
+const getTruthSource = (driver: DriverComplianceSummary): 'tacho' | 'app' =>
+  driver.tachoSummary.hasData ? 'tacho' : 'app';
 
 // ─── Raise Infringement Modal ─────────────────────────────────────────────────
 
@@ -175,7 +182,7 @@ function RaiseInfringementModal({
 export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProps) {
   const { profile } = useAuth();
   const { t } = useTranslation();
-  const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id, 14);
+  const { appSummary, tachoSummary, combinedSummary, loading } = useCompanyCompliance(profile?.company_id ?? undefined, 14);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [raiseTarget, setRaiseTarget] = useState<{
     driverId: string; driverName: string; sessionId: string; date: string; violations: string[];
@@ -184,14 +191,41 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
 
   const [showUpload, setShowUpload] = useState(false);
 
-  const overallStats = React.useMemo(() => {
-    const totalDrivers = complianceSummary.length;
+  const driverRows = useMemo(() => {
+    return combinedSummary.map((driver) => {
+      const truthSummary = getTruthSummary(driver);
+      const truthSource = getTruthSource(driver);
+      return {
+        ...driver,
+        truthSummary,
+        truthSource,
+        truthScore: truthSummary.averageScore,
+        truthViolations: truthSummary.totalViolations,
+        truthRecentViolations: truthSummary.recentViolations,
+      };
+    });
+  }, [combinedSummary]);
+
+  const overallStats = useMemo(() => {
+    const totalDrivers = driverRows.length;
     if (totalDrivers === 0) return { avgScore: 100, totalViolations: 0, driversInViolation: 0 };
-    const totalScore = complianceSummary.reduce((sum, d) => sum + d.averageScore, 0);
-    const totalViolations = complianceSummary.reduce((sum, d) => sum + d.totalViolations, 0);
-    const driversInViolation = complianceSummary.filter(d => d.averageScore < 95).length;
+    const totalScore = driverRows.reduce((sum, d) => sum + d.truthScore, 0);
+    const totalViolations = driverRows.reduce((sum, d) => sum + d.truthViolations, 0);
+    const driversInViolation = driverRows.filter(d => d.truthScore < 95).length;
     return { avgScore: Math.round(totalScore / totalDrivers), totalViolations, driversInViolation };
-  }, [complianceSummary]);
+  }, [driverRows]);
+
+  const sourceStats = useMemo(() => {
+    const verifiedDrivers = tachoSummary.filter((driver) => driver.tachoSummary.hasData).length;
+    const appOnlyDrivers = driverRows.filter((driver) => driver.truthSource === 'app').length;
+    const appCrossCheckAlerts = combinedSummary.filter(
+      (driver) =>
+        driver.tachoSummary.hasData &&
+        (driver.appSummary.totalViolations > 0 || driver.tachoSummary.missingMileage.length > 0)
+    ).length;
+
+    return { verifiedDrivers, appOnlyDrivers, appCrossCheckAlerts };
+  }, [combinedSummary, driverRows, tachoSummary]);
 
   if (loading) {
     return (
@@ -233,13 +267,13 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-50 rounded-lg"><TrendingUp className="w-6 h-6 text-blue-600" /></div>
             <span className={`text-3xl font-black ${getScoreColor(overallStats.avgScore).text}`}>{overallStats.avgScore}%</span>
           </div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('compliance.stats.avgScore')}</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Truth Score</p>
         </div>
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
@@ -255,6 +289,27 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
           </div>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('compliance.stats.driversInViolation')}</p>
         </div>
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-emerald-50 rounded-lg"><ShieldCheck className="w-6 h-6 text-emerald-600" /></div>
+            <span className="text-3xl font-black text-emerald-700">{sourceStats.verifiedDrivers}</span>
+          </div>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Verified Tacho Drivers</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{sourceStats.appOnlyDrivers} app-only fallback</p>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Source Precedence</p>
+          <p className="text-sm text-blue-900 font-medium mt-1">
+            Verified tachograph card / VU data is the compliance source of truth. App data remains visible as the clock-in, clock-out, rest, and manual-entry support layer.
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Cross-check alerts</p>
+          <p className="text-2xl font-black text-blue-900">{sourceStats.appCrossCheckAlerts}</p>
+        </div>
       </div>
 
       {/* Driver breakdown */}
@@ -263,7 +318,7 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
           <h3 className="text-lg font-bold text-slate-900">{t('compliance.details.title', 'Driver Breakdown')}</h3>
         </div>
 
-        {complianceSummary.length === 0 ? (
+        {driverRows.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">{t('compliance.details.noDrivers')}</h3>
@@ -271,9 +326,11 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {complianceSummary.map(driver => {
+            {driverRows.map(driver => {
               const isExpanded = expandedDriver === driver.driverId;
-              const colors = getScoreColor(driver.averageScore);
+              const colors = getScoreColor(driver.truthScore);
+              const appDriver = appSummary.find((entry) => entry.driverId === driver.driverId);
+              const tachoDriver = tachoSummary.find((entry) => entry.driverId === driver.driverId);
 
               return (
                 <div key={driver.driverId} className="transition-colors hover:bg-slate-50/30">
@@ -284,26 +341,33 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                       <div>
                         <p className="font-bold text-slate-900 text-lg">{driver.driverName}</p>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">
-                          {driver.recentViolations.length > 0
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">
+                            {driver.truthRecentViolations.length > 0
                             ? t('compliance.status.actionNeeded', 'Action Required')
                             : t('compliance.status.compliant', 'Compliant')}
-                        </p>
+                          </p>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
+                            driver.truthSource === 'tacho' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {driver.truthSource === 'tacho' ? 'Tacho Truth' : 'App Snapshot'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex justify-between items-end mb-1">
-                            <span className={`text-sm font-black ${colors.text}`}>{driver.averageScore}%</span>
+                            <span className={`text-sm font-black ${colors.text}`}>{driver.truthScore}%</span>
                           </div>
                           <div className="w-full bg-slate-100 rounded-full h-2">
-                            <div className={`${colors.bg} h-2 rounded-full transition-all duration-500`} style={{ width: `${driver.averageScore}%` }} />
+                            <div className={`${colors.bg} h-2 rounded-full transition-all duration-500`} style={{ width: `${driver.truthScore}%` }} />
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between md:justify-end gap-8">
                         <div className="text-center md:text-right">
-                          <p className={`text-xl font-black ${driver.totalViolations > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                            {driver.totalViolations}
+                          <p className={`text-xl font-black ${driver.truthViolations > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {driver.truthViolations}
                           </p>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t('compliance.details.headers.infringements')}</p>
                         </div>
@@ -320,21 +384,21 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                             <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                               <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">
-                                {t('compliance.recentActivity', 'Recent Infringements (14 Days)')}
+                                {driver.truthSource === 'tacho' ? 'Verified Tacho Findings (14 Days)' : t('compliance.recentActivity', 'Recent App Findings (14 Days)')}
                               </h4>
-                              {driver.source === 'tacho' && (
-                                <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter">Verified Tacho Data</span>
+                              {driver.truthSource === 'tacho' && (
+                                <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter">Source Of Truth</span>
                               )}
                             </div>
 
-                            {driver.recentViolations.length === 0 ? (
+                            {driver.truthRecentViolations.length === 0 ? (
                               <div className="p-8 text-center">
                                 <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-50" />
                                 <p className="text-slate-500 font-medium">{t('compliance.noRecentViolations', 'No recorded infringements in the last 14 days.')}</p>
                               </div>
                             ) : (
                               <div className="divide-y divide-slate-100">
-                                {driver.recentViolations.map((v, idx) => {
+                                {driver.truthRecentViolations.map((v, idx) => {
                                   const alreadyRaised = raisedSessions.has(v.sessionId);
                                   return (
                                     <div key={`${v.sessionId}-${idx}`} className="p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
@@ -385,6 +449,37 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                             )}
                           </div>
 
+                          <div className="bg-slate-900 rounded-lg p-4 text-white">
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                              <h4 className="text-xs font-black uppercase tracking-widest">App Clocking Snapshot</h4>
+                              {onViewSession && appDriver && appDriver.appSummary.recentViolations[0] && (
+                                <button
+                                  onClick={() => onViewSession(driver.driverId, appDriver.appSummary.recentViolations[0].date)}
+                                  className="text-[10px] font-black uppercase tracking-widest text-blue-300 hover:text-white"
+                                >
+                                  Open App Day
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">App Score</p>
+                                <p className="text-lg font-black">{appDriver?.appSummary.averageScore ?? driver.appSummary.averageScore}%</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">App Findings</p>
+                                <p className="text-lg font-black">{appDriver?.appSummary.totalViolations ?? driver.appSummary.totalViolations}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Manual Entry Aid</p>
+                                <p className="text-lg font-black">{driver.truthSource === 'tacho' ? 'Yes' : 'Primary'}</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                              The mobile app remains the operational clocking record for previous clock-out, current clock-in, and daily rest guidance so the driver can complete head-unit manual entries correctly.
+                            </p>
+                          </div>
+
                           {/* Missing Mileage Alerts */}
                           {driver.missingMileage && driver.missingMileage.length > 0 && (
                             <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
@@ -420,13 +515,13 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                               <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Digital Tachograph View</h4>
                             </div>
 
-                            {driver.tachoActivities && driver.tachoActivities.length > 0 ? (
+                            {tachoDriver?.tachoActivities && tachoDriver.tachoActivities.length > 0 ? (
                               <div className="space-y-6">
                                 {/* Only show most recent day with data for now */}
                                 {(() => {
-                                  const lastActivity = driver.tachoActivities[0];
+                                  const lastActivity = tachoDriver.tachoActivities[0];
                                   const lastDate = startOfDay(new Date(lastActivity.start_time));
-                                  const dayActivities = driver.tachoActivities.filter(a =>
+                                  const dayActivities = tachoDriver.tachoActivities.filter(a =>
                                     startOfDay(new Date(a.start_time)).getTime() === lastDate.getTime()
                                   );
                                   return (
@@ -440,7 +535,7 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <MapPin size={14} className="text-slate-400" />
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Tacho Source: Digital Card .DDD</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Tacho Source: Verified card / VU import</span>
                                   </div>
                                   <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">
                                     View Full 28-Day Analysis
@@ -456,9 +551,9 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                           </div>
 
                           <div className="bg-blue-600 rounded-lg p-4 text-white shadow-sm shadow-blue-200">
-                            <h4 className="text-xs font-black uppercase tracking-widest mb-1 opacity-80">Compliance Tip</h4>
+                            <h4 className="text-xs font-black uppercase tracking-widest mb-1 opacity-80">Manual Entry Guidance</h4>
                             <p className="text-xs font-medium leading-relaxed">
-                              Always compare tacho driving time against work sessions to ensure drivers are using the mobile app correctly.
+                              Use the app’s previous clock-out, current clock-in, and daily rest snapshot to guide driver manual entries, but always treat the verified tachograph record as the compliance truth.
                             </p>
                           </div>
                         </div>

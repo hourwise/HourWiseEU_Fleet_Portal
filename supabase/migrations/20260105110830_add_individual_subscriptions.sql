@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 
 -- Invoices policies
+DROP POLICY IF EXISTS "Solo drivers can view own invoices" ON invoices;
 CREATE POLICY "Solo drivers can view own invoices"
   ON invoices FOR SELECT
   TO authenticated
@@ -137,6 +138,7 @@ CREATE POLICY "Solo drivers can view own invoices"
     )
   );
 
+DROP POLICY IF EXISTS "Solo drivers can create own invoices" ON invoices;
 CREATE POLICY "Solo drivers can create own invoices"
   ON invoices FOR INSERT
   TO authenticated
@@ -146,6 +148,7 @@ CREATE POLICY "Solo drivers can create own invoices"
     )
   );
 
+DROP POLICY IF EXISTS "Solo drivers can update own invoices" ON invoices;
 CREATE POLICY "Solo drivers can update own invoices"
   ON invoices FOR UPDATE
   TO authenticated
@@ -160,6 +163,7 @@ CREATE POLICY "Solo drivers can update own invoices"
     )
   );
 
+DROP POLICY IF EXISTS "Solo drivers can delete own invoices" ON invoices;
 CREATE POLICY "Solo drivers can delete own invoices"
   ON invoices FOR DELETE
   TO authenticated

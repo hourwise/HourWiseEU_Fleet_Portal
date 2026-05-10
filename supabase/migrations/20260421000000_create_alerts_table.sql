@@ -19,25 +19,27 @@ CREATE TABLE IF NOT EXISTS alerts (
 ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+DROP POLICY IF EXISTS "Managers can view company alerts" ON alerts;
 CREATE POLICY "Managers can view company alerts"
   ON alerts FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM profiles
-      WHERE profiles.id \u003d auth.uid()
-      AND profiles.role \u003d 'manager'
-      AND profiles.company_id \u003d alerts.company_id
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'manager'
+      AND profiles.company_id = alerts.company_id
     )
   );
 
+DROP POLICY IF EXISTS "Managers can update company alerts" ON alerts;
 CREATE POLICY "Managers can update company alerts"
   ON alerts FOR UPDATE
   USING (
     EXISTS (
       SELECT 1 FROM profiles
-      WHERE profiles.id \u003d auth.uid()
-      AND profiles.role \u003d 'manager'
-      AND profiles.company_id \u003d alerts.company_id
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'manager'
+      AND profiles.company_id = alerts.company_id
     )
   );
 

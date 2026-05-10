@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserCheck, AlertTriangle, ChevronRight, GraduationCap } from 'lucide-react';
+import { AlertTriangle, ChevronRight, GraduationCap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 
 interface DriverWarning {
   driver_id: string;
@@ -17,14 +18,15 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
   const { t } = useTranslation();
   const [warnings, setWarnings] = useState<DriverWarning[]>([]);
   const [loading, setLoading] = useState(true);
+  const { combinedSummary } = useCompanyCompliance(profile?.company_id ?? undefined, 14);
 
   useEffect(() => {
     if (profile?.company_id) {
-      loadDocumentWarnings();
+      loadDocumentWarnings(profile.company_id);
     }
   }, [profile]);
 
-  const loadDocumentWarnings = async () => {
+  const loadDocumentWarnings = async (companyId: string) => {
     try {
       const { data: docData, error: docError } = await supabase
         .from('driver_documents')
@@ -34,14 +36,14 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
           user_id,
           profiles:user_id (full_name)
         `)
-        .eq('company_id', profile!.company_id);
+        .eq('company_id', companyId);
 
       if (docError) throw docError;
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, driving_licence_expiry, cpc_dqc_expiry')
-        .eq('company_id', profile!.company_id)
+        .eq('company_id', companyId)
         .eq('role', 'driver');
 
       if (profileError) throw profileError;
@@ -72,29 +74,31 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
       });
 
       profileData?.forEach((p: any) => {
-        if (p.driving_licence_expiry && !processedKeys.has(`${p.id}-HGV Licence`)) {
-          const expiry = new Date(p.driving_licence_expiry);
+        const licenceExpiry = p.driving_licence_expiry as string | null;
+        if (licenceExpiry && !processedKeys.has(`${p.id}-HGV Licence`)) {
+          const expiry = new Date(licenceExpiry);
           const diff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           if (diff <= 30) {
             newWarnings.push({
               driver_id: p.id,
               driver_name: p.full_name,
               doc_type: 'Driving Licence',
-              expiry_date: p.driving_licence_expiry,
+              expiry_date: licenceExpiry,
               days_remaining: diff
             });
           }
         }
 
-        if (p.cpc_dqc_expiry && !processedKeys.has(`${p.id}-CPC Tacho`)) {
-          const expiry = new Date(p.cpc_dqc_expiry);
+        const cpcExpiry = p.cpc_dqc_expiry as string | null;
+        if (cpcExpiry && !processedKeys.has(`${p.id}-CPC Tacho`)) {
+          const expiry = new Date(cpcExpiry);
           const diff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           if (diff <= 30) {
             newWarnings.push({
               driver_id: p.id,
               driver_name: p.full_name,
               doc_type: 'CPC Card',
-              expiry_date: p.cpc_dqc_expiry,
+              expiry_date: cpcExpiry,
               days_remaining: diff
             });
           }
@@ -109,6 +113,14 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
     }
   };
 
+  const tachoAlertCount = useMemo(
+    () =>
+      combinedSummary.filter(
+        (driver) => driver.tachoSummary.totalViolations > 0 || driver.tachoSummary.missingMileage.length > 0
+      ).length,
+    [combinedSummary]
+  );
+
   if (loading) return <div className="animate-pulse bg-brand-card rounded-xl h-48 border border-brand-border" />;
 
   return (
@@ -120,6 +132,13 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
         </h3>
         <span className={`text-xs font-black px-2 py-1 rounded ${warnings.length > 0 ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
           {warnings.length === 1 ? t('dashboard.manager.snapshots.alertSingle') : t('dashboard.manager.snapshots.alerts', { count: warnings.length })}
+        </span>
+      </div>
+
+      <div className="px-4 py-2 border-b border-brand-border/70 bg-brand-dark/30 flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+        <span className="text-slate-400">App Docs &amp; Licence Alerts</span>
+        <span className={tachoAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+          Tacho Alerts: {tachoAlertCount}
         </span>
       </div>
 

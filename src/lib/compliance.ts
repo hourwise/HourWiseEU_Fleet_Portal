@@ -1,5 +1,6 @@
-// Note: This is a modified version for the web portal.
-// It does not include the i18n translation logic.
+// Legacy app-side compliance helpers.
+// This file still supports the existing portal workflows, but it is not the long-term
+// tachograph rules engine for normalized driver card and vehicle unit analysis.
 
 export type WorkSession = {
   start_time: string;
@@ -11,6 +12,8 @@ export type WorkSession = {
 };
 
 export type TachoActivity = {
+  driver_id?: string | null;
+  vehicle_id?: string | null;
   start_time: string;
   end_time: string;
   activity_type: 'driving' | 'work' | 'poa' | 'rest';
@@ -77,16 +80,21 @@ const VIOLATION_RULES = {
   BREAK_AFTER_9_HOURS_WORK_MINS: 45,
 };
 
-interface ComplianceResult {
+interface TachoComplianceResult {
   score: number;
   violations: { type: string; date: string; metadata?: any }[];
+}
+
+interface SessionComplianceResult {
+  score: number;
+  violations: string[];
 }
 
 /**
  * Analyzes granular Tachograph activities for EU 561/2006 violations.
  * This is the high-precision engine used for .DDD file analysis.
  */
-export const analyzeTachoCompliance = (activities: TachoActivity[]): ComplianceResult => {
+export const analyzeTachoCompliance = (activities: TachoActivity[]): TachoComplianceResult => {
   const violations: { type: string; date: string; metadata?: any }[] = [];
   if (!activities || activities.length === 0) return { score: 100, violations: [] };
 
@@ -169,7 +177,7 @@ export const calculateCompliance = (
   previousDaySessions: WorkSession[] | null,
   fortnightlyDrivingMinutes: number,
   weeklyDrivingExtensionsUsed: number
-): ComplianceResult => {
+): SessionComplianceResult => {
   const violations: string[] = [];
 
   if (!daySessions || daySessions.length === 0) {

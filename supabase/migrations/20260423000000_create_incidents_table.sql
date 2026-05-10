@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS incidents (
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
 
 -- Managers can manage everything for their company
+DROP POLICY IF EXISTS "Managers can manage company incidents" ON incidents;
 CREATE POLICY "Managers can manage company incidents"
   ON incidents FOR ALL
   TO authenticated
@@ -41,11 +42,13 @@ CREATE POLICY "Managers can manage company incidents"
   );
 
 -- Drivers can report and see their own history
+DROP POLICY IF EXISTS "Drivers can report incidents" ON incidents;
 CREATE POLICY "Drivers can report incidents"
   ON incidents FOR INSERT
   TO authenticated
   WITH CHECK (driver_id = (select auth.uid()));
 
+DROP POLICY IF EXISTS "Drivers can view their own incidents" ON incidents;
 CREATE POLICY "Drivers can view their own incidents"
   ON incidents FOR SELECT
   TO authenticated
@@ -56,7 +59,14 @@ CREATE INDEX IF NOT EXISTS idx_incidents_company_date ON incidents(company_id, o
 CREATE INDEX IF NOT EXISTS idx_incidents_vehicle_id ON incidents(vehicle_id);
 
 -- Trigger for updated_at
-CREATE TRIGGER update_incidents_updated_at
-  BEFORE UPDATE ON incidents
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_incidents_updated_at'
+  ) THEN
+    CREATE TRIGGER update_incidents_updated_at
+      BEFORE UPDATE ON incidents
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END $$;

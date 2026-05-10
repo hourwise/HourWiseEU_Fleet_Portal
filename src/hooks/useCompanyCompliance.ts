@@ -1,11 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
-import { TachoActivity, analyzeTachoCompliance } from '../lib/compliance';
-import { detectMissingMileage, MissingMileageGap } from '../lib/tachoAnalysis';
+import { TachoActivity } from '../lib/compliance';
+import { MissingMileageGap } from '../lib/tachoAnalysis';
+import { fetchCompanyTachoSignals } from '../lib/tacho/api';
+import {
+  buildDriverTachoComplianceSignal,
+  type NormalizedDriverTachoComplianceSignal,
+} from '../lib/tacho/normalizedSignals';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type TachoActivityRecord = TachoActivity & { driver_id?: string | null };
 
 export interface DriverViolation {
   date: string;
@@ -15,23 +21,44 @@ export interface DriverViolation {
   source: 'app' | 'tacho';
 }
 
+export interface DriverComplianceSourceSummary {
+  averageScore: number;
+  totalViolations: number;
+  violations: string[];
+  recentViolations: DriverViolation[];
+  missingMileage: MissingMileageGap[];
+  hasData: boolean;
+}
+
 export interface DriverComplianceSummary {
   driverId: string;
   driverName: string;
+  source: 'app' | 'tacho' | 'combined';
   averageScore: number;
   totalViolations: number;
   violations: string[]; // Unique list of all violation types
   recentViolations: DriverViolation[];
-  tachoActivities: TachoActivity[];
+  tachoActivities: TachoActivityRecord[];
   missingMileage: MissingMileageGap[];
+  appSummary: DriverComplianceSourceSummary;
+  tachoSummary: DriverComplianceSourceSummary;
+  combinedSummary: DriverComplianceSourceSummary;
 }
 
-export const useCompanyCompliance = (companyId: string | undefined, days = 7) => {
+export const useCompanyCompliance = (
+  companyId: string | undefined,
+  days = 7,
+  options?: {
+    tachoSignals?: NormalizedDriverTachoComplianceSignal[];
+    normalizedFetch?: { enabled?: boolean };
+  }
+) => {
   const [data, setData] = useState<{
     profiles: Profile[],
     sessions: WorkSession[],
-    tachoActivities: TachoActivity[]
-  }>({ profiles: [], sessions: [], tachoActivities: [] });
+    tachoActivities: TachoActivityRecord[],
+    normalizedSignals: NormalizedDriverTachoComplianceSignal[]
+  }>({ profiles: [], sessions: [], tachoActivities: [], normalizedSignals: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,13 +83,22 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
         
         if (profilesError) throw profilesError;
         if (!profiles || profiles.length === 0) {
-          setData({ profiles: [], sessions: [], tachoActivities: [] });
+          setData({ profiles: [], sessions: [], tachoActivities: [], normalizedSignals: [] });
           return;
         }
 
         const driverIds = profiles.map(p => p.id);
 
-        const [sessionsRes, tachoRes] = await Promise.all([
+        const normalizedSignalsPromise = options?.normalizedFetch?.enabled
+          ? fetchCompanyTachoSignals(companyId, days)
+              .then((result) => result.complianceSignals)
+              .catch((error) => {
+                console.error('Error fetching normalized tacho compliance signals:', error);
+                return [] as NormalizedDriverTachoComplianceSignal[];
+              })
+          : Promise.resolve([] as NormalizedDriverTachoComplianceSignal[]);
+
+        const [sessionsRes, tachoRes, normalizedSignals] = await Promise.all([
           supabase
             .from('work_sessions')
             .select('*')
@@ -74,7 +110,8 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
             .select('*')
             .in('driver_id', driverIds)
             .gte('start_time', startDate.toISOString())
-            .order('start_time', { ascending: false })
+            .order('start_time', { ascending: false }),
+          normalizedSignalsPromise,
         ]);
 
         if (sessionsRes.error) throw sessionsRes.error;
@@ -83,7 +120,8 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
         setData({
           profiles: profiles || [],
           sessions: sessionsRes.data || [],
-          tachoActivities: (tachoRes.data as any) || []
+          tachoActivities: (tachoRes.data as any) || [],
+          normalizedSignals,
         });
       } catch (error) {
         console.error('Error fetching company compliance data:', error);
@@ -93,20 +131,23 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
     };
 
     fetchData();
-  }, [companyId, days]);
+  }, [companyId, days, options?.normalizedFetch?.enabled]);
 
-  const complianceSummary = useMemo<DriverComplianceSummary[]>(() => {
+  const combinedSummary = useMemo<DriverComplianceSummary[]>(() => {
     if (!data.profiles.length) return [];
 
     return data.profiles.map(driver => {
       const driverSessions = data.sessions.filter(s => s.user_id === driver.id);
       const driverTacho = data.tachoActivities.filter(a => a.driver_id === driver.id);
-
-      // Analyze Tacho Compliance
-      const tachoAnalysis = analyzeTachoCompliance(driverTacho);
-      
-      // Detect Missing Mileage
-      const missingMileage = detectMissingMileage(driverTacho, driverSessions as any);
+      const tachoSignal =
+        options?.tachoSignals?.find((signal) => signal.driverId === driver.id) ??
+        data.normalizedSignals.find((signal) => signal.driverId === driver.id) ??
+        buildDriverTachoComplianceSignal({
+          driverId: driver.id,
+          activities: driverTacho,
+          workSessions: driverSessions as any,
+        });
+      const missingMileage = tachoSignal.missingMileage;
 
       const appViolations: DriverViolation[] = driverSessions
         .filter(s => (s.compliance_violations?.length ?? 0) > 0)
@@ -118,37 +159,94 @@ export const useCompanyCompliance = (companyId: string | undefined, days = 7) =>
           source: 'app'
         }));
 
-      const tachoViolations: DriverViolation[] = tachoAnalysis.violations.map(v => ({
-        date: v.date,
-        violations: [v.type],
-        score: tachoAnalysis.score,
-        sessionId: 'tacho-' + v.date,
-        source: 'tacho'
-      }));
+      const tachoViolations: DriverViolation[] = tachoSignal.recentViolations;
 
       const allRecentViolations = [...appViolations, ...tachoViolations].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
-      const totalViolations = allRecentViolations.length;
-      const avgScore = driverSessions.length > 0
+      const appAverageScore = driverSessions.length > 0
         ? Math.round(driverSessions.reduce((acc, s) => acc + (s.compliance_score ?? 100), 0) / driverSessions.length)
         : 100;
+      const tachoAverageScore = tachoSignal.averageScore;
 
-      const uniqueViolationTypes = [...new Set(allRecentViolations.flatMap(v => v.violations))];
+      const appSummary: DriverComplianceSourceSummary = {
+        averageScore: appAverageScore,
+        totalViolations: appViolations.length,
+        violations: [...new Set(appViolations.flatMap(v => v.violations))],
+        recentViolations: appViolations,
+        missingMileage: [],
+        hasData: driverSessions.length > 0,
+      };
+
+      const tachoSummary: DriverComplianceSourceSummary = {
+        averageScore: tachoAverageScore,
+        totalViolations: tachoViolations.length,
+        violations: tachoSignal.violations,
+        recentViolations: tachoViolations,
+        missingMileage,
+        hasData: tachoSignal.hasData,
+      };
+
+      const combinedSourceSummary: DriverComplianceSourceSummary = {
+        averageScore: tachoSummary.hasData ? Math.min(appSummary.averageScore, tachoSummary.averageScore) : appSummary.averageScore,
+        totalViolations: allRecentViolations.length,
+        violations: [...new Set(allRecentViolations.flatMap(v => v.violations))],
+        recentViolations: allRecentViolations,
+        missingMileage,
+        hasData: appSummary.hasData || tachoSummary.hasData,
+      };
 
       return {
         driverId: driver.id,
         driverName: driver.full_name || 'Unnamed Driver',
-        averageScore: Math.min(avgScore, tachoAnalysis.score),
-        totalViolations,
-        violations: uniqueViolationTypes,
-        recentViolations: allRecentViolations,
+        source: tachoSummary.hasData && !appSummary.hasData ? 'tacho' : tachoSummary.hasData ? 'combined' : 'app',
+        averageScore: combinedSourceSummary.averageScore,
+        totalViolations: combinedSourceSummary.totalViolations,
+        violations: combinedSourceSummary.violations,
+        recentViolations: combinedSourceSummary.recentViolations,
         tachoActivities: driverTacho,
-        missingMileage
+        missingMileage,
+        appSummary,
+        tachoSummary,
+        combinedSummary: combinedSourceSummary,
       };
     });
-  }, [data]);
+  }, [data, options?.tachoSignals]);
 
-  return { complianceSummary, loading };
+  const appSummary = useMemo<DriverComplianceSummary[]>(
+    () =>
+      combinedSummary.map((driver) => ({
+        ...driver,
+        source: 'app',
+        averageScore: driver.appSummary.averageScore,
+        totalViolations: driver.appSummary.totalViolations,
+        violations: driver.appSummary.violations,
+        recentViolations: driver.appSummary.recentViolations,
+        missingMileage: [],
+      })),
+    [combinedSummary]
+  );
+
+  const tachoSummary = useMemo<DriverComplianceSummary[]>(
+    () =>
+      combinedSummary.map((driver) => ({
+        ...driver,
+        source: 'tacho',
+        averageScore: driver.tachoSummary.averageScore,
+        totalViolations: driver.tachoSummary.totalViolations,
+        violations: driver.tachoSummary.violations,
+        recentViolations: driver.tachoSummary.recentViolations,
+        missingMileage: driver.tachoSummary.missingMileage,
+      })),
+    [combinedSummary]
+  );
+
+  return {
+    appSummary,
+    tachoSummary,
+    combinedSummary,
+    complianceSummary: combinedSummary,
+    loading,
+  };
 };

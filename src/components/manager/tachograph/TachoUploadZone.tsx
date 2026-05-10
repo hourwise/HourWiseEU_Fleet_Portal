@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
@@ -37,14 +37,14 @@ export function TachoUploadZone() {
 
         // 2. Insert record into database to trigger processing
         const { error: dbError } = await supabase
-          .from('tachograph_files')
+          .from('tachograph_files' as any)
           .insert({
             company_id: profile.company_id,
             filename: file.name,
             file_path: filePath,
             file_type: fileExt,
             status: 'pending'
-          });
+          } as any);
 
         if (dbError) throw dbError;
       }

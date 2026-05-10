@@ -1,5 +1,5 @@
 import { TachoActivity, WorkSession } from './compliance';
-import { differenceInMinutes, isWithinInterval } from 'date-fns';
+import { differenceInMinutes } from 'date-fns';
 
 export interface MissingMileageGap {
   start: string;
