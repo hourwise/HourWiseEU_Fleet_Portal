@@ -104,3 +104,42 @@ Return shape:
 2. If RPCs fail or return nothing, the frontend can fall back to raw-activity adapters temporarily.
 3. RPCs should not return parser-internal raw blobs that the frontend must decode further.
 4. Timestamps must be ISO UTC strings.
+
+## Additional normalized backend data
+
+The frontend now also supports normalized vehicle-motion discrepancy rows stored in:
+
+1. `public.tachograph_vehicle_motion_discrepancies`
+
+Purpose:
+
+1. Capture unassigned motion, card gaps, driver mismatches, and related operational review items.
+2. Feed the vehicle-unit analysis workspace without relying on client-side inference alone.
+
+Current hydration path:
+
+1. `get_vehicle_unit_analysis_bundle` should return `vehicleMotionDiscrepancies` directly.
+2. `get_tacho_import_bundle` should return `vehicleMotionDiscrepancies` directly.
+3. The frontend API still has a direct-table fallback for older deployments that have not applied the latest RPC migration yet.
+
+Target end state:
+
+1. The direct-table fallback can be removed once all environments are on the updated RPC contract.
+
+## Additional normalized reconciliation data
+
+The frontend now also supports normalized app-vs-tacho reconciliation rows stored in:
+
+1. `public.tachograph_reconciliation_items`
+
+Purpose:
+
+1. Capture day-level `matched`, `tacho_only`, `app_only`, and `mismatch_duration` outcomes.
+2. Feed the driver-card analysis screen and company-level compliance/risk summaries without forcing the client to recompute reconciliation from `work_sessions`.
+
+Current hydration path:
+
+1. `get_driver_tacho_analysis_bundle` should return `reconciliation` directly.
+2. `get_tacho_import_bundle` should return `reconciliation` directly for driver-linked imports.
+3. `get_company_tacho_signals` should include `reconciliationSummary` inside both `compliance_signal` and `risk_signal`.
+4. The frontend driver-analysis hook still has a `work_sessions` fallback for environments that have not applied the latest reconciliation migration yet.

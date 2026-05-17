@@ -54,7 +54,17 @@ const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t
   return { level: 'green', text: t('driverManagement.status.compliant'), Icon: CheckCircle, color: 'text-green-600' };
 };
 
-export function DriverManagement() {
+export function DriverManagement({
+  onOpenDriverTacho,
+  onOpenDriverCompliance,
+  onOpenDriverTraining,
+  focusedDriverId,
+}: {
+  onOpenDriverTacho?: (driverId: string) => void;
+  onOpenDriverCompliance?: (driverId: string) => void;
+  onOpenDriverTraining?: (driverId: string) => void;
+  focusedDriverId?: string;
+}) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [drivers, setDrivers] = useState<Profile[]>([]);
@@ -108,6 +118,14 @@ export function DriverManagement() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!focusedDriverId || drivers.length === 0) return;
+    const match = drivers.find((entry) => entry.id === focusedDriverId);
+    if (match) {
+      setSelectedDriver(match);
+    }
+  }, [drivers, focusedDriverId]);
 
   const handleRemoveDriver = async (driverId: string, driverName: string) => {
     if (window.confirm(t('common.confirmDelete', { name: driverName }))) {
@@ -352,7 +370,16 @@ export function DriverManagement() {
       </div>
 
       {showInviteModal && (<InviteDriverModal onClose={() => setShowInviteModal(false)} onInviteSent={loadData} />)}
-      {selectedDriver && (<DriverDetailsModal driver={selectedDriver} onClose={() => setSelectedDriver(null)} onSave={() => { setSelectedDriver(null); loadData(); }} />)}
+      {selectedDriver && (
+        <DriverDetailsModal
+          driver={selectedDriver}
+          onClose={() => setSelectedDriver(null)}
+          onSave={() => { setSelectedDriver(null); loadData(); }}
+          onOpenDriverTacho={onOpenDriverTacho}
+          onOpenDriverCompliance={onOpenDriverCompliance}
+          onOpenDriverTraining={onOpenDriverTraining}
+        />
+      )}
       {onboardingDriver && (<DriverOnboardingModal driver={onboardingDriver} onClose={() => setOnboardingDriver(null)} onComplete={() => { setOnboardingDriver(null); loadData(); }} />)}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import type { ElementType } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -36,24 +37,40 @@ function TabLoading() {
   );
 }
 
-type Tab = 'dashboard' | 'drivers' | 'shifts' | 'incidents' | 'olicence' | 'compliance' | 'training' | 'fleet' | 'fuel' | 'vehicle_checks' | 'supervisors' | 'messages' | 'reports' | 'settings';
+type Workspace = 'dashboard' | 'people' | 'fleet' | 'compliance' | 'reports' | 'settings';
+type PeopleSection = 'drivers' | 'training' | 'shifts' | 'supervisors' | 'messages';
+type FleetSection = 'vehicles' | 'vehicle_checks' | 'fuel' | 'olicence' | 'incidents';
+type SettingsSection = 'account' | 'company';
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace>('dashboard');
+  const [activePeopleSection, setActivePeopleSection] = useState<PeopleSection>('drivers');
+  const [activeFleetSection, setActiveFleetSection] = useState<FleetSection>('vehicles');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>('account');
+  const [focusedDriverRecordId, setFocusedDriverRecordId] = useState<string | undefined>();
+  const [focusedVehicleRecordId, setFocusedVehicleRecordId] = useState<string | undefined>();
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [complianceWorkspaceState, setComplianceWorkspaceState] = useState<{
+    tab?: 'overview' | 'imports' | 'driver_cards' | 'vehicle_units';
+    focusedVehicleId?: string;
+    focusedDriverId?: string;
+    focusedDate?: string;
+  }>({});
 
   // Live unread count — messages sent to this manager that haven't been read
   useEffect(() => {
     if (!profile?.id || !profile?.company_id) return;
+    const companyId = profile.company_id;
+    const profileId = profile.id;
 
     const fetchUnread = async () => {
       const { count } = await supabase
         .from('messages')
         .select('id', { count: 'exact', head: true })
-        .eq('company_id', profile.company_id)
-        .eq('recipient_id', profile.id)
+        .eq('company_id', companyId)
+        .eq('recipient_id', profileId)
         .is('read_at', null);
       setUnreadMessages(count ?? 0);
     };
@@ -62,28 +79,54 @@ export function ManagerDashboard() {
 
     const channel = supabase
       .channel('dashboard:unread')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `company_id=eq.${profile.company_id}` }, fetchUnread)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `company_id=eq.${companyId}` }, fetchUnread)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [profile?.id, profile?.company_id]);
 
-  const tabs = [
-    { id: 'dashboard' as Tab, label: t('navigation.dashboard'), icon: LayoutDashboard },
-    { id: 'drivers' as Tab, label: t('navigation.drivers'), icon: Users },
-    { id: 'incidents' as Tab, label: 'Incidents', icon: ShieldAlert },
-    { id: 'shifts' as Tab, label: 'Shifts', icon: CalendarIcon },
-    { id: 'olicence' as Tab, label: 'O-Licence Centre', icon: Shield },
-    { id: 'compliance' as Tab, label: t('navigation.compliance'), icon: Activity },
-    { id: 'training' as Tab, label: t('navigation.training'), icon: GraduationCap },
-    { id: 'fleet' as Tab, label: t('navigation.fleet'), icon: Truck },
-    { id: 'fuel' as Tab, label: 'Fuel & Mileage', icon: Fuel },
-    { id: 'vehicle_checks' as Tab, label: t('navigation.safetyChecks'), icon: ShieldCheck },
-    { id: 'supervisors' as Tab, label: t('navigation.supervisors'), icon: Users },
-    { id: 'messages' as Tab, label: 'Messages', icon: MessageSquare },
-    { id: 'reports' as Tab, label: 'Reports & Exports', icon: FileBarChart2 },
-    { id: 'settings' as Tab, label: t('navigation.settings'), icon: Settings },
+  const workspaces = [
+    { id: 'dashboard' as Workspace, label: t('navigation.dashboard'), icon: LayoutDashboard },
+    { id: 'people' as Workspace, label: 'People', icon: Users },
+    { id: 'fleet' as Workspace, label: t('navigation.fleet'), icon: Truck },
+    { id: 'compliance' as Workspace, label: t('navigation.compliance'), icon: Activity },
+    { id: 'reports' as Workspace, label: 'Reports', icon: FileBarChart2 },
+    { id: 'settings' as Workspace, label: t('navigation.settings'), icon: Settings },
   ];
+
+  const peopleSections: { id: PeopleSection; label: string; icon: ElementType; badge?: number }[] = [
+    { id: 'drivers', label: t('navigation.drivers'), icon: Users },
+    { id: 'training', label: t('navigation.training'), icon: GraduationCap },
+    { id: 'shifts', label: 'Shifts', icon: CalendarIcon },
+    { id: 'supervisors', label: t('navigation.supervisors'), icon: Users },
+    { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessages },
+  ];
+
+  const fleetSections: { id: FleetSection; label: string; icon: ElementType }[] = [
+    { id: 'vehicles', label: 'Vehicles', icon: Truck },
+    { id: 'vehicle_checks', label: t('navigation.safetyChecks'), icon: ShieldCheck },
+    { id: 'fuel', label: 'Fuel', icon: Fuel },
+    { id: 'olicence', label: 'O-Licence', icon: Shield },
+    { id: 'incidents', label: 'Incidents', icon: ShieldAlert },
+  ];
+
+  const settingsSections: { id: SettingsSection; label: string; icon: ElementType }[] = [
+    { id: 'account', label: 'Account', icon: Settings },
+    { id: 'company', label: 'Company', icon: Settings },
+  ];
+
+  const openComplianceWorkspace = (
+    tab: 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' = 'overview',
+    options?: { focusedVehicleId?: string; focusedDriverId?: string; focusedDate?: string }
+  ) => {
+    setComplianceWorkspaceState({
+      tab,
+      focusedVehicleId: options?.focusedVehicleId,
+      focusedDriverId: options?.focusedDriverId,
+      focusedDate: options?.focusedDate,
+    });
+    setActiveWorkspace('compliance');
+  };
 
   return (
     <div className="min-h-screen bg-brand-dark text-slate-200">
@@ -102,7 +145,9 @@ export function ManagerDashboard() {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-white">{profile?.full_name}</p>
-                <p className="text-xs text-slate-400">{t('navigation.dashboard')}</p>
+                <p className="text-xs text-slate-400">
+                  {workspaces.find((workspace) => workspace.id === activeWorkspace)?.label ?? t('navigation.dashboard')}
+                </p>
               </div>
               <button onClick={signOut} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:bg-brand-dark rounded-lg transition">
                 <LogOut className="w-5 h-5" />
@@ -116,47 +161,98 @@ export function ManagerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-brand-card rounded-xl shadow-sm mb-6 border border-brand-border">
           <div className="flex overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
+            {workspaces.map((workspace) => {
+              const Icon = workspace.icon;
               return (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  key={workspace.id}
+                  onClick={() => {
+                    if (workspace.id === 'compliance') {
+                      setComplianceWorkspaceState({ tab: 'overview', focusedVehicleId: undefined, focusedDriverId: undefined, focusedDate: undefined });
+                    }
+                    setActiveWorkspace(workspace.id);
+                  }}
                   className={`flex items-center gap-2 px-6 py-4 font-black text-xs uppercase tracking-widest border-b-2 transition whitespace-nowrap ${
-                    activeTab === tab.id
+                    activeWorkspace === workspace.id
                       ? 'border-brand-accent text-brand-accent bg-brand-dark/50'
                       : 'border-transparent text-slate-400 hover:text-white hover:bg-brand-card/50'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  {tab.label}
-                  {tab.id === 'messages' && unreadMessages > 0 && (
-                    <span className="ml-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
-                      {unreadMessages}
-                    </span>
-                  )}
+                  {workspace.label}
                 </button>
               );
             })}
           </div>
         </div>
 
+        {activeWorkspace !== 'dashboard' && activeWorkspace !== 'reports' && activeWorkspace !== 'compliance' && (
+          <div className="bg-brand-card rounded-xl shadow-sm mb-6 border border-brand-border p-2">
+            <div className="flex flex-wrap gap-2">
+              {(activeWorkspace === 'people' ? peopleSections : activeWorkspace === 'fleet' ? fleetSections : activeWorkspace === 'settings' ? settingsSections : []).map((section) => {
+                const Icon = section.icon;
+                const isActive =
+                  (activeWorkspace === 'people' && activePeopleSection === section.id) ||
+                  (activeWorkspace === 'fleet' && activeFleetSection === section.id) ||
+                  (activeWorkspace === 'settings' && activeSettingsSection === section.id);
+
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      if (activeWorkspace === 'people') setActivePeopleSection(section.id as PeopleSection);
+                      if (activeWorkspace === 'fleet') setActiveFleetSection(section.id as FleetSection);
+                      if (activeWorkspace === 'settings') setActiveSettingsSection(section.id as SettingsSection);
+                    }}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition ${
+                      isActive ? 'bg-brand-dark text-white' : 'text-slate-400 hover:bg-brand-dark/40 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {section.label}
+                    {'badge' in section && section.badge && section.badge > 0 ? (
+                      <span className="ml-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                        {section.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Suspense fallback={<TabLoading />}>
-            {activeTab === 'dashboard' && (
+            {activeWorkspace === 'dashboard' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <ComplianceSnapshot onAction={() => setActiveTab('compliance')} />
-                  <VehicleComplianceSnapshot onAction={() => setActiveTab('fleet')} />
-                  <DriverComplianceSnapshot onAction={() => setActiveTab('drivers')} />
+                  <ComplianceSnapshot onAction={() => openComplianceWorkspace('overview')} />
+                  <VehicleComplianceSnapshot
+                    onAction={() => {
+                      setActiveWorkspace('fleet');
+                      setActiveFleetSection('vehicles');
+                    }}
+                    onReviewVehicle={(vehicleId, focusedDate) => openComplianceWorkspace('vehicle_units', { focusedVehicleId: vehicleId, focusedDate })}
+                  />
+                  <DriverComplianceSnapshot
+                    onAction={() => {
+                      setActiveWorkspace('people');
+                      setActivePeopleSection('drivers');
+                    }}
+                    onReviewDriver={(driverId, focusedDate) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId, focusedDate })}
+                  />
                 </div>
 
                 {/* Driver Risk Scores — full width row */}
-                <DriverRiskSnapshot onAction={() => setActiveTab('compliance')} />
+                <DriverRiskSnapshot
+                  onAction={() => openComplianceWorkspace('overview')}
+                  onReviewDriver={(driverId, focusedDate) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId, focusedDate })}
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
-                    <AlertsFeed title={t('dashboard.manager.alerts.title')} />
+                    <AlertsFeed />
                   </div>
                   <div className="lg:col-span-1 space-y-6">
                     <BroadcastMessage />
@@ -177,7 +273,10 @@ export function ManagerDashboard() {
                           Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
                         </p>
                         <button
-                          onClick={() => setActiveTab('training')}
+                          onClick={() => {
+                            setActiveWorkspace('people');
+                            setActivePeopleSection('training');
+                          }}
                           className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition"
                         >
                           Open Training Center
@@ -189,24 +288,88 @@ export function ManagerDashboard() {
               </div>
             )}
 
-            {activeTab === 'drivers' && <DriverManagement />}
-            {activeTab === 'incidents' && <IncidentReporting />}
-            {activeTab === 'shifts' && <ShiftPlanner />}
-            {activeTab === 'olicence' && <OLicenceComplianceCentre />}
-            {activeTab === 'compliance' && <TachoComplianceWorkspace onViewSession={() => setActiveTab('reports')} />}
-            {activeTab === 'training' && <TachoTrainingModule />}
-            {activeTab === 'fleet' && <VehicleManagement />}
-            {activeTab === 'fuel' && <FuelMileageTracker />}
-            {activeTab === 'vehicle_checks' && <VehicleChecksModule onNavigateToFleet={() => setActiveTab('fleet')} />}
-            {activeTab === 'supervisors' && <SupervisorManagement />}
-            {activeTab === 'messages' && <MessagingHub />}
-            {activeTab === 'reports' && <ReportsAndExports />}
-            {activeTab === 'settings' && (
+            {activeWorkspace === 'people' && activePeopleSection === 'drivers' && (
+              <DriverManagement
+                focusedDriverId={focusedDriverRecordId}
+                onOpenDriverTacho={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
+                onOpenDriverCompliance={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
+                onOpenDriverTraining={() => {
+                  setActiveWorkspace('people');
+                  setActivePeopleSection('training');
+                }}
+              />
+            )}
+            {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
+            {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner />}
+            {activeWorkspace === 'people' && activePeopleSection === 'supervisors' && <SupervisorManagement />}
+            {activeWorkspace === 'people' && activePeopleSection === 'messages' && <MessagingHub />}
+
+            {activeWorkspace === 'fleet' && activeFleetSection === 'vehicles' && (
+              <VehicleManagement
+                focusedVehicleId={focusedVehicleRecordId}
+                onOpenVehicleTacho={(vehicleId) => openComplianceWorkspace('vehicle_units', { focusedVehicleId: vehicleId })}
+                onOpenVehicleIncidents={() => {
+                  setActiveWorkspace('fleet');
+                  setActiveFleetSection('incidents');
+                }}
+              />
+            )}
+            {activeWorkspace === 'fleet' && activeFleetSection === 'vehicle_checks' && <VehicleChecksModule onNavigateToFleet={() => setActiveFleetSection('vehicles')} />}
+            {activeWorkspace === 'fleet' && activeFleetSection === 'fuel' && <FuelMileageTracker />}
+            {activeWorkspace === 'fleet' && activeFleetSection === 'olicence' && <OLicenceComplianceCentre />}
+            {activeWorkspace === 'fleet' && activeFleetSection === 'incidents' && <IncidentReporting />}
+
+            {activeWorkspace === 'compliance' && (
+                <TachoComplianceWorkspace
+                  onViewSession={() => setActiveWorkspace('reports')}
+                  onOpenDriverAnalysis={(driverId, date) =>
+                    openComplianceWorkspace('driver_cards', {
+                      focusedDriverId: driverId,
+                      focusedDate: date,
+                    })
+                  }
+                  onOpenPersonnelFile={(driverId) => {
+                    setFocusedDriverRecordId(driverId);
+                    setActiveWorkspace('people');
+                    setActivePeopleSection('drivers');
+                  }}
+                  onOpenDriverCompliance={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
+                  onOpenDriverTraining={() => {
+                    setActiveWorkspace('people');
+                    setActivePeopleSection('training');
+                  }}
+                  onOpenFleetRecord={(vehicleId) => {
+                    setFocusedVehicleRecordId(vehicleId);
+                    setActiveWorkspace('fleet');
+                    setActiveFleetSection('vehicles');
+                  }}
+                  onOpenVehicleMaintenance={(vehicleId) => {
+                    setFocusedVehicleRecordId(vehicleId);
+                    setActiveWorkspace('fleet');
+                    setActiveFleetSection('vehicles');
+                  }}
+                  onOpenVehicleIncidents={() => {
+                    setActiveWorkspace('fleet');
+                    setActiveFleetSection('incidents');
+                  }}
+                  initialTab={complianceWorkspaceState.tab}
+                  focusedVehicleId={complianceWorkspaceState.focusedVehicleId}
+                  focusedDriverId={complianceWorkspaceState.focusedDriverId}
+                  focusedDate={complianceWorkspaceState.focusedDate}
+                />
+              )}
+
+            {activeWorkspace === 'reports' && <ReportsAndExports />}
+            {activeWorkspace === 'settings' && activeSettingsSection === 'account' && (
               <div className="space-y-6">
                   <UserProfileSettings />
+                  <MfaSettings />
+              </div>
+            )}
+            {activeWorkspace === 'settings' && activeSettingsSection === 'company' && (
+              <div className="space-y-6">
                   <BillingManager />
                   <CompanySettings />
-                  <MfaSettings />
               </div>
             )}
           </Suspense>

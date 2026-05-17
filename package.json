@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:rules": "vitest run src/lib/tacho/rules/engine.test.ts src/lib/tacho/rules/reconciliation.test.ts src/lib/tacho/adapters.test.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

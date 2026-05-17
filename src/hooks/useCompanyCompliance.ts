@@ -8,10 +8,21 @@ import {
   buildDriverTachoComplianceSignal,
   type NormalizedDriverTachoComplianceSignal,
 } from '../lib/tacho/normalizedSignals';
+import type { TachoReconciliationSummary, TachoReviewFocus } from '../lib/tacho/rules/types';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type TachoActivityRecord = TachoActivity & { driver_id?: string | null };
+
+const EMPTY_RECONCILIATION_SUMMARY: TachoReconciliationSummary = {
+  matchedDays: 0,
+  tachoOnlyDays: 0,
+  appOnlyDays: 0,
+  mismatchDurationDays: 0,
+  mismatchActivityDays: 0,
+  uncertainDays: 0,
+  totalIssues: 0,
+};
 
 export interface DriverViolation {
   date: string;
@@ -27,6 +38,8 @@ export interface DriverComplianceSourceSummary {
   violations: string[];
   recentViolations: DriverViolation[];
   missingMileage: MissingMileageGap[];
+  reconciliationSummary: TachoReconciliationSummary;
+  reviewFocus?: TachoReviewFocus;
   hasData: boolean;
 }
 
@@ -176,6 +189,8 @@ export const useCompanyCompliance = (
         violations: [...new Set(appViolations.flatMap(v => v.violations))],
         recentViolations: appViolations,
         missingMileage: [],
+        reconciliationSummary: EMPTY_RECONCILIATION_SUMMARY,
+        reviewFocus: undefined,
         hasData: driverSessions.length > 0,
       };
 
@@ -185,6 +200,8 @@ export const useCompanyCompliance = (
         violations: tachoSignal.violations,
         recentViolations: tachoViolations,
         missingMileage,
+        reconciliationSummary: tachoSignal.reconciliationSummary ?? EMPTY_RECONCILIATION_SUMMARY,
+        reviewFocus: tachoSignal.reviewFocus,
         hasData: tachoSignal.hasData,
       };
 
@@ -194,6 +211,8 @@ export const useCompanyCompliance = (
         violations: [...new Set(allRecentViolations.flatMap(v => v.violations))],
         recentViolations: allRecentViolations,
         missingMileage,
+        reconciliationSummary: tachoSummary.reconciliationSummary,
+        reviewFocus: tachoSummary.reviewFocus,
         hasData: appSummary.hasData || tachoSummary.hasData,
       };
 

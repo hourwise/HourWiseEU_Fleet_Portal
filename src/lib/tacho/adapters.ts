@@ -4,10 +4,12 @@ import type {
   ParserVehicleUnitDownload,
   TachoAnalysisRange,
   TachoDaySummary,
+  TachoFinding,
   TachoImportRecord,
   TachoImportStatus,
   TachoParserBundle,
   TachoSummaryMetric,
+  VehicleMotionDiscrepancy,
   VehicleUnitAnalysisData,
 } from './rules/types';
 
@@ -50,6 +52,10 @@ function metric(label: string, value: string, tone: TachoSummaryMetric['tone']):
   return { label, value, tone };
 }
 
+function countRule(findings: { ruleCode: string }[], ...codes: string[]) {
+  return findings.filter((finding) => codes.includes(finding.ruleCode)).length;
+}
+
 export function adaptImportRecord(raw: any): TachoImportRecord {
   const sourceType = raw?.sourceType ?? raw?.source_type ?? (raw?.vehicle_id ? 'vehicle_unit' : 'driver_card');
   const importedAt = raw?.importedAt ?? raw?.uploaded_at ?? new Date().toISOString();
@@ -66,6 +72,12 @@ export function adaptImportRecord(raw: any): TachoImportRecord {
     driverName: raw?.driverName ?? raw?.driver_name ?? raw?.metadata?.driver_name,
     vehicleReg: raw?.vehicleReg ?? raw?.vehicle_reg ?? raw?.metadata?.vehicle_reg,
     summary: raw?.summary ?? raw?.metadata?.summary,
+    technicalEventCount: raw?.technicalEventCount ?? raw?.metadata?.technical_event_count,
+    discrepancyCount: raw?.discrepancyCount ?? raw?.metadata?.discrepancy_count,
+    reconciliationIssueCount: raw?.reconciliationIssueCount ?? raw?.metadata?.reconciliation_issue_count,
+    highSeverityCount: raw?.highSeverityCount ?? raw?.metadata?.high_severity_count,
+    discrepancyPreview: raw?.discrepancyPreview,
+    reconciliationPreview: raw?.reconciliationPreview,
   };
 }
 
@@ -86,17 +98,64 @@ function fallbackDaySummaries(daySummaries: TachoDaySummary[] | undefined) {
   return [];
 }
 
+export function deriveVehicleMotionDiscrepancies(
+  technicalEvents: TachoFinding[],
+  findings: TachoFinding[]
+): VehicleMotionDiscrepancy[] {
+  const resolveDiscrepancyStatus = (ruleCode: string): VehicleMotionDiscrepancy['status'] => {
+    if (ruleCode === 'VU_DRIVING_WITHOUT_CARD') return 'unassigned_motion';
+    if (ruleCode === 'VU_CARD_CONFLICT') return 'driver_mismatch';
+    if (ruleCode === 'VU_CARD_INSERTION_WHILE_DRIVING') return 'card_gap';
+    return 'needs_review';
+  };
+
+  const fromTechnicalEvents = technicalEvents
+    .filter((event) =>
+      ['VU_DRIVING_WITHOUT_CARD', 'VU_CARD_CONFLICT', 'VU_CARD_INSERTION_WHILE_DRIVING', 'VU_MOTION_CONFLICT'].includes(event.ruleCode)
+    )
+    .map((event) => ({
+      id: `disc-${event.id}`,
+      date: event.occurredAt.slice(0, 10),
+      startTime: event.periodStart,
+      endTime: event.periodEnd,
+      durationMins: Math.max(0, Math.round((new Date(event.periodEnd).getTime() - new Date(event.periodStart).getTime()) / 60000)),
+      severity: event.severity,
+      status: resolveDiscrepancyStatus(event.ruleCode),
+      summary: event.summary,
+      evidenceRefs: event.evidenceRefs,
+    }));
+
+  const fromFindings = findings
+    .filter((finding) => finding.ruleCode.startsWith('DISC_'))
+    .map((finding) => ({
+      id: `disc-${finding.id}`,
+      date: finding.occurredAt.slice(0, 10),
+      startTime: finding.periodStart,
+      endTime: finding.periodEnd,
+      durationMins: Math.max(0, Math.round((new Date(finding.periodEnd).getTime() - new Date(finding.periodStart).getTime()) / 60000)),
+      severity: finding.severity,
+      status: 'driver_mismatch' as const,
+      summary: finding.summary,
+      evidenceRefs: finding.evidenceRefs,
+    }));
+
+  return [...fromTechnicalEvents, ...fromFindings].sort((left, right) => right.startTime.localeCompare(left.startTime));
+}
+
 export function adaptDriverBundleToAnalysis(
   bundle: TachoParserBundle,
-  range: TachoAnalysisRange
+  range: TachoAnalysisRange,
+  reconciliation: DriverCardAnalysisData['reconciliation'] = bundle.reconciliation ?? []
 ): DriverCardAnalysisData {
   const download = bundle.driverCardDownload;
   const importRecord = getBundleImportRecord(bundle);
   const daySummaries = fallbackDaySummaries(bundle.daySummaries);
   const findings = bundle.findings ?? [];
+  const technicalEvents = bundle.technicalEvents ?? [];
   const drivingBreaches = findings.filter((finding) => finding.ruleCode.startsWith('DRV_')).length;
   const wtdAlerts = findings.filter((finding) => finding.ruleCode.startsWith('WTD_')).length;
   const mismatches = findings.filter((finding) => finding.ruleCode.startsWith('DISC_')).length;
+  const linkedVuEvents = technicalEvents.length;
 
   return {
     identity: {
@@ -115,6 +174,7 @@ export function adaptDriverBundleToAnalysis(
       metric('Driving Breaches', String(drivingBreaches), drivingBreaches > 0 ? 'warning' : 'good'),
       metric('WTD Alerts', String(wtdAlerts), wtdAlerts > 0 ? 'warning' : 'good'),
       metric('App/Tacho Mismatches', String(mismatches), mismatches > 0 ? 'danger' : 'good'),
+      metric('Linked VU Events', String(linkedVuEvents), linkedVuEvents > 0 ? 'warning' : 'good'),
       metric(
         'Download Status',
         driverDownloadStatus(download) === 'overdue'
@@ -127,7 +187,8 @@ export function adaptDriverBundleToAnalysis(
     ],
     dailySummaries: daySummaries,
     findings,
-    reconciliation: [],
+    technicalEvents,
+    reconciliation,
   };
 }
 
@@ -139,7 +200,23 @@ export function adaptVehicleBundleToAnalysis(
   const importRecord = getBundleImportRecord(bundle);
   const findings = bundle.findings ?? [];
   const technicalEvents = bundle.technicalEvents ?? [];
-  const overspeedCount = technicalEvents.filter((finding) => finding.ruleCode === 'VU_OVERSPEED').length;
+  const unassignedMotion = bundle.vehicleMotionDiscrepancies ?? deriveVehicleMotionDiscrepancies(technicalEvents, findings);
+  const overspeedCount = countRule(technicalEvents, 'VU_OVERSPEED');
+  const cardEventCount = countRule(
+    technicalEvents,
+    'VU_DRIVING_WITHOUT_CARD',
+    'VU_CARD_INSERTION_WHILE_DRIVING',
+    'VU_CARD_CONFLICT'
+  );
+  const faultCount = countRule(
+    technicalEvents,
+    'VU_MOTION_CONFLICT',
+    'VU_POWER_INTERRUPTION',
+    'VU_SENSOR_FAULT',
+    'VU_SECURITY_FAULT',
+    'VU_CALIBRATION_EVENT'
+  );
+  const unassignedMotionCount = unassignedMotion.length;
 
   return {
     identity: {
@@ -156,7 +233,9 @@ export function adaptVehicleBundleToAnalysis(
     range,
     metrics: [
       metric('Overspeed Events', String(overspeedCount), overspeedCount > 0 ? 'danger' : 'good'),
-      metric('Technical Events', String(technicalEvents.length), technicalEvents.length > 0 ? 'warning' : 'good'),
+      metric('Card / Driver Events', String(cardEventCount), cardEventCount > 0 ? 'warning' : 'good'),
+      metric('Technical Faults', String(faultCount), faultCount > 0 ? 'warning' : 'good'),
+      metric('Unassigned Motion', String(unassignedMotionCount), unassignedMotionCount > 0 ? 'danger' : 'good'),
       metric('Compliance Findings', String(findings.length), findings.length > 0 ? 'warning' : 'good'),
       metric(
         'Download Status',
@@ -171,5 +250,6 @@ export function adaptVehicleBundleToAnalysis(
     dailySummaries: fallbackDaySummaries(bundle.daySummaries),
     findings,
     technicalEvents,
+    unassignedMotion,
   };
 }

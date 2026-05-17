@@ -1,6 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import readesm from "https://esm.sh/readesm@1.0.17";
+import { TACHO_RULE_LEGAL_BASIS, TACHO_RULE_TITLES } from "../../../shared/tachoRuleCore.ts";
+import {
+  buildSharedDaySummaries,
+  buildSharedDutyWindows,
+  mergeAdjacentNormalizedActivities,
+  type SharedDutyWindow,
+  type SharedNormalizedActivity,
+} from "../../../shared/tachoNormalization.ts";
+import { evaluateSharedRuleFindings } from "../../../shared/tachoRuleEvaluation.ts";
+import {
+  buildSharedAppTachoReconciliationItems,
+  summarizeSharedReconciliation,
+} from "../../../shared/tachoReconciliation.ts";
 
 const PARSER_VERSION = "readesm@1.0.17";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
@@ -88,7 +101,7 @@ type TechnicalEventRow = {
   driver_id: string | null;
   vehicle_id: string | null;
   source: "vehicle_unit";
-  severity: "medium";
+  severity: "high" | "medium";
   status: "warning";
   rule_code: string;
   title: string;
@@ -98,6 +111,65 @@ type TechnicalEventRow = {
   period_end: string;
   evidence_refs: Array<{ kind: string; refId: string; label?: string }>;
   metadata: Record<string, string | number | boolean | null>;
+};
+
+type VehicleMotionDiscrepancyRow = {
+  import_id: string;
+  company_id: string | null;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  discrepancy_date: string;
+  start_time: string;
+  end_time: string;
+  duration_mins: number;
+  severity: "high" | "medium";
+  status: "unassigned_motion" | "card_gap" | "driver_mismatch" | "needs_review";
+  summary: string;
+  linked_driver_name: string | null;
+  evidence_refs: Array<{ kind: string; refId: string; label?: string }>;
+  metadata: Record<string, string | number | boolean | null>;
+};
+
+type ReconciliationRow = {
+  import_id: string;
+  company_id: string | null;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  recon_date: string;
+  status: "matched" | "tacho_only" | "app_only" | "mismatch_activity" | "mismatch_duration" | "uncertain";
+  app_label: string;
+  tacho_label: string;
+  summary: string;
+  app_driving_mins: number;
+  tacho_driving_mins: number;
+  metadata: Record<string, string | number | boolean | null>;
+};
+
+type WorkSessionRow = {
+  start_time: string;
+  other_data: { driving?: number } | null;
+};
+
+type ExtractedVuEvent = {
+  timestamp: string;
+  endTimestamp: string;
+  ruleCode:
+    | "VU_MOTION_CONFLICT"
+    | "VU_POWER_INTERRUPTION"
+    | "VU_DRIVING_WITHOUT_CARD"
+    | "VU_CARD_INSERTION_WHILE_DRIVING"
+    | "VU_CARD_CONFLICT"
+    | "VU_SENSOR_FAULT"
+    | "VU_SECURITY_FAULT"
+    | "VU_CALIBRATION_EVENT";
+  summary: string;
+  evidenceLabel: string;
+  severity: "high" | "medium";
+  metadata: Record<string, string | number | boolean | null>;
+};
+
+type DutyWindow = SharedDutyWindow & {
+  activities: NormalizedActivityRow[];
 };
 
 serve(async (req) => {
@@ -198,30 +270,45 @@ serve(async (req) => {
       importId: record.id,
       driverId,
     });
-    const normalizedActivities = rawActivities.map((activity) => ({
-      import_id: record.id,
-      company_id: record.company_id ?? null,
-      driver_id: driverId,
-      vehicle_id: vehicleId,
-      source: sourceType,
-      activity_type: mapNormalizedActivityType(activity.activity_type),
-      start_time: activity.start_time,
-      end_time: activity.end_time,
-      duration_mins: minutesBetween(activity.start_time, activity.end_time),
-      distance_km: activity.distance_km,
-      confidence: "high" as const,
-      label: activity.is_manual_entry ? "Manual entry" : null,
-    }));
+    const normalizedActivities = fromSharedNormalizedActivities(
+      mergeAdjacentNormalizedActivities(
+        toSharedNormalizedActivities(rawActivities.map((activity, index) => ({
+          id: `${activity.activity_type}-${activity.start_time}-${index}`,
+          import_id: record.id,
+          company_id: record.company_id ?? null,
+          driver_id: driverId,
+          vehicle_id: vehicleId,
+          source: sourceType,
+          activity_type: mapNormalizedActivityType(activity.activity_type),
+          start_time: activity.start_time,
+          end_time: activity.end_time,
+          duration_mins: minutesBetween(activity.start_time, activity.end_time),
+          distance_km: activity.distance_km,
+          confidence: "high" as const,
+          label: activity.is_manual_entry ? "Manual entry" : null,
+        })))
+      ).map(({ id: _ignoredId, ...activity }) => activity)
+      ,
+      {
+        importId: record.id,
+        companyId: record.company_id ?? null,
+        driverId,
+        vehicleId,
+        sourceType,
+      }
+    );
     const speedLogs = extractSpeedLogs(parsed, record.id);
+    const vuEvents = extractVuEvents(parsed);
 
     const summaryWindow = resolvePeriodBounds(normalizedActivities);
     const downloadedAt = summaryWindow.endTime ?? new Date().toISOString();
+    const dutyWindows = buildDutyWindows(normalizedActivities);
     const daySummaries = buildDaySummaries({
       importId: record.id,
       companyId: record.company_id ?? null,
       driverId,
       vehicleId,
-      activities: normalizedActivities,
+      dutyWindows,
       speedLogsCountByDate: countByDate(speedLogs.map((log) => log.timestamp)),
     });
     const findings = buildFindings({
@@ -230,15 +317,47 @@ serve(async (req) => {
       driverId,
       vehicleId,
       sourceType,
+      dutyWindows,
       daySummaries,
       activities: normalizedActivities,
     });
+    const workSessions =
+      driverId && summaryWindow.startTime && summaryWindow.endTime
+        ? await fetchWorkSessionsForRange(supabaseAdmin, {
+            companyId: record.company_id ?? null,
+            driverId,
+            startDate: summaryWindow.startTime.slice(0, 10),
+            endDate: summaryWindow.endTime.slice(0, 10),
+          })
+        : [];
+    const reconciliationRows = buildReconciliationRows({
+      importId: record.id,
+      companyId: record.company_id ?? null,
+      driverId,
+      vehicleId,
+      activities: normalizedActivities,
+      workSessions,
+    });
+    for (const summary of daySummaries) {
+      const matchingReconciliation = reconciliationRows.find((row) => row.recon_date === summary.summary_date);
+      summary.app_driving_mins = matchingReconciliation?.app_driving_mins ?? null;
+    }
     const technicalEvents = buildTechnicalEvents({
       importId: record.id,
       companyId: record.company_id ?? null,
       driverId,
       vehicleId,
       speedLogs,
+      vuEvents,
+    });
+    const vehicleMotionDiscrepancies = buildVehicleMotionDiscrepancies({
+      importId: record.id,
+      companyId: record.company_id ?? null,
+      driverId,
+      driverName,
+      vehicleId,
+      technicalEvents,
+      findings,
     });
 
     await clearImportData(supabaseAdmin, record.id);
@@ -270,6 +389,16 @@ serve(async (req) => {
 
     if (technicalEvents.length > 0) {
       const { error } = await supabaseAdmin.from("tachograph_technical_events").insert(technicalEvents);
+      if (error) throw error;
+    }
+
+    if (vehicleMotionDiscrepancies.length > 0) {
+      const { error } = await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").insert(vehicleMotionDiscrepancies);
+      if (error) throw error;
+    }
+
+    if (reconciliationRows.length > 0) {
+      const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(reconciliationRows);
       if (error) throw error;
     }
 
@@ -311,12 +440,14 @@ serve(async (req) => {
         companyId: record.company_id ?? null,
         driverId,
         findings,
+        reconciliationRows,
         generatedAt: downloadedAt,
       });
       const riskSignals = buildRiskSignals({
         companyId: record.company_id ?? null,
         driverId,
         complianceSignals,
+        reconciliationRows,
         generatedAt: downloadedAt,
       });
 
@@ -350,6 +481,8 @@ serve(async (req) => {
       normalized_segments: normalizedActivities.length,
       findings_count: findings.length,
       technical_event_count: technicalEvents.length,
+      discrepancy_count: vehicleMotionDiscrepancies.length,
+      reconciliation_issue_count: reconciliationRows.filter((row) => row.status !== "matched").length,
     });
 
     await supabaseAdmin
@@ -372,6 +505,8 @@ serve(async (req) => {
       normalized_segments: normalizedActivities.length,
       findings_count: findings.length,
       technical_event_count: technicalEvents.length,
+      discrepancy_count: vehicleMotionDiscrepancies.length,
+      reconciliation_issue_count: reconciliationRows.filter((row) => row.status !== "matched").length,
     });
   } catch (error) {
     console.error("Tacho processing error:", error);
@@ -421,7 +556,27 @@ async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, i
   await supabaseAdmin.from("tachograph_day_summaries").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_findings").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_technical_events").delete().eq("import_id", importId);
+  await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").delete().eq("import_id", importId);
+  await supabaseAdmin.from("tachograph_reconciliation_items").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_processing_runs").delete().eq("import_id", importId);
+}
+
+async function fetchWorkSessionsForRange(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  input: { companyId: string | null; driverId: string; startDate: string; endDate: string }
+) {
+  const query = supabaseAdmin
+    .from("work_sessions")
+    .select("start_time, other_data")
+    .eq("user_id", input.driverId)
+    .gte("date", input.startDate)
+    .lte("date", input.endDate)
+    .order("date", { ascending: false });
+
+  const scopedQuery = input.companyId ? query.eq("company_id", input.companyId) : query;
+  const { data, error } = await scopedQuery;
+  if (error) throw error;
+  return ((data ?? []) as WorkSessionRow[]).filter((session) => !!session.start_time);
 }
 
 function extractRawActivities(parsed: any, context: { importId: string; driverId: string | null }): RawActivityRow[] {
@@ -492,42 +647,283 @@ function extractSpeedLogs(parsed: any, importId: string) {
   return logs;
 }
 
+function extractVuEvents(parsed: any): ExtractedVuEvent[] {
+  const sources = [
+    parsed?.events,
+    parsed?.faults,
+    parsed?.eventFaults,
+    parsed?.eventRecords,
+    parsed?.faultRecords,
+    parsed?.vehicleUnit?.events,
+    parsed?.vehicleUnit?.faults,
+    parsed?.vehicleUnit?.eventFaults,
+    parsed?.vehicleUnit?.eventRecords,
+    parsed?.vehicleUnit?.faultRecords,
+    parsed?.vuData?.events,
+    parsed?.vuData?.faults,
+    parsed?.vuData?.eventFaults,
+    parsed?.vuData?.eventRecords,
+    parsed?.vuData?.faultRecords,
+  ].filter(Array.isArray);
+
+  const events: ExtractedVuEvent[] = [];
+  for (const source of sources) {
+    for (const item of source) {
+      const flattenedItems = flattenVuEventItems(item);
+      for (const eventItem of flattenedItems) {
+        const timestamp = toIsoString(
+          eventItem.timestamp,
+          eventItem.time,
+          eventItem.recordedAt,
+          eventItem.startTime,
+          eventItem.occurredAt,
+          eventItem.begin,
+          eventItem.from
+        );
+        if (!timestamp) continue;
+
+        const rawText = [
+          eventItem.type,
+          eventItem.eventType,
+          eventItem.faultType,
+          eventItem.code,
+          eventItem.name,
+          eventItem.description,
+          eventItem.detail,
+          eventItem.category,
+        ]
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase())
+          .join(" ");
+
+        const classification = classifyVuEvent(rawText);
+        if (!classification) continue;
+
+        events.push({
+          timestamp,
+          endTimestamp:
+            toIsoString(eventItem.endTime, eventItem.finish, eventItem.to, eventItem.resolvedAt) ?? timestamp,
+          ruleCode: classification.ruleCode,
+          summary: buildVuEventSummary(classification.ruleCode, eventItem),
+          evidenceLabel: firstString(eventItem.name, eventItem.eventType, eventItem.type, eventItem.code) ?? TACHO_RULE_TITLES[classification.ruleCode],
+          severity: classification.severity,
+          metadata: {
+            rawType: firstString(eventItem.type, eventItem.eventType, eventItem.faultType, eventItem.code, eventItem.name),
+            rawCategory: firstString(eventItem.category, eventItem.group, eventItem.classification),
+            rawCode: firstString(eventItem.code, eventItem.eventCode, eventItem.faultCode),
+            slot: toInteger(eventItem.slot),
+          },
+        });
+      }
+    }
+  }
+
+  return dedupeVuEvents(events);
+}
+
+function flattenVuEventItems(item: any): any[] {
+  const nestedCollections = [
+    item?.events,
+    item?.faults,
+    item?.eventFaults,
+    item?.eventRecords,
+    item?.faultRecords,
+    item?.records,
+    item?.items,
+  ].filter(Array.isArray);
+
+  if (nestedCollections.length === 0) return item ? [item] : [];
+
+  return nestedCollections.flatMap((collection) => collection.filter(Boolean));
+}
+
+function dedupeVuEvents(events: ExtractedVuEvent[]) {
+  const seen = new Set<string>();
+  return events.filter((event) => {
+    const key = `${event.ruleCode}:${event.timestamp}:${event.endTimestamp}:${event.summary}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function classifyVuEvent(rawText: string): Pick<ExtractedVuEvent, "ruleCode" | "severity"> | null {
+  if (
+    rawText.includes("driving without card") ||
+    rawText.includes("vehicle motion without card") ||
+    rawText.includes("no card inserted") ||
+    rawText.includes("driving without suitable card")
+  ) {
+    return { ruleCode: "VU_DRIVING_WITHOUT_CARD", severity: "high" };
+  }
+
+  if (
+    rawText.includes("insertion while driving") ||
+    rawText.includes("card insertion while driving") ||
+    rawText.includes("inserted while driving")
+  ) {
+    return { ruleCode: "VU_CARD_INSERTION_WHILE_DRIVING", severity: "high" };
+  }
+
+  if (
+    rawText.includes("card conflict") ||
+    rawText.includes("conflicting card") ||
+    rawText.includes("multiple card") ||
+    rawText.includes("driver card conflict")
+  ) {
+    return { ruleCode: "VU_CARD_CONFLICT", severity: "high" };
+  }
+
+  if (
+    rawText.includes("security") ||
+    rawText.includes("tamper") ||
+    rawText.includes("authentication failure") ||
+    rawText.includes("unauthorised") ||
+    rawText.includes("unauthorized")
+  ) {
+    return { ruleCode: "VU_SECURITY_FAULT", severity: "high" };
+  }
+
+  if (
+    rawText.includes("motion conflict") ||
+    rawText.includes("motion data conflict") ||
+    rawText.includes("motion inconsistency")
+  ) {
+    return { ruleCode: "VU_MOTION_CONFLICT", severity: "medium" };
+  }
+
+  if (
+    rawText.includes("power interruption") ||
+    rawText.includes("power supply interruption") ||
+    rawText.includes("interruption of power supply") ||
+    rawText.includes("power cut")
+  ) {
+    return { ruleCode: "VU_POWER_INTERRUPTION", severity: "medium" };
+  }
+
+  if (
+    rawText.includes("sensor") ||
+    rawText.includes("sender fault") ||
+    rawText.includes("motion sensor") ||
+    rawText.includes("sensor fault")
+  ) {
+    return { ruleCode: "VU_SENSOR_FAULT", severity: "medium" };
+  }
+
+  if (
+    rawText.includes("calibration") ||
+    rawText.includes("workshop") ||
+    rawText.includes("time adjustment") ||
+    rawText.includes("clock adjustment")
+  ) {
+    return { ruleCode: "VU_CALIBRATION_EVENT", severity: "medium" };
+  }
+
+  return null;
+}
+
+function buildVuEventSummary(ruleCode: ExtractedVuEvent["ruleCode"], item: any) {
+  const details = firstString(item.description, item.detail, item.name, item.eventType, item.type);
+  if (details) return details;
+
+  return TACHO_RULE_TITLES[ruleCode];
+}
+
+function toSharedNormalizedActivities(
+  activities: Array<NormalizedActivityRow & { id: string }>
+): SharedNormalizedActivity[] {
+  return activities.map((activity) => ({
+    id: activity.id,
+    driverId: activity.driver_id ?? null,
+    vehicleId: activity.vehicle_id ?? null,
+    startTime: activity.start_time,
+    endTime: activity.end_time,
+    activityType: activity.activity_type,
+    durationMins: activity.duration_mins,
+    distanceKm: activity.distance_km ?? null,
+    label: activity.label ?? undefined,
+  }));
+}
+
+function fromSharedNormalizedActivities(
+  activities: SharedNormalizedActivity[],
+  context: {
+    importId: string;
+    companyId: string | null;
+    driverId: string | null;
+    vehicleId: string | null;
+    sourceType: "driver_card" | "vehicle_unit";
+  }
+): NormalizedActivityRow[] {
+  return activities.map((activity) => ({
+    import_id: context.importId,
+    company_id: context.companyId,
+    driver_id: activity.driverId ?? context.driverId,
+    vehicle_id: activity.vehicleId ?? context.vehicleId,
+    source: context.sourceType,
+    activity_type: activity.activityType === "rest" ? "break_rest" : activity.activityType,
+    start_time: activity.startTime,
+    end_time: activity.endTime,
+    duration_mins: activity.durationMins,
+    distance_km: activity.distanceKm ?? null,
+    confidence: "high",
+    label: activity.label ?? null,
+  }));
+}
+
+function buildDutyWindows(activities: NormalizedActivityRow[]): DutyWindow[] {
+  const firstActivity = activities[0];
+  const sharedWindows = buildSharedDutyWindows(
+    toSharedNormalizedActivities(
+      activities.map((activity, index) => ({
+        ...activity,
+        id: `${activity.activity_type}-${activity.start_time}-${index}`,
+      }))
+    )
+  );
+
+  return sharedWindows.map((window) => ({
+    ...window,
+    activities: window.activities.map((activity) => ({
+      import_id: firstActivity?.import_id ?? "",
+      company_id: firstActivity?.company_id ?? null,
+      driver_id: activity.driverId ?? firstActivity?.driver_id ?? null,
+      vehicle_id: activity.vehicleId ?? firstActivity?.vehicle_id ?? null,
+      source: firstActivity?.source ?? "driver_card",
+      activity_type: activity.activityType === "rest" ? "break_rest" : activity.activityType,
+      start_time: activity.startTime,
+      end_time: activity.endTime,
+      duration_mins: activity.durationMins,
+      distance_km: activity.distanceKm ?? null,
+      confidence: "high",
+      label: activity.label ?? null,
+    })),
+  }));
+}
+
 function buildDaySummaries(input: {
   importId: string;
   companyId: string | null;
   driverId: string | null;
   vehicleId: string | null;
-  activities: NormalizedActivityRow[];
+  dutyWindows: DutyWindow[];
   speedLogsCountByDate: Record<string, number>;
 }): DaySummaryRow[] {
-  const byDate = new Map<string, DaySummaryRow>();
-
-  for (const activity of input.activities) {
-    const date = activity.start_time.slice(0, 10);
-    const summary = byDate.get(date) ?? {
+  return buildSharedDaySummaries(input.dutyWindows).map((window) => ({
       import_id: input.importId,
       company_id: input.companyId,
       driver_id: input.driverId,
       vehicle_id: input.vehicleId,
-      summary_date: date,
-      driving_mins: 0,
-      work_mins: 0,
-      poa_mins: 0,
-      rest_mins: 0,
+      summary_date: window.date,
+      driving_mins: window.drivingMins,
+      work_mins: window.workMins,
+      poa_mins: window.poaMins,
+      rest_mins: window.restMins,
       app_driving_mins: null,
       findings_count: 0,
-      vu_event_count: input.speedLogsCountByDate[date] ?? 0,
-    };
-
-    if (activity.activity_type === "driving") summary.driving_mins += activity.duration_mins;
-    if (activity.activity_type === "work") summary.work_mins += activity.duration_mins;
-    if (activity.activity_type === "poa") summary.poa_mins += activity.duration_mins;
-    if (activity.activity_type === "break_rest") summary.rest_mins += activity.duration_mins;
-
-    byDate.set(date, summary);
-  }
-
-  return [...byDate.values()].sort((a, b) => a.summary_date.localeCompare(b.summary_date));
+      vu_event_count: input.speedLogsCountByDate[window.date] ?? 0,
+    }))
+    .sort((a, b) => a.summary_date.localeCompare(b.summary_date));
 }
 
 function buildFindings(input: {
@@ -536,73 +932,57 @@ function buildFindings(input: {
   driverId: string | null;
   vehicleId: string | null;
   sourceType: "driver_card" | "vehicle_unit";
+  dutyWindows: DutyWindow[];
   daySummaries: DaySummaryRow[];
   activities: NormalizedActivityRow[];
 }): FindingRow[] {
-  const findings: FindingRow[] = [];
+  const sharedEvaluation = evaluateSharedRuleFindings({
+    activities: input.activities.map((activity, index) => ({
+      id: `${activity.activity_type}-${activity.start_time}-${index}`,
+      startTime: activity.start_time,
+      endTime: activity.end_time,
+      activityType: activity.activity_type,
+      durationMins: activity.duration_mins,
+    })),
+    dutyWindows: input.dutyWindows.map((window) => ({
+      id: window.id,
+      dutyDate: window.duty_date,
+      dutyStart: window.duty_start,
+      dutyEnd: window.duty_end,
+      activities: window.activities.map((activity, index) => ({
+        id: `${activity.activity_type}-${activity.start_time}-${index}`,
+        startTime: activity.start_time,
+        endTime: activity.end_time,
+        activityType: activity.activity_type,
+        durationMins: activity.duration_mins,
+      })),
+      drivingMins: window.driving_mins,
+      workMins: window.work_mins,
+      poaMins: window.poa_mins,
+      restMins: window.rest_mins,
+    })),
+  });
 
   for (const summary of input.daySummaries) {
-    if (summary.driving_mins > 600) {
-      findings.push(makeFinding(input, {
-        ruleCode: "DRV_DAILY_10H_EXCEEDED",
-        title: "Daily driving exceeded 10 hours",
-        summary: `Driving recorded for ${summary.driving_mins} minutes on ${summary.summary_date}.`,
-        severity: "high",
-        status: "breach",
-        occurredAt: `${summary.summary_date}T23:59:59.000Z`,
-        periodStart: `${summary.summary_date}T00:00:00.000Z`,
-        periodEnd: `${summary.summary_date}T23:59:59.000Z`,
-        evidenceLabel: summary.summary_date,
-      }));
-      summary.findings_count += 1;
-    } else if (summary.driving_mins > 540) {
-      findings.push(makeFinding(input, {
-        ruleCode: "DRV_DAILY_9H_EXCEEDED",
-        title: "Daily driving exceeded 9 hours",
-        summary: `Driving recorded for ${summary.driving_mins} minutes on ${summary.summary_date}.`,
-        severity: "medium",
-        status: "warning",
-        occurredAt: `${summary.summary_date}T23:59:59.000Z`,
-        periodStart: `${summary.summary_date}T00:00:00.000Z`,
-        periodEnd: `${summary.summary_date}T23:59:59.000Z`,
-        evidenceLabel: summary.summary_date,
-      }));
-      summary.findings_count += 1;
-    }
+    summary.findings_count = sharedEvaluation.findingsPerDate[summary.summary_date] ?? 0;
   }
 
-  let continuousDriving = 0;
-  let continuousStart: string | null = null;
-
-  for (const activity of [...input.activities].sort((a, b) => a.start_time.localeCompare(b.start_time))) {
-    if (activity.activity_type === "driving") {
-      continuousDriving += activity.duration_mins;
-      continuousStart = continuousStart ?? activity.start_time;
-      if (continuousDriving > 270) {
-        findings.push(makeFinding(input, {
-          ruleCode: "DRV_CONTINUOUS_4H30_EXCEEDED",
-          title: "Continuous driving exceeded 4.5 hours",
-          summary: `A continuous driving block reached ${continuousDriving} minutes.`,
-          severity: "high",
-          status: "breach",
-          occurredAt: activity.end_time,
-          periodStart: continuousStart,
-          periodEnd: activity.end_time,
-          evidenceLabel: "Continuous driving block",
-        }));
-        continuousDriving = 0;
-        continuousStart = null;
-      }
-      continue;
-    }
-
-    if (activity.activity_type === "break_rest" && activity.duration_mins >= 45) {
-      continuousDriving = 0;
-      continuousStart = null;
-    }
-  }
-
-  return findings;
+  return sharedEvaluation.combinedFindings.map((finding) =>
+    makeFinding(input, {
+      ruleCode: finding.ruleCode,
+      summary: finding.summary,
+      severity: finding.severity,
+      status: finding.status,
+      occurredAt: finding.occurredAt,
+      periodStart: finding.periodStart,
+      periodEnd: finding.periodEnd,
+      legalBasis: finding.legalBasis,
+      evidenceLabel: finding.evidenceLabel,
+      evidenceKind: finding.evidenceKind,
+      evidenceRefId: finding.evidenceRefId,
+      metadata: finding.metadata,
+    })
+  );
 }
 
 function makeFinding(
@@ -615,14 +995,17 @@ function makeFinding(
   },
   finding: {
     ruleCode: string;
-    title: string;
     summary: string;
     severity: "high" | "medium";
     status: "breach" | "warning";
     occurredAt: string;
     periodStart: string;
     periodEnd: string;
+    legalBasis: string;
     evidenceLabel: string;
+    evidenceKind: "activity_segment" | "summary";
+    evidenceRefId: string;
+    metadata: Record<string, string | number | boolean | null>;
   }
 ): FindingRow {
   return {
@@ -634,15 +1017,54 @@ function makeFinding(
     severity: finding.severity,
     status: finding.status,
     rule_code: finding.ruleCode,
-    title: finding.title,
+    title: TACHO_RULE_TITLES[finding.ruleCode as keyof typeof TACHO_RULE_TITLES] ?? finding.ruleCode,
     summary: finding.summary,
-    legal_basis: null,
+    legal_basis: finding.legalBasis,
     occurred_at: finding.occurredAt,
     period_start: finding.periodStart,
     period_end: finding.periodEnd,
-    evidence_refs: [{ kind: "raw_file", refId: input.importId, label: finding.evidenceLabel }],
-    metadata: {},
+    evidence_refs: [{ kind: finding.evidenceKind, refId: finding.evidenceRefId, label: finding.evidenceLabel }],
+    metadata: finding.metadata,
   };
+}
+
+function buildReconciliationRows(input: {
+  importId: string;
+  companyId: string | null;
+  driverId: string | null;
+  vehicleId: string | null;
+  activities: NormalizedActivityRow[];
+  workSessions: WorkSessionRow[];
+}): ReconciliationRow[] {
+  if (!input.driverId) return [];
+
+  return buildSharedAppTachoReconciliationItems(
+    input.activities.map((activity, index) => ({
+      id: `${activity.activity_type}-${activity.start_time}-${index}`,
+      startTime: activity.start_time,
+      endTime: activity.end_time,
+      activityType: activity.activity_type,
+    })),
+    input.workSessions.map((session) => ({
+      startTime: session.start_time,
+      drivingMins: Math.max(0, Number(session.other_data?.driving ?? 0)),
+    }))
+  ).map((item) => ({
+    import_id: input.importId,
+    company_id: input.companyId,
+    driver_id: input.driverId,
+    vehicle_id: input.vehicleId,
+    recon_date: item.date,
+    status: item.status,
+    app_label: item.appLabel,
+    tacho_label: item.tachoLabel,
+    summary: item.summary,
+    app_driving_mins: item.appDrivingMins,
+    tacho_driving_mins: item.tachoDrivingMins,
+    metadata: {
+      derivedFrom: "app_tacho_day_compare",
+    },
+  }));
 }
 
 function buildTechnicalEvents(input: {
@@ -651,8 +1073,9 @@ function buildTechnicalEvents(input: {
   driverId: string | null;
   vehicleId: string | null;
   speedLogs: Array<{ file_id: string; timestamp: string; speed_kmh: number }>;
+  vuEvents: ExtractedVuEvent[];
 }): TechnicalEventRow[] {
-  return input.speedLogs
+  const overspeedEvents = input.speedLogs
     .filter((log) => log.speed_kmh >= 90)
     .map((log) => ({
       import_id: input.importId,
@@ -660,23 +1083,126 @@ function buildTechnicalEvents(input: {
       driver_id: input.driverId,
       vehicle_id: input.vehicleId,
       source: "vehicle_unit" as const,
-      severity: "medium" as const,
+      severity: log.speed_kmh >= 100 ? "high" as const : "medium" as const,
       status: "warning" as const,
       rule_code: "VU_OVERSPEED",
       title: "Overspeed event",
       summary: `Recorded speed ${log.speed_kmh} km/h.`,
+      legal_basis: "Vehicle Unit Event",
       occurred_at: log.timestamp,
       period_start: log.timestamp,
       period_end: log.timestamp,
       evidence_refs: [{ kind: "event", refId: input.importId, label: "Speed log" }],
-      metadata: { speedKmh: log.speed_kmh },
+      metadata: { speedKmh: log.speed_kmh, thresholdKmh: 90 },
     }));
+
+  const extractedEvents = input.vuEvents.map((event) => ({
+    import_id: input.importId,
+    company_id: input.companyId,
+    driver_id: input.driverId,
+    vehicle_id: input.vehicleId,
+    source: "vehicle_unit" as const,
+    severity: event.severity,
+    status: "warning" as const,
+    rule_code: event.ruleCode,
+    title: TACHO_RULE_TITLES[event.ruleCode],
+    summary: event.summary,
+    legal_basis: TACHO_RULE_LEGAL_BASIS[event.ruleCode],
+    occurred_at: event.timestamp,
+    period_start: event.timestamp,
+    period_end: event.endTimestamp,
+    evidence_refs: [{ kind: "event", refId: input.importId, label: event.evidenceLabel }],
+    metadata: {
+      ...event.metadata,
+      severitySource: "parser_event_text",
+    },
+  }));
+
+  return [...overspeedEvents, ...extractedEvents];
+}
+
+function buildVehicleMotionDiscrepancies(input: {
+  importId: string;
+  companyId: string | null;
+  driverId: string | null;
+  driverName: string | null;
+  vehicleId: string | null;
+  technicalEvents: TechnicalEventRow[];
+  findings: FindingRow[];
+}): VehicleMotionDiscrepancyRow[] {
+  const fromTechnicalEvents = input.technicalEvents
+    .filter((event) =>
+      [
+        "VU_DRIVING_WITHOUT_CARD",
+        "VU_CARD_INSERTION_WHILE_DRIVING",
+        "VU_CARD_CONFLICT",
+        "VU_MOTION_CONFLICT",
+      ].includes(event.rule_code)
+    )
+    .map((event) => ({
+      import_id: input.importId,
+      company_id: input.companyId,
+      driver_id: event.driver_id ?? input.driverId,
+      vehicle_id: event.vehicle_id ?? input.vehicleId,
+      discrepancy_date: event.occurred_at.slice(0, 10),
+      start_time: event.period_start,
+      end_time: event.period_end,
+      duration_mins: minutesBetween(event.period_start, event.period_end),
+      severity: event.severity,
+      status:
+        event.rule_code === "VU_DRIVING_WITHOUT_CARD"
+          ? "unassigned_motion"
+          : event.rule_code === "VU_CARD_INSERTION_WHILE_DRIVING"
+          ? "card_gap"
+          : event.rule_code === "VU_CARD_CONFLICT"
+          ? "driver_mismatch"
+          : "needs_review",
+      summary: event.summary,
+      linked_driver_name: input.driverName,
+      evidence_refs: event.evidence_refs,
+      metadata: {
+        ...event.metadata,
+        derivedFrom: "technical_event",
+      },
+    }));
+
+  const fromFindings = input.findings
+    .filter((finding) => finding.rule_code.startsWith("DISC_"))
+    .map((finding) => ({
+      import_id: input.importId,
+      company_id: input.companyId,
+      driver_id: finding.driver_id ?? input.driverId,
+      vehicle_id: finding.vehicle_id ?? input.vehicleId,
+      discrepancy_date: finding.occurred_at.slice(0, 10),
+      start_time: finding.period_start,
+      end_time: finding.period_end,
+      duration_mins: minutesBetween(finding.period_start, finding.period_end),
+      severity: finding.severity,
+      status: "driver_mismatch" as const,
+      summary: finding.summary,
+      linked_driver_name: input.driverName,
+      evidence_refs: finding.evidence_refs,
+      metadata: {
+        ...finding.metadata,
+        derivedFrom: "compliance_finding",
+      },
+    }));
+
+  const combined = [...fromTechnicalEvents, ...fromFindings];
+  const seen = new Set<string>();
+  return combined.filter((item) => {
+    const key = `${item.status}:${item.start_time}:${item.end_time}:${item.summary}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function buildComplianceSignals(input: {
   companyId: string | null;
   driverId: string;
   findings: FindingRow[];
+  reconciliationRows: ReconciliationRow[];
   generatedAt: string;
 }) {
   return SIGNAL_PERIODS.map((periodDays) => {
@@ -686,11 +1212,31 @@ function buildComplianceSignals(input: {
     const periodFindings = input.findings
       .filter((finding) => new Date(finding.occurred_at).getTime() >= since.getTime())
       .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+    const periodReconciliation = input.reconciliationRows.filter(
+      (row) => new Date(`${row.recon_date}T23:59:59.999Z`).getTime() >= since.getTime()
+    );
+    const reconciliationSummary = summarizeSharedReconciliation(
+      periodReconciliation.map((row) => ({
+        id: `recon-${row.recon_date}`,
+        status: row.status,
+        date: row.recon_date,
+        appLabel: row.app_label,
+        tachoLabel: row.tacho_label,
+        summary: row.summary,
+        appDrivingMins: row.app_driving_mins,
+        tachoDrivingMins: row.tacho_driving_mins,
+      }))
+    );
     const totalViolations = periodFindings.length;
     const averageScore = Math.max(
       0,
       100 - periodFindings.reduce((score, finding) => score + (finding.severity === "high" ? 12 : 8), 0)
     );
+    const reviewFocus = buildSignalReviewFocus({
+      findings: periodFindings,
+      reconciliationRows: periodReconciliation,
+      missingMileage: [],
+    });
 
     return {
       company_id: input.companyId,
@@ -707,6 +1253,8 @@ function buildComplianceSignals(input: {
         source: "tacho",
       })),
       missing_mileage: [],
+      reconciliation_summary: reconciliationSummary,
+      review_focus: reviewFocus,
       has_data: true,
       source: "normalized_findings",
       generated_at: input.generatedAt,
@@ -722,11 +1270,44 @@ function buildRiskSignals(input: {
     average_score: number;
     total_violations: number;
     missing_mileage: unknown[];
+    review_focus?: {
+      date: string;
+      kind: "violation" | "reconciliation" | "missing_mileage";
+      summary: string;
+    } | null;
+    reconciliation_summary?: {
+      matchedDays: number;
+      tachoOnlyDays: number;
+      appOnlyDays: number;
+      mismatchDurationDays: number;
+      mismatchActivityDays: number;
+      uncertainDays: number;
+      totalIssues: number;
+    };
   }>;
+  reconciliationRows: ReconciliationRow[];
   generatedAt: string;
 }) {
   return SIGNAL_PERIODS.map((periodDays) => {
     const compliance = input.complianceSignals.find((signal) => signal.period_days === periodDays);
+    const reconciliationSummary = compliance?.reconciliation_summary ?? summarizeSharedReconciliation(
+      input.reconciliationRows
+        .filter((row) => {
+          const since = new Date(input.generatedAt);
+          since.setUTCDate(since.getUTCDate() - periodDays);
+          return new Date(`${row.recon_date}T23:59:59.999Z`).getTime() >= since.getTime();
+        })
+        .map((row) => ({
+          id: `recon-${row.recon_date}`,
+          status: row.status,
+          date: row.recon_date,
+          appLabel: row.app_label,
+          tachoLabel: row.tacho_label,
+          summary: row.summary,
+          appDrivingMins: row.app_driving_mins,
+          tachoDrivingMins: row.tacho_driving_mins,
+        }))
+    );
     return {
       company_id: input.companyId,
       driver_id: input.driverId,
@@ -734,11 +1315,56 @@ function buildRiskSignals(input: {
       legal_compliance_score: compliance?.average_score ?? 100,
       violation_count: compliance?.total_violations ?? 0,
       missing_mileage_count: Array.isArray(compliance?.missing_mileage) ? compliance!.missing_mileage.length : 0,
-      app_mismatch_count: 0,
+      app_mismatch_count: reconciliationSummary.totalIssues,
+      reconciliation_summary: reconciliationSummary,
+      review_focus: compliance?.review_focus ?? buildSignalReviewFocus({
+        findings: [],
+        reconciliationRows: input.reconciliationRows.filter((row) => {
+          const since = new Date(input.generatedAt);
+          since.setUTCDate(since.getUTCDate() - periodDays);
+          return new Date(`${row.recon_date}T23:59:59.999Z`).getTime() >= since.getTime();
+        }),
+        missingMileage: [],
+      }),
       source: "normalized_findings",
       generated_at: input.generatedAt,
     };
   });
+}
+
+function buildSignalReviewFocus(input: {
+  findings: FindingRow[];
+  reconciliationRows: ReconciliationRow[];
+  missingMileage: Array<{ start: string; end: string }>;
+}) {
+  const firstFinding = input.findings[0];
+  if (firstFinding) {
+    return {
+      date: firstFinding.occurred_at.slice(0, 10),
+      kind: "violation",
+      summary: firstFinding.title,
+    };
+  }
+
+  const firstReconciliation = input.reconciliationRows.find((row) => row.status !== "matched");
+  if (firstReconciliation) {
+    return {
+      date: firstReconciliation.recon_date,
+      kind: "reconciliation",
+      summary: firstReconciliation.summary,
+    };
+  }
+
+  const firstMissingMileage = input.missingMileage[0];
+  if (firstMissingMileage) {
+    return {
+      date: firstMissingMileage.start.slice(0, 10),
+      kind: "missing_mileage",
+      summary: `Missing mileage gap from ${firstMissingMileage.start.slice(11, 16)} to ${firstMissingMileage.end.slice(11, 16)}.`,
+    };
+  }
+
+  return null;
 }
 
 function resolvePeriodBounds(activities: NormalizedActivityRow[]) {

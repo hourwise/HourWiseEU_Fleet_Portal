@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, Wrench, CheckCircle, X, Info, Save, Container, ShieldCheck, ShieldAlert, LifeBuoy, Bell, FileWarning } from 'lucide-react';
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
+import { useVehicleTachoSummary } from '../../hooks/useVehicleTachoSummary';
 
 interface Vehicle {
   id: string;
@@ -26,7 +27,15 @@ interface Vehicle {
   created_at: string;
 }
 
-export function VehicleManagement() {
+export function VehicleManagement({
+  onOpenVehicleTacho,
+  onOpenVehicleIncidents,
+  focusedVehicleId,
+}: {
+  onOpenVehicleTacho?: (vehicleId: string) => void;
+  onOpenVehicleIncidents?: (vehicleId: string) => void;
+  focusedVehicleId?: string;
+}) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -42,6 +51,7 @@ export function VehicleManagement() {
   const [openDefectRegs, setOpenDefectRegs] = useState<Set<string>>(new Set());
   const [complianceAlertsCount, setComplianceAlertsCount] = useState<Record<string, number>>({});
   const [pendingDocsCount, setPendingDocsCount] = useState<Record<string, number>>({});
+  const { data: tachoSummary } = useVehicleTachoSummary(profile?.company_id ?? undefined, selectedVehicle?.id);
 
   const loadVehicles = useCallback(async () => {
     try {
@@ -113,6 +123,15 @@ export function VehicleManagement() {
       loadVehicles();
     }
   }, [loadVehicles, profile?.company_id]);
+
+  useEffect(() => {
+    if (!focusedVehicleId || vehicles.length === 0) return;
+    const match = vehicles.find((entry) => entry.id === focusedVehicleId);
+    if (match) {
+      setSelectedVehicle(match);
+      setView('details');
+    }
+  }, [focusedVehicleId, vehicles]);
 
   const getStatusColor = (dateString: string | null) => {
     if (!dateString) return 'text-slate-400';
@@ -275,6 +294,61 @@ export function VehicleManagement() {
                   <div className={`text-lg font-black ${getStatusColor(selectedVehicle.insurance_expiry)}`}>
                     {selectedVehicle.insurance_expiry || 'NOT SET'}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 rounded-xl border border-blue-100 p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex-1">
+                  <h3 className="font-bold text-blue-900 flex items-center gap-2 uppercase tracking-wide text-sm">
+                    <Truck size={18} className="text-blue-600" /> Vehicle Unit Status
+                  </h3>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Last VU Download</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">{tachoSummary?.lastDownloadAt ? new Date(tachoSummary.lastDownloadAt).toLocaleString() : 'Not imported'}</p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Calibration Due</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">{selectedVehicle.tacho_calibration_due || 'Not set'}</p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">High Severity Issues</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">{tachoSummary?.highSeverityIssues ?? 0}</p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Unassigned Motion</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">{tachoSummary?.unassignedMotionCount ?? 0}</p>
+                    </div>
+                  </div>
+                  {tachoSummary?.latestReviewFocus?.summary ? (
+                    <div className="mt-4 rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Latest Review Focus</p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">{tachoSummary.latestReviewFocus.summary}</p>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => selectedVehicle && onOpenVehicleTacho?.(selectedVehicle.id)}
+                    disabled={!selectedVehicle || !onOpenVehicleTacho}
+                    className="rounded-xl bg-blue-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Open VU Analysis
+                  </button>
+                  <button
+                    onClick={() => selectedVehicle && setTriggerLogModal(true)}
+                    className="rounded-xl border border-blue-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition hover:bg-blue-100"
+                  >
+                    Open Maintenance Context
+                  </button>
+                  <button
+                    onClick={() => selectedVehicle && (onOpenVehicleIncidents ? onOpenVehicleIncidents(selectedVehicle.id) : setActiveIncidentVehicle(selectedVehicle.id))}
+                    className="rounded-xl border border-blue-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition hover:bg-blue-100"
+                  >
+                    Open Related Incidents
+                  </button>
                 </div>
               </div>
             </div>

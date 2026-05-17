@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
 import { scanDocument } from '../../lib/ocr';
+import { useDriverTachoSummary } from '../../hooks/useDriverTachoSummary';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Document = Database['public']['Tables']['driver_documents']['Row'];
@@ -16,6 +17,9 @@ interface DriverDetailsModalProps {
   driver: Profile;
   onClose: () => void;
   onSave: () => void;
+  onOpenDriverTacho?: (driverId: string) => void;
+  onOpenDriverCompliance?: (driverId: string) => void;
+  onOpenDriverTraining?: (driverId: string) => void;
 }
 
 interface DocumentSubmitPayload {
@@ -81,7 +85,14 @@ const LocationAnalysisMap = ({ driverId }: { driverId: string }) => {
   return <img src={mapUrl} alt="Heatmap" className="rounded-lg w-full" />;
 };
 
-export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsModalProps) {
+export function DriverDetailsModal({
+  driver,
+  onClose,
+  onSave,
+  onOpenDriverTacho,
+  onOpenDriverCompliance,
+  onOpenDriverTraining,
+}: DriverDetailsModalProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Profile>>(driver);
@@ -94,6 +105,7 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
   const tachoState = useDocumentUpload();
+  const { data: tachoSummary } = useDriverTachoSummary(driver.company_id ?? undefined, driver.id);
 
   const fetchDocuments = useCallback(async () => {
     const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id).order('uploaded_at', { ascending: false });
@@ -302,6 +314,69 @@ export function DriverDetailsModal({ driver, onClose, onSave }: DriverDetailsMod
               <div className="mt-6">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverDetails.labels.address')}</label>
                 <textarea name="full_address" value={formData.full_address || ''} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 bg-white font-medium" />
+              </div>
+            </section>
+
+            <section className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-blue-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <CreditCard size={14} /> Tachograph Status
+                  </h3>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Card Status</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">
+                        {tachoSummary?.downloadStatus ? tachoSummary.downloadStatus.replace('_', ' ') : 'No card download yet'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Last Download</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">
+                        {tachoSummary?.lastDownloadAt ? new Date(tachoSummary.lastDownloadAt).toLocaleString() : 'Not imported'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Truth Score</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">
+                        {typeof tachoSummary?.truthScore === 'number' ? `${tachoSummary.truthScore}%` : 'Awaiting tacho signal'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cross-check Issues</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">{tachoSummary?.crossCheckIssues ?? 0}</p>
+                    </div>
+                  </div>
+                  {tachoSummary?.latestReviewFocus?.summary ? (
+                    <div className="mt-4 rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Latest Review Focus</p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">{tachoSummary.latestReviewFocus.summary}</p>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => onOpenDriverTacho?.(driver.id)}
+                    disabled={!onOpenDriverTacho}
+                    className="rounded-xl bg-blue-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Open Driver Card Analysis
+                  </button>
+                  <button
+                    onClick={() => onOpenDriverCompliance?.(driver.id)}
+                    disabled={!onOpenDriverCompliance}
+                    className="rounded-xl border border-blue-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+                  >
+                    Open Compliance Actions
+                  </button>
+                  <button
+                    onClick={() => onOpenDriverTraining?.(driver.id)}
+                    disabled={!onOpenDriverTraining}
+                    className="rounded-xl border border-blue-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+                  >
+                    Open Training
+                  </button>
+                </div>
               </div>
             </section>
 

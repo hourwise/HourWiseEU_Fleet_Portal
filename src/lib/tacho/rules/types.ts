@@ -37,6 +37,12 @@ export interface TachoImportRecord {
   driverName?: string;
   vehicleReg?: string;
   summary?: string;
+  technicalEventCount?: number;
+  discrepancyCount?: number;
+  reconciliationIssueCount?: number;
+  highSeverityCount?: number;
+  discrepancyPreview?: VehicleMotionDiscrepancy[];
+  reconciliationPreview?: TachoReconciliationItem[];
 }
 
 export interface TachoEvidenceRef {
@@ -101,6 +107,22 @@ export interface TachoReconciliationItem {
   summary: string;
 }
 
+export interface TachoReconciliationSummary {
+  matchedDays: number;
+  tachoOnlyDays: number;
+  appOnlyDays: number;
+  mismatchDurationDays: number;
+  mismatchActivityDays: number;
+  uncertainDays: number;
+  totalIssues: number;
+}
+
+export interface TachoReviewFocus {
+  date: string;
+  kind: 'violation' | 'reconciliation' | 'missing_mileage';
+  summary: string;
+}
+
 export interface TachoDaySummary {
   date: string;
   drivingMins: number;
@@ -137,12 +159,28 @@ export interface VehicleUnitIdentity {
   periodEnd?: string;
 }
 
+export type VehicleDiscrepancyStatus = 'unassigned_motion' | 'card_gap' | 'driver_mismatch' | 'needs_review';
+
+export interface VehicleMotionDiscrepancy {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  durationMins: number;
+  severity: TachoFindingSeverity;
+  status: VehicleDiscrepancyStatus;
+  summary: string;
+  linkedDriverName?: string;
+  evidenceRefs?: TachoEvidenceRef[];
+}
+
 export interface DriverCardAnalysisData {
   identity: DriverCardIdentity;
   range: TachoAnalysisRange;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
   findings: TachoFinding[];
+  technicalEvents: TachoFinding[];
   reconciliation: TachoReconciliationItem[];
 }
 
@@ -153,6 +191,7 @@ export interface VehicleUnitAnalysisData {
   dailySummaries: TachoDaySummary[];
   findings: TachoFinding[];
   technicalEvents: TachoFinding[];
+  unassignedMotion: VehicleMotionDiscrepancy[];
 }
 
 export interface ParserDriverCardDownload {
@@ -201,6 +240,8 @@ export interface ParserDriverTachoComplianceSignal {
     durationMins: number;
     distanceKm: number;
   }[];
+  reconciliationSummary?: TachoReconciliationSummary;
+  reviewFocus?: TachoReviewFocus;
   hasData: boolean;
 }
 
@@ -211,6 +252,8 @@ export interface ParserDriverTachoRiskSignal {
   violationCount: number;
   missingMileageCount: number;
   appMismatchCount: number;
+  reconciliationSummary?: TachoReconciliationSummary;
+  reviewFocus?: TachoReviewFocus;
 }
 
 export interface TachoParserBundle {
@@ -222,7 +265,78 @@ export interface TachoParserBundle {
   activitySegments: TachoActivitySegment[];
   findings: TachoFinding[];
   technicalEvents: TachoFinding[];
+  reconciliation?: TachoReconciliationItem[];
+  vehicleMotionDiscrepancies?: VehicleMotionDiscrepancy[];
   daySummaries: TachoDaySummary[];
   driverComplianceSignals: ParserDriverTachoComplianceSignal[];
   driverRiskSignals: ParserDriverTachoRiskSignal[];
+}
+
+export type TachoRuleCode =
+  | 'DRV_CONTINUOUS_4H30_EXCEEDED'
+  | 'DRV_DAILY_9H_EXCEEDED'
+  | 'DRV_DAILY_10H_EXCEEDED'
+  | 'DRV_WEEKLY_56H_EXCEEDED'
+  | 'DRV_FORTNIGHT_90H_EXCEEDED'
+  | 'REST_DAILY_UNDER_9H'
+  | 'REST_DAILY_REDUCED'
+  | 'REST_WEEKLY_UNDER_24H'
+  | 'REST_WEEKLY_REDUCED'
+  | 'WTD_BREAK_AFTER_6H_MISSING'
+  | 'WTD_BREAK_AFTER_9H_MISSING'
+  | 'DATA_INVALID_ACTIVITY'
+  | 'DATA_OVERLAPPING_ACTIVITY'
+  | 'DISC_APP_TACHO_MISMATCH'
+  | 'VU_OVERSPEED'
+  | 'VU_MOTION_CONFLICT'
+  | 'VU_POWER_INTERRUPTION'
+  | 'VU_DRIVING_WITHOUT_CARD'
+  | 'VU_CARD_INSERTION_WHILE_DRIVING'
+  | 'VU_CARD_CONFLICT'
+  | 'VU_SENSOR_FAULT'
+  | 'VU_SECURITY_FAULT'
+  | 'VU_CALIBRATION_EVENT';
+
+export interface RuleActivitySegment {
+  id: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  startTime: string;
+  endTime: string;
+  activityType: 'driving' | 'work' | 'poa' | 'rest';
+  distanceKm?: number | null;
+  isManualEntry?: boolean;
+  source: 'raw_activity' | 'normalized_findings';
+}
+
+export interface RuleDutyWindow {
+  id: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  dutyDate: string;
+  dutyStart: string;
+  dutyEnd: string;
+  activities: RuleActivitySegment[];
+  drivingMins: number;
+  workMins: number;
+  poaMins: number;
+  restMins: number;
+}
+
+export interface RuleEvaluationInput {
+  driverId: string;
+  activities: RuleActivitySegment[];
+  vehicleId?: string | null;
+  source?: 'driver_card' | 'vehicle_unit';
+}
+
+export interface RuleEvaluationResult {
+  driverId: string;
+  vehicleId?: string | null;
+  source: 'driver_card' | 'vehicle_unit';
+  activities: RuleActivitySegment[];
+  dutyWindows: RuleDutyWindow[];
+  daySummaries: TachoDaySummary[];
+  findings: TachoFinding[];
+  dataQualityIssues: TachoFinding[];
 }

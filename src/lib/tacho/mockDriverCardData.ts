@@ -226,6 +226,54 @@ const findings: TachoFinding[] = [
   },
 ];
 
+const technicalEvents: TachoFinding[] = [
+  {
+    id: 'driver-vu-1',
+    source: 'vehicle_unit',
+    severity: 'high',
+    status: 'warning',
+    ruleCode: 'VU_DRIVING_WITHOUT_CARD',
+    title: 'Driving without card event',
+    summary: 'A linked VU event indicates vehicle motion without a detected card during the duty period tied to this driver.',
+    occurredAt: `${isoDay(4)}T09:05:00Z`,
+    periodStart: `${isoDay(4)}T08:58:00Z`,
+    periodEnd: `${isoDay(4)}T09:10:00Z`,
+    legalBasis: 'Vehicle Unit Event',
+    evidenceRefs: [{ kind: 'event', refId: 'vu-import-9021', label: 'Linked VU event' }],
+    metadata: { linkedRegNumber: 'HX24FLT' },
+  },
+  {
+    id: 'driver-vu-2',
+    source: 'vehicle_unit',
+    severity: 'medium',
+    status: 'warning',
+    ruleCode: 'VU_OVERSPEED',
+    title: 'Overspeed event',
+    summary: 'The linked vehicle unit recorded an overspeed event while the driver card was active in the same duty window.',
+    occurredAt: `${isoDay(1)}T12:18:00Z`,
+    periodStart: `${isoDay(1)}T12:18:00Z`,
+    periodEnd: `${isoDay(1)}T12:18:00Z`,
+    legalBasis: 'Vehicle Unit Event',
+    evidenceRefs: [{ kind: 'event', refId: 'vu-import-9024', label: 'Overspeed event' }],
+    metadata: { speedKmh: 96 },
+  },
+  {
+    id: 'driver-vu-3',
+    source: 'vehicle_unit',
+    severity: 'high',
+    status: 'warning',
+    ruleCode: 'VU_SECURITY_FAULT',
+    title: 'Security fault event',
+    summary: 'A linked vehicle unit security event should be reviewed alongside this driver’s duty records and vehicle access context.',
+    occurredAt: `${isoDay(0)}T04:55:00Z`,
+    periodStart: `${isoDay(0)}T04:55:00Z`,
+    periodEnd: `${isoDay(0)}T05:05:00Z`,
+    legalBasis: 'Vehicle Unit Technical Fault',
+    evidenceRefs: [{ kind: 'fault', refId: 'vu-import-9025-security', label: 'Security event' }],
+    metadata: { linkedRegNumber: 'HX24FLT' },
+  },
+];
+
 const reconciliation: TachoReconciliationItem[] = [
   {
     id: 'recon-1',
@@ -260,6 +308,7 @@ function metricsForRange(range: TachoAnalysisRange): TachoSummaryMetric[] {
     { label: `${rangeLabel} Driving Breaches`, value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '7' : '11', tone: 'warning' },
     { label: 'WTD Alerts', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : '8', tone: 'neutral' },
     { label: 'App/Tacho Mismatches', value: range === '7d' ? '2' : range === '30d' ? '5' : range === '3m' ? '8' : '10', tone: 'danger' },
+    { label: 'Linked VU Events', value: range === '7d' ? '3' : range === '30d' ? '5' : range === '3m' ? '8' : '12', tone: 'warning' },
     { label: 'Download Status', value: range === '6m' ? '1 overdue risk' : 'Due soon', tone: 'warning' },
   ];
 }
@@ -279,6 +328,7 @@ export function getMockDriverCardAnalysis(range: TachoAnalysisRange): DriverCard
     metrics: metricsForRange(range),
     dailySummaries,
     findings,
+    technicalEvents,
     reconciliation,
   };
 }

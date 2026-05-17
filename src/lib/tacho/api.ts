@@ -4,6 +4,9 @@ import type {
   ParserDriverTachoRiskSignal,
   TachoImportRecord,
   TachoParserBundle,
+  TachoAnalysisRange,
+  TachoReconciliationItem,
+  VehicleMotionDiscrepancy,
 } from './rules/types';
 import { adaptImportRecord } from './adapters';
 
@@ -18,6 +21,100 @@ interface CompanyTachoSignalsRow {
   driver_id: string;
   compliance_signal: ParserDriverTachoComplianceSignal | null;
   risk_signal: ParserDriverTachoRiskSignal | null;
+}
+
+function resolveRangeStart(range: TachoAnalysisRange) {
+  const start = new Date();
+  switch (range) {
+    case '30d':
+      start.setUTCDate(start.getUTCDate() - 30);
+      break;
+    case '3m':
+      start.setUTCMonth(start.getUTCMonth() - 3);
+      break;
+    case '6m':
+      start.setUTCMonth(start.getUTCMonth() - 6);
+      break;
+    default:
+      start.setUTCDate(start.getUTCDate() - 7);
+      break;
+  }
+  return start.toISOString();
+}
+
+async function fetchVehicleMotionDiscrepanciesByVehicle(
+  companyId: string,
+  vehicleId: string,
+  range: TachoAnalysisRange
+): Promise<VehicleMotionDiscrepancy[]> {
+  const { data, error } = await supabase
+    .from('tachograph_vehicle_motion_discrepancies' as any)
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('vehicle_id', vehicleId)
+    .gte('start_time', resolveRangeStart(range))
+    .order('start_time', { ascending: false });
+
+  if (error) throw error;
+
+  return ((data as any[] | null) ?? []).map((row) => ({
+    id: row.id,
+    date: row.discrepancy_date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    durationMins: row.duration_mins,
+    severity: row.severity,
+    status: row.status,
+    summary: row.summary,
+    linkedDriverName: row.linked_driver_name ?? undefined,
+    evidenceRefs: row.evidence_refs ?? [],
+  }));
+}
+
+async function fetchVehicleMotionDiscrepanciesByImport(
+  importId: string
+): Promise<VehicleMotionDiscrepancy[]> {
+  const { data, error } = await supabase
+    .from('tachograph_vehicle_motion_discrepancies' as any)
+    .select('*')
+    .eq('import_id', importId)
+    .order('start_time', { ascending: false });
+
+  if (error) throw error;
+
+  return ((data as any[] | null) ?? []).map((row) => ({
+    id: row.id,
+    date: row.discrepancy_date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    durationMins: row.duration_mins,
+    severity: row.severity,
+    status: row.status,
+    summary: row.summary,
+    linkedDriverName: row.linked_driver_name ?? undefined,
+    evidenceRefs: row.evidence_refs ?? [],
+  }));
+}
+
+async function fetchImportReconciliationByImport(
+  importId: string
+): Promise<TachoReconciliationItem[]> {
+  const { data, error } = await supabase
+    .from('tachograph_reconciliation_items' as any)
+    .select('*')
+    .eq('import_id', importId)
+    .order('recon_date', { ascending: false });
+
+  if (error) throw error;
+
+  return ((data as any[] | null) ?? []).map((row) => ({
+    id: row.id,
+    status: row.status,
+    date: row.recon_date,
+    appLabel: row.app_label,
+    tachoLabel: row.tacho_label,
+    summary: row.summary,
+  }));
 }
 
 export interface CompanyTachoSignalsResponse {
@@ -79,7 +176,13 @@ export async function fetchVehicleUnitAnalysisBundle(
 
   if (error) throw error;
 
-  return (data as TachoParserBundle | null) ?? null;
+  const bundle = (data as TachoParserBundle | null) ?? null;
+  if (!bundle) return null;
+
+  if (!Array.isArray(bundle.vehicleMotionDiscrepancies)) {
+    bundle.vehicleMotionDiscrepancies = await fetchVehicleMotionDiscrepanciesByVehicle(companyId, vehicleId, range);
+  }
+  return bundle;
 }
 
 export async function fetchTachoImportBundle(
@@ -93,7 +196,17 @@ export async function fetchTachoImportBundle(
 
   if (error) throw error;
 
-  return (data as TachoParserBundle | null) ?? null;
+  const bundle = (data as TachoParserBundle | null) ?? null;
+  if (!bundle) return null;
+
+  if (!Array.isArray(bundle.reconciliation) && bundle.importRecord?.sourceType === 'driver_card') {
+    bundle.reconciliation = await fetchImportReconciliationByImport(importId);
+  }
+
+  if (!Array.isArray(bundle.vehicleMotionDiscrepancies)) {
+    bundle.vehicleMotionDiscrepancies = await fetchVehicleMotionDiscrepanciesByImport(importId);
+  }
+  return bundle;
 }
 
 export async function fetchRecentTachoImports(

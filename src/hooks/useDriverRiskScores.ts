@@ -7,6 +7,7 @@ import {
   buildDriverTachoRiskSignal,
   type NormalizedDriverTachoRiskSignal,
 } from '../lib/tacho/normalizedSignals';
+import type { TachoReconciliationSummary, TachoReviewFocus } from '../lib/tacho/rules/types';
 
 export type RiskLabel = 'Low Risk' | 'Medium Risk' | 'High Risk' | 'Critical';
 export type RiskColour = 'green' | 'amber' | 'orange' | 'red';
@@ -30,6 +31,8 @@ export interface DriverTachoRiskSummary {
   violationCount: number;
   missingMileageCount: number;
   appMismatchCount: number;
+  reconciliationSummary?: TachoReconciliationSummary;
+  reviewFocus?: TachoReviewFocus;
   source: 'raw_activity' | 'normalized_findings';
 }
 

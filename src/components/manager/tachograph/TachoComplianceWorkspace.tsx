@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ElementType } from 'react';
 import { Activity, CreditCard, FileUp, ShieldAlert, Truck } from 'lucide-react';
 import { ComplianceScoreboard } from '../ComplianceScoreboard';
@@ -16,8 +16,40 @@ const TABS: { id: Tab; label: string; icon: ElementType }[] = [
   { id: 'vehicle_units', label: 'Vehicle Units', icon: Truck },
 ];
 
-export function TachoComplianceWorkspace({ onViewSession }: { onViewSession?: (driverId: string, date: string) => void }) {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+export function TachoComplianceWorkspace({
+  onViewSession,
+  onOpenDriverAnalysis,
+  onOpenPersonnelFile,
+  onOpenDriverCompliance,
+  onOpenDriverTraining,
+  onOpenFleetRecord,
+  onOpenVehicleMaintenance,
+  onOpenVehicleIncidents,
+  initialTab,
+  focusedVehicleId,
+  focusedDriverId,
+  focusedDate,
+}: {
+  onViewSession?: (driverId: string, date: string) => void;
+  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+  onOpenPersonnelFile?: (driverId: string) => void;
+  onOpenDriverCompliance?: (driverId: string) => void;
+  onOpenDriverTraining?: (driverId: string) => void;
+  onOpenFleetRecord?: (vehicleId: string) => void;
+  onOpenVehicleMaintenance?: (vehicleId: string) => void;
+  onOpenVehicleIncidents?: (vehicleId: string) => void;
+  initialTab?: Tab;
+  focusedVehicleId?: string;
+  focusedDriverId?: string;
+  focusedDate?: string;
+}) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'overview');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   return (
     <div className="space-y-6">
@@ -43,7 +75,7 @@ export function TachoComplianceWorkspace({ onViewSession }: { onViewSession?: (d
 
       {activeTab === 'overview' && (
         <div className="space-y-8">
-          <ComplianceScoreboard onViewSession={onViewSession} />
+          <ComplianceScoreboard onViewSession={onViewSession} onOpenDriverAnalysis={onOpenDriverAnalysis} />
           <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-start gap-3">
             <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
@@ -57,8 +89,24 @@ export function TachoComplianceWorkspace({ onViewSession }: { onViewSession?: (d
         </div>
       )}
       {activeTab === 'imports' && <TachoImportCentre />}
-      {activeTab === 'driver_cards' && <DriverCardAnalysis />}
-      {activeTab === 'vehicle_units' && <VehicleUnitAnalysis />}
+      {activeTab === 'driver_cards' && (
+        <DriverCardAnalysis
+          driverId={focusedDriverId}
+          focusedDate={focusedDate}
+          onOpenPersonnelFile={onOpenPersonnelFile}
+          onOpenComplianceActions={onOpenDriverCompliance}
+          onOpenTraining={onOpenDriverTraining}
+        />
+      )}
+      {activeTab === 'vehicle_units' && (
+        <VehicleUnitAnalysis
+          vehicleId={focusedVehicleId}
+          focusedDate={focusedDate}
+          onOpenFleetRecord={onOpenFleetRecord}
+          onOpenMaintenance={onOpenVehicleMaintenance}
+          onOpenIncidents={onOpenVehicleIncidents}
+        />
+      )}
     </div>
   );
 }

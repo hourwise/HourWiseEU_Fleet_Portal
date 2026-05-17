@@ -4,6 +4,7 @@ import type {
   TachoDaySummary,
   TachoFinding,
   TachoSummaryMetric,
+  VehicleMotionDiscrepancy,
   VehicleUnitAnalysisData,
 } from './rules/types';
 
@@ -139,6 +140,24 @@ const dailySummaries: TachoDaySummary[] = [
 
 const findings: TachoFinding[] = [
   {
+    id: 'vu-find-0',
+    source: 'vehicle_unit',
+    severity: 'medium',
+    status: 'warning',
+    ruleCode: 'DRV_WEEKLY_56H_EXCEEDED',
+    title: 'Vehicle activity exceeds weekly linked driving threshold',
+    summary: 'Rolling weekly VU activity suggests one linked driver exceeded the weekly driving limit and should be reviewed against card data.',
+    occurredAt: `${isoDay(0)}T18:00:00Z`,
+    periodStart: `${isoDay(6)}T05:30:00Z`,
+    periodEnd: `${isoDay(0)}T18:00:00Z`,
+    legalBasis: 'Drivers’ Hours',
+    evidenceRefs: [{ kind: 'summary', refId: 'vu-summary-week-1', label: 'Weekly vehicle summary' }],
+    metadata: { weeklyDrivingMinutes: 3420, thresholdMinutes: 3360 },
+  },
+];
+
+const technicalEvents: TachoFinding[] = [
+  {
     id: 'vu-find-1',
     source: 'vehicle_unit',
     severity: 'high',
@@ -151,6 +170,7 @@ const findings: TachoFinding[] = [
     periodEnd: `${isoDay(1)}T12:19:00Z`,
     legalBasis: 'Vehicle Unit Event',
     evidenceRefs: [{ kind: 'raw_file', refId: 'vu-import-2088', label: 'VU import' }],
+    metadata: { speedKmh: 96, thresholdKmh: 90 },
   },
   {
     id: 'vu-find-2',
@@ -163,28 +183,86 @@ const findings: TachoFinding[] = [
     occurredAt: `${isoDay(3)}T07:45:00Z`,
     periodStart: `${isoDay(3)}T07:44:00Z`,
     periodEnd: `${isoDay(3)}T07:46:00Z`,
+    legalBasis: 'Vehicle Unit Event',
     evidenceRefs: [{ kind: 'event', refId: 'vu-import-2086-motion', label: 'Motion conflict event' }],
+    metadata: { eventCategory: 'motion_conflict' },
   },
   {
     id: 'vu-find-3',
     source: 'vehicle_unit',
+    severity: 'high',
+    status: 'warning',
+    ruleCode: 'VU_DRIVING_WITHOUT_CARD',
+    title: 'Driving without card event',
+    summary: 'The VU recorded motion with no corresponding driver card present for the captured interval.',
+    occurredAt: `${isoDay(1)}T06:48:00Z`,
+    periodStart: `${isoDay(1)}T06:42:00Z`,
+    periodEnd: `${isoDay(1)}T06:51:00Z`,
+    legalBasis: 'Vehicle Unit Event',
+    evidenceRefs: [{ kind: 'event', refId: 'vu-import-2088-cardless', label: 'Driving without card event' }],
+    metadata: { durationMinutes: 9 },
+  },
+  {
+    id: 'vu-find-4',
+    source: 'vehicle_unit',
     severity: 'medium',
     status: 'warning',
-    ruleCode: 'VU_DOWNLOAD_OVERDUE',
-    title: 'Vehicle unit download overdue',
-    summary: 'The last completed VU download is beyond the expected compliance interval.',
-    occurredAt: `${isoDay(0)}T08:00:00Z`,
-    periodStart: `${isoDay(6)}T08:15:00Z`,
-    periodEnd: `${isoDay(0)}T08:00:00Z`,
-    evidenceRefs: [{ kind: 'raw_file', refId: 'vu-import-2088', label: 'VU import' }],
+    ruleCode: 'VU_POWER_INTERRUPTION',
+    title: 'Power interruption recorded',
+    summary: 'A short VU power interruption was logged and should be checked against workshop or electrical maintenance notes.',
+    occurredAt: `${isoDay(4)}T14:12:00Z`,
+    periodStart: `${isoDay(4)}T14:12:00Z`,
+    periodEnd: `${isoDay(4)}T14:15:00Z`,
+    legalBasis: 'Vehicle Unit Event',
+    evidenceRefs: [{ kind: 'fault', refId: 'vu-import-2084-power', label: 'Power interruption fault' }],
+    metadata: { faultCategory: 'power_interruption' },
+  },
+];
+
+const unassignedMotion: VehicleMotionDiscrepancy[] = [
+  {
+    id: 'vu-disc-1',
+    date: isoDay(1),
+    startTime: `${isoDay(1)}T06:42:00Z`,
+    endTime: `${isoDay(1)}T06:51:00Z`,
+    durationMins: 9,
+    severity: 'high',
+    status: 'unassigned_motion',
+    summary: 'Vehicle movement was recorded before any linked driver card was present in the VU.',
+    evidenceRefs: [{ kind: 'event', refId: 'vu-import-2088-cardless', label: 'Driving without card event' }],
+  },
+  {
+    id: 'vu-disc-2',
+    date: isoDay(3),
+    startTime: `${isoDay(3)}T07:44:00Z`,
+    endTime: `${isoDay(3)}T07:46:00Z`,
+    durationMins: 2,
+    severity: 'medium',
+    status: 'needs_review',
+    summary: 'Motion conflict event should be checked against sensor data and assigned driver context.',
+    evidenceRefs: [{ kind: 'event', refId: 'vu-import-2086-motion', label: 'Motion conflict event' }],
+  },
+  {
+    id: 'vu-disc-3',
+    date: isoDay(4),
+    startTime: `${isoDay(4)}T09:50:00Z`,
+    endTime: `${isoDay(4)}T10:08:00Z`,
+    durationMins: 18,
+    severity: 'medium',
+    status: 'driver_mismatch',
+    summary: 'Vehicle movement has no matching linked driver session in the current review window.',
+    linkedDriverName: 'Unassigned',
+    evidenceRefs: [{ kind: 'summary', refId: 'vu-day-gap-1', label: 'Vehicle day review' }],
   },
 ];
 
 function metricsForRange(range: TachoAnalysisRange): TachoSummaryMetric[] {
   return [
     { label: 'Overspeed Events', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : '7', tone: 'danger' },
-    { label: 'Technical Events', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : '9', tone: 'warning' },
-    { label: 'Unassigned Motion', value: range === '7d' ? '1 day' : range === '30d' ? '2 days' : range === '3m' ? '4 days' : '6 days', tone: 'warning' },
+    { label: 'Card / Driver Events', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : '4', tone: 'warning' },
+    { label: 'Technical Faults', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : '8', tone: 'warning' },
+    { label: 'Unassigned Motion', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : '9', tone: 'danger' },
+    { label: 'Compliance Findings', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : '4', tone: 'warning' },
     { label: 'Download Status', value: 'Overdue', tone: 'danger' },
   ];
 }
@@ -204,6 +282,7 @@ export function getMockVehicleUnitAnalysis(range: TachoAnalysisRange): VehicleUn
     metrics: metricsForRange(range),
     dailySummaries,
     findings,
-    technicalEvents: findings,
+    technicalEvents,
+    unassignedMotion,
   };
 }

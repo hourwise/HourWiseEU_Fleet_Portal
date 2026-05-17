@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { AlertTriangle, ChevronRight, GraduationCap } from 'lucide-react';
+import { AlertTriangle, ChevronRight, GraduationCap, Link2, ShieldAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCompanyCompliance } from '../../hooks/useCompanyCompliance';
 
@@ -13,7 +13,13 @@ interface DriverWarning {
   days_remaining: number;
 }
 
-export function DriverComplianceSnapshot({ onAction }: { onAction: () => void }) {
+export function DriverComplianceSnapshot({
+  onAction,
+  onReviewDriver,
+}: {
+  onAction: () => void;
+  onReviewDriver?: (driverId: string, focusedDate?: string) => void;
+}) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const [warnings, setWarnings] = useState<DriverWarning[]>([]);
@@ -116,8 +122,44 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
   const tachoAlertCount = useMemo(
     () =>
       combinedSummary.filter(
-        (driver) => driver.tachoSummary.totalViolations > 0 || driver.tachoSummary.missingMileage.length > 0
+        (driver) =>
+          driver.tachoSummary.totalViolations > 0 ||
+          driver.tachoSummary.missingMileage.length > 0 ||
+          driver.tachoSummary.reconciliationSummary.totalIssues > 0
       ).length,
+    [combinedSummary]
+  );
+
+  const reconciliationIssueCount = useMemo(
+    () =>
+      combinedSummary.reduce(
+        (total, driver) => total + driver.tachoSummary.reconciliationSummary.totalIssues,
+        0
+      ),
+    [combinedSummary]
+  );
+
+  const tachoReviewQueue = useMemo(
+    () =>
+      combinedSummary
+        .filter(
+          (driver) =>
+            driver.tachoSummary.totalViolations > 0 ||
+            driver.tachoSummary.missingMileage.length > 0 ||
+            driver.tachoSummary.reconciliationSummary.totalIssues > 0
+        )
+        .sort((left, right) => {
+          const rightWeight =
+            right.tachoSummary.reconciliationSummary.totalIssues +
+            right.tachoSummary.totalViolations +
+            right.tachoSummary.missingMileage.length;
+          const leftWeight =
+            left.tachoSummary.reconciliationSummary.totalIssues +
+            left.tachoSummary.totalViolations +
+            left.tachoSummary.missingMileage.length;
+          return rightWeight - leftWeight;
+        })
+        .slice(0, 5),
     [combinedSummary]
   );
 
@@ -137,9 +179,73 @@ export function DriverComplianceSnapshot({ onAction }: { onAction: () => void })
 
       <div className="px-4 py-2 border-b border-brand-border/70 bg-brand-dark/30 flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
         <span className="text-slate-400">App Docs &amp; Licence Alerts</span>
-        <span className={tachoAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'}>
-          Tacho Alerts: {tachoAlertCount}
-        </span>
+        <div className="text-right">
+          <span className={tachoAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+            Tacho Alerts: {tachoAlertCount}
+          </span>
+          <p className="text-[9px] font-black text-slate-500 mt-1">Cross-check Issues: {reconciliationIssueCount}</p>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 border-b border-brand-border/70 bg-brand-dark/20">
+        <div className="flex items-center gap-2 mb-2">
+          <ShieldAlert className="w-4 h-4 text-amber-400" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tacho Review Queue</p>
+        </div>
+        {tachoReviewQueue.length === 0 ? (
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+            No open tacho review drivers in the current manager snapshot window.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {tachoReviewQueue.map((driver) => (
+              <button
+                key={driver.driverId}
+                onClick={() => {
+                  if (onReviewDriver) {
+                    onReviewDriver(
+                      driver.driverId,
+                      driver.tachoSummary.reviewFocus?.date
+                        ?? driver.tachoSummary.recentViolations[0]?.date
+                        ?? driver.tachoSummary.missingMileage[0]?.start?.slice(0, 10)
+                    );
+                    return;
+                  }
+                  onAction();
+                }}
+                className="w-full rounded-lg border border-brand-border bg-brand-dark/30 p-3 text-left hover:bg-brand-dark/50 transition"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-white">{driver.driverName}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {driver.tachoSummary.reconciliationSummary.totalIssues} cross-check • {driver.tachoSummary.totalViolations} tacho alert
+                      {driver.tachoSummary.totalViolations === 1 ? '' : 's'} • {driver.tachoSummary.missingMileage.length} missing mileage
+                    </p>
+                    {driver.tachoSummary.reviewFocus?.summary ? (
+                      <p className="mt-1 text-[11px] text-slate-500">{driver.tachoSummary.reviewFocus.summary}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
+                      driver.tachoSummary.reconciliationSummary.tachoOnlyDays > 0
+                        ? 'bg-red-500/10 text-red-400'
+                        : driver.tachoSummary.reconciliationSummary.totalIssues > 0
+                        ? 'bg-amber-500/10 text-amber-400'
+                        : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {driver.tachoSummary.reconciliationSummary.tachoOnlyDays > 0 ? 'Tacho Only' : driver.tachoSummary.reconciliationSummary.totalIssues > 0 ? 'Cross-check' : 'Review'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      <Link2 className="w-3 h-3" />
+                      Open driver card
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="p-2 max-h-[300px] overflow-y-auto">

@@ -12,6 +12,11 @@ interface UseVehicleUnitAnalysisOptions {
   fallbackToMock?: boolean;
 }
 
+interface VehicleUnitAnalysisEmptyState {
+  title: string;
+  guidance: string;
+}
+
 export function useVehicleUnitAnalysis(
   range: TachoAnalysisRange,
   options?: UseVehicleUnitAnalysisOptions
@@ -20,6 +25,8 @@ export function useVehicleUnitAnalysis(
   const [data, setData] = useState<VehicleUnitAnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emptyState, setEmptyState] = useState<VehicleUnitAnalysisEmptyState | null>(null);
+  const [isMock, setIsMock] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +34,8 @@ export function useVehicleUnitAnalysis(
     const load = async () => {
       setLoading(true);
       setError(null);
+      setEmptyState(null);
+      setIsMock(false);
 
       const companyId = options?.companyId ?? profile?.company_id ?? undefined;
       const shouldUseLive = options?.useLive !== false && !!companyId;
@@ -39,10 +48,33 @@ export function useVehicleUnitAnalysis(
             if (bundle) {
               if (!cancelled) {
                 setData(adaptVehicleBundleToAnalysis(bundle, range));
+                setIsMock(false);
                 setLoading(false);
               }
               return;
             }
+          }
+
+          if (options?.vehicleId) {
+            if (!cancelled) {
+              setData(null);
+              setEmptyState({
+                title: 'No vehicle-unit data found for this vehicle',
+                guidance: 'This vehicle can be selected, but no imported VU bundle matched it yet. Upload a VU file or pick another vehicle.',
+              });
+            }
+            return;
+          }
+
+          if (!resolvedVehicleId) {
+            if (!cancelled) {
+              setData(null);
+              setEmptyState({
+                title: 'No vehicle-unit downloads imported yet',
+                guidance: 'Import a VU file to populate the live vehicle-unit workspace for this fleet.',
+              });
+            }
+            return;
           }
         }
 
@@ -52,6 +84,7 @@ export function useVehicleUnitAnalysis(
 
         if (!cancelled) {
           setData(getMockVehicleUnitAnalysis(range));
+          setIsMock(true);
         }
       } catch (err) {
         if (!cancelled) {
@@ -60,6 +93,7 @@ export function useVehicleUnitAnalysis(
             setData(null);
           } else {
             setData(getMockVehicleUnitAnalysis(range));
+            setIsMock(true);
             setError(null);
           }
         }
@@ -77,5 +111,5 @@ export function useVehicleUnitAnalysis(
     };
   }, [options?.companyId, options?.fallbackToMock, options?.useLive, options?.vehicleId, profile?.company_id, range]);
 
-  return { data, loading, error };
+  return { data, loading, error, emptyState, isMock };
 }

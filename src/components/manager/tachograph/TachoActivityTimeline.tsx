@@ -9,6 +9,11 @@ interface TachoActivityTimelineProps {
     date: Date;
     activities: TachoActivitySegment[];
     markers?: number;
+    markerGroups?: {
+      label: string;
+      count: number;
+      tone: 'danger' | 'warning' | 'neutral';
+    }[];
   }[];
   selectedDate?: Date;
   onSelectDate?: (date: Date) => void;
@@ -158,11 +163,23 @@ function MultiDayTimeline({
                     {day.activities.length} activity blocks
                   </p>
                 </div>
-                {typeof day.markers === 'number' && day.markers > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black uppercase tracking-widest">
-                    {day.markers} marker{day.markers === 1 ? '' : 's'}
-                  </span>
-                )}
+                <div className="flex flex-wrap justify-end gap-2">
+                  {day.markerGroups?.filter((group) => group.count > 0).map((group) => (
+                    <span
+                      key={`${day.date.toISOString()}-${group.label}`}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getMarkerToneClass(group.tone)}`}
+                    >
+                      {group.label}: {group.count}
+                    </span>
+                  ))}
+                  {(!day.markerGroups || day.markerGroups.every((group) => group.count === 0)) &&
+                    typeof day.markers === 'number' &&
+                    day.markers > 0 && (
+                      <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black uppercase tracking-widest">
+                        {day.markers} marker{day.markers === 1 ? '' : 's'}
+                      </span>
+                    )}
+                </div>
               </div>
 
               <div className="relative w-full h-10 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
@@ -209,5 +226,16 @@ function getRangeActivityColor(type: TachoActivitySegment['activityType']) {
       return 'bg-slate-300';
     default:
       return 'bg-slate-200';
+  }
+}
+
+function getMarkerToneClass(tone: 'danger' | 'warning' | 'neutral') {
+  switch (tone) {
+    case 'danger':
+      return 'bg-rose-100 text-rose-700';
+    case 'warning':
+      return 'bg-amber-100 text-amber-700';
+    default:
+      return 'bg-slate-100 text-slate-700';
   }
 }

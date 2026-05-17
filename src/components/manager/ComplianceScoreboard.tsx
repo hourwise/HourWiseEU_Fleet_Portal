@@ -15,6 +15,7 @@ import type { DriverComplianceSummary, DriverComplianceSourceSummary } from '../
 
 interface ComplianceScoreboardProps {
   onViewSession?: (driverId: string, date: string) => void;
+  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
 }
 
 const getScoreColor = (score: number): { text: string; bg: string; border: string; lightBg: string } => {
@@ -179,7 +180,7 @@ function RaiseInfringementModal({
 
 // ─── Main scoreboard ──────────────────────────────────────────────────────────
 
-export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProps) {
+export function ComplianceScoreboard({ onViewSession, onOpenDriverAnalysis }: ComplianceScoreboardProps) {
   const { profile } = useAuth();
   const { t } = useTranslation();
   const { appSummary, tachoSummary, combinedSummary, loading } = useCompanyCompliance(profile?.company_id ?? undefined, 14);
@@ -221,10 +222,25 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
     const appCrossCheckAlerts = combinedSummary.filter(
       (driver) =>
         driver.tachoSummary.hasData &&
-        (driver.appSummary.totalViolations > 0 || driver.tachoSummary.missingMileage.length > 0)
+        (
+          driver.tachoSummary.reconciliationSummary.totalIssues > 0 ||
+          driver.appSummary.totalViolations > 0 ||
+          driver.tachoSummary.missingMileage.length > 0
+        )
     ).length;
+    const reconciliationTotals = combinedSummary.reduce(
+      (totals, driver) => {
+        const summary = driver.tachoSummary.reconciliationSummary;
+        totals.tachoOnlyDays += summary.tachoOnlyDays;
+        totals.appOnlyDays += summary.appOnlyDays;
+        totals.mismatchDurationDays += summary.mismatchDurationDays;
+        totals.totalIssues += summary.totalIssues;
+        return totals;
+      },
+      { tachoOnlyDays: 0, appOnlyDays: 0, mismatchDurationDays: 0, totalIssues: 0 }
+    );
 
-    return { verifiedDrivers, appOnlyDrivers, appCrossCheckAlerts };
+    return { verifiedDrivers, appOnlyDrivers, appCrossCheckAlerts, reconciliationTotals };
   }, [combinedSummary, driverRows, tachoSummary]);
 
   if (loading) {
@@ -309,6 +325,9 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
         <div className="text-right">
           <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Cross-check alerts</p>
           <p className="text-2xl font-black text-blue-900">{sourceStats.appCrossCheckAlerts}</p>
+          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-2">
+            {sourceStats.reconciliationTotals.tachoOnlyDays} tacho-only · {sourceStats.reconciliationTotals.appOnlyDays} app-only · {sourceStats.reconciliationTotals.mismatchDurationDays} duration mismatch
+          </p>
         </div>
       </div>
 
@@ -331,6 +350,10 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
               const colors = getScoreColor(driver.truthScore);
               const appDriver = appSummary.find((entry) => entry.driverId === driver.driverId);
               const tachoDriver = tachoSummary.find((entry) => entry.driverId === driver.driverId);
+              const latestTachoReviewDate =
+                driver.tachoSummary.reviewFocus?.date ??
+                driver.tachoSummary.recentViolations[0]?.date ??
+                driver.missingMileage[0]?.start?.slice(0, 10);
 
               return (
                 <div key={driver.driverId} className="transition-colors hover:bg-slate-50/30">
@@ -386,10 +409,28 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                               <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">
                                 {driver.truthSource === 'tacho' ? 'Verified Tacho Findings (14 Days)' : t('compliance.recentActivity', 'Recent App Findings (14 Days)')}
                               </h4>
-                              {driver.truthSource === 'tacho' && (
-                                <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter">Source Of Truth</span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {driver.truthSource === 'tacho' && (
+                                  <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter">Source Of Truth</span>
+                                )}
+                                {driver.truthSource === 'tacho' && onOpenDriverAnalysis && latestTachoReviewDate && (
+                                  <button
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      onOpenDriverAnalysis(driver.driverId, latestTachoReviewDate);
+                                    }}
+                                    className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
+                                  >
+                                    Open Tacho Day
+                                  </button>
+                                )}
+                              </div>
                             </div>
+                            {driver.tachoSummary.reviewFocus?.summary && (
+                              <div className="px-4 py-2 border-b border-slate-100 bg-blue-50/60 text-[11px] text-blue-900 font-medium">
+                                Review focus: {driver.tachoSummary.reviewFocus.summary}
+                              </div>
+                            )}
 
                             {driver.truthRecentViolations.length === 0 ? (
                               <div className="p-8 text-center">
@@ -427,6 +468,17 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('compliance.dayScore', 'Day Score')}</p>
                                           <p className={`font-bold ${getScoreColor(v.score).text}`}>{v.score}%</p>
                                         </div>
+                                        {v.source === 'tacho' && onOpenDriverAnalysis && (
+                                          <button
+                                            onClick={event => {
+                                              event.stopPropagation();
+                                              onOpenDriverAnalysis(driver.driverId, v.date);
+                                            }}
+                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                                          >
+                                            <Clock size={11} /> Open Day
+                                          </button>
+                                        )}
                                         <button
                                           onClick={e => {
                                             e.stopPropagation();
@@ -480,6 +532,39 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                             </p>
                           </div>
 
+                          {driver.tachoSummary.reconciliationSummary.totalIssues > 0 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between gap-3 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                                  <h4 className="text-sm font-black text-amber-900 uppercase tracking-widest">App / Tacho Cross-check</h4>
+                                </div>
+                                {onOpenDriverAnalysis && latestTachoReviewDate && (
+                                  <button
+                                    onClick={() => onOpenDriverAnalysis(driver.driverId, latestTachoReviewDate)}
+                                    className="text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900"
+                                  >
+                                    Review In Driver Card
+                                  </button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-white/80 rounded p-3 border border-amber-100">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Tacho Only</p>
+                                  <p className="text-lg font-black text-slate-900">{driver.tachoSummary.reconciliationSummary.tachoOnlyDays}</p>
+                                </div>
+                                <div className="bg-white/80 rounded p-3 border border-amber-100">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">App Only</p>
+                                  <p className="text-lg font-black text-slate-900">{driver.tachoSummary.reconciliationSummary.appOnlyDays}</p>
+                                </div>
+                                <div className="bg-white/80 rounded p-3 border border-amber-100">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Duration Delta</p>
+                                  <p className="text-lg font-black text-slate-900">{driver.tachoSummary.reconciliationSummary.mismatchDurationDays}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Missing Mileage Alerts */}
                           {driver.missingMileage && driver.missingMileage.length > 0 && (
                             <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
@@ -489,7 +574,7 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                               </div>
                               <div className="space-y-2">
                                 {driver.missingMileage.map((gap, i) => (
-                                  <div key={i} className="bg-white/80 rounded p-2 flex items-center justify-between border border-rose-100">
+                                  <div key={i} className="bg-white/80 rounded p-2 flex items-center justify-between gap-3 border border-rose-100">
                                     <div className="flex items-center gap-3">
                                       <Navigation className="w-4 h-4 text-rose-500" />
                                       <div>
@@ -499,7 +584,17 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                                         <p className="text-[10px] text-slate-500">{gap.durationMins} mins · {gap.distanceKm} km</p>
                                       </div>
                                     </div>
-                                    <span className="text-[10px] font-black text-rose-600 uppercase tracking-tighter">No App Session</span>
+                                    <div className="flex items-center gap-2">
+                                      {onOpenDriverAnalysis && (
+                                        <button
+                                          onClick={() => onOpenDriverAnalysis(driver.driverId, gap.start.slice(0, 10))}
+                                          className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
+                                        >
+                                          Open Day
+                                        </button>
+                                      )}
+                                      <span className="text-[10px] font-black text-rose-600 uppercase tracking-tighter">No App Session</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -537,7 +632,14 @@ export function ComplianceScoreboard({ onViewSession }: ComplianceScoreboardProp
                                     <MapPin size={14} className="text-slate-400" />
                                     <span className="text-[10px] font-bold text-slate-500 uppercase">Tacho Source: Verified card / VU import</span>
                                   </div>
-                                  <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">
+                                  <button
+                                    onClick={() => {
+                                      if (onOpenDriverAnalysis && latestTachoReviewDate) {
+                                        onOpenDriverAnalysis(driver.driverId, latestTachoReviewDate);
+                                      }
+                                    }}
+                                    className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                                  >
                                     View Full 28-Day Analysis
                                   </button>
                                 </div>
