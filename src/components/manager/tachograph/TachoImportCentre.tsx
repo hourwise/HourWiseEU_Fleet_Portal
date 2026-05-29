@@ -1,11 +1,17 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, CreditCard, FileUp, Truck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTachoImports } from '../../../hooks/useTachoImports';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
+import { TachoReaderHelperPanel } from './TachoReaderHelperPanel';
+import { TachoUploadZone } from './TachoUploadZone';
 
-export function TachoImportCentre() {
-  const { data, loading, error } = useTachoImports();
+export function TachoImportCentre({
+  onOpenDriverAnalysis,
+}: {
+  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+}) {
+  const { data, loading, error, reload } = useTachoImports();
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
   const selectedImport = useMemo(
     () => data.find((item) => item.id === selectedImportId) ?? data[0] ?? null,
@@ -15,7 +21,7 @@ export function TachoImportCentre() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="flex flex-col gap-6">
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tacho Import Centre</p>
             <h2 className="text-3xl font-black text-slate-900 mt-1">Import Driver Cards And VU Files</h2>
@@ -23,10 +29,11 @@ export function TachoImportCentre() {
               The import queue now surfaces unassigned motion, driver-link discrepancies, and app-vs-tacho cross-check issues directly in the import workflow.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest transition shadow-sm shadow-blue-200">
-            <FileUp size={16} />
-            Upload Files
-          </button>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1.25fr,1fr] gap-6">
+            <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} />
+            <TachoUploadZone onUploaded={reload} />
+          </div>
         </div>
       </div>
 
@@ -144,7 +151,7 @@ export function TachoImportCentre() {
         <InfoCard
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
           title="Driver card flow"
-          text="Card-reader live progress will map onto the same import lifecycle later, so this screen can stay stable when the desktop helper lands."
+          text="The same import lifecycle now supports both the desktop helper polling path and the manual upload fallback."
         />
         <InfoCard
           icon={<AlertTriangle className="w-5 h-5 text-amber-600" />}

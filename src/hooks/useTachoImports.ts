@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchRecentTachoImports, fetchTachoImportBundle } from '../lib/tacho/api';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../lib/tacho/rules/types';
@@ -117,6 +117,11 @@ export function useTachoImports(options?: UseTachoImportsOptions) {
   const [data, setData] = useState<TachoImportRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const reload = useCallback(() => {
+    setReloadKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +196,7 @@ export function useTachoImports(options?: UseTachoImportsOptions) {
     return () => {
       cancelled = true;
     };
-  }, [options?.companyId, options?.fallbackToMock, options?.limit, options?.useLive, profile?.company_id]);
+  }, [options?.companyId, options?.fallbackToMock, options?.limit, options?.useLive, profile?.company_id, reloadKey]);
 
-  return { data, loading, error };
+  return { data, loading, error, reload };
 }

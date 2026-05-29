@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, History } from 'lucide-react';
 
-export function TachoUploadZone() {
+export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
   const { profile } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,26 +37,27 @@ export function TachoUploadZone() {
 
         // 2. Insert record into database to trigger processing
         const { error: dbError } = await supabase
-          .from('tachograph_files' as any)
+          .from('tachograph_files' as never)
           .insert({
             company_id: profile.company_id,
             filename: file.name,
             file_path: filePath,
             file_type: fileExt,
             status: 'pending'
-          } as any);
+          } as never);
 
         if (dbError) throw dbError;
       }
 
       setSuccess(true);
-    } catch (err: any) {
+      onUploaded?.();
+    } catch (err: unknown) {
       console.error('Upload error:', err);
-      setError(err.message || 'Failed to upload file');
+      setError(err instanceof Error ? err.message : 'Failed to upload file');
     } finally {
       setUploading(false);
     }
-  }, [profile]);
+  }, [onUploaded, profile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -72,7 +73,7 @@ export function TachoUploadZone() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900">Import Tachograph Data</h3>
-            <p className="text-sm text-slate-500 font-medium">Upload .DDD or .V1B files for automated compliance analysis</p>
+            <p className="text-sm text-slate-500 font-medium">Upload card or VU files when the desktop helper is unavailable or a manual import is preferred.</p>
           </div>
           <div className="p-2 bg-blue-50 rounded-lg">
             <FileText className="w-6 h-6 text-blue-600" />
@@ -107,7 +108,7 @@ export function TachoUploadZone() {
                isDragActive ? 'Drop files here' : 'Drag & drop tachograph files'}
             </p>
             <p className="text-sm text-slate-500 font-medium">
-              Supports .DDD, .V1B, .C1B (Max 50MB)
+              Supports .DDD, .V1B, .C1B, .TGD, .ESM (Max 50MB)
             </p>
 
             {!uploading && !success && !error && (

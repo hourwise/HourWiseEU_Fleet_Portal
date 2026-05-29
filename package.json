@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "tacho:helper:mock": "node tools/tacho-reader-helper/mock-helper.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:rules": "vitest run src/lib/tacho/rules/engine.test.ts src/lib/tacho/rules/reconciliation.test.ts src/lib/tacho/adapters.test.ts"
   },

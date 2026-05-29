@@ -39,12 +39,19 @@ Based on the current frontend and this implementation pass:
   - navigation is grouped into Dashboard / People / Fleet / Compliance / Reports / Settings
   - legacy modules remain reachable through grouped subnavigation
   - tacho destinations are consolidated under the compliance workspace
+- Phase 8 is now scaffolded in frontend:
+  - the import centre includes a reader-helper panel that polls a local helper endpoint
+  - helper operator actions and a localhost API contract are now defined in-repo
+  - a local mock helper is now available for UI testing without the Windows executable
+  - mock-only debug controls are now exposed in the reader panel when the mock helper is detected
+  - successful helper completion can auto-open focused driver analysis
+  - the manual upload fallback now sits beside the helper workflow on the same page
 
 Still external or not fully executable from this repo alone:
 
+- helper executable and localhost protocol implementation
 - backend deployment confirmation
 - real-file regression / parser validation
-- reader helper / desktop flow
 - release hardening, monitoring, RLS review, and UAT
 
 ---
@@ -81,7 +88,7 @@ The intended end state is:
 | 5 | Finish analysis workspaces | Largely complete in frontend | Explicit driver/vehicle targeting, selected-day context, follow-up actions, and stronger empty states are now in place. |
 | 6 | Embed tacho across portal | Largely complete in frontend | Driver and vehicle record integration, training links, infringement review linking, and focused tacho evidence exports are now in place. |
 | 7 | Navigation cleanup | Functionally complete in frontend | Grouped top-level workspaces and consolidated compliance destinations are now implemented while keeping legacy reachability. |
-| 8 | Reader helper | Not started | Live card-reader workflow still planned. |
+| 8 | Reader helper | Frontend scaffold started | Import-centre helper polling, auto-open wiring, and upload fallback are now in place. The Windows helper itself still needs to be built and validated. |
 | 9 | Hardening and release | Not started | Real file regression set, monitoring, RLS review, and rollout prep still to do. |
 
 ---
@@ -488,11 +495,14 @@ Primary design:
 - Define process model for Windows helper.
 - Define localhost/API handshake with the portal.
 - Define failure handling and fallback.
+- Initial contract doc now exists at `docs/tacho-reader-helper-contract.md`.
+- Local mock helper now exists at `tools/tacho-reader-helper/mock-helper.mjs` for frontend testing.
 
 #### 8.2 Reader page in portal
 
 - Build card-reader page state machine.
 - Keep file-upload fallback on same page.
+- Frontend scaffold is now in place with helper polling plus start/cancel command hooks.
 
 #### 8.3 Progress reporting
 
