@@ -44,6 +44,11 @@ Based on the current frontend and this implementation pass:
   - helper operator actions and a localhost API contract are now defined in-repo
   - a local mock helper is now available for UI testing without the Windows executable
   - mock-only debug controls are now exposed in the reader panel when the mock helper is detected
+  - the mock helper now simulates export file, upload receipt, backend job, and import correlation data
+  - the mock helper now supports scenario switching for slow upload, backend failure, and missing-driver cases
+  - a regression harness now validates all named mock-helper scenarios automatically
+  - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
+  - browser-assisted helper imports now upload exported files into Supabase Storage and register `tachograph_files` rows
   - successful helper completion can auto-open focused driver analysis
   - the manual upload fallback now sits beside the helper workflow on the same page
 
@@ -496,6 +501,7 @@ Primary design:
 - Define localhost/API handshake with the portal.
 - Define failure handling and fallback.
 - Initial contract doc now exists at `docs/tacho-reader-helper-contract.md`.
+- Supabase-facing handoff doc now exists at `docs/tacho-reader-helper-backend-handoff.md`.
 - Local mock helper now exists at `tools/tacho-reader-helper/mock-helper.mjs` for frontend testing.
 
 #### 8.2 Reader page in portal
@@ -508,6 +514,7 @@ Primary design:
 
 - Show meaningful local + backend progress states.
 - Preserve import-centre consistency.
+- Browser-assisted registration is now wired so helper exports can enter the real import queue without manual file picking.
 
 #### 8.4 Auto-open analysis
 

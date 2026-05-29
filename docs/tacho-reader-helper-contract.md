@@ -12,6 +12,10 @@ The current UI in `src/components/manager/tachograph/TachoReaderHelperPanel.tsx`
 
 This keeps the browser workflow stable while the helper executable is built separately.
 
+For the Supabase-facing import handoff after a real reader export, see:
+
+- `docs/tacho-reader-helper-backend-handoff.md`
+
 ## Default Endpoint
 
 - default base URL: `http://127.0.0.1:47231`
@@ -58,6 +62,26 @@ Optional completion fields:
 
 When `stage` is `complete`, the frontend will try to open driver analysis automatically if `driverId` is present.
 
+Optional correlation fields:
+
+- `companyId`
+- `sourceType`
+- `driverName`
+- `readSessionId`
+- `exportFileName`
+- `exportFilePath`
+- `exportDownloadPath`
+- `exportFileSizeBytes`
+- `exportSha256`
+- `driverCardNumberHint`
+- `vehicleRegHint`
+- `uploadReceiptId`
+- `uploadPercent`
+- `backendJobId`
+- `uploadedStoragePath`
+- `scenario`
+- `availableScenarios`
+
 ### `POST /commands/start-read`
 
 Starts reading the currently inserted driver card.
@@ -98,6 +122,34 @@ Suggested response:
 }
 ```
 
+### `POST /imports/register`
+
+Confirms that the browser has uploaded the exported file to Supabase Storage and registered the matching `tachograph_files` row.
+
+Example request:
+
+```json
+{
+  "requestedAt": "2026-05-29T15:02:00.000Z",
+  "readSessionId": "read_0f4a5a3d-6990-4e5a-b9e5-2c8da78c5f1e",
+  "importId": "dc42b0a2-f6f6-4a13-a808-e5d4f2478a02",
+  "uploadedStoragePath": "company-uuid/1748535734000_LEWIS_CARTER_20260529.C1B",
+  "fileName": "LEWIS_CARTER_20260529.C1B",
+  "fileType": "c1b",
+  "sourceType": "driver_card"
+}
+```
+
+Suggested response:
+
+```json
+{
+  "accepted": true,
+  "stage": "processing",
+  "importId": "dc42b0a2-f6f6-4a13-a808-e5d4f2478a02"
+}
+```
+
 ### Optional debug endpoints for the in-repo mock helper
 
 These are not part of the production contract, but the local prototype in this repo supports them for UI testing:
@@ -105,6 +157,23 @@ These are not part of the production contract, but the local prototype in this r
 - `POST /debug/reset`
 - `POST /debug/card-insert`
 - `POST /debug/error`
+- `POST /debug/scenario`
+
+Example request for scenario switching:
+
+```json
+{
+  "scenario": "backend_failure",
+  "requestedAt": "2026-05-29T15:40:00.000Z"
+}
+```
+
+Supported mock scenarios:
+
+- `success`
+- `slow_upload`
+- `backend_failure`
+- `missing_driver`
 
 ## State Expectations
 
@@ -135,6 +204,7 @@ If anything fails, return:
 - Bind only to localhost.
 - Return JSON for all endpoints.
 - Keep `driverId` and `focusedDate` blank unless they are known with confidence.
+- For browser-assisted upload flows, expose the exported bytes over localhost using `exportDownloadPath`.
 - `processing` should mean the helper upload succeeded and Supabase processing is underway.
 - `complete` should only be returned after the helper can identify the resulting import or driver review target.
 
@@ -157,11 +227,22 @@ Run it with:
 npm run tacho:helper:mock
 ```
 
+Run the automated scenario regression harness with:
+
+```bash
+npm run tacho:helper:test
+```
+
 Default behavior:
 
 - starts in `ready`
 - auto-simulates card insertion after a short delay
 - accepts `start-read`
 - progresses through `reading` -> `uploading` -> `processing` -> `complete`
+- serves the exported file over `GET /exports/:readSessionId/file`
+- expects the browser to confirm the registered Supabase import with `POST /imports/register`
+- emits realistic mock correlation data for read session, exported file, upload receipt, backend job, and import id
 - exposes optional debug routes for reset/error testing
+- supports scenario switching for slow upload, backend failure, and missing-driver correlation cases
 - when the frontend detects `helperVersion` starting with `mock-`, it shows mock-only debug buttons in the reader panel
+- includes a regression harness that boots the mock helper and validates all named scenarios

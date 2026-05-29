@@ -8,6 +8,14 @@ import {
   RefreshCw,
   Upload,
 } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
+import {
+  acknowledgeReaderHelperImport,
+  fetchDriverReviewFocusDate,
+  fetchReaderHelperImportStatus,
+  registerReaderHelperImport,
+  type ReaderHelperImportStatus,
+} from '../../../lib/tacho/helperImport';
 
 type ReaderHelperStage =
   | 'helper_unavailable'
@@ -27,7 +35,9 @@ interface ReaderHelperStatus {
   helperUrl: string;
   helperVersion?: string;
   importId?: string;
+  sourceType?: string;
   driverId?: string;
+  driverName?: string;
   focusedDate?: string;
   lastHeartbeatAt?: string;
   readerConnected?: boolean;
@@ -35,6 +45,21 @@ interface ReaderHelperStatus {
   canStartRead: boolean;
   canCancel: boolean;
   errorCode?: string;
+  companyId?: string;
+  readSessionId?: string;
+  exportFileName?: string;
+  exportFilePath?: string;
+  exportDownloadPath?: string;
+  exportFileSizeBytes?: number;
+  exportSha256?: string;
+  driverCardNumberHint?: string;
+  vehicleRegHint?: string;
+  uploadReceiptId?: string;
+  uploadPercent?: number;
+  backendJobId?: string;
+  uploadedStoragePath?: string;
+  scenario?: string;
+  availableScenarios?: string[];
 }
 
 interface ReaderHelperResponse {
@@ -46,7 +71,9 @@ interface ReaderHelperResponse {
   detail?: string;
   helperVersion?: string;
   importId?: string;
+  sourceType?: string;
   driverId?: string;
+  driverName?: string;
   focusedDate?: string;
   reviewDate?: string;
   lastHeartbeatAt?: string;
@@ -57,6 +84,21 @@ interface ReaderHelperResponse {
   canStartRead?: boolean;
   canCancel?: boolean;
   errorCode?: string;
+  companyId?: string;
+  readSessionId?: string;
+  exportFileName?: string;
+  exportFilePath?: string;
+  exportDownloadPath?: string;
+  exportFileSizeBytes?: number;
+  exportSha256?: string;
+  driverCardNumberHint?: string;
+  vehicleRegHint?: string;
+  uploadReceiptId?: string;
+  uploadPercent?: number;
+  backendJobId?: string;
+  uploadedStoragePath?: string;
+  scenario?: string;
+  availableScenarios?: string[];
 }
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_TACHO_HELPER_URL || 'http://127.0.0.1:47231';
@@ -93,6 +135,56 @@ function defaultStatus(helperUrl: string): ReaderHelperStatus {
     detail: 'The reader helper did not answer, so the supervisor should use manual file upload for now.',
     helperUrl,
     canStartRead: false,
+    canCancel: false,
+  };
+}
+
+function buildImportedStatus(
+  helperStatus: ReaderHelperStatus,
+  trackedImport: ReaderHelperImportStatus | null,
+  focusedDate: string | null
+): ReaderHelperStatus {
+  if (!trackedImport) return helperStatus;
+
+  const stage =
+    trackedImport.status === 'error'
+      ? 'error'
+      : trackedImport.status === 'processed' || trackedImport.status === 'partial'
+      ? 'complete'
+      : 'processing';
+
+  const detail =
+    trackedImport.status === 'pending'
+      ? `Import ${trackedImport.importId} is registered and waiting for processing to start.`
+      : trackedImport.status === 'processing'
+      ? `Import ${trackedImport.importId} is processing in Supabase.`
+      : trackedImport.status === 'partial'
+      ? trackedImport.summary ?? `Import ${trackedImport.importId} completed with partial parser output.`
+      : trackedImport.status === 'processed'
+      ? trackedImport.summary ?? `Import ${trackedImport.importId} completed successfully.`
+      : trackedImport.summary ?? `Import ${trackedImport.importId} failed during processing.`;
+
+  const headline =
+    stage === 'complete'
+      ? 'Driver review ready'
+      : stage === 'error'
+      ? 'Supabase import failed'
+      : 'Processing tachograph import';
+
+  return {
+    ...helperStatus,
+    stage,
+    headline,
+    detail,
+    progressPercent:
+      stage === 'complete' || stage === 'error' ? 100 : trackedImport.status === 'pending' ? 80 : 90,
+    importId: trackedImport.importId,
+    sourceType: trackedImport.sourceType ?? helperStatus.sourceType,
+    driverId: trackedImport.driverId ?? helperStatus.driverId,
+    driverName: trackedImport.driverName ?? helperStatus.driverName,
+    focusedDate: focusedDate ?? helperStatus.focusedDate,
+    uploadedStoragePath: trackedImport.filePath ?? helperStatus.uploadedStoragePath,
+    exportFileName: trackedImport.fileName ?? helperStatus.exportFileName,
     canCancel: false,
   };
 }
@@ -158,7 +250,9 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
     helperUrl,
     helperVersion: response.helperVersion,
     importId: response.importId,
+    sourceType: response.sourceType,
     driverId: response.driverId,
+    driverName: response.driverName,
     focusedDate: response.focusedDate ?? response.reviewDate,
     lastHeartbeatAt: response.lastHeartbeatAt,
     readerConnected: response.readerConnected ?? response.readerDetected,
@@ -172,23 +266,55 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
         ? response.canCancel
         : stage === 'reading' || stage === 'uploading' || stage === 'processing',
     errorCode: response.errorCode,
+    companyId: response.companyId,
+    readSessionId: response.readSessionId,
+    exportFileName: response.exportFileName,
+    exportFilePath: response.exportFilePath,
+    exportDownloadPath: response.exportDownloadPath,
+    exportFileSizeBytes: response.exportFileSizeBytes,
+    exportSha256: response.exportSha256,
+    driverCardNumberHint: response.driverCardNumberHint,
+    vehicleRegHint: response.vehicleRegHint,
+    uploadReceiptId: response.uploadReceiptId,
+    uploadPercent: response.uploadPercent,
+    backendJobId: response.backendJobId,
+    uploadedStoragePath: response.uploadedStoragePath,
+    scenario: response.scenario,
+    availableScenarios: response.availableScenarios,
   };
 }
 
 export function TachoReaderHelperPanel({
   onOpenDriverAnalysis,
+  onImportRegistered,
 }: {
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+  onImportRegistered?: () => void;
 }) {
+  const { profile, user } = useAuth();
   const helperUrl = DEFAULT_HELPER_URL.replace(/\/$/, '');
-  const [status, setStatus] = useState<ReaderHelperStatus>(() => defaultStatus(helperUrl));
+  const [helperStatus, setHelperStatus] = useState<ReaderHelperStatus>(() => defaultStatus(helperUrl));
   const [refreshing, setRefreshing] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [commandPending, setCommandPending] = useState<'start-read' | 'cancel' | null>(null);
   const [commandMessage, setCommandMessage] = useState<string | null>(null);
   const [debugPending, setDebugPending] = useState<'reset' | 'card-insert' | 'error' | null>(null);
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
+  const [scenarioPending, setScenarioPending] = useState(false);
+  const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
+  const [importPending, setImportPending] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [registeredImport, setRegisteredImport] = useState<{ readSessionId: string; importId: string } | null>(null);
+  const [trackedImport, setTrackedImport] = useState<ReaderHelperImportStatus | null>(null);
+  const [trackedFocusedDate, setTrackedFocusedDate] = useState<string | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState('success');
   const openedReviewKeyRef = useRef<string | null>(null);
+  const importSessionRef = useRef<string | null>(null);
+
+  const status = useMemo(
+    () => buildImportedStatus(helperStatus, trackedImport, trackedFocusedDate),
+    [helperStatus, trackedFocusedDate, trackedImport]
+  );
 
   const refreshStatus = useCallback(async () => {
     setRefreshing(true);
@@ -206,10 +332,10 @@ export function TachoReaderHelperPanel({
       }
 
       const nextStatus = buildStatus(helperUrl, (await response.json()) as ReaderHelperResponse);
-      setStatus(nextStatus);
+      setHelperStatus(nextStatus);
       setLastError(null);
     } catch (error) {
-      setStatus(defaultStatus(helperUrl));
+      setHelperStatus(defaultStatus(helperUrl));
       setLastError(error instanceof Error ? error.message : 'Unable to reach helper');
     } finally {
       setRefreshing(false);
@@ -229,6 +355,8 @@ export function TachoReaderHelperPanel({
           },
           body: JSON.stringify({
             requestedAt: new Date().toISOString(),
+            companyId: profile?.company_id ?? null,
+            requestedByUserId: user?.id ?? null,
           }),
         });
 
@@ -244,7 +372,7 @@ export function TachoReaderHelperPanel({
         setCommandPending(null);
       }
     },
-    [helperUrl, refreshStatus]
+    [helperUrl, profile?.company_id, refreshStatus, user?.id]
   );
 
   const sendDebugCommand = useCallback(
@@ -283,6 +411,35 @@ export function TachoReaderHelperPanel({
     [helperUrl, refreshStatus]
   );
 
+  const applyScenario = useCallback(async () => {
+    setScenarioPending(true);
+    setScenarioMessage(null);
+
+    try {
+      const response = await fetch(`${helperUrl}/debug/scenario`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenario: selectedScenario,
+          requestedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Helper returned ${response.status}`);
+      }
+
+      setScenarioMessage(`Scenario switched to ${selectedScenario.replace(/_/g, ' ')}.`);
+      await refreshStatus();
+    } catch (error) {
+      setScenarioMessage(error instanceof Error ? error.message : 'Failed to switch helper scenario');
+    } finally {
+      setScenarioPending(false);
+    }
+  }, [helperUrl, refreshStatus, selectedScenario]);
+
   useEffect(() => {
     refreshStatus();
     const intervalId = window.setInterval(() => {
@@ -302,12 +459,152 @@ export function TachoReaderHelperPanel({
     onOpenDriverAnalysis(status.driverId, status.focusedDate);
   }, [onOpenDriverAnalysis, status]);
 
+  useEffect(() => {
+    if (helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
+    if (!profile?.company_id) return;
+    if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
+    if (importSessionRef.current === helperStatus.readSessionId) return;
+
+    let cancelled = false;
+    importSessionRef.current = helperStatus.readSessionId;
+    setImportPending(true);
+    setImportMessage('Uploading helper export to the portal and registering the import.');
+
+    const registerImport = async () => {
+      try {
+        const registration = await registerReaderHelperImport({
+          companyId: profile.company_id,
+          descriptor: {
+            helperUrl,
+            readSessionId: helperStatus.readSessionId!,
+            helperVersion: helperStatus.helperVersion,
+            companyId: helperStatus.companyId,
+            sourceType: helperStatus.sourceType,
+            exportFileName: helperStatus.exportFileName,
+            exportDownloadPath: helperStatus.exportDownloadPath,
+            exportFileSizeBytes: helperStatus.exportFileSizeBytes,
+            exportSha256: helperStatus.exportSha256,
+            driverName: helperStatus.driverName,
+            driverCardNumberHint: helperStatus.driverCardNumberHint,
+            vehicleRegHint: helperStatus.vehicleRegHint,
+          },
+        });
+
+        await acknowledgeReaderHelperImport({
+          helperUrl,
+          readSessionId: helperStatus.readSessionId!,
+          importId: registration.importId,
+          uploadedStoragePath: registration.filePath,
+          fileName: registration.fileName,
+          fileType: registration.fileType,
+          sourceType: registration.sourceType,
+        });
+
+        if (cancelled) return;
+
+        setRegisteredImport({
+          readSessionId: helperStatus.readSessionId!,
+          importId: registration.importId,
+        });
+        setImportMessage(`Import ${registration.importId} registered from the helper export.`);
+        onImportRegistered?.();
+        await refreshStatus();
+      } catch (error) {
+        if (!cancelled) {
+          importSessionRef.current = null;
+          setImportMessage(error instanceof Error ? error.message : 'Failed to register helper import');
+        }
+      } finally {
+        if (!cancelled) {
+          setImportPending(false);
+        }
+      }
+    };
+
+    registerImport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    helperStatus.companyId,
+    helperStatus.driverCardNumberHint,
+    helperStatus.driverName,
+    helperStatus.exportDownloadPath,
+    helperStatus.exportFileName,
+    helperStatus.exportFileSizeBytes,
+    helperStatus.exportSha256,
+    helperStatus.helperVersion,
+    helperStatus.readSessionId,
+    helperStatus.sourceType,
+    helperStatus.stage,
+    helperStatus.vehicleRegHint,
+    helperUrl,
+    onImportRegistered,
+    profile?.company_id,
+    refreshStatus,
+    registeredImport?.readSessionId,
+  ]);
+
+  useEffect(() => {
+    const companyId = profile?.company_id;
+    const importId = registeredImport?.importId ?? helperStatus.importId;
+    if (!companyId || !importId) return;
+
+    let cancelled = false;
+
+    const loadImport = async () => {
+      try {
+        const nextImport = await fetchReaderHelperImportStatus(companyId, importId);
+        if (cancelled) return;
+        setTrackedImport(nextImport);
+
+        if (nextImport?.driverId) {
+          const focusDate = await fetchDriverReviewFocusDate(companyId, nextImport.driverId);
+          if (!cancelled) {
+            setTrackedFocusedDate(focusDate ?? null);
+          }
+        } else if (!cancelled) {
+          setTrackedFocusedDate(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setImportMessage(error instanceof Error ? error.message : 'Failed to refresh helper import status');
+        }
+      }
+    };
+
+    loadImport();
+    const intervalId = window.setInterval(loadImport, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [helperStatus.importId, profile?.company_id, registeredImport?.importId]);
+
+  useEffect(() => {
+    if (helperStatus.stage !== 'reading' || !helperStatus.readSessionId) return;
+    if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
+    setRegisteredImport(null);
+    setTrackedImport(null);
+    setTrackedFocusedDate(null);
+    setImportMessage(null);
+    importSessionRef.current = null;
+  }, [helperStatus.readSessionId, helperStatus.stage, registeredImport?.readSessionId]);
+
   const completedStepIndex = useMemo(() => {
     const index = WORKFLOW_STEPS.findIndex((step) => step.id === status.stage);
     return index === -1 ? -1 : index;
   }, [status.stage]);
 
   const isMockHelper = useMemo(() => status.helperVersion?.startsWith('mock-') ?? false, [status.helperVersion]);
+
+  useEffect(() => {
+    if (helperStatus.scenario) {
+      setSelectedScenario(helperStatus.scenario);
+    }
+  }, [helperStatus.scenario]);
 
   const tone =
     status.stage === 'complete'
@@ -389,6 +686,51 @@ export function TachoReaderHelperPanel({
           <MetaCard label="Helper error code" value={status.errorCode ?? 'None'} />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <MetaCard label="Company" value={status.companyId ?? 'Not reported'} />
+          <MetaCard label="Driver target" value={status.driverName ?? status.driverId ?? 'Pending correlation'} />
+          <MetaCard label="Read session" value={status.readSessionId ?? 'Not started'} />
+          <MetaCard label="Backend job" value={status.backendJobId ?? 'Pending upload'} />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export And Upload Correlation</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Shows the simulated file export, storage path, and upload receipt that the production helper will need to correlate.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload progress</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{typeof status.uploadPercent === 'number' ? `${status.uploadPercent}%` : 'Not started'}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <MetaCard label="Export file" value={status.exportFileName ?? 'Pending export'} />
+            <MetaCard label="Export path" value={status.exportFilePath ?? 'Pending export'} />
+            <MetaCard label="Download path" value={status.exportDownloadPath ?? 'Pending export'} />
+            <MetaCard label="Storage path" value={status.uploadedStoragePath ?? 'Pending upload'} />
+            <MetaCard label="Upload receipt" value={status.uploadReceiptId ?? 'Pending upload'} />
+            <MetaCard label="Source type" value={status.sourceType ?? 'Not reported'} />
+          </div>
+          <div className="mt-3">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span>File size</span>
+              <span>{formatBytes(status.exportFileSizeBytes)}</span>
+            </div>
+            <div className="h-2 rounded-full bg-white overflow-hidden">
+              <div
+                className="h-2 rounded-full bg-blue-600 transition-all"
+                style={{ width: `${typeof status.uploadPercent === 'number' ? status.uploadPercent : 0}%` }}
+              />
+            </div>
+          </div>
+          {importMessage ? (
+            <p className={`mt-3 text-xs ${importPending ? 'text-blue-700' : 'text-slate-600'}`}>{importMessage}</p>
+          ) : null}
+        </div>
+
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -423,44 +765,79 @@ export function TachoReaderHelperPanel({
 
         {isMockHelper ? (
           <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Mock Helper Controls</p>
-                <p className="mt-1 text-sm text-violet-900">
-                  Debug-only actions for the in-repo helper prototype. These should not exist in the production helper.
-                </p>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Mock Helper Scenario</p>
+                  <p className="mt-1 text-sm text-violet-900">
+                    Switch the simulated helper flow before running a read.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <select
+                    value={selectedScenario}
+                    onChange={(event) => setSelectedScenario(event.target.value)}
+                    disabled={scenarioPending}
+                    className="rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-bold text-violet-950 outline-none"
+                  >
+                    {(status.availableScenarios ?? ['success']).map((scenario) => (
+                      <option key={scenario} value={scenario}>
+                        {scenario.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={applyScenario}
+                    disabled={scenarioPending}
+                    className="inline-flex items-center gap-2 rounded-xl bg-violet-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {scenarioPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    Apply scenario
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => sendDebugCommand('reset')}
-                  disabled={debugPending !== null}
-                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {debugPending === 'reset' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendDebugCommand('card-insert')}
-                  disabled={debugPending !== null}
-                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {debugPending === 'card-insert' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                  Insert card
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendDebugCommand('error')}
-                  disabled={debugPending !== null}
-                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {debugPending === 'error' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
-                  Force error
-                </button>
+              {scenarioMessage ? <p className="text-xs text-violet-900">{scenarioMessage}</p> : null}
+
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Mock Helper Controls</p>
+                  <p className="mt-1 text-sm text-violet-900">
+                    Debug-only actions for the in-repo helper prototype. These should not exist in the production helper.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sendDebugCommand('reset')}
+                    disabled={debugPending !== null}
+                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {debugPending === 'reset' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendDebugCommand('card-insert')}
+                    disabled={debugPending !== null}
+                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {debugPending === 'card-insert' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                    Insert card
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendDebugCommand('error')}
+                    disabled={debugPending !== null}
+                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {debugPending === 'error' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+                    Force error
+                  </button>
+                </div>
               </div>
+              {debugMessage ? <p className="text-xs text-violet-900">{debugMessage}</p> : null}
             </div>
-            {debugMessage ? <p className="mt-3 text-xs text-violet-900">{debugMessage}</p> : null}
           </div>
         ) : null}
 
@@ -510,6 +887,13 @@ function MetaCard({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-sm font-bold text-slate-900 break-all">{value}</p>
     </div>
   );
+}
+
+function formatBytes(value?: number) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return 'Not reported';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function StatusIcon({ stage }: { stage: ReaderHelperStage }) {

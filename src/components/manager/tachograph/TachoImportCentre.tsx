@@ -31,7 +31,7 @@ export function TachoImportCentre({
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[1.25fr,1fr] gap-6">
-            <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} />
+            <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
             <TachoUploadZone onUploaded={reload} />
           </div>
         </div>
