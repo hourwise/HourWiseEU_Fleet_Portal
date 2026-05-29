@@ -85,7 +85,7 @@ export function TachoComplianceWorkspace({
               </p>
             </div>
           </div>
-          <InfringementManagement />
+          <InfringementManagement onOpenDriverTacho={onOpenDriverAnalysis} />
         </div>
       )}
       {activeTab === 'imports' && <TachoImportCentre />}

@@ -5,7 +5,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import { CompliancePackPDF } from './CompliancePackPDF';
 import { useAuth } from '../../../../contexts/AuthContext';
 
-export function CompliancePackGenerator() {
+export function CompliancePackGenerator({ preferredDriverId }: { preferredDriverId?: string }) {
   const { profile: managerProfile } = useAuth();
   const [selectedDriverId, setSelectedDriverId] = useState('');
   const [drivers, setDrivers] = useState<{ id: string; full_name: string }[]>([]);
@@ -31,6 +31,13 @@ export function CompliancePackGenerator() {
     };
     fetchDrivers();
   }, [managerProfile?.company_id]);
+
+  useEffect(() => {
+    if (!preferredDriverId) return;
+    setSelectedDriverId(preferredDriverId);
+    setPackData(null);
+    setError(null);
+  }, [preferredDriverId]);
 
   const prepareData = async () => {
     if (!selectedDriverId) return;

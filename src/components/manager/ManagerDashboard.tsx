@@ -58,6 +58,10 @@ export function ManagerDashboard() {
     focusedDriverId?: string;
     focusedDate?: string;
   }>({});
+  const [reportsWorkspaceState, setReportsWorkspaceState] = useState<{
+    focusedDriverId?: string;
+    focusedDate?: string;
+  }>({});
 
   // Live unread count — messages sent to this manager that haven't been read
   useEffect(() => {
@@ -128,6 +132,14 @@ export function ManagerDashboard() {
     setActiveWorkspace('compliance');
   };
 
+  const openReportsWorkspace = (options?: { focusedDriverId?: string; focusedDate?: string }) => {
+    setReportsWorkspaceState({
+      focusedDriverId: options?.focusedDriverId,
+      focusedDate: options?.focusedDate,
+    });
+    setActiveWorkspace('reports');
+  };
+
   return (
     <div className="min-h-screen bg-brand-dark text-slate-200">
       <nav className="bg-brand-card border-b border-brand-border shadow-sm">
@@ -169,6 +181,9 @@ export function ManagerDashboard() {
                   onClick={() => {
                     if (workspace.id === 'compliance') {
                       setComplianceWorkspaceState({ tab: 'overview', focusedVehicleId: undefined, focusedDriverId: undefined, focusedDate: undefined });
+                    }
+                    if (workspace.id === 'reports') {
+                      setReportsWorkspaceState({ focusedDriverId: undefined, focusedDate: undefined });
                     }
                     setActiveWorkspace(workspace.id);
                   }}
@@ -321,7 +336,7 @@ export function ManagerDashboard() {
 
             {activeWorkspace === 'compliance' && (
                 <TachoComplianceWorkspace
-                  onViewSession={() => setActiveWorkspace('reports')}
+                  onViewSession={(driverId, date) => openReportsWorkspace({ focusedDriverId: driverId, focusedDate: date })}
                   onOpenDriverAnalysis={(driverId, date) =>
                     openComplianceWorkspace('driver_cards', {
                       focusedDriverId: driverId,
@@ -359,7 +374,18 @@ export function ManagerDashboard() {
                 />
               )}
 
-            {activeWorkspace === 'reports' && <ReportsAndExports />}
+            {activeWorkspace === 'reports' && (
+              <ReportsAndExports
+                focusedDriverId={reportsWorkspaceState.focusedDriverId}
+                focusedDate={reportsWorkspaceState.focusedDate}
+                onOpenDriverAnalysis={(driverId, date) =>
+                  openComplianceWorkspace('driver_cards', {
+                    focusedDriverId: driverId,
+                    focusedDate: date,
+                  })
+                }
+              />
+            )}
             {activeWorkspace === 'settings' && activeSettingsSection === 'account' && (
               <div className="space-y-6">
                   <UserProfileSettings />

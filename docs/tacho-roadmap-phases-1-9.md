@@ -18,7 +18,7 @@ The target product remains:
 - direct workflows for supervisors similar in spirit to Tachomaster
 - cleaner portal navigation with fewer duplicated entry points
 
-## Repo Assessment Update (2026-05-17)
+## Repo Assessment Update (2026-05-19)
 
 This repo now appears to be past the original "Phase 4 complete / Phase 5 not started" checkpoint.
 
@@ -29,10 +29,12 @@ Based on the current frontend and this implementation pass:
   - deep-link date context is surfaced in the analysis workspaces
   - driver and vehicle analysis now expose direct supervisor follow-up actions
   - empty / no-data / partial-state handling has been strengthened
-- Phase 6 is now partially implemented:
+- Phase 6 is now materially implemented in frontend:
   - driver files show live tacho summary status and direct analysis/training/compliance actions
   - vehicle files show VU summary status and direct analysis / maintenance / incident actions
   - training assignment from driver-card analysis is wired for repeated tacho patterns
+  - infringement records can reopen the underlying driver tacho review context
+  - reports now support focused tacho follow-up exports and preselected evidence-pack generation
 - Phase 7 is now functionally implemented in the manager frontend:
   - navigation is grouped into Dashboard / People / Fleet / Compliance / Reports / Settings
   - legacy modules remain reachable through grouped subnavigation
@@ -77,7 +79,7 @@ The intended end state is:
 | 3 | VU event deepening | Strongly complete | Severity-aware VU events, discrepancy storage, import-centre review, and vehicle review UX are in place. |
 | 4 | App vs tacho reconciliation | Functionally complete | Driver/vehicle/day deep-linking is implemented; review focus is now part of normalized signals. Final backend deploy still required. |
 | 5 | Finish analysis workspaces | Largely complete in frontend | Explicit driver/vehicle targeting, selected-day context, follow-up actions, and stronger empty states are now in place. |
-| 6 | Embed tacho across portal | Partially complete | Driver and vehicle record integration plus training links are in place; infringement/report embedding still remains. |
+| 6 | Embed tacho across portal | Largely complete in frontend | Driver and vehicle record integration, training links, infringement review linking, and focused tacho evidence exports are now in place. |
 | 7 | Navigation cleanup | Functionally complete in frontend | Grouped top-level workspaces and consolidated compliance destinations are now implemented while keeping legacy reachability. |
 | 8 | Reader helper | Not started | Live card-reader workflow still planned. |
 | 9 | Hardening and release | Not started | Real file regression set, monitoring, RLS review, and rollout prep still to do. |

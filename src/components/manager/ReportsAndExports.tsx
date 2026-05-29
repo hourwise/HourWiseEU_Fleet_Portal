@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -19,7 +19,7 @@ type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
 type VehicleCheck = Database['public']['Tables']['vehicle_checks']['Row'];
 type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
-type DriverDocument = Database['public']['Tables']['driver_documents']['Row'];
+type Infringement = Database['public']['Tables']['infringements']['Row'];
 
 interface Incident {
   id: string;
@@ -67,6 +67,9 @@ interface PayConfiguration {
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 const toISO = (date: Date) => date.toISOString().split('T')[0];
+const parseIsoDayStart = (s: string) => new Date(`${s}T00:00:00`);
+const parseIsoDayEnd = (s: string) => new Date(`${s}T23:59:59.999`);
+const fmtIsoDay = (s: string) => new Date(`${s}T12:00:00`).toLocaleDateString('en-GB');
 
 function downloadCSV(headers: string[], rows: (string | number | null | undefined)[][], filename: string) {
   const escape = (v: string | number | null | undefined) => {
@@ -581,6 +584,170 @@ function DriverHoursAuditCard({ range }: { range: DateRange }) {
   );
 }
 
+type InfringementWithProfile = Infringement & {
+  profiles: { full_name: string } | null;
+  source?: string | null;
+};
+
+type TachoTrainingWithProfile = TrainingRecord & { profiles: { full_name: string } | null };
+
+interface TachoFollowUpRow {
+  id: string;
+  driverId: string;
+  driverName: string;
+  reviewDate: string;
+  recordType: 'Infringement' | 'Training';
+  status: string;
+  summary: string;
+  origin: string;
+}
+
+function TachoFollowUpExportCard({
+  range,
+  focusedDriverId,
+  focusedDate,
+  onOpenDriverAnalysis,
+}: {
+  range: DateRange;
+  focusedDriverId?: string;
+  focusedDate?: string;
+  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+}) {
+  const { profile } = useAuth();
+  const [rows, setRows] = useState<TachoFollowUpRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+
+  const fetch = useCallback(async () => {
+    if (!profile?.company_id) return;
+    setLoading(true);
+    try {
+      let infringementsQuery = supabase
+        .from('infringements')
+        .select('*, profiles:driver_id(full_name)')
+        .eq('company_id', profile.company_id)
+        .gte('occurred_at', range.start.toISOString())
+        .lte('occurred_at', range.end.toISOString())
+        .order('occurred_at', { ascending: false });
+
+      let trainingQuery = supabase
+        .from('training_records')
+        .select('*, profiles:driver_id(full_name)')
+        .eq('company_id', profile.company_id)
+        .gte('assigned_at', range.start.toISOString())
+        .lte('assigned_at', range.end.toISOString())
+        .order('assigned_at', { ascending: false });
+
+      if (focusedDriverId) {
+        infringementsQuery = infringementsQuery.eq('driver_id', focusedDriverId);
+        trainingQuery = trainingQuery.eq('driver_id', focusedDriverId);
+      }
+
+      const [{ data: infringementData }, { data: trainingData }] = await Promise.all([
+        infringementsQuery,
+        trainingQuery,
+      ]);
+
+      const tachoRows: TachoFollowUpRow[] = [];
+
+      ((infringementData as InfringementWithProfile[]) ?? [])
+        .filter((row) => row.regulation === 'REG_561' || row.source === 'tacho')
+        .forEach((row) => {
+          tachoRows.push({
+            id: `inf-${row.id}`,
+            driverId: row.driver_id,
+            driverName: row.profiles?.full_name ?? '—',
+            reviewDate: row.occurred_at.slice(0, 10),
+            recordType: 'Infringement',
+            status: row.status.replace('_', ' '),
+            summary: row.violation_type,
+            origin: row.source === 'tacho' ? 'Verified tacho import' : 'EU Reg 561 workflow',
+          });
+        });
+
+      ((trainingData as TachoTrainingWithProfile[]) ?? [])
+        .filter((row) =>
+          ['remedial', 'tacho_refresher'].includes(row.training_type) ||
+          /tacho/i.test(`${row.title} ${row.notes ?? ''}`)
+        )
+        .forEach((row) => {
+          tachoRows.push({
+            id: `training-${row.id}`,
+            driverId: row.driver_id,
+            driverName: row.profiles?.full_name ?? '—',
+            reviewDate: row.assigned_at.slice(0, 10),
+            recordType: 'Training',
+            status: row.status.replace('_', ' '),
+            summary: row.title,
+            origin: row.training_type,
+          });
+        });
+
+      tachoRows.sort((a, b) => b.reviewDate.localeCompare(a.reviewDate));
+      setRows(tachoRows);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [focusedDriverId, profile?.company_id, range]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const download = () => downloadCSV(
+    ['Review Date', 'Driver', 'Record Type', 'Status', 'Summary', 'Origin', 'Focused Review Day'],
+    rows.map((row) => [
+      fmtIsoDay(row.reviewDate),
+      row.driverName,
+      row.recordType,
+      row.status,
+      row.summary,
+      row.origin,
+      focusedDate ? fmtIsoDay(focusedDate) : '—',
+    ]),
+    `tacho_follow_up_${toISO(range.start)}_${toISO(range.end)}.csv`,
+  );
+
+  const badge = focusedDriverId || focusedDate ? 'Focused' : rows.length > 0 ? `${rows.length} items` : undefined;
+
+  return (
+    <ExportCard
+      icon={FileText}
+      title="Tacho Follow-up Export"
+      description="Verified tacho-linked infringements and remedial training actions for the selected reporting window."
+      badge={badge}
+      badgeColour="bg-blue-600"
+      loading={loading}
+      rowCount={rows.length}
+      onRefresh={fetch}
+      onDownload={download}
+      downloadLabel="Download Pack CSV"
+      expanded={expanded}
+      onToggleExpand={() => setExpanded((v) => !v)}
+    >
+      <PreviewTable
+        headers={['Date', 'Driver', 'Type', 'Status', 'Summary', 'Action']}
+        rows={rows.map((row) => [
+          fmtIsoDay(row.reviewDate),
+          row.driverName,
+          row.recordType,
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{row.status}</span>,
+          row.summary,
+          onOpenDriverAnalysis ? (
+            <button
+              onClick={() => onOpenDriverAnalysis(row.driverId, focusedDate ?? row.reviewDate)}
+              className="rounded-lg border border-blue-500/20 bg-blue-600/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-300 hover:bg-blue-600/20"
+            >
+              Open Review
+            </button>
+          ) : '—',
+        ])}
+        emptyMsg="No tacho-linked follow-up items matched the selected period."
+      />
+    </ExportCard>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // CARD 5 — Upcoming Renewals (next 90 days, always live)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -598,7 +765,7 @@ function UpcomingRenewalsCard() {
     setLoading(true);
     try {
       const horizon = new Date(); horizon.setDate(horizon.getDate() + 90);
-      const today = toISO(new Date()), horizonStr = toISO(horizon);
+      const horizonStr = toISO(horizon);
 
       // From driver_documents
       const { data: docs } = await supabase.from('driver_documents')
@@ -632,8 +799,6 @@ function UpcomingRenewalsCard() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const overdueCount = rows.filter(r => (r.daysLeft ?? 0) < 0).length;
-  const soonCount = rows.filter(r => (r.daysLeft ?? 0) >= 0 && (r.daysLeft ?? 0) <= 30).length;
-
   const download = () => downloadCSV(
     ['Driver', 'Document Type', 'ID Number', 'Expiry Date', 'Days Remaining'],
     rows.map(r => [r.driver, r.type, r.idNumber ?? '—', r.expiry ? fmtDate(r.expiry) : '—', r.daysLeft ?? '—']),
@@ -1051,11 +1216,24 @@ function IncidentLogCard({ range }: { range: DateRange }) {
 // ROOT — ReportsAndExports
 // ═════════════════════════════════════════════════════════════════════════════
 
-export function ReportsAndExports() {
+export function ReportsAndExports({
+  focusedDriverId,
+  focusedDate,
+  onOpenDriverAnalysis,
+}: {
+  focusedDriverId?: string;
+  focusedDate?: string;
+  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+}) {
   const [range, setRange] = useState<DateRange>(() => {
     const now = new Date();
     return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
   });
+
+  useEffect(() => {
+    if (!focusedDate) return;
+    setRange({ start: parseIsoDayStart(focusedDate), end: parseIsoDayEnd(focusedDate) });
+  }, [focusedDate]);
 
   return (
     <div className="space-y-8">
@@ -1073,6 +1251,28 @@ export function ReportsAndExports() {
       {/* Date Filter Bar */}
       <DateFilterBar range={range} onRangeChange={setRange} />
 
+      {(focusedDriverId || focusedDate) && (
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-5 py-4 text-sm text-blue-100">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-300">Focused Evidence View</p>
+              <p className="mt-1">
+                {focusedDriverId ? 'Driver-specific evidence is preselected.' : 'Evidence is scoped to the current report view.'}
+                {focusedDate ? ` Review day: ${fmtIsoDay(focusedDate)}.` : ''}
+              </p>
+            </div>
+            {focusedDriverId && onOpenDriverAnalysis ? (
+              <button
+                onClick={() => onOpenDriverAnalysis(focusedDriverId, focusedDate)}
+                className="rounded-lg border border-blue-400/20 bg-blue-600/20 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-600/30"
+              >
+                Open Driver Review
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       {/* ── Section 1: Payroll & Expenses ── */}
       <div className="space-y-4">
         <SectionHeader icon={DollarSign} title="Payroll & Expenses" subtitle="Export pay data and manage driver expense claims." />
@@ -1084,7 +1284,13 @@ export function ReportsAndExports() {
       {/* ── Section 2: Driver & Compliance ── */}
       <div className="space-y-4">
         <SectionHeader icon={ClipboardList} title="Driver & Compliance" subtitle="Hours audit, document renewals, and training records." />
-        <CompliancePackGenerator />
+        <TachoFollowUpExportCard
+          range={range}
+          focusedDriverId={focusedDriverId}
+          focusedDate={focusedDate}
+          onOpenDriverAnalysis={onOpenDriverAnalysis}
+        />
+        <CompliancePackGenerator preferredDriverId={focusedDriverId} />
         <DriverHoursAuditCard range={range} />
         <UpcomingRenewalsCard />
         <TrainingRecordsCard range={range} />

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  AlertTriangle, ChevronDown, ChevronUp, CheckCircle,
+  ChevronDown, ChevronUp, CheckCircle,
   ClipboardCheck, X, RefreshCw, Filter, GraduationCap, BookOpen, Activity, Layout
 } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -15,6 +15,10 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 interface InfringementWithDriver extends Infringement {
   profiles: { full_name: string } | null;
 }
+
+type InfringementWithMeta = InfringementWithDriver & {
+  source?: string | null;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,12 +53,11 @@ const fmtDate = (s: string | null) => s ? new Date(s).toLocaleDateString('en-GB'
 
 interface DebriefModalProps {
   infringement: InfringementWithDriver;
-  drivers: Profile[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-function DebriefModal({ infringement, drivers, onClose, onSaved }: DebriefModalProps) {
+function DebriefModal({ infringement, onClose, onSaved }: DebriefModalProps) {
   const { profile } = useAuth();
   const [statement, setStatement] = useState(infringement.driver_statement ?? '');
   const [notes, setNotes] = useState(infringement.manager_notes ?? '');
@@ -230,7 +233,11 @@ function DebriefModal({ infringement, drivers, onClose, onSaved }: DebriefModalP
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function InfringementManagement() {
+export function InfringementManagement({
+  onOpenDriverTacho,
+}: {
+  onOpenDriverTacho?: (driverId: string, date?: string) => void;
+}) {
   const { profile } = useAuth();
   const [infringements, setInfringements] = useState<InfringementWithDriver[]>([]);
   const [drivers, setDrivers] = useState<Profile[]>([]);
@@ -340,10 +347,12 @@ export function InfringementManagement() {
           </div>
         ) : (
           <div className="divide-y divide-brand-border/50">
-            {filtered.map(inf => {
+            {filtered.map((inf) => {
               const sev = SEVERITY_CONFIG[inf.severity];
               const sta = STATUS_CONFIG[inf.status];
               const isExpanded = expandedId === inf.id;
+              const source = (inf as InfringementWithMeta).source;
+              const isTachoLinked = source === 'tacho' || inf.regulation === 'REG_561';
 
               return (
                 <div key={inf.id}>
@@ -364,15 +373,15 @@ export function InfringementManagement() {
 
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {(inf as any).source && (
-                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border flex items-center gap-1 ${SOURCE_CONFIG[(inf as any).source]?.color}`}>
-                          {SOURCE_CONFIG[(inf as any).source]?.label}
+                      {source && SOURCE_CONFIG[source] && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border flex items-center gap-1 ${SOURCE_CONFIG[source].color}`}>
+                          {SOURCE_CONFIG[source].label}
                         </span>
                       )}
                       <span className="hidden sm:block text-[10px] font-black text-slate-400">{REGULATION_LABELS[inf.regulation]}</span>
                       <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${sev?.colour}`}>{sev?.label}</span>
                       <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${sta?.colour}`}>{sta?.label}</span>
-                      {inf.training_record_id && <GraduationCap size={12} className="text-brand-accent" title="Training linked" />}
+                      {inf.training_record_id && <GraduationCap size={12} className="text-brand-accent" />}
                     </div>
 
                     {/* Expand */}
@@ -422,15 +431,13 @@ export function InfringementManagement() {
                           </button>
                         )}
 
-                        {(inf as any).source === 'tacho' && (
+                        {isTachoLinked && (
                           <button
-                            onClick={() => {
-                              // We could navigate to a tacho specific view or open a modal
-                              // For now, let's signal this is a tacho record
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg text-xs font-black border border-blue-500/20 transition"
+                            onClick={() => onOpenDriverTacho?.(inf.driver_id, inf.occurred_at.slice(0, 10))}
+                            disabled={!onOpenDriverTacho}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg text-xs font-black border border-blue-500/20 transition disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <Activity size={12} /> View Tacho Timeline
+                            <Activity size={12} /> Open Tacho Review
                           </button>
                         )}
                       </div>
@@ -453,7 +460,6 @@ export function InfringementManagement() {
       {debriefTarget && (
         <DebriefModal
           infringement={debriefTarget}
-          drivers={drivers}
           onClose={() => setDebriefTarget(null)}
           onSaved={load}
         />
