@@ -56,10 +56,11 @@ function countRule(findings: { ruleCode: string }[], ...codes: string[]) {
   return findings.filter((finding) => codes.includes(finding.ruleCode)).length;
 }
 
-export function adaptImportRecord(raw: any): TachoImportRecord {
+export function adaptImportRecord(raw: Record<string, unknown> | null | undefined): TachoImportRecord {
   const sourceType = raw?.sourceType ?? raw?.source_type ?? (raw?.vehicle_id ? 'vehicle_unit' : 'driver_card');
   const importedAt = raw?.importedAt ?? raw?.uploaded_at ?? new Date().toISOString();
   const status = normalizeImportStatus(raw?.status);
+  const metadata = raw?.metadata ?? {};
 
   return {
     id: raw?.id ?? crypto.randomUUID(),
@@ -69,13 +70,19 @@ export function adaptImportRecord(raw: any): TachoImportRecord {
     importedAt,
     status,
     progressPercent: raw?.progressPercent ?? buildProgress(status),
-    driverName: raw?.driverName ?? raw?.driver_name ?? raw?.metadata?.driver_name,
-    vehicleReg: raw?.vehicleReg ?? raw?.vehicle_reg ?? raw?.metadata?.vehicle_reg,
-    summary: raw?.summary ?? raw?.metadata?.summary,
-    technicalEventCount: raw?.technicalEventCount ?? raw?.metadata?.technical_event_count,
-    discrepancyCount: raw?.discrepancyCount ?? raw?.metadata?.discrepancy_count,
-    reconciliationIssueCount: raw?.reconciliationIssueCount ?? raw?.metadata?.reconciliation_issue_count,
-    highSeverityCount: raw?.highSeverityCount ?? raw?.metadata?.high_severity_count,
+    driverName: raw?.driverName ?? raw?.driver_name ?? metadata?.driver_name,
+    vehicleReg: raw?.vehicleReg ?? raw?.vehicle_reg ?? metadata?.vehicle_reg,
+    summary: raw?.summary ?? metadata?.summary,
+    technicalEventCount: raw?.technicalEventCount ?? metadata?.technical_event_count,
+    discrepancyCount: raw?.discrepancyCount ?? metadata?.discrepancy_count,
+    reconciliationIssueCount: raw?.reconciliationIssueCount ?? metadata?.reconciliation_issue_count,
+    highSeverityCount: raw?.highSeverityCount ?? metadata?.high_severity_count,
+    ingestSource: raw?.ingestSource ?? metadata?.ingest_source,
+    processingError: raw?.processingError ?? metadata?.processing_error,
+    processingKickoffError: raw?.processingKickoffError ?? metadata?.processing_kickoff_error,
+    triggerDispatchError: raw?.triggerDispatchError ?? metadata?.trigger_dispatch_error,
+    triggerDispatchRequestedAt: raw?.triggerDispatchRequestedAt ?? metadata?.trigger_dispatch_requested_at,
+    processingKickoffRequestedAt: raw?.processingKickoffRequestedAt ?? metadata?.processing_kickoff_requested_at,
     discrepancyPreview: raw?.discrepancyPreview,
     reconciliationPreview: raw?.reconciliationPreview,
   };

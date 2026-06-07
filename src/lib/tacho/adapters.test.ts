@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveVehicleMotionDiscrepancies } from './adapters';
+import { adaptImportRecord, deriveVehicleMotionDiscrepancies } from './adapters';
 import type { TachoFinding } from './rules/types';
 
 function buildFinding(overrides: Partial<TachoFinding>): TachoFinding {
@@ -82,5 +82,33 @@ describe('deriveVehicleMotionDiscrepancies', () => {
     expect(discrepancies[0].summary).toBe('Newer mismatch');
     expect(discrepancies[0].status).toBe('driver_mismatch');
     expect(discrepancies[1].summary).toBe('Older mismatch');
+  });
+});
+
+describe('adaptImportRecord', () => {
+  it('surfaces observability metadata from tachograph_files rows', () => {
+    const record = adaptImportRecord({
+      id: 'import-obs-1',
+      source_type: 'driver_card',
+      filename: 'OBSERVE.C1B',
+      file_type: 'c1b',
+      uploaded_at: '2026-06-07T10:30:00.000Z',
+      status: 'pending',
+      metadata: {
+        ingest_source: 'reader_helper',
+        processing_kickoff_error: 'Function returned 401.',
+        processing_kickoff_requested_at: '2026-06-07T10:31:00.000Z',
+        trigger_dispatch_error: 'pg_net timeout',
+        trigger_dispatch_requested_at: '2026-06-07T10:31:05.000Z',
+        processing_error: 'Parser rejected a corrupted block.',
+      },
+    });
+
+    expect(record.ingestSource).toBe('reader_helper');
+    expect(record.processingKickoffError).toBe('Function returned 401.');
+    expect(record.processingKickoffRequestedAt).toBe('2026-06-07T10:31:00.000Z');
+    expect(record.triggerDispatchError).toBe('pg_net timeout');
+    expect(record.triggerDispatchRequestedAt).toBe('2026-06-07T10:31:05.000Z');
+    expect(record.processingError).toBe('Parser rejected a corrupted block.');
   });
 });

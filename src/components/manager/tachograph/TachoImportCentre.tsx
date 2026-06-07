@@ -1,7 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useTachoImports } from '../../../hooks/useTachoImports';
+import {
+  canRetryTachoImportProcessing,
+  getTachoImportObservabilityIssue,
+  summarizeTachoImportObservability,
+} from '../../../lib/tacho/importObservability';
+import { retryTachoImportProcessing } from '../../../lib/tacho/helperImport';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
 import { TachoReaderHelperPanel } from './TachoReaderHelperPanel';
 import { TachoUploadZone } from './TachoUploadZone';
@@ -11,12 +18,41 @@ export function TachoImportCentre({
 }: {
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
 }) {
+  const { profile } = useAuth();
   const { data, loading, error, reload } = useTachoImports();
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
+  const [retryPending, setRetryPending] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const selectedImport = useMemo(
     () => data.find((item) => item.id === selectedImportId) ?? data[0] ?? null,
     [data, selectedImportId]
   );
+  const selectedIssue = useMemo(
+    () => (selectedImport ? getTachoImportObservabilityIssue(selectedImport) : null),
+    [selectedImport]
+  );
+  const monitoringSummary = useMemo(() => summarizeTachoImportObservability(data), [data]);
+
+  const handleRetryProcessing = async () => {
+    if (!profile?.company_id || !selectedImport || !canRetryTachoImportProcessing(selectedImport)) return;
+
+    setRetryPending(true);
+    setRetryMessage(null);
+
+    try {
+      const result = await retryTachoImportProcessing(profile.company_id, selectedImport.id);
+      setRetryMessage(
+        result.started
+          ? `Processing retry requested for import ${selectedImport.id}.`
+          : `Retry request was sent for import ${selectedImport.id}, but the backend did not confirm kickoff: ${result.error ?? 'Unknown error'}.`
+      );
+      reload();
+    } catch (retryError) {
+      setRetryMessage(retryError instanceof Error ? retryError.message : 'Failed to retry processing.');
+    } finally {
+      setRetryPending(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -38,12 +74,34 @@ export function TachoImportCentre({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <StatCard label="Processing Now" value={loading ? '...' : String(data.filter((item) => item.status === 'processing').length)} tone="warning" />
-        <StatCard label="Completed Today" value={loading ? '...' : String(data.filter((item) => item.status === 'complete').length)} tone="good" />
-        <StatCard label="Failed Imports" value={loading ? '...' : String(data.filter((item) => item.status === 'failed').length)} tone="danger" />
+        <StatCard label="Processing Now" value={loading ? '...' : String(monitoringSummary.processingNow)} tone="warning" />
+        <StatCard label="Completed Today" value={loading ? '...' : String(monitoringSummary.completedToday)} tone="good" />
+        <StatCard label="Failed Imports" value={loading ? '...' : String(monitoringSummary.failedImports)} tone="danger" />
         <StatCard label="Open Motion Issues" value={loading ? '...' : String(data.reduce((total, item) => total + (item.discrepancyCount ?? 0), 0))} tone="danger" />
         <StatCard label="Cross-check Issues" value={loading ? '...' : String(data.reduce((total, item) => total + (item.reconciliationIssueCount ?? 0), 0))} tone="warning" />
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard label="Retry Backlog" value={loading ? '...' : String(monitoringSummary.retryBacklog)} tone={monitoringSummary.retryBacklog > 0 ? 'warning' : 'good'} />
+        <StatCard label="Kickoff Warnings" value={loading ? '...' : String(monitoringSummary.kickoffWarnings)} tone={monitoringSummary.kickoffWarnings > 0 ? 'warning' : 'good'} />
+        <StatCard label="Dispatch Warnings" value={loading ? '...' : String(monitoringSummary.dispatchWarnings)} tone={monitoringSummary.dispatchWarnings > 0 ? 'warning' : 'good'} />
+        <StatCard label="Attention Queue" value={loading ? '...' : String(monitoringSummary.attentionQueue)} tone={monitoringSummary.attentionQueue > 0 ? 'danger' : 'good'} />
+      </div>
+
+      {!loading && monitoringSummary.attentionQueue > 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Import Monitoring</p>
+          <p className="mt-2">
+            {monitoringSummary.attentionQueue} import{monitoringSummary.attentionQueue === 1 ? '' : 's'} need supervisor attention across
+            {' '}
+            {monitoringSummary.retryBacklog} retryable issue{monitoringSummary.retryBacklog === 1 ? '' : 's'},
+            {' '}
+            {monitoringSummary.partialImports} partial parse{monitoringSummary.partialImports === 1 ? '' : 's'},
+            {' '}
+            and {monitoringSummary.processingErrors} processor error{monitoringSummary.processingErrors === 1 ? '' : 's'}.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.7fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -92,6 +150,30 @@ export function TachoImportCentre({
             </div>
           ) : (
             <div className="space-y-4">
+              <ImportObservabilityNotice item={selectedImport} />
+
+              {selectedIssue?.retryable ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recovery Action</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Request backend processing again for this import when kickoff or dispatch did not complete cleanly.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRetryProcessing}
+                      disabled={retryPending}
+                      className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {retryPending ? 'Retrying...' : 'Retry Processing'}
+                    </button>
+                  </div>
+                  {retryMessage ? <p className="mt-3 text-xs text-slate-600">{retryMessage}</p> : null}
+                </div>
+              ) : null}
+
               {(selectedImport.status === 'failed' || selectedImport.status === 'partial') && (
                 <div className={`rounded-xl border p-4 text-sm ${selectedImport.status === 'failed' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
                   <p className="font-black uppercase tracking-widest text-[10px] mb-2">
@@ -186,11 +268,26 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
                 {item.reconciliationIssueCount} cross-check
               </span>
             )}
+            {item.processingKickoffError && (
+              <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700">
+                Kickoff issue
+              </span>
+            )}
+            {item.triggerDispatchError && (
+              <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700">
+                Dispatch issue
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {item.sourceType === 'driver_card' ? item.driverName : item.vehicleReg} • {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
           </p>
           <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
+          {(item.processingKickoffError || item.triggerDispatchError) && (
+            <p className="mt-2 text-xs text-amber-700">
+              {item.processingKickoffError ?? item.triggerDispatchError}
+            </p>
+          )}
           {(item.technicalEventCount ?? 0) > 0 || (item.highSeverityCount ?? 0) > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {(item.technicalEventCount ?? 0) > 0 && (
@@ -231,6 +328,50 @@ function statusStyles(status: string) {
   if (status === 'complete') return 'bg-emerald-100 text-emerald-700';
   if (status === 'processing') return 'bg-blue-100 text-blue-700';
   return 'bg-slate-100 text-slate-600';
+}
+
+function ImportObservabilityNotice({ item }: { item: TachoImportRecord }) {
+  const issue = getTachoImportObservabilityIssue(item);
+  if (!issue) return null;
+
+  if (issue.kind === 'processing_kickoff') {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="text-[10px] font-black uppercase tracking-widest mb-2">{issue.title}</p>
+        <p>{issue.message}</p>
+        {issue.timestamp ? (
+          <p className="mt-2 text-xs text-amber-800">
+            Requested at {format(new Date(issue.timestamp), 'dd MMM yyyy HH:mm')}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (issue.kind === 'trigger_dispatch') {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="text-[10px] font-black uppercase tracking-widest mb-2">{issue.title}</p>
+        <p>{issue.message}</p>
+        {issue.timestamp ? (
+          <p className="mt-2 text-xs text-amber-800">
+            Requested at {format(new Date(issue.timestamp), 'dd MMM yyyy HH:mm')}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (issue.kind === 'processing_error') {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+        <p className="text-[10px] font-black uppercase tracking-widest mb-2">{issue.title}</p>
+        <p>{issue.message}</p>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function StatCard({ label, value, tone }: { label: string; value: string; tone: 'warning' | 'good' | 'danger' }) {

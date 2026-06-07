@@ -182,11 +182,14 @@ Minimum current-compatible insert:
 Observed behavior from the current function:
 
 1. Rejects the request if `record.id` or `record.file_path` is missing.
-2. Sets `tachograph_files.status = 'processing'`.
-3. Downloads from storage bucket `tachograph-files` using `record.file_path`.
-4. Uses `record.driver_id`, `record.vehicle_id`, and `record.source_type` as strong hints.
-5. Falls back to matching `profiles.tacho_card_number` and `vehicles.reg_number` when explicit ids are absent.
-6. Writes the final row with `status`, `processed_at`, resolved `driver_id`, resolved `vehicle_id`, `source_type`, and merged metadata.
+2. Requires either:
+   - an authenticated manager session whose `profiles.company_id` matches `record.company_id`, or
+   - a valid `x-tacho-trigger-token` header matching `PROCESS_TACHO_TRIGGER_TOKEN`
+3. Sets `tachograph_files.status = 'processing'`.
+4. Downloads from storage bucket `tachograph-files` using `record.file_path`.
+5. Uses `record.driver_id`, `record.vehicle_id`, and `record.source_type` as strong hints.
+6. Falls back to matching `profiles.tacho_card_number` and `vehicles.reg_number` when explicit ids are absent.
+7. Writes the final row with `status`, `processed_at`, resolved `driver_id`, resolved `vehicle_id`, `source_type`, and merged metadata.
 
 ## Import Correlation Rules
 
@@ -198,12 +201,15 @@ Recommended correlation fields to preserve from helper to import row:
 - `metadata.export_sha256`
 - `metadata.reader_device_id`
 - `metadata.ingest_source = 'reader_helper'`
+- `metadata.processing_kickoff_requested_at`
+- `metadata.processing_kickoff_error`
 
 These fields are useful for:
 
 - showing the operator which helper read created which import
 - retrying a failed backend run without re-reading the card
 - diagnosing duplicate uploads or reader-side export issues
+- surfacing kickoff/dispatch issues in the import queue
 
 ## Review-Target Correlation
 
@@ -247,14 +253,43 @@ Why this order:
 2. Helper exports the raw file and exposes the export descriptor plus `downloadPath`.
 3. Browser uploads the exported bytes to `tachograph-files`.
 4. Browser inserts the `tachograph_files` row with helper metadata.
-5. Existing deployment trigger or webhook invokes `process-tacho` with `{ "record": <inserted row> }`.
+5. Browser invokes `process-tacho` directly with `{ "record": <inserted row> }`.
 6. Browser polls import status by `importId`.
 7. Once processing finishes, browser resolves `driverId` and `focusedDate` from Supabase and only then marks the helper flow `complete`.
 
-## Known Gap
+## Optional Deployment Trigger Path
 
-This repo contains the processor but not the in-database or webhook trigger that calls `process-tacho` for new `tachograph_files` rows.
+If you still want database-initiated processing for non-browser ingest paths, that trigger or webhook should call the same function input shape and use the dedicated header:
 
-That missing deployment-owned trigger is the same boundary referenced in the roadmap note about replacing the exposed trigger bearer pattern safely.
+- header: `x-tacho-trigger-token`
+- secret: `PROCESS_TACHO_TRIGGER_TOKEN`
 
-Until that trigger path is finalized, the helper build should treat `{ "record": <inserted row> }` as the stable processor input and avoid depending on any additional unpublished backend payload shape.
+That keeps the function callable from trusted backend automation without reusing a service-role bearer in trigger SQL.
+
+The stable integration point remains `{ "record": <inserted row> }`.
+
+This repo now includes a trigger-dispatch migration for that path:
+
+- `supabase/migrations/20260606120000_add_tacho_trigger_dispatch.sql`
+- `supabase/migrations/20260607113000_add_tacho_runtime_config_rpc.sql`
+- `docs/tacho-processing-runtime-config.md`
+
+It is intentionally scoped so that:
+
+- rows with `metadata.upload_origin = 'browser_manual'`
+- rows with `metadata.upload_origin = 'browser_assisted'`
+
+do not auto-dispatch, because the browser now invokes `process-tacho` directly.
+
+After deploy, configure the private runtime row with:
+
+1. `trigger_enabled = true`
+2. `process_tacho_url = '<your deployed process-tacho function URL>'`
+3. `trigger_token = '<same value as PROCESS_TACHO_TRIGGER_TOKEN>'`
+
+If direct SQL access is inconvenient, this repo now also includes:
+
+- `supabase/functions/configure-tacho-processing-runtime/index.ts`
+- `tools/tacho-processing/configure-runtime.mjs`
+
+That path lets you inspect and update the runtime row through a dedicated admin token instead of requiring `psql`.

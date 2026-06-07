@@ -41,6 +41,12 @@ export interface TachoImportRecord {
   discrepancyCount?: number;
   reconciliationIssueCount?: number;
   highSeverityCount?: number;
+  ingestSource?: string;
+  processingError?: string;
+  processingKickoffError?: string;
+  triggerDispatchError?: string;
+  triggerDispatchRequestedAt?: string;
+  processingKickoffRequestedAt?: string;
   discrepancyPreview?: VehicleMotionDiscrepancy[];
   reconciliationPreview?: TachoReconciliationItem[];
 }

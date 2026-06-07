@@ -49,6 +49,13 @@ Based on the current frontend and this implementation pass:
   - a regression harness now validates all named mock-helper scenarios automatically
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
   - browser-assisted helper imports now upload exported files into Supabase Storage and register `tachograph_files` rows
+  - browser-originated imports now request `process-tacho` directly instead of depending on undeclared deployment glue
+  - an optional DB-trigger dispatch path now exists for non-browser ingest, using a dedicated trigger token instead of a bearer secret in SQL
+  - import-centre observability now surfaces kickoff failures, trigger-dispatch failures, and processor errors from import metadata
+  - runtime SQL configuration guidance now exists for the optional DB-trigger dispatch path
+  - a dedicated admin edge function and local script now exist to configure or inspect the optional DB-trigger runtime without direct SQL tooling
+  - import monitoring now has repo-backed summary logic, telemetry hooks, and a synthetic regression fixture set for failure-state stability
+  - imports with kickoff, dispatch, or failed-processing issues can now request a direct processing retry from the review pane
   - successful helper completion can auto-open focused driver analysis
   - the manual upload fallback now sits beside the helper workflow on the same page
 
@@ -208,6 +215,8 @@ Specifically ensure the following migrations are live:
 
 - `20260511093000_add_tacho_reconciliation_contract.sql`
 - `20260512100000_add_tacho_signal_review_focus.sql`
+- `20260606120000_add_tacho_trigger_dispatch.sql`
+- `20260607113000_add_tacho_runtime_config_rpc.sql`
 
 ---
 
@@ -515,6 +524,7 @@ Primary design:
 - Show meaningful local + backend progress states.
 - Preserve import-centre consistency.
 - Browser-assisted registration is now wired so helper exports can enter the real import queue without manual file picking.
+- Browser-originated uploads now also request backend processing directly after registration.
 
 #### 8.4 Auto-open analysis
 
@@ -562,12 +572,22 @@ Make the full tacho system safe for operational rollout.
   - partial imports
   - mapping failures
   - unexpected payload shapes
+- Import queue now surfaces:
+  - `processing_error`
+  - `processing_kickoff_error`
+  - `trigger_dispatch_error`
+  from `tachograph_files.metadata`
+- Import review now exposes a retry action for imports that can safely request processing again.
+- Repo-backed synthetic regression fixtures now cover import monitoring and retry-state handling while real binary files are still pending.
 
 #### 9.4 Security and RLS review
 
 - Review all new normalized tables and RPCs.
 - Confirm least-privilege access patterns.
 - Confirm trigger/function auth patterns are safe.
+- `process-tacho` now requires either an authenticated manager session for the import company or a dedicated trigger token header.
+- Optional non-browser DB dispatch now uses `private.tacho_processing_runtime` plus `x-tacho-trigger-token`, not a service-role bearer in SQL.
+- Runtime inspection and configuration can now also be performed through a dedicated admin edge function instead of requiring direct SQL access.
 
 #### 9.5 Data migration / backfill
 

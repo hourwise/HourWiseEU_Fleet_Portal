@@ -1,13 +1,14 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../../contexts/AuthContext';
-import { supabase } from '../../../lib/supabase';
+import { registerManualTachoImport } from '../../../lib/tacho/helperImport';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, History } from 'lucide-react';
 
 export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
   const { profile } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -15,9 +16,12 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
 
     setUploading(true);
     setError(null);
+    setWarning(null);
     setSuccess(false);
 
     try {
+      const kickoffWarnings: string[] = [];
+
       for (const file of acceptedFiles) {
         const fileExt = file.name.split('.').pop()?.toLowerCase();
         // Standard tachograph file extensions
@@ -25,31 +29,20 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
           throw new Error(`Unsupported file type: .${fileExt}. Please upload .DDD or .V1B files.`);
         }
 
-        const fileName = `${Date.now()}_${file.name}`;
-        const filePath = `${profile.company_id}/${fileName}`;
+        const result = await registerManualTachoImport({
+          companyId: profile.company_id,
+          file,
+        });
 
-        // 1. Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('tachograph-files')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        // 2. Insert record into database to trigger processing
-        const { error: dbError } = await supabase
-          .from('tachograph_files' as never)
-          .insert({
-            company_id: profile.company_id,
-            filename: file.name,
-            file_path: filePath,
-            file_type: fileExt,
-            status: 'pending'
-          } as never);
-
-        if (dbError) throw dbError;
+        if (!result.kickoff.started && result.kickoff.error) {
+          kickoffWarnings.push(`${file.name}: ${result.kickoff.error}`);
+        }
       }
 
       setSuccess(true);
+      if (kickoffWarnings.length > 0) {
+        setWarning(`Imports were registered, but processing kickoff did not confirm: ${kickoffWarnings.join(' | ')}`);
+      }
       onUploaded?.();
     } catch (err: unknown) {
       console.error('Upload error:', err);
@@ -127,6 +120,19 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
               <p className="text-[11px] text-rose-700">{error}</p>
             </div>
             <button onClick={() => setError(null)} className="text-rose-400 hover:text-rose-600">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {warning && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-bold text-amber-900">Processing Follow-up Needed</p>
+              <p className="text-[11px] text-amber-800">{warning}</p>
+            </div>
+            <button onClick={() => setWarning(null)} className="text-amber-400 hover:text-amber-600">
               <X size={14} />
             </button>
           </div>

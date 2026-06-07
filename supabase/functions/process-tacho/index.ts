@@ -20,7 +20,7 @@ const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-tacho-trigger-token",
 };
 
 type ImportRecord = {
@@ -172,6 +172,84 @@ type DutyWindow = SharedDutyWindow & {
   activities: NormalizedActivityRow[];
 };
 
+type AuthorizedImportActor =
+  | { kind: "trigger" }
+  | {
+      kind: "user";
+      userId: string;
+      companyId: string | null;
+      role: "driver" | "manager" | null;
+    };
+
+function unauthorizedResponse(message: string, status = 401) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function authorizeImportRequest(
+  req: Request,
+  record: ImportRecord
+): Promise<AuthorizedImportActor | Response> {
+  const triggerToken = req.headers.get("x-tacho-trigger-token");
+  const configuredTriggerToken = Deno.env.get("PROCESS_TACHO_TRIGGER_TOKEN");
+
+  if (configuredTriggerToken && triggerToken === configuredTriggerToken) {
+    return { kind: "trigger" };
+  }
+
+  const authorization = req.headers.get("Authorization");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+  if (!authorization || !supabaseUrl || !anonKey) {
+    return unauthorizedResponse("Missing authorized processing context.");
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: {
+      headers: {
+        Authorization: authorization,
+      },
+    },
+  });
+
+  const {
+    data: { user },
+    error: userError,
+  } = await userClient.auth.getUser();
+
+  if (userError || !user) {
+    return unauthorizedResponse("Unable to verify the processing user.");
+  }
+
+  const { data: profile, error: profileError } = await userClient
+    .from("profiles")
+    .select("company_id, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    return unauthorizedResponse("Unable to load the processing user profile.");
+  }
+
+  if (profile.role !== "manager") {
+    return unauthorizedResponse("Only manager users can process tachograph imports.", 403);
+  }
+
+  if (record.company_id && profile.company_id !== record.company_id) {
+    return unauthorizedResponse("Import company does not match the authenticated manager.", 403);
+  }
+
+  return {
+    kind: "user",
+    userId: user.id,
+    companyId: profile.company_id ?? null,
+    role: profile.role ?? null,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -190,6 +268,11 @@ serve(async (req) => {
 
     if (!record?.id || !record.file_path) {
       throw new Error("Missing tachograph file payload.");
+    }
+
+    const authorizedActor = await authorizeImportRequest(req, record);
+    if (authorizedActor instanceof Response) {
+      return authorizedActor;
     }
 
     await supabaseAdmin

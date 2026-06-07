@@ -13,6 +13,7 @@ import {
   acknowledgeReaderHelperImport,
   fetchDriverReviewFocusDate,
   fetchReaderHelperImportStatus,
+  kickoffTachoImportProcessing,
   registerReaderHelperImport,
   type ReaderHelperImportStatus,
 } from '../../../lib/tacho/helperImport';
@@ -490,6 +491,8 @@ export function TachoReaderHelperPanel({
           },
         });
 
+        const kickoff = await kickoffTachoImportProcessing(registration.record);
+
         await acknowledgeReaderHelperImport({
           helperUrl,
           readSessionId: helperStatus.readSessionId!,
@@ -506,7 +509,11 @@ export function TachoReaderHelperPanel({
           readSessionId: helperStatus.readSessionId!,
           importId: registration.importId,
         });
-        setImportMessage(`Import ${registration.importId} registered from the helper export.`);
+        setImportMessage(
+          kickoff.started
+            ? `Import ${registration.importId} registered from the helper export and processing was requested.`
+            : `Import ${registration.importId} registered from the helper export, but processing kickoff did not confirm: ${kickoff.error ?? 'Unknown error'}.`
+        );
         onImportRegistered?.();
         await refreshStatus();
       } catch (error) {

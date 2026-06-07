@@ -92,6 +92,20 @@ const MOCK_IMPORTS: TachoImportRecord[] = [
     progressPercent: 100,
     driverName: 'Amanda Reid',
     summary: 'Parser rejected one corrupted activity block. Retry recommended.',
+    processingError: 'Corrupted activity block at offset 21844.',
+  },
+  {
+    id: 'import-4',
+    sourceType: 'vehicle_unit',
+    fileName: 'HX24FLT_20260605.DDD',
+    fileType: 'ddd',
+    importedAt: '2026-06-05T18:05:00Z',
+    status: 'queued',
+    progressPercent: 20,
+    vehicleReg: 'HX24 FLT',
+    summary: 'Import is waiting for a backend retry after processing kickoff did not confirm.',
+    processingKickoffError: 'Edge Function returned 401 while browser kickoff was attempted.',
+    processingKickoffRequestedAt: '2026-06-05T18:05:12Z',
   },
 ];
 

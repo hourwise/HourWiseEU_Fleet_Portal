@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { reportTachoImportTelemetry } from './importTelemetry';
 
 const SUPPORTED_TACHO_FILE_TYPES = ['ddd', 'v1b', 'c1b', 'tgd'] as const;
 
@@ -30,6 +31,7 @@ export interface RegisteredReaderHelperImport {
   filePath: string;
   sourceType?: string;
   metadata: HelperImportMetadata;
+  record: ProcessTachoImportRecord;
 }
 
 export interface ReaderHelperImportStatus {
@@ -44,6 +46,23 @@ export interface ReaderHelperImportStatus {
   vehicleReg?: string | null;
   summary?: string | null;
   focusedDate?: string | null;
+}
+
+export interface ProcessTachoImportRecord {
+  id: string;
+  company_id: string;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  file_path: string;
+  file_type: string;
+  filename: string;
+  metadata: HelperImportMetadata;
+  source_type: string | null;
+}
+
+export interface TachoProcessingKickoffResult {
+  started: boolean;
+  error?: string;
 }
 
 function deriveFileName(descriptor: ReaderHelperExportDescriptor) {
@@ -73,15 +92,248 @@ async function downloadHelperExportBlob(descriptor: ReaderHelperExportDescriptor
     throw new Error('Helper export download path was not provided.');
   }
 
-  const response = await fetch(buildExportUrl(descriptor.helperUrl, descriptor.exportDownloadPath), {
-    method: 'GET',
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildExportUrl(descriptor.helperUrl, descriptor.exportDownloadPath), {
+      method: 'GET',
+    });
+  } catch (error) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Failed to reach the local helper export endpoint.',
+      error,
+      context: {
+        stage: 'helper_download',
+        readSessionId: descriptor.readSessionId,
+        fileName: descriptor.exportFileName,
+        sourceType: descriptor.sourceType ?? null,
+        ingestSource: 'reader_helper',
+      },
+    });
+    throw error;
+  }
 
   if (!response.ok) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: `Helper export download returned ${response.status}.`,
+      context: {
+        stage: 'helper_download',
+        readSessionId: descriptor.readSessionId,
+        fileName: descriptor.exportFileName,
+        sourceType: descriptor.sourceType ?? null,
+        ingestSource: 'reader_helper',
+      },
+    });
     throw new Error(`Failed to download helper export: ${response.status}`);
   }
 
   return response.blob();
+}
+
+function toProcessTachoRecord(input: {
+  id: string;
+  companyId: string;
+  filePath: string;
+  fileType: string;
+  fileName: string;
+  metadata: HelperImportMetadata;
+  sourceType?: string | null;
+  driverId?: string | null;
+  vehicleId?: string | null;
+}): ProcessTachoImportRecord {
+  return {
+    id: input.id,
+    company_id: input.companyId,
+    driver_id: input.driverId ?? null,
+    vehicle_id: input.vehicleId ?? null,
+    file_path: input.filePath,
+    file_type: input.fileType,
+    filename: input.fileName,
+    metadata: input.metadata,
+    source_type: input.sourceType ?? null,
+  };
+}
+
+async function insertPendingTachoImport(args: {
+  companyId: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  sourceType?: string | null;
+  metadata: HelperImportMetadata;
+  driverId?: string | null;
+  vehicleId?: string | null;
+}) {
+  const insertPayload = {
+    company_id: args.companyId,
+    filename: args.fileName,
+    file_path: args.filePath,
+    file_type: args.fileType,
+    status: 'pending',
+    source_type: args.sourceType ?? null,
+    driver_id: args.driverId ?? null,
+    vehicle_id: args.vehicleId ?? null,
+    metadata: args.metadata,
+  };
+
+  const { data, error } = await supabase
+    .from('tachograph_files' as never)
+    .insert(insertPayload as never)
+    .select('id')
+    .single();
+
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Failed to insert tachograph import record.',
+      error,
+      context: {
+        stage: 'import_insert',
+        companyId: args.companyId,
+        fileName: args.fileName,
+        filePath: args.filePath,
+        sourceType: args.sourceType ?? null,
+        ingestSource: typeof args.metadata.ingest_source === 'string' ? args.metadata.ingest_source : undefined,
+      },
+    });
+    throw error;
+  }
+
+  return toProcessTachoRecord({
+    id: (data as { id: string }).id,
+    companyId: args.companyId,
+    filePath: args.filePath,
+    fileType: args.fileType,
+    fileName: args.fileName,
+    metadata: args.metadata,
+    sourceType: args.sourceType,
+    driverId: args.driverId,
+    vehicleId: args.vehicleId,
+  });
+}
+
+async function persistImportMetadata(importId: string, metadata: HelperImportMetadata) {
+  const { error } = await supabase
+    .from('tachograph_files' as never)
+    .update({ metadata } as never)
+    .eq('id', importId);
+
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Failed to persist tachograph import metadata.',
+      error,
+      context: {
+        stage: 'metadata_persist',
+        importId,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function kickoffTachoImportProcessing(record: ProcessTachoImportRecord): Promise<TachoProcessingKickoffResult> {
+  const requestedAt = new Date().toISOString();
+  const { error } = await supabase.functions.invoke('process-tacho', {
+    body: { record },
+  });
+
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Tachograph processing kickoff did not confirm successfully.',
+      error,
+      context: {
+        stage: 'processing_kickoff',
+        companyId: record.company_id,
+        importId: record.id,
+        fileName: record.filename,
+        filePath: record.file_path,
+        sourceType: record.source_type,
+        ingestSource: typeof record.metadata.ingest_source === 'string' ? record.metadata.ingest_source : undefined,
+      },
+    });
+  }
+
+  const nextMetadata: HelperImportMetadata = {
+    ...record.metadata,
+    processing_kickoff_requested_at: requestedAt,
+    processing_kickoff_origin: 'browser_direct',
+    processing_kickoff_error: error?.message ?? null,
+  };
+
+  try {
+    await persistImportMetadata(record.id, nextMetadata);
+    record.metadata = nextMetadata;
+  } catch (metadataError) {
+    return {
+      started: false,
+      error:
+        metadataError instanceof Error
+          ? `Processing request result could not be recorded: ${metadataError.message}`
+          : 'Processing request result could not be recorded.',
+    };
+  }
+
+  if (error) {
+    return {
+      started: false,
+      error: error.message,
+    };
+  }
+
+  return { started: true };
+}
+
+export async function registerManualTachoImport(args: {
+  companyId: string;
+  file: File;
+}) {
+  const fileType = deriveFileType(args.file.name);
+  const storageFileName = `${Date.now()}_${args.file.name}`;
+  const filePath = `${args.companyId}/${storageFileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('tachograph-files')
+    .upload(filePath, args.file, {
+      contentType: 'application/octet-stream',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Manual tachograph upload to storage failed.',
+      error: uploadError,
+      context: {
+        stage: 'storage_upload',
+        companyId: args.companyId,
+        fileName: args.file.name,
+        filePath,
+        ingestSource: 'manual_upload',
+      },
+    });
+    throw uploadError;
+  }
+
+  const metadata: HelperImportMetadata = {
+    ingest_source: 'manual_upload',
+    upload_origin: 'browser_manual',
+  };
+
+  const record = await insertPendingTachoImport({
+    companyId: args.companyId,
+    fileName: args.file.name,
+    filePath,
+    fileType,
+    metadata,
+  });
+
+  return {
+    record,
+    kickoff: await kickoffTachoImportProcessing(record),
+  };
 }
 
 export async function registerReaderHelperImport(args: {
@@ -108,6 +360,20 @@ export async function registerReaderHelperImport(args: {
     });
 
   if (uploadError) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Reader-helper tachograph upload to storage failed.',
+      error: uploadError,
+      context: {
+        stage: 'storage_upload',
+        companyId,
+        readSessionId: descriptor.readSessionId,
+        fileName,
+        filePath,
+        sourceType: descriptor.sourceType ?? null,
+        ingestSource: 'reader_helper',
+      },
+    });
     throw uploadError;
   }
 
@@ -124,33 +390,23 @@ export async function registerReaderHelperImport(args: {
     vehicle_reg: descriptor.vehicleRegHint ?? null,
   };
 
-  const insertPayload = {
-    company_id: companyId,
-    filename: fileName,
-    file_path: filePath,
-    file_type: fileType,
-    status: 'pending',
-    source_type: descriptor.sourceType ?? null,
+  const record = await insertPendingTachoImport({
+    companyId,
+    fileName,
+    filePath,
+    fileType,
+    sourceType: descriptor.sourceType ?? null,
     metadata,
-  };
-
-  const { data, error: insertError } = await supabase
-    .from('tachograph_files' as never)
-    .insert(insertPayload as never)
-    .select('id')
-    .single();
-
-  if (insertError) {
-    throw insertError;
-  }
+  });
 
   return {
-    importId: (data as { id: string }).id,
+    importId: record.id,
     fileName,
     fileType,
     filePath,
     sourceType: descriptor.sourceType,
     metadata,
+    record,
   };
 }
 
@@ -180,6 +436,19 @@ export async function acknowledgeReaderHelperImport(args: {
   });
 
   if (!response.ok) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: `Helper import acknowledgement returned ${response.status}.`,
+      context: {
+        stage: 'helper_acknowledge',
+        importId: args.importId,
+        readSessionId: args.readSessionId,
+        fileName: args.fileName,
+        filePath: args.uploadedStoragePath,
+        sourceType: args.sourceType ?? null,
+        ingestSource: 'reader_helper',
+      },
+    });
     throw new Error(`Helper import registration failed: ${response.status}`);
   }
 
@@ -194,7 +463,19 @@ export async function fetchReaderHelperImportStatus(companyId: string, importId:
     .eq('id', importId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Failed to fetch helper import status from Supabase.',
+      error,
+      context: {
+        stage: 'import_status',
+        companyId,
+        importId,
+      },
+    });
+    throw error;
+  }
   if (!data) return null;
 
   const metadata = (data as { metadata?: HelperImportMetadata | null }).metadata ?? {};
@@ -242,4 +523,54 @@ export async function fetchDriverReviewFocusDate(companyId: string, driverId: st
   const complianceFocus = await fetchLatestReviewFocusFromTable('driver_tacho_compliance_signals', companyId, driverId);
   if (complianceFocus) return complianceFocus;
   return fetchLatestReviewFocusFromTable('driver_tacho_risk_signals', companyId, driverId);
+}
+
+export async function retryTachoImportProcessing(companyId: string, importId: string): Promise<TachoProcessingKickoffResult> {
+  const { data, error } = await supabase
+    .from('tachograph_files' as never)
+    .select('id,company_id,driver_id,vehicle_id,file_path,file_type,filename,metadata,source_type')
+    .eq('company_id', companyId)
+    .eq('id', importId)
+    .maybeSingle();
+
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Failed to reload tachograph import for retry.',
+      error,
+      context: {
+        stage: 'processing_retry',
+        companyId,
+        importId,
+      },
+    });
+    throw error;
+  }
+
+  if (!data) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Retry was requested for an import that could not be found.',
+      context: {
+        stage: 'processing_retry',
+        companyId,
+        importId,
+      },
+    });
+    throw new Error('Import record not found for retry.');
+  }
+
+  const record = toProcessTachoRecord({
+    id: data.id,
+    companyId: data.company_id,
+    filePath: data.file_path,
+    fileType: data.file_type,
+    fileName: data.filename,
+    metadata: (data.metadata as HelperImportMetadata | null) ?? {},
+    sourceType: data.source_type,
+    driverId: data.driver_id,
+    vehicleId: data.vehicle_id,
+  });
+
+  return kickoffTachoImportProcessing(record);
 }
