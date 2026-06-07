@@ -105,6 +105,14 @@ function fallbackDaySummaries(daySummaries: TachoDaySummary[] | undefined) {
   return [];
 }
 
+function fallbackActivitySegments(bundle: TachoParserBundle) {
+  if (Array.isArray(bundle.activitySegments) && bundle.activitySegments.length > 0) {
+    return bundle.activitySegments;
+  }
+
+  return fallbackDaySummaries(bundle.daySummaries).flatMap((day) => day.activities);
+}
+
 export function deriveVehicleMotionDiscrepancies(
   technicalEvents: TachoFinding[],
   findings: TachoFinding[]
@@ -192,6 +200,7 @@ export function adaptDriverBundleToAnalysis(
         driverDownloadStatus(download) === 'ok' ? 'good' : 'warning'
       ),
     ],
+    activitySegments: fallbackActivitySegments(bundle),
     dailySummaries: daySummaries,
     findings,
     technicalEvents,
@@ -254,6 +263,7 @@ export function adaptVehicleBundleToAnalysis(
         vehicleDownloadStatus(download) === 'ok' ? 'good' : 'warning'
       ),
     ],
+    activitySegments: fallbackActivitySegments(bundle),
     dailySummaries: fallbackDaySummaries(bundle.daySummaries),
     findings,
     technicalEvents,

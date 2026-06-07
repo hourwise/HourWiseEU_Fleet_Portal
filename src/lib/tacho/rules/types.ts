@@ -6,7 +6,7 @@ export type TachoFindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'inf
 
 export type TachoFindingStatus = 'breach' | 'warning' | 'info';
 
-export type TachoAnalysisRange = '7d' | '30d' | '3m' | '6m';
+export type TachoAnalysisRange = '7d' | '30d' | '3m' | '6m' | '12m';
 
 export type TachoImportStatus = 'uploaded' | 'queued' | 'processing' | 'complete' | 'partial' | 'failed';
 
@@ -185,6 +185,7 @@ export interface DriverCardAnalysisData {
   range: TachoAnalysisRange;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
+  activitySegments: TachoActivitySegment[];
   findings: TachoFinding[];
   technicalEvents: TachoFinding[];
   reconciliation: TachoReconciliationItem[];
@@ -195,6 +196,7 @@ export interface VehicleUnitAnalysisData {
   range: TachoAnalysisRange;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
+  activitySegments: TachoActivitySegment[];
   findings: TachoFinding[];
   technicalEvents: TachoFinding[];
   unassignedMotion: VehicleMotionDiscrepancy[];

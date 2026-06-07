@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import type { ElementType } from 'react';
-import { Activity, CreditCard, FileUp, ShieldAlert, Truck } from 'lucide-react';
+import { Activity, CreditCard, FileUp, FlaskConical, ShieldAlert, Truck } from 'lucide-react';
 import { ComplianceScoreboard } from '../ComplianceScoreboard';
 import { InfringementManagement } from '../InfringementManagement';
 import { DriverCardAnalysis } from './DriverCardAnalysis';
 import { TachoImportCentre } from './TachoImportCentre';
+import { TachoSimulatorPreview } from './TachoSimulatorPreview';
 import { VehicleUnitAnalysis } from './VehicleUnitAnalysis';
 
-type Tab = 'overview' | 'imports' | 'driver_cards' | 'vehicle_units';
+type Tab = 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' | 'simulator';
 
-const TABS: { id: Tab; label: string; icon: ElementType }[] = [
+const BASE_TABS: { id: Exclude<Tab, 'simulator'>; label: string; icon: ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'imports', label: 'Import Centre', icon: FileUp },
   { id: 'driver_cards', label: 'Driver Cards', icon: CreditCard },
@@ -43,18 +44,22 @@ export function TachoComplianceWorkspace({
   focusedDriverId?: string;
   focusedDate?: string;
 }) {
+  const isDev = import.meta.env.DEV;
+  const tabs: { id: Tab; label: string; icon: ElementType }[] = isDev
+    ? [...BASE_TABS, { id: 'simulator', label: 'Simulator', icon: FlaskConical }]
+    : BASE_TABS;
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'overview');
 
   useEffect(() => {
-    if (initialTab) {
+    if (initialTab && (initialTab !== 'simulator' || isDev)) {
       setActiveTab(initialTab);
     }
-  }, [initialTab]);
+  }, [initialTab, isDev]);
 
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 flex flex-wrap gap-2">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
@@ -107,6 +112,7 @@ export function TachoComplianceWorkspace({
           onOpenIncidents={onOpenVehicleIncidents}
         />
       )}
+      {isDev && activeTab === 'simulator' && <TachoSimulatorPreview />}
     </div>
   );
 }

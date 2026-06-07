@@ -35,6 +35,8 @@ function buildActivity(
     id: `${date}-${start}-${activityType}-${source}`,
     source,
     activityType,
+    driverId: 'driver-001',
+    vehicleId: 'vehicle-001',
     startTime,
     endTime,
     durationMins,
@@ -302,14 +304,23 @@ const reconciliation: TachoReconciliationItem[] = [
 ];
 
 function metricsForRange(range: TachoAnalysisRange): TachoSummaryMetric[] {
-  const rangeLabel = range === '7d' ? '7 days' : range === '30d' ? '30 days' : range === '3m' ? '3 months' : '6 months';
+  const rangeLabel =
+    range === '7d'
+      ? '7 days'
+      : range === '30d'
+      ? '30 days'
+      : range === '3m'
+      ? '3 months'
+      : range === '6m'
+      ? '6 months'
+      : '12 months';
 
   return [
-    { label: `${rangeLabel} Driving Breaches`, value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '7' : '11', tone: 'warning' },
-    { label: 'WTD Alerts', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : '8', tone: 'neutral' },
-    { label: 'App/Tacho Mismatches', value: range === '7d' ? '2' : range === '30d' ? '5' : range === '3m' ? '8' : '10', tone: 'danger' },
-    { label: 'Linked VU Events', value: range === '7d' ? '3' : range === '30d' ? '5' : range === '3m' ? '8' : '12', tone: 'warning' },
-    { label: 'Download Status', value: range === '6m' ? '1 overdue risk' : 'Due soon', tone: 'warning' },
+    { label: `${rangeLabel} Driving Breaches`, value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '7' : range === '6m' ? '11' : '18', tone: 'warning' },
+    { label: 'WTD Alerts', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : range === '6m' ? '8' : '13', tone: 'neutral' },
+    { label: 'App/Tacho Mismatches', value: range === '7d' ? '2' : range === '30d' ? '5' : range === '3m' ? '8' : range === '6m' ? '10' : '16', tone: 'danger' },
+    { label: 'Linked VU Events', value: range === '7d' ? '3' : range === '30d' ? '5' : range === '3m' ? '8' : range === '6m' ? '12' : '19', tone: 'warning' },
+    { label: 'Download Status', value: range === '12m' ? '1 overdue risk' : 'Due soon', tone: 'warning' },
   ];
 }
 
@@ -327,6 +338,7 @@ export function getMockDriverCardAnalysis(range: TachoAnalysisRange): DriverCard
     range,
     metrics: metricsForRange(range),
     dailySummaries,
+    activitySegments: dailySummaries.flatMap((day) => day.activities),
     findings,
     technicalEvents,
     reconciliation,

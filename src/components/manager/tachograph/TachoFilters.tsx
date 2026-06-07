@@ -5,6 +5,7 @@ const OPTIONS: { id: TachoAnalysisRange; label: string }[] = [
   { id: '30d', label: '30 Days' },
   { id: '3m', label: '3 Months' },
   { id: '6m', label: '6 Months' },
+  { id: '12m', label: '12 Months' },
 ];
 
 interface TachoFiltersProps {

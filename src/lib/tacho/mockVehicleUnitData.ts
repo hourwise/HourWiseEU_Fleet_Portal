@@ -21,7 +21,8 @@ function buildActivity(
   start: string,
   end: string,
   activityType: TachoActivitySegment['activityType'],
-  label?: string
+  label?: string,
+  driverId?: string | null
 ): TachoActivitySegment {
   const startTime = `${date}T${start}:00Z`;
   const endTime = `${date}T${end}:00Z`;
@@ -30,6 +31,8 @@ function buildActivity(
     id: `${date}-${start}-${activityType}`,
     source: 'vehicle_unit',
     activityType,
+    driverId: driverId ?? null,
+    vehicleId: 'vehicle-001',
     startTime,
     endTime,
     durationMins: Math.max(0, Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000)),
@@ -48,8 +51,8 @@ const dailySummaries: TachoDaySummary[] = [
     vuEventCount: 1,
     activities: [
       buildActivity(isoDay(0), '05:40', '09:00', 'driving'),
-      buildActivity(isoDay(0), '09:00', '09:45', 'break_rest'),
-      buildActivity(isoDay(0), '09:45', '13:25', 'driving'),
+      buildActivity(isoDay(0), '09:00', '09:45', 'break_rest', undefined, 'driver-001'),
+      buildActivity(isoDay(0), '09:45', '13:25', 'driving', undefined, 'driver-001'),
     ],
   },
   {
@@ -61,9 +64,9 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 3,
     vuEventCount: 2,
     activities: [
-      buildActivity(isoDay(1), '06:10', '10:00', 'driving'),
-      buildActivity(isoDay(1), '10:00', '10:45', 'break_rest'),
-      buildActivity(isoDay(1), '10:45', '13:30', 'driving'),
+      buildActivity(isoDay(1), '06:10', '10:00', 'driving', undefined, 'driver-001'),
+      buildActivity(isoDay(1), '10:00', '10:45', 'break_rest', undefined, 'driver-001'),
+      buildActivity(isoDay(1), '10:45', '13:30', 'driving', undefined, 'driver-002'),
     ],
   },
   {
@@ -75,9 +78,9 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 0,
     vuEventCount: 0,
     activities: [
-      buildActivity(isoDay(2), '08:00', '10:10', 'driving'),
-      buildActivity(isoDay(2), '10:10', '10:55', 'break_rest'),
-      buildActivity(isoDay(2), '10:55', '12:10', 'driving'),
+      buildActivity(isoDay(2), '08:00', '10:10', 'driving', undefined, 'driver-002'),
+      buildActivity(isoDay(2), '10:10', '10:55', 'break_rest', undefined, 'driver-002'),
+      buildActivity(isoDay(2), '10:55', '12:10', 'driving', undefined, 'driver-002'),
     ],
   },
   {
@@ -89,9 +92,9 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 2,
     vuEventCount: 2,
     activities: [
-      buildActivity(isoDay(3), '05:30', '09:40', 'driving'),
-      buildActivity(isoDay(3), '09:40', '10:25', 'break_rest'),
-      buildActivity(isoDay(3), '10:25', '13:55', 'driving'),
+      buildActivity(isoDay(3), '05:30', '09:40', 'driving', undefined, 'driver-003'),
+      buildActivity(isoDay(3), '09:40', '10:25', 'break_rest', undefined, 'driver-003'),
+      buildActivity(isoDay(3), '10:25', '13:55', 'driving', undefined, 'driver-003'),
     ],
   },
   {
@@ -103,8 +106,8 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 1,
     vuEventCount: 1,
     activities: [
-      buildActivity(isoDay(4), '07:30', '09:00', 'driving'),
-      buildActivity(isoDay(4), '09:00', '09:50', 'break_rest'),
+      buildActivity(isoDay(4), '07:30', '09:00', 'driving', undefined, 'driver-004'),
+      buildActivity(isoDay(4), '09:00', '09:50', 'break_rest', undefined, 'driver-004'),
       buildActivity(isoDay(4), '09:50', '11:40', 'driving'),
     ],
   },
@@ -117,9 +120,9 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 1,
     vuEventCount: 1,
     activities: [
-      buildActivity(isoDay(5), '06:45', '09:20', 'driving'),
-      buildActivity(isoDay(5), '09:20', '10:05', 'break_rest'),
-      buildActivity(isoDay(5), '10:05', '12:10', 'driving'),
+      buildActivity(isoDay(5), '06:45', '09:20', 'driving', undefined, 'driver-001'),
+      buildActivity(isoDay(5), '09:20', '10:05', 'break_rest', undefined, 'driver-001'),
+      buildActivity(isoDay(5), '10:05', '12:10', 'driving', undefined, 'driver-001'),
     ],
   },
   {
@@ -131,9 +134,9 @@ const dailySummaries: TachoDaySummary[] = [
     findingsCount: 0,
     vuEventCount: 0,
     activities: [
-      buildActivity(isoDay(6), '08:15', '10:40', 'driving'),
-      buildActivity(isoDay(6), '10:40', '11:30', 'break_rest'),
-      buildActivity(isoDay(6), '11:30', '12:45', 'driving'),
+      buildActivity(isoDay(6), '08:15', '10:40', 'driving', undefined, 'driver-002'),
+      buildActivity(isoDay(6), '10:40', '11:30', 'break_rest', undefined, 'driver-002'),
+      buildActivity(isoDay(6), '11:30', '12:45', 'driving', undefined, 'driver-002'),
     ],
   },
 ];
@@ -258,11 +261,11 @@ const unassignedMotion: VehicleMotionDiscrepancy[] = [
 
 function metricsForRange(range: TachoAnalysisRange): TachoSummaryMetric[] {
   return [
-    { label: 'Overspeed Events', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : '7', tone: 'danger' },
-    { label: 'Card / Driver Events', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : '4', tone: 'warning' },
-    { label: 'Technical Faults', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : '8', tone: 'warning' },
-    { label: 'Unassigned Motion', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : '9', tone: 'danger' },
-    { label: 'Compliance Findings', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : '4', tone: 'warning' },
+    { label: 'Overspeed Events', value: range === '7d' ? '1' : range === '30d' ? '3' : range === '3m' ? '5' : range === '6m' ? '7' : '12', tone: 'danger' },
+    { label: 'Card / Driver Events', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : range === '6m' ? '4' : '7', tone: 'warning' },
+    { label: 'Technical Faults', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : range === '6m' ? '8' : '13', tone: 'warning' },
+    { label: 'Unassigned Motion', value: range === '7d' ? '2' : range === '30d' ? '4' : range === '3m' ? '6' : range === '6m' ? '9' : '15', tone: 'danger' },
+    { label: 'Compliance Findings', value: range === '7d' ? '1' : range === '30d' ? '2' : range === '3m' ? '3' : range === '6m' ? '4' : '8', tone: 'warning' },
     { label: 'Download Status', value: 'Overdue', tone: 'danger' },
   ];
 }
@@ -281,6 +284,7 @@ export function getMockVehicleUnitAnalysis(range: TachoAnalysisRange): VehicleUn
     range,
     metrics: metricsForRange(range),
     dailySummaries,
+    activitySegments: dailySummaries.flatMap((day) => day.activities),
     findings,
     technicalEvents,
     unassignedMotion,

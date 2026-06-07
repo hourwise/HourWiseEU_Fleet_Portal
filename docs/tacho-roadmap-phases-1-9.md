@@ -58,6 +58,13 @@ Based on the current frontend and this implementation pass:
   - imports with kickoff, dispatch, or failed-processing issues can now request a direct processing retry from the review pane
   - successful helper completion can auto-open focused driver analysis
   - the manual upload fallback now sits beside the helper workflow on the same page
+  - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
+- parser-simulation infrastructure now exists in-repo so rule and reconciliation scenarios can be exercised without real tachograph binaries
+- the simulator library now covers split-break, weekly, fortnight, daily-rest, weekly-rest, WTD-break, and app-vs-tacho mismatch scenarios
+- a dev-only simulator preview tab now renders those scenarios through the actual tachograph timeline and day-detail components
+- the simulator preview now also covers VU technical events and motion-discrepancy presentation for cardless driving, driver mismatch, and overspeed-style scenarios
+- vehicle-history simulator coverage now includes multi-driver consecutive-day use, same-day handover, partial assigned motion gaps, and attribution-conflict scenarios
+- parser-like bad-data simulator coverage now includes overlapping activities, missing timestamps, and malformed timing, with the preview handling those cases as controlled errors instead of crashing
 
 Still external or not fully executable from this repo alone:
 
@@ -217,6 +224,7 @@ Specifically ensure the following migrations are live:
 - `20260512100000_add_tacho_signal_review_focus.sql`
 - `20260606120000_add_tacho_trigger_dispatch.sql`
 - `20260607113000_add_tacho_runtime_config_rpc.sql`
+- `20260607124500_add_tacho_12m_range.sql`
 
 ---
 
@@ -564,6 +572,10 @@ Make the full tacho system safe for operational rollout.
   - multi-manning
   - VU event categories from real files
   - reconciliation edge cases
+- Synthetic simulator coverage now also exercises parser-like bad-data conditions:
+  - overlapping activity records
+  - missing timestamps
+  - malformed discrepancy timing
 
 #### 9.3 Import observability
 

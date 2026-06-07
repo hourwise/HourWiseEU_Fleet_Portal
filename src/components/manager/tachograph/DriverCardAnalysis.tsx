@@ -27,6 +27,9 @@ interface TrainingRecommendation {
   reason: string;
 }
 
+const EMPTY_FINDINGS: TachoFinding[] = [];
+const EMPTY_RECONCILIATION: TachoReconciliationItem[] = [];
+
 export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile, onOpenComplianceActions, onOpenTraining }: DriverCardAnalysisProps) {
   const { profile } = useAuth();
   const [range, setRange] = useState<TachoAnalysisRange>('7d');
@@ -64,9 +67,9 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile,
       .map((entry) => ({ id: entry.id, label: entry.full_name || entry.email, meta: entry.email }));
   }, [drivers, searchValue]);
 
-  const findings = data?.findings ?? [];
-  const technicalEvents = data?.technicalEvents ?? [];
-  const reconciliation = data?.reconciliation ?? [];
+  const findings = data?.findings ?? EMPTY_FINDINGS;
+  const technicalEvents = data?.technicalEvents ?? EMPTY_FINDINGS;
+  const reconciliation = data?.reconciliation ?? EMPTY_RECONCILIATION;
   const dayReason = useMemo(() => {
     if (!selectedDay || !focusedDate) return null;
     if (selectedDay.date !== focusedDate) return `Opened from a review queue focused on ${format(new Date(`${focusedDate}T12:00:00`), 'dd MMM yyyy')}. That day was not present in the current range, so the workspace fell back to the nearest loaded day.`;
@@ -152,25 +155,36 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile,
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr,1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[2.25fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <div><h3 className="text-lg font-black text-slate-900">Weekly / Rolling Timeline</h3><p className="text-sm text-slate-500">The selected driver stays fixed while the review range changes.</p></div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historical Timeline</p>
+              <h3 className="text-lg font-black text-slate-900">Driver Card Activity Strip</h3>
+              <p className="text-sm text-slate-500">This is the primary review surface: scroll the card history, then open any day for evidence and findings.</p>
+            </div>
             <button onClick={() => setSelectedDay(data.dailySummaries[0] ?? null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-black uppercase tracking-widest transition">Open Latest Day</button>
           </div>
           <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
         </div>
 
         <div className="space-y-6">
+          <InfoPanel title="Selected Day Overview" icon={<BadgeAlert className="w-5 h-5 text-blue-600" />}>
+            {selectedDay ? <StatList items={[`Driving: ${minsToHours(selectedDay.drivingMins)}`, `Work: ${minsToHours(selectedDay.workMins)}`, `POA: ${minsToHours(selectedDay.poaMins)}`, `Rest: ${minsToHours(selectedDay.restMins)}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
+          </InfoPanel>
+
           <InfoPanel title="Selected Day Cross-check" icon={<BadgeAlert className="w-5 h-5 text-amber-600" />}>
             {selectedDay ? <StatList items={[`Legal findings: ${findings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Linked VU events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Cross-check issues: ${reconciliation.filter((item) => item.date === selectedDay.date && item.status !== 'matched').length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
           </InfoPanel>
+        </div>
+      </div>
 
-          <InfoPanel title="Training / Action Follow-up" icon={<GraduationCap className="w-5 h-5 text-blue-600" />}>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1fr] gap-6">
+        <InfoPanel title="Training / Action Follow-up" icon={<GraduationCap className="w-5 h-5 text-blue-600" />}>
             {trainingRecommendations.length === 0 ? <p className="text-sm text-slate-500">No repeated tacho patterns currently map to a refresher recommendation for this selected range.</p> : (
               <div className="space-y-3">
                 {trainingRecommendations.map((recommendation) => (
@@ -183,17 +197,20 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile,
                 ))}
               </div>
             )}
-          </InfoPanel>
+        </InfoPanel>
 
-          <InfoPanel title="Evidence Summary" icon={<BadgeAlert className="w-5 h-5 text-rose-600" />}>
-            <StatList items={[`Findings in range: ${findings.length}`, `Technical events in range: ${technicalEvents.length}`, `Cross-check items in range: ${reconciliation.filter((item) => item.status !== 'matched').length}`]} />
-          </InfoPanel>
-        </div>
+        <InfoPanel title="Evidence Summary" icon={<BadgeAlert className="w-5 h-5 text-rose-600" />}>
+          <StatList items={[`Findings in range: ${findings.length}`, `Technical events in range: ${technicalEvents.length}`, `Cross-check items in range: ${reconciliation.filter((item) => item.status !== 'matched').length}`, `Loaded activity segments: ${data.activitySegments.length}`]} />
+        </InfoPanel>
       </div>
 
       <TachoDayDetailDrawer day={selectedDay} findings={findings} technicalEvents={technicalEvents} reconciliation={reconciliation} selectedReason={dayReason} onClose={() => setSelectedDay(null)} />
     </div>
   );
+}
+
+function minsToHours(mins: number) {
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: TachoReconciliationItem[]): TrainingRecommendation[] {

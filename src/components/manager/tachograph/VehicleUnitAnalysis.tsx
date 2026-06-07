@@ -4,12 +4,14 @@ import { AlertTriangle, Gauge, ShieldAlert, Truck, Wrench, ShieldCheck, FileWarn
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useVehicleUnitAnalysis } from '../../../hooks/useVehicleUnitAnalysis';
+import { useDrivers } from '../../../hooks/useDrivers';
 import { useVehicles } from '../../../hooks/useVehicles';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
+import { VehicleHistoryLedger } from './VehicleHistoryLedger';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
-import type { TachoAnalysisRange, TachoDaySummary } from '../../../lib/tacho/rules/types';
+import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
 
 interface VehicleUnitAnalysisProps {
   vehicleId?: string;
@@ -19,6 +21,9 @@ interface VehicleUnitAnalysisProps {
   onOpenIncidents?: (vehicleId: string) => void;
 }
 
+const EMPTY_VU_EVENTS: TachoFinding[] = [];
+const EMPTY_DISCREPANCIES: VehicleMotionDiscrepancy[] = [];
+
 export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord, onOpenMaintenance, onOpenIncidents }: VehicleUnitAnalysisProps) {
   const { profile } = useAuth();
   const [range, setRange] = useState<TachoAnalysisRange>('7d');
@@ -26,6 +31,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
   const [searchValue, setSearchValue] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState(vehicleId ?? '');
   const { data: vehicles = [] } = useVehicles(profile?.company_id ?? undefined);
+  const { data: drivers = [] } = useDrivers(profile?.company_id ?? undefined);
   const { data, loading, error, emptyState, isMock } = useVehicleUnitAnalysis(range, { vehicleId: selectedVehicleId || undefined });
 
   useEffect(() => { setSelectedVehicleId(vehicleId ?? ''); }, [vehicleId]);
@@ -53,8 +59,17 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
       .map((entry) => ({ id: entry.id, label: entry.reg_number, meta: `${entry.make} ${entry.model ?? ''}`.trim() }));
   }, [searchValue, vehicles]);
 
-  const discrepancies = data?.unassignedMotion ?? [];
-  const technicalEvents = data?.technicalEvents ?? [];
+  const discrepancies = data?.unassignedMotion ?? EMPTY_DISCREPANCIES;
+  const technicalEvents = data?.technicalEvents ?? EMPTY_VU_EVENTS;
+  const driverNameById = useMemo(
+    () =>
+      Object.fromEntries(
+        drivers
+          .filter((entry) => entry.role === 'driver')
+          .map((entry) => [entry.id, entry.full_name || entry.email])
+      ),
+    [drivers]
+  );
   const dayReason = useMemo(() => {
     if (!selectedDay || !focusedDate) return null;
     if (selectedDay.date !== focusedDate) return `Opened from a review queue focused on ${format(new Date(`${focusedDate}T12:00:00`), 'dd MMM yyyy')}. That day was not present in the current range, so the workspace fell back to the nearest loaded day.`;
@@ -115,37 +130,62 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
-        {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr,1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[2.25fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <div><h3 className="text-lg font-black text-slate-900">Vehicle Motion Timeline</h3><p className="text-sm text-slate-500">The selected vehicle stays fixed while the review range changes.</p></div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historical Timeline</p>
+              <h3 className="text-lg font-black text-slate-900">Vehicle Unit Activity Strip</h3>
+              <p className="text-sm text-slate-500">This is the primary VU review surface: scroll vehicle history first, then drill into dates, driver links, and motion anomalies.</p>
+            </div>
             <button onClick={() => setSelectedDay(data.dailySummaries[0] ?? null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-black uppercase tracking-widest transition">Open Latest Day</button>
           </div>
           <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
         </div>
 
         <div className="space-y-6">
+          <InfoPanel title="Selected Day Overview" icon={<Gauge className="w-5 h-5 text-blue-600" />}>
+            {selectedDay ? <StatList items={[`Driving: ${minsToHours(selectedDay.drivingMins)}`, `Technical events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Motion review rows: ${discrepancies.filter((item) => item.date === selectedDay.date).length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
+          </InfoPanel>
+
           <InfoPanel title="Selected Day Review Context" icon={<Gauge className="w-5 h-5 text-blue-600" />}>
             {selectedDay ? <StatList items={[`Technical events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Discrepancies: ${discrepancies.filter((item) => item.date === selectedDay.date).length}`, `Linked drivers: ${new Set(discrepancies.filter((item) => item.date === selectedDay.date).map((item) => item.linkedDriverName).filter(Boolean)).size}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
           </InfoPanel>
-
-          <InfoPanel title="Vehicle Evidence Summary" icon={<ShieldAlert className="w-5 h-5 text-rose-600" />}>
-            <StatList items={[`Technical events in range: ${technicalEvents.length}`, `Unassigned motion rows: ${discrepancies.filter((item) => item.status === 'unassigned_motion').length}`, `Driver-link discrepancies: ${discrepancies.length}`]} />
-          </InfoPanel>
-
-          <InfoPanel title="Download / Calibration State" icon={<ShieldCheck className="w-5 h-5 text-amber-600" />}>
-            <StatList items={[`Download status: ${data.identity.downloadStatus.replace('_', ' ')}`, `Last download: ${format(new Date(data.identity.lastDownloadAt), 'dd MMM yyyy HH:mm')}`, `Calibration due: ${format(new Date(data.identity.calibrationDue), 'dd MMM yyyy')}`]} />
-          </InfoPanel>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
+        {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
+      </div>
+
+      <VehicleHistoryLedger
+        range={range}
+        days={data.dailySummaries}
+        activitySegments={data.activitySegments}
+        technicalEvents={technicalEvents}
+        discrepancies={discrepancies}
+        driverNameById={driverNameById}
+        selectedDate={selectedDay?.date ?? null}
+        onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date) ?? null)}
+      />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1fr] gap-6">
+        <InfoPanel title="Vehicle Evidence Summary" icon={<ShieldAlert className="w-5 h-5 text-rose-600" />}>
+          <StatList items={[`Technical events in range: ${technicalEvents.length}`, `Unassigned motion rows: ${discrepancies.filter((item) => item.status === 'unassigned_motion').length}`, `Driver-link discrepancies: ${discrepancies.length}`, `Loaded activity segments: ${data.activitySegments.length}`]} />
+        </InfoPanel>
+
+        <InfoPanel title="Download / Calibration State" icon={<ShieldCheck className="w-5 h-5 text-amber-600" />}>
+          <StatList items={[`Download status: ${data.identity.downloadStatus.replace('_', ' ')}`, `Last download: ${format(new Date(data.identity.lastDownloadAt), 'dd MMM yyyy HH:mm')}`, `Calibration due: ${format(new Date(data.identity.calibrationDue), 'dd MMM yyyy')}`]} />
+        </InfoPanel>
       </div>
 
       <TachoDayDetailDrawer day={selectedDay} findings={data.findings} technicalEvents={technicalEvents} discrepancies={discrepancies} selectedReason={dayReason} onClose={() => setSelectedDay(null)} />
     </div>
   );
+}
+
+function minsToHours(mins: number) {
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 function ActionButton({ icon, label, onClick, disabled }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean }) { return <button onClick={onClick} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">{icon}{label}</button>; }

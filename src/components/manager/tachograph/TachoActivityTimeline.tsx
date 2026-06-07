@@ -142,11 +142,30 @@ function MultiDayTimeline({
         ))}
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-[136px,1fr,96px] items-center gap-3 px-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <span>Day</span>
+        <div className="relative h-4">
+          {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
+            <span
+              key={hour}
+              className={`absolute top-0 ${hour === 24 ? '-translate-x-full' : '-translate-x-1/2'}`}
+              style={{ left: `${(hour / 24) * 100}%` }}
+            >
+              {hour.toString().padStart(2, '0')}:00
+            </span>
+          ))}
+        </div>
+        <span className="text-right">Review</span>
+      </div>
+
+      <div className="max-h-[40rem] space-y-2 overflow-y-auto pr-1">
         {days.map((day) => {
           const dayStart = startOfDay(day.date);
           const totalMinutesInDay = 24 * 60;
           const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
+          const dayStartTime = day.activities.length > 0 ? format(new Date(day.activities[0].startTime), 'HH:mm') : '--:--';
+          const dayEndTime =
+            day.activities.length > 0 ? format(new Date(day.activities[day.activities.length - 1].endTime), 'HH:mm') : '--:--';
 
           return (
             <button
@@ -156,14 +175,48 @@ function MultiDayTimeline({
                 isSelected ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
-              <div className="flex items-center justify-between gap-4 mb-3">
+              <div className="grid gap-3 xl:grid-cols-[136px,1fr,auto] xl:items-center">
                 <div>
-                  <p className="text-sm font-black text-slate-900">{format(day.date, 'EEEE d MMMM')}</p>
+                  <p className="text-sm font-black text-slate-900">{format(day.date, 'EEE d MMM')}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {day.activities.length} activity blocks
+                    {dayStartTime} - {dayEndTime} • {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-end gap-2">
+
+                <div className="relative h-9 rounded-lg border border-slate-200 bg-slate-100 overflow-hidden">
+                  {[0, 4, 8, 12, 16, 20].map((hour) => (
+                    <div
+                      key={`${day.date.toISOString()}-${hour}`}
+                      className="absolute top-0 bottom-0 border-l border-slate-300/40"
+                      style={{ left: `${(hour / 24) * 100}%` }}
+                    />
+                  ))}
+
+                  {day.activities.map((activity) => {
+                    const start = new Date(activity.startTime);
+                    const end = new Date(activity.endTime);
+                    const offsetMins = differenceInMinutes(start, dayStart);
+                    const durationMins = differenceInMinutes(end, start);
+                    const leftPercent = (Math.max(0, offsetMins) / totalMinutesInDay) * 100;
+                    const widthPercent = (durationMins / totalMinutesInDay) * 100;
+
+                    if (widthPercent <= 0) return null;
+
+                    return (
+                      <div
+                        key={activity.id}
+                        className={`absolute inset-y-0 ${getRangeActivityColor(activity.activityType)} group`}
+                        style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                      >
+                        <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap z-10">
+                          {activity.activityType.replace('_', ' ')} • {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-2 xl:justify-end">
                   {day.markerGroups?.filter((group) => group.count > 0).map((group) => (
                     <span
                       key={`${day.date.toISOString()}-${group.label}`}
@@ -180,31 +233,6 @@ function MultiDayTimeline({
                       </span>
                     )}
                 </div>
-              </div>
-
-              <div className="relative w-full h-10 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                {day.activities.map((activity) => {
-                  const start = new Date(activity.startTime);
-                  const end = new Date(activity.endTime);
-                  const offsetMins = differenceInMinutes(start, dayStart);
-                  const durationMins = differenceInMinutes(end, start);
-                  const leftPercent = (Math.max(0, offsetMins) / totalMinutesInDay) * 100;
-                  const widthPercent = (durationMins / totalMinutesInDay) * 100;
-
-                  if (widthPercent <= 0) return null;
-
-                  return (
-                    <div
-                      key={activity.id}
-                      className={`absolute h-full ${getRangeActivityColor(activity.activityType)} group`}
-                      style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                    >
-                      <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap z-10">
-                        {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </button>
           );

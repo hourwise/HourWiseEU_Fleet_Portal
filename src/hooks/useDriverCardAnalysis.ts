@@ -19,6 +19,9 @@ function resolveRangeStart(range: TachoAnalysisRange) {
     case '6m':
       start.setUTCMonth(start.getUTCMonth() - 6);
       break;
+    case '12m':
+      start.setUTCMonth(start.getUTCMonth() - 12);
+      break;
     default:
       start.setUTCDate(start.getUTCDate() - 7);
       break;
@@ -36,6 +39,14 @@ interface UseDriverCardAnalysisOptions {
 interface DriverCardAnalysisEmptyState {
   title: string;
   guidance: string;
+}
+
+interface WorkSessionRow {
+  start_time: string;
+  end_time: string;
+  total_work_minutes: number | null;
+  total_break_minutes: number | null;
+  other_data: Record<string, unknown> | null;
 }
 
 export function useDriverCardAnalysis(
@@ -95,7 +106,7 @@ export function useDriverCardAnalysis(
                         distanceKm: segment.distanceKm ?? null,
                         source: 'normalized_findings',
                       })),
-                      (workSessions as any[]) ?? []
+                      ((workSessions as WorkSessionRow[] | null) ?? [])
                     );
                   })();
 

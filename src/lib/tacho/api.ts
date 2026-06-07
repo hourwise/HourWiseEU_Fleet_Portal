@@ -35,6 +35,9 @@ function resolveRangeStart(range: TachoAnalysisRange) {
     case '6m':
       start.setUTCMonth(start.getUTCMonth() - 6);
       break;
+    case '12m':
+      start.setUTCMonth(start.getUTCMonth() - 12);
+      break;
     default:
       start.setUTCDate(start.getUTCDate() - 7);
       break;
@@ -150,7 +153,7 @@ export async function fetchCompanyTachoSignals(
 export async function fetchDriverTachoAnalysisBundle(
   companyId: string,
   driverId: string,
-  range: '7d' | '30d' | '3m' | '6m' = '7d'
+  range: TachoAnalysisRange = '7d'
 ): Promise<TachoParserBundle | null> {
   const { data, error } = await supabase.rpc(TACHO_RPC.driverAnalysisBundle as any, {
     p_company_id: companyId,
@@ -166,7 +169,7 @@ export async function fetchDriverTachoAnalysisBundle(
 export async function fetchVehicleUnitAnalysisBundle(
   companyId: string,
   vehicleId: string,
-  range: '7d' | '30d' | '3m' | '6m' = '7d'
+  range: TachoAnalysisRange = '7d'
 ): Promise<TachoParserBundle | null> {
   const { data, error } = await supabase.rpc(TACHO_RPC.vehicleAnalysisBundle as any, {
     p_company_id: companyId,
