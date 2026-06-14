@@ -227,6 +227,14 @@ Minimum installer requirements:
 - Allow uninstall without deleting logs by default.
 - Show installed version.
 
+Current first-pass scaffold:
+
+- `tools/tacho-reader-helper/windows-helper/install.ps1` publishes or copies the helper into a predictable install root.
+- `tools/tacho-reader-helper/windows-helper/install.ps1` creates log/export folders and writes `install-info.json`, `VERSION.txt`, and a startup wrapper.
+- `tools/tacho-reader-helper/windows-helper/install.ps1` registers startup through the Windows `Run` key for `CurrentUser` or `Machine` scope.
+- `tools/tacho-reader-helper/windows-helper/uninstall.ps1` removes startup registration and installed files while preserving logs/exports unless `-RemoveData` is supplied.
+- `tools/tacho-reader-helper/windows-helper/README.md` documents install/uninstall commands and default paths.
+
 Recommended:
 
 - Code-sign the installer and executable.
@@ -303,7 +311,7 @@ These should be resolved before implementation starts:
 4. Add fake export bytes behind real helper shell, then make read probe pass.
 5. Replace fake export with real card export.
 6. Validate real export bytes with portal upload and `process-tacho`.
-7. Add installer, startup, logs, and diagnostics.
+7. Replace the first-pass PowerShell installer with the final signed installer/update route when distribution is selected.
 8. Run UAT with a real supervisor workflow.
 
 ## Current Repo Scaffold
@@ -313,6 +321,25 @@ The first production-shaped helper shell now exists at:
 - `tools/tacho-reader-helper/windows-helper/`
 
 It is an ASP.NET Core localhost service targeting `.NET 10`.
+
+Installer scaffold:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\tools\tacho-reader-helper\windows-helper\install.ps1 -Scope CurrentUser
+```
+
+Machine-wide install requires an elevated PowerShell session:
+
+```powershell
+.\tools\tacho-reader-helper\windows-helper\install.ps1 -Scope Machine
+```
+
+Uninstall while preserving logs and exports:
+
+```powershell
+.\tools\tacho-reader-helper\windows-helper\uninstall.ps1 -Scope CurrentUser
+```
 
 Run the shell:
 
@@ -353,6 +380,7 @@ Current scaffold limitations:
 - Can run a configured external card export command and expose the resulting file through `/exports/:readSessionId/file`.
 - Writes a JSONL diagnostic event log and exposes recent support events through `/diagnostics`.
 - Exposes helper configuration/capabilities through `/diagnostics`, including whether VU workflow support is enabled.
+- Includes first-pass install/uninstall scripts using Windows `Run` startup registration, not a Windows Service.
 - Does not yet include a bundled tachograph card export library/tool.
 - Generates placeholder bytes only when `TACHO_HELPER_PLACEHOLDER_READER=true`.
 - Completes immediately after `/imports/register` only in placeholder mode.
@@ -387,6 +415,8 @@ Default local folders:
 
 - exports: `%ProgramData%\HourWise\TachoReaderHelper\exports`
 - logs: `%ProgramData%\HourWise\TachoReaderHelper\logs`
+
+The installer uses `%LOCALAPPDATA%\HourWise\TachoReaderHelper\logs` and `%LOCALAPPDATA%\HourWise\TachoReaderHelper\exports` for `CurrentUser` scope, and `%ProgramData%\HourWise\TachoReaderHelper\...` for `Machine` scope.
 
 Local command-seam test without hardware:
 

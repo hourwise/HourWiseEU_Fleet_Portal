@@ -55,6 +55,7 @@ Based on the current frontend and this implementation pass:
   - the `.NET` shell now has JSONL support logging and `/diagnostics` endpoints for config, capabilities, state, and recent events
   - the `.NET` shell now includes a disabled-by-default `vehicle_unit` source-type shape for the future VU reader/download workflow
   - the `.NET` shell also supports explicit placeholder-reader mode for full read/register contract probing without hardware
+  - the `.NET` shell now has first-pass Windows install/uninstall PowerShell scaffolding for published app placement, startup registration, version metadata, logs, and exports
   - the helper contract has been validated with placeholder bytes and a simulated external export command producing fake bytes
   - the reader panel now includes a first customer-facing HourWise reader console inspired by the Tachomaster-style reference without copying its visual scheme
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
@@ -82,7 +83,7 @@ Based on the current frontend and this implementation pass:
 
 Still external or not fully executable from this repo alone:
 
-- production helper executable packaging
+- production helper executable packaging beyond the first-pass PowerShell install scaffold
 - selected/validated real tachograph card export tool or library
 - selected/validated real VU download path and supported device list
 - backend deployment confirmation
@@ -536,6 +537,7 @@ Primary design:
 - Initial contract doc now exists at `docs/tacho-reader-helper-contract.md`.
 - Supabase-facing handoff doc now exists at `docs/tacho-reader-helper-backend-handoff.md`.
 - Local mock helper now exists at `tools/tacho-reader-helper/mock-helper.mjs` for frontend testing.
+- First-pass Windows install/startup scaffolding now exists at `tools/tacho-reader-helper/windows-helper/install.ps1` and `tools/tacho-reader-helper/windows-helper/uninstall.ps1`.
 
 #### 8.2 Reader page in portal
 
@@ -709,3 +711,8 @@ Current main implementation areas:
 - backend contract docs:
   - `docs/tacho-parser-contract.md`
   - `docs/tacho-backend-api.md`
+- Windows helper scaffold:
+  - `tools/tacho-reader-helper/windows-helper/Program.cs`
+  - `tools/tacho-reader-helper/windows-helper/install.ps1`
+  - `tools/tacho-reader-helper/windows-helper/uninstall.ps1`
+  - `tools/tacho-reader-helper/windows-helper/README.md`
