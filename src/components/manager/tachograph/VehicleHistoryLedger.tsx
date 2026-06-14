@@ -11,6 +11,7 @@ interface VehicleHistoryLedgerProps {
   range: TachoAnalysisRange;
   days: TachoDaySummary[];
   activitySegments: TachoActivitySegment[];
+  findings?: TachoFinding[];
   technicalEvents: TachoFinding[];
   discrepancies: VehicleMotionDiscrepancy[];
   driverNameById: Record<string, string>;
@@ -90,6 +91,7 @@ export function VehicleHistoryLedger({
   range,
   days,
   activitySegments,
+  findings = [],
   technicalEvents,
   discrepancies,
   driverNameById,
@@ -115,6 +117,8 @@ export function VehicleHistoryLedger({
       <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
         {days.map((day) => {
           const drivers = summarizeDriversForDay(day, activitySegments, driverNameById);
+          const dayFindings = findings.filter((finding) => finding.periodStart.slice(0, 10) <= day.date && finding.periodEnd.slice(0, 10) >= day.date);
+          const multiManningFindings = dayFindings.filter((finding) => finding.ruleCode === 'DRV_MULTI_MANNING_DETECTED');
           const dayDiscrepancies = discrepancies.filter((item) => item.date === day.date);
           const dayTechnicalEvents = technicalEvents.filter(
             (event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date
@@ -141,6 +145,21 @@ export function VehicleHistoryLedger({
                 </div>
 
                 <div className="space-y-3">
+                  {multiManningFindings.length > 0 ? (
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-blue-950">Multi-manning review context</p>
+                          <p className="mt-1 text-xs text-blue-900">
+                            {multiManningFindings.length} overlapping same-vehicle team-driving window{multiManningFindings.length === 1 ? '' : 's'} detected for this day.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700">
+                          Team driving
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                   {drivers.length > 0 ? (
                     drivers.map((driver) => (
                       <div
@@ -185,6 +204,9 @@ export function VehicleHistoryLedger({
                   </span>
                   <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-rose-700">
                     Motion issues: {dayDiscrepancies.length}
+                  </span>
+                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700">
+                    Multi-manning: {multiManningFindings.length}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-700">
                     Findings: {day.findingsCount}

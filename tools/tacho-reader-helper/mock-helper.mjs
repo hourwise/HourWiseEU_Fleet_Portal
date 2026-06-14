@@ -37,6 +37,7 @@ const state = {
   focusedDate: undefined,
   errorCode: undefined,
   companyId: MOCK_COMPANY_ID,
+  requestedByUserId: undefined,
   readSessionId: undefined,
   exportFileName: undefined,
   exportFilePath: undefined,
@@ -79,6 +80,7 @@ function clearReadArtifacts() {
     driverName: undefined,
     focusedDate: undefined,
     errorCode: undefined,
+    requestedByUserId: undefined,
     readSessionId: undefined,
     exportFileName: undefined,
     exportFilePath: undefined,
@@ -209,6 +211,10 @@ function getScenarioProfile() {
   }
 }
 
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function beginReadFlow(payload = {}) {
   clearTransitions();
   if (cardInsertTimer) {
@@ -216,9 +222,9 @@ function beginReadFlow(payload = {}) {
     cardInsertTimer = null;
   }
 
-  if (typeof payload.companyId === 'string' && payload.companyId.trim()) {
-    updateState({ companyId: payload.companyId.trim() });
-  }
+  const companyId = payload.companyId.trim();
+  const requestedByUserId = isNonEmptyString(payload.requestedByUserId) ? payload.requestedByUserId.trim() : undefined;
+  updateState({ companyId, requestedByUserId });
 
   const sample = demoDrivers[readSequence % demoDrivers.length];
   const artifacts = buildSessionArtifacts(sample);
@@ -243,6 +249,7 @@ function beginReadFlow(payload = {}) {
     driverName: sample.driverName,
     focusedDate: undefined,
     errorCode: undefined,
+    requestedByUserId,
     readSessionId: artifacts.readSessionId,
     exportFileName: artifacts.exportFileName,
     exportFilePath: artifacts.exportFilePath,
@@ -452,6 +459,22 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 400, { accepted: false, error: error.message });
     });
     if (response.writableEnded) return;
+
+    if (!payload || typeof payload !== 'object' || !isNonEmptyString(payload.companyId)) {
+      sendJson(response, 400, {
+        accepted: false,
+        error: 'Company id is required to start a reader workflow.',
+      });
+      return;
+    }
+
+    if (payload.sourceType && payload.sourceType !== 'driver_card') {
+      sendJson(response, 400, {
+        accepted: false,
+        error: 'The mock card-reader workflow only supports sourceType driver_card.',
+      });
+      return;
+    }
 
     if (!state.canStartRead) {
       sendJson(response, 409, {

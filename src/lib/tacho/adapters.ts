@@ -5,15 +5,18 @@ import type {
   TachoAnalysisRange,
   TachoDaySummary,
   TachoFinding,
+  TachoImportFileType,
   TachoImportRecord,
+  TachoImportSourceType,
   TachoImportStatus,
   TachoParserBundle,
+  TachoReconciliationItem,
   TachoSummaryMetric,
   VehicleMotionDiscrepancy,
   VehicleUnitAnalysisData,
 } from './rules/types';
 
-function normalizeImportStatus(status: string | null | undefined): TachoImportStatus {
+function normalizeImportStatus(status: unknown): TachoImportStatus {
   switch (status) {
     case 'complete':
     case 'queued':
@@ -31,7 +34,7 @@ function normalizeImportStatus(status: string | null | undefined): TachoImportSt
   }
 }
 
-function buildProgress(status: string | null | undefined) {
+function buildProgress(status: unknown) {
   switch (normalizeImportStatus(status)) {
     case 'uploaded':
       return 10;
@@ -56,40 +59,76 @@ function countRule(findings: { ruleCode: string }[], ...codes: string[]) {
   return findings.filter((finding) => codes.includes(finding.ruleCode)).length;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function asString(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.length > 0 ? value : fallback;
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function asOptionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function asImportSourceType(value: unknown): TachoImportSourceType {
+  return value === 'vehicle_unit' ? 'vehicle_unit' : 'driver_card';
+}
+
+function asImportFileType(value: unknown): TachoImportFileType {
+  const normalized = typeof value === 'string' ? value.toLowerCase() : '';
+  if (normalized === 'c1b' || normalized === 'v1b') return normalized;
+  return 'ddd';
+}
+
+function asDiscrepancyPreview(value: unknown): VehicleMotionDiscrepancy[] | undefined {
+  return Array.isArray(value) ? value as VehicleMotionDiscrepancy[] : undefined;
+}
+
+function asReconciliationPreview(value: unknown): TachoReconciliationItem[] | undefined {
+  return Array.isArray(value) ? value as TachoReconciliationItem[] : undefined;
+}
+
 export function adaptImportRecord(raw: Record<string, unknown> | null | undefined): TachoImportRecord {
-  const sourceType = raw?.sourceType ?? raw?.source_type ?? (raw?.vehicle_id ? 'vehicle_unit' : 'driver_card');
-  const importedAt = raw?.importedAt ?? raw?.uploaded_at ?? new Date().toISOString();
-  const status = normalizeImportStatus(raw?.status);
-  const metadata = raw?.metadata ?? {};
+  const input = asRecord(raw);
+  const metadata = asRecord(input.metadata);
+  const sourceType = input.sourceType ?? input.source_type ?? (input.vehicle_id ? 'vehicle_unit' : 'driver_card');
+  const importedAt = input.importedAt ?? input.uploaded_at ?? new Date().toISOString();
+  const status = normalizeImportStatus(input.status);
+  const fileType = input.fileType ?? input.file_type ?? 'ddd';
 
   return {
-    id: raw?.id ?? crypto.randomUUID(),
-    sourceType,
-    fileName: raw?.fileName ?? raw?.filename ?? 'Unknown import',
-    fileType: (raw?.fileType ?? raw?.file_type ?? 'ddd').toLowerCase(),
-    importedAt,
+    id: asString(input.id, crypto.randomUUID()),
+    sourceType: asImportSourceType(sourceType),
+    fileName: asString(input.fileName ?? input.filename, 'Unknown import'),
+    fileType: asImportFileType(fileType),
+    importedAt: asString(importedAt, new Date().toISOString()),
     status,
-    progressPercent: raw?.progressPercent ?? buildProgress(status),
-    driverName: raw?.driverName ?? raw?.driver_name ?? metadata?.driver_name,
-    vehicleReg: raw?.vehicleReg ?? raw?.vehicle_reg ?? metadata?.vehicle_reg,
-    summary: raw?.summary ?? metadata?.summary,
-    technicalEventCount: raw?.technicalEventCount ?? metadata?.technical_event_count,
-    discrepancyCount: raw?.discrepancyCount ?? metadata?.discrepancy_count,
-    reconciliationIssueCount: raw?.reconciliationIssueCount ?? metadata?.reconciliation_issue_count,
-    highSeverityCount: raw?.highSeverityCount ?? metadata?.high_severity_count,
-    ingestSource: raw?.ingestSource ?? metadata?.ingest_source,
-    processingError: raw?.processingError ?? metadata?.processing_error,
-    processingKickoffError: raw?.processingKickoffError ?? metadata?.processing_kickoff_error,
-    triggerDispatchError: raw?.triggerDispatchError ?? metadata?.trigger_dispatch_error,
-    triggerDispatchRequestedAt: raw?.triggerDispatchRequestedAt ?? metadata?.trigger_dispatch_requested_at,
-    processingKickoffRequestedAt: raw?.processingKickoffRequestedAt ?? metadata?.processing_kickoff_requested_at,
-    discrepancyPreview: raw?.discrepancyPreview,
-    reconciliationPreview: raw?.reconciliationPreview,
+    progressPercent: asOptionalNumber(input.progressPercent) ?? buildProgress(status),
+    driverName: asOptionalString(input.driverName ?? input.driver_name ?? metadata.driver_name),
+    vehicleReg: asOptionalString(input.vehicleReg ?? input.vehicle_reg ?? metadata.vehicle_reg),
+    summary: asOptionalString(input.summary ?? metadata.summary),
+    technicalEventCount: asOptionalNumber(input.technicalEventCount ?? metadata.technical_event_count),
+    discrepancyCount: asOptionalNumber(input.discrepancyCount ?? metadata.discrepancy_count),
+    reconciliationIssueCount: asOptionalNumber(input.reconciliationIssueCount ?? metadata.reconciliation_issue_count),
+    highSeverityCount: asOptionalNumber(input.highSeverityCount ?? metadata.high_severity_count),
+    ingestSource: asOptionalString(input.ingestSource ?? metadata.ingest_source),
+    processingError: asOptionalString(input.processingError ?? metadata.processing_error),
+    processingKickoffError: asOptionalString(input.processingKickoffError ?? metadata.processing_kickoff_error),
+    triggerDispatchError: asOptionalString(input.triggerDispatchError ?? metadata.trigger_dispatch_error),
+    triggerDispatchRequestedAt: asOptionalString(input.triggerDispatchRequestedAt ?? metadata.trigger_dispatch_requested_at),
+    processingKickoffRequestedAt: asOptionalString(input.processingKickoffRequestedAt ?? metadata.processing_kickoff_requested_at),
+    discrepancyPreview: asDiscrepancyPreview(input.discrepancyPreview),
+    reconciliationPreview: asReconciliationPreview(input.reconciliationPreview),
   };
 }
 
 function getBundleImportRecord(bundle: TachoParserBundle | null): TachoImportRecord {
-  return adaptImportRecord(bundle?.importRecord ?? {});
+  return bundle?.importRecord ?? adaptImportRecord({});
 }
 
 function driverDownloadStatus(download?: ParserDriverCardDownload) {

@@ -367,6 +367,15 @@ deno_version = 2
 [functions.configure-tacho-processing-runtime]
 verify_jwt = false
 
+[functions.process-tacho]
+verify_jwt = false
+
+[functions.send-broadcast]
+verify_jwt = false
+
+[functions.recurring-pmi-alerts]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -357,7 +357,9 @@ export function TachoSimulatorPreview() {
               0,
               Math.round((new Date(activity.endTime).getTime() - new Date(activity.startTime).getTime()) / 60000)
             ),
+            distanceKm: activity.distanceKm ?? undefined,
           }))}
+          findings={findings}
           technicalEvents={technicalEvents}
           discrepancies={discrepancies}
           driverNameById={driverNameById}
@@ -372,6 +374,7 @@ export function TachoSimulatorPreview() {
         technicalEvents={technicalEvents}
         reconciliation={reconciliation}
         discrepancies={discrepancies}
+        driverNameById={driverNameById}
         onClose={() => setSelectedDay(null)}
         selectedReason={`Opened from the simulator scenario '${scenario.title}'.`}
       />

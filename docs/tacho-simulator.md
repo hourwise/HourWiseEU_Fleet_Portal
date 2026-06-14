@@ -30,17 +30,19 @@ The first in-repo scenarios currently cover:
 5. rolling fortnight 90-hour breach
 6. reduced daily rest
 7. weekly rest under 24 hours
-8. WTD 6-hour break breach
-9. VU cardless driving
-10. VU driver mismatch
-11. VU overspeed and technical-event presentation
-12. multi-driver vehicle history across consecutive days
-13. same-day driver handover on one vehicle
-14. partial assigned driving with unassigned motion
-15. driver-attribution conflict against review context
-16. overlapping activity data-quality warning
-17. missing activity timestamp compile failure
-18. malformed discrepancy timing compile failure
+8. reduced weekly rest with a later compensation window
+9. WTD 6-hour break breach
+10. VU cardless driving
+11. VU multi-manning shared duty window
+12. VU driver mismatch
+13. VU overspeed and technical-event presentation
+14. multi-driver vehicle history across consecutive days
+15. same-day driver handover on one vehicle
+16. partial assigned driving with unassigned motion
+17. driver-attribution conflict against review context
+18. overlapping activity data-quality warning
+19. missing activity timestamp compile failure
+20. malformed discrepancy timing compile failure
 
 These are intended to validate:
 
@@ -48,6 +50,13 @@ These are intended to validate:
 - rule findings
 - reconciliation outputs
 - parser-like bad-data handling in the simulator compiler and preview
+
+Current limitation:
+
+- the rules engine now tracks reduced weekly-rest compensation as `pending`, `completed`, or `missing`
+- the rules engine now treats qualifying same-vehicle overlapping different-driver activity as `DRV_MULTI_MANNING_DETECTED` review context instead of generic overlap noise
+- truly impossible overlap patterns, such as concurrent same-vehicle driving by two drivers, still remain data-quality issues
+- the dev preview now surfaces multi-manning directly in the vehicle history ledger and day-detail drawer
 
 ## What it does not cover
 

@@ -13,6 +13,7 @@ It is grounded in the current repo behavior:
 It complements:
 
 - `docs/tacho-reader-helper-contract.md`
+- `docs/tacho-reader-helper-production-checklist.md`
 - `docs/tacho-backend-api.md`
 - `src/components/manager/tachograph/TachoUploadZone.tsx`
 - `supabase/functions/process-tacho/index.ts`
@@ -136,6 +137,7 @@ Minimum current-compatible insert:
     "helper_schema_version": "1.0",
     "helper_version": "0.2.0",
     "read_session_id": "0f4a5a3d-6990-4e5a-b9e5-2c8da78c5f1e",
+    "requested_by_user_id": "manager-profile-uuid",
     "reader_device_id": "omnikey-3121-frontdesk",
     "exported_at": "2026-05-29T16:22:14.000Z",
     "export_file_name": "LEWIS_CARTER_20260529.C1B",
@@ -198,6 +200,7 @@ Observed behavior from the current function:
 Recommended correlation fields to preserve from helper to import row:
 
 - `metadata.read_session_id`
+- `metadata.requested_by_user_id`
 - `metadata.export_sha256`
 - `metadata.reader_device_id`
 - `metadata.ingest_source = 'reader_helper'`
@@ -249,7 +252,7 @@ Why this order:
 
 ## Recommended Production Flow
 
-1. Browser sends `start-read` with authenticated company and optional driver or vehicle hints.
+1. Browser sends `start-read` with authenticated company, requesting user, and optional driver or vehicle hints.
 2. Helper exports the raw file and exposes the export descriptor plus `downloadPath`.
 3. Browser uploads the exported bytes to `tachograph-files`.
 4. Browser inserts the `tachograph_files` row with helper metadata.

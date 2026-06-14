@@ -61,6 +61,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
 
   const discrepancies = data?.unassignedMotion ?? EMPTY_DISCREPANCIES;
   const technicalEvents = data?.technicalEvents ?? EMPTY_VU_EVENTS;
+  const multiManningFindings = data?.findings.filter((finding) => finding.ruleCode === 'DRV_MULTI_MANNING_DETECTED') ?? [];
   const driverNameById = useMemo(
     () =>
       Object.fromEntries(
@@ -145,7 +146,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
 
         <div className="space-y-6">
           <InfoPanel title="Selected Day Overview" icon={<Gauge className="w-5 h-5 text-blue-600" />}>
-            {selectedDay ? <StatList items={[`Driving: ${minsToHours(selectedDay.drivingMins)}`, `Technical events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Motion review rows: ${discrepancies.filter((item) => item.date === selectedDay.date).length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
+            {selectedDay ? <StatList items={[`Driving: ${minsToHours(selectedDay.drivingMins)}`, `Technical events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Motion review rows: ${discrepancies.filter((item) => item.date === selectedDay.date).length}`, `Multi-manning windows: ${multiManningFindings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date).length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
           </InfoPanel>
 
           <InfoPanel title="Selected Day Review Context" icon={<Gauge className="w-5 h-5 text-blue-600" />}>
@@ -162,6 +163,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
         range={range}
         days={data.dailySummaries}
         activitySegments={data.activitySegments}
+        findings={data.findings}
         technicalEvents={technicalEvents}
         discrepancies={discrepancies}
         driverNameById={driverNameById}
@@ -179,7 +181,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
         </InfoPanel>
       </div>
 
-      <TachoDayDetailDrawer day={selectedDay} findings={data.findings} technicalEvents={technicalEvents} discrepancies={discrepancies} selectedReason={dayReason} onClose={() => setSelectedDay(null)} />
+      <TachoDayDetailDrawer day={selectedDay} findings={data.findings} technicalEvents={technicalEvents} discrepancies={discrepancies} driverNameById={driverNameById} selectedReason={dayReason} onClose={() => setSelectedDay(null)} />
     </div>
   );
 }

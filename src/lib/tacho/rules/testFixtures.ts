@@ -30,6 +30,10 @@ export function buildDayActivities(
     start: string;
     end: string;
     activityType: RuleActivitySegment['activityType'];
+    driverId?: string | null;
+    vehicleId?: string | null;
+    distanceKm?: number | null;
+    isManualEntry?: boolean;
   }>
 ) {
   return blocks.map((block) =>
@@ -37,6 +41,10 @@ export function buildDayActivities(
       startTime: `${date}T${block.start}:00.000Z`,
       endTime: `${date}T${block.end}:00.000Z`,
       activityType: block.activityType,
+      driverId: block.driverId,
+      vehicleId: block.vehicleId,
+      distanceKm: block.distanceKm,
+      isManualEntry: block.isManualEntry,
     })
   );
 }

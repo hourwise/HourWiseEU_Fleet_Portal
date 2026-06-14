@@ -8,6 +8,7 @@ interface TachoDayDetailDrawerProps {
   technicalEvents?: TachoFinding[];
   reconciliation?: TachoReconciliationItem[];
   discrepancies?: VehicleMotionDiscrepancy[];
+  driverNameById?: Record<string, string>;
   selectedReason?: string | null;
   onClose: () => void;
 }
@@ -18,18 +19,33 @@ function overlapsDay(date: string, item: TachoFinding) {
   return item.periodStart.slice(0, 10) <= date && item.periodEnd.slice(0, 10) >= date;
 }
 
+function describeDriverIds(value: string | number | boolean | null | undefined, driverNameById: Record<string, string>) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return 'Linked drivers not specified';
+  }
+
+  return value
+    .split(',')
+    .map((driverId) => driverId.trim())
+    .filter(Boolean)
+    .map((driverId) => driverNameById[driverId] ?? driverId)
+    .join(' + ');
+}
+
 export function TachoDayDetailDrawer({
   day,
   findings,
   technicalEvents = [],
   reconciliation = [],
   discrepancies = [],
+  driverNameById = {},
   selectedReason,
   onClose,
 }: TachoDayDetailDrawerProps) {
   if (!day) return null;
 
   const dayFindings = findings.filter((finding) => overlapsDay(day.date, finding));
+  const multiManningFindings = dayFindings.filter((finding) => finding.ruleCode === 'DRV_MULTI_MANNING_DETECTED');
   const dayTechnicalEvents = technicalEvents.filter((event) => overlapsDay(day.date, event));
   const dayReconciliation = reconciliation.filter((item) => item.date === day.date);
   const dayDiscrepancies = discrepancies.filter((item) => item.date === day.date);
@@ -58,6 +74,46 @@ export function TachoDayDetailDrawer({
             <MetricCard label="POA" value={minsToHours(day.poaMins)} tone="blue" />
             <MetricCard label="Rest" value={minsToHours(day.restMins)} tone="slate" />
           </div>
+
+          {multiManningFindings.length > 0 ? (
+            <section className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Link2 className="w-4 h-4 text-blue-600" />
+                <h4 className="text-sm font-black text-blue-900 uppercase tracking-widest">Multi-manning Context</h4>
+              </div>
+              <div className="space-y-3">
+                {multiManningFindings.map((finding) => (
+                  <div key={`multi-manning-${finding.id}`} className="rounded-lg border border-blue-100 bg-white p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{finding.title}</p>
+                        <p className="mt-1 text-xs text-slate-600">{finding.summary}</p>
+                      </div>
+                      <SourceBadge source={finding.source} />
+                    </div>
+                    <div className="mt-3 space-y-1 text-[11px] text-slate-600">
+                      <p>
+                        <span className="font-black text-slate-500 uppercase tracking-widest">Drivers:</span>{' '}
+                        {describeDriverIds(finding.metadata?.driverIds, driverNameById)}
+                      </p>
+                      {typeof finding.metadata?.overlapMins === 'number' ? (
+                        <p>
+                          <span className="font-black text-slate-500 uppercase tracking-widest">Overlap:</span>{' '}
+                          {minsToHours(finding.metadata.overlapMins)}
+                        </p>
+                      ) : null}
+                      {typeof finding.metadata?.vehicleId === 'string' ? (
+                        <p>
+                          <span className="font-black text-slate-500 uppercase tracking-widest">Vehicle:</span>{' '}
+                          {finding.metadata.vehicleId}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section className="bg-slate-50 rounded-xl border border-slate-200 p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -92,11 +148,11 @@ export function TachoDayDetailDrawer({
               <AlertTriangle className="w-4 h-4 text-rose-600" />
               <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">Findings</h4>
             </div>
-            {dayFindings.length === 0 ? (
+            {dayFindings.filter((finding) => finding.ruleCode !== 'DRV_MULTI_MANNING_DETECTED').length === 0 ? (
               <p className="text-sm text-slate-500">No findings for this day.</p>
             ) : (
               <div className="space-y-3">
-                {dayFindings.map((finding) => (
+                {dayFindings.filter((finding) => finding.ruleCode !== 'DRV_MULTI_MANNING_DETECTED').map((finding) => (
                   <div key={finding.id} className="bg-white rounded-lg border border-rose-100 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>

@@ -42,11 +42,13 @@ interface ReaderHelperStatus {
   focusedDate?: string;
   lastHeartbeatAt?: string;
   readerConnected?: boolean;
+  readerDeviceName?: string;
   cardPresent?: boolean;
   canStartRead: boolean;
   canCancel: boolean;
   errorCode?: string;
   companyId?: string;
+  requestedByUserId?: string;
   readSessionId?: string;
   exportFileName?: string;
   exportFilePath?: string;
@@ -80,12 +82,14 @@ interface ReaderHelperResponse {
   lastHeartbeatAt?: string;
   readerConnected?: boolean;
   readerDetected?: boolean;
+  readerDeviceName?: string;
   cardPresent?: boolean;
   cardInserted?: boolean;
   canStartRead?: boolean;
   canCancel?: boolean;
   errorCode?: string;
   companyId?: string;
+  requestedByUserId?: string;
   readSessionId?: string;
   exportFileName?: string;
   exportFilePath?: string;
@@ -100,6 +104,40 @@ interface ReaderHelperResponse {
   uploadedStoragePath?: string;
   scenario?: string;
   availableScenarios?: string[];
+}
+
+interface ReaderHelperDiagnosticEvent {
+  timestamp?: string;
+  Timestamp?: string;
+  event?: string;
+  Event?: string;
+  data?: unknown;
+  Data?: unknown;
+}
+
+interface ReaderHelperDiagnostics {
+  helperVersion?: string;
+  utcNow?: string;
+  processId?: number;
+  listenUrl?: string;
+  config?: {
+    placeholderReaderEnabled?: boolean;
+    simulateCardPresent?: boolean;
+    completeAfterRegister?: boolean;
+    vuWorkflowEnabled?: boolean;
+    exportCommandConfigured?: boolean;
+    exportArgumentsConfigured?: boolean;
+    exportTimeoutSeconds?: number;
+    exportOutputDirectory?: string;
+    logDirectory?: string;
+  };
+  capabilities?: {
+    sourceTypes?: string[];
+    diagnostics?: string[];
+    exportDownload?: boolean;
+    browserRegistrationHandoff?: boolean;
+  };
+  recentEvents?: ReaderHelperDiagnosticEvent[];
 }
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_TACHO_HELPER_URL || 'http://127.0.0.1:47231';
@@ -257,6 +295,7 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
     focusedDate: response.focusedDate ?? response.reviewDate,
     lastHeartbeatAt: response.lastHeartbeatAt,
     readerConnected: response.readerConnected ?? response.readerDetected,
+    readerDeviceName: response.readerDeviceName,
     cardPresent: response.cardPresent ?? response.cardInserted,
     canStartRead:
       typeof response.canStartRead === 'boolean'
@@ -268,6 +307,7 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
         : stage === 'reading' || stage === 'uploading' || stage === 'processing',
     errorCode: response.errorCode,
     companyId: response.companyId,
+    requestedByUserId: response.requestedByUserId,
     readSessionId: response.readSessionId,
     exportFileName: response.exportFileName,
     exportFilePath: response.exportFilePath,
@@ -309,6 +349,9 @@ export function TachoReaderHelperPanel({
   const [trackedImport, setTrackedImport] = useState<ReaderHelperImportStatus | null>(null);
   const [trackedFocusedDate, setTrackedFocusedDate] = useState<string | null>(null);
   const [selectedScenario, setSelectedScenario] = useState('success');
+  const [diagnostics, setDiagnostics] = useState<ReaderHelperDiagnostics | null>(null);
+  const [diagnosticsPending, setDiagnosticsPending] = useState(false);
+  const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null);
   const openedReviewKeyRef = useRef<string | null>(null);
   const importSessionRef = useRef<string | null>(null);
 
@@ -349,6 +392,10 @@ export function TachoReaderHelperPanel({
       setCommandMessage(null);
 
       try {
+        if (command === 'start-read' && !profile?.company_id) {
+          throw new Error('Cannot start a card read without a signed-in company context.');
+        }
+
         const response = await fetch(`${helperUrl}/commands/${command}`, {
           method: 'POST',
           headers: {
@@ -375,6 +422,32 @@ export function TachoReaderHelperPanel({
     },
     [helperUrl, profile?.company_id, refreshStatus, user?.id]
   );
+
+  const loadDiagnostics = useCallback(async () => {
+    setDiagnosticsPending(true);
+    setDiagnosticsMessage(null);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 2500);
+      const response = await fetch(`${helperUrl}/diagnostics`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      window.clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Helper returned ${response.status}`);
+      }
+
+      setDiagnostics((await response.json()) as ReaderHelperDiagnostics);
+      setDiagnosticsMessage('Diagnostics refreshed from the local helper.');
+    } catch (error) {
+      setDiagnosticsMessage(error instanceof Error ? error.message : 'Diagnostics endpoint is unavailable');
+    } finally {
+      setDiagnosticsPending(false);
+    }
+  }, [helperUrl]);
 
   const sendDebugCommand = useCallback(
     async (command: 'reset' | 'card-insert' | 'error') => {
@@ -462,27 +535,31 @@ export function TachoReaderHelperPanel({
 
   useEffect(() => {
     if (helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
-    if (!profile?.company_id) return;
+    const companyId = profile?.company_id;
+    if (!companyId) return;
+    const readSessionId = helperStatus.readSessionId;
+    const exportDownloadPath = helperStatus.exportDownloadPath;
     if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
     if (importSessionRef.current === helperStatus.readSessionId) return;
 
     let cancelled = false;
-    importSessionRef.current = helperStatus.readSessionId;
+    importSessionRef.current = readSessionId;
     setImportPending(true);
     setImportMessage('Uploading helper export to the portal and registering the import.');
 
     const registerImport = async () => {
       try {
         const registration = await registerReaderHelperImport({
-          companyId: profile.company_id,
+          companyId,
           descriptor: {
             helperUrl,
-            readSessionId: helperStatus.readSessionId!,
+            readSessionId,
             helperVersion: helperStatus.helperVersion,
             companyId: helperStatus.companyId,
+            requestedByUserId: helperStatus.requestedByUserId ?? user?.id,
             sourceType: helperStatus.sourceType,
             exportFileName: helperStatus.exportFileName,
-            exportDownloadPath: helperStatus.exportDownloadPath,
+            exportDownloadPath,
             exportFileSizeBytes: helperStatus.exportFileSizeBytes,
             exportSha256: helperStatus.exportSha256,
             driverName: helperStatus.driverName,
@@ -495,7 +572,7 @@ export function TachoReaderHelperPanel({
 
         await acknowledgeReaderHelperImport({
           helperUrl,
-          readSessionId: helperStatus.readSessionId!,
+          readSessionId,
           importId: registration.importId,
           uploadedStoragePath: registration.filePath,
           fileName: registration.fileName,
@@ -506,7 +583,7 @@ export function TachoReaderHelperPanel({
         if (cancelled) return;
 
         setRegisteredImport({
-          readSessionId: helperStatus.readSessionId!,
+          readSessionId,
           importId: registration.importId,
         });
         setImportMessage(
@@ -542,6 +619,7 @@ export function TachoReaderHelperPanel({
     helperStatus.exportFileSizeBytes,
     helperStatus.exportSha256,
     helperStatus.helperVersion,
+    helperStatus.requestedByUserId,
     helperStatus.readSessionId,
     helperStatus.sourceType,
     helperStatus.stage,
@@ -606,6 +684,11 @@ export function TachoReaderHelperPanel({
   }, [status.stage]);
 
   const isMockHelper = useMemo(() => status.helperVersion?.startsWith('mock-') ?? false, [status.helperVersion]);
+
+  useEffect(() => {
+    if (helperStatus.stage === 'helper_unavailable' || isMockHelper) return;
+    loadDiagnostics();
+  }, [helperStatus.helperVersion, helperStatus.stage, isMockHelper, loadDiagnostics]);
 
   useEffect(() => {
     if (helperStatus.scenario) {
@@ -677,6 +760,8 @@ export function TachoReaderHelperPanel({
           </div>
         </div>
 
+        <ReaderGraphicConsole status={status} diagnostics={diagnostics} />
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <MetaCard label="Helper endpoint" value={status.helperUrl} />
           <MetaCard label="Helper version" value={status.helperVersion ?? 'Not reported'} />
@@ -687,16 +772,17 @@ export function TachoReaderHelperPanel({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <MetaCard label="Reader detected" value={status.readerConnected ? 'Connected' : 'Not detected'} />
+          <MetaCard label="Reader detected" value={status.readerConnected ? status.readerDeviceName ?? 'Connected' : 'Not detected'} />
           <MetaCard label="Card present" value={status.cardPresent ? 'Inserted' : 'Not inserted'} />
           <MetaCard label="Import id" value={status.importId ?? 'Waiting for read'} />
           <MetaCard label="Helper error code" value={status.errorCode ?? 'None'} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
           <MetaCard label="Company" value={status.companyId ?? 'Not reported'} />
           <MetaCard label="Driver target" value={status.driverName ?? status.driverId ?? 'Pending correlation'} />
           <MetaCard label="Read session" value={status.readSessionId ?? 'Not started'} />
+          <MetaCard label="Operator" value={status.requestedByUserId ?? user?.id ?? 'Not reported'} />
           <MetaCard label="Backend job" value={status.backendJobId ?? 'Pending upload'} />
         </div>
 
@@ -738,6 +824,15 @@ export function TachoReaderHelperPanel({
           ) : null}
         </div>
 
+        {!isMockHelper ? (
+          <HelperDiagnosticsPanel
+            diagnostics={diagnostics}
+            pending={diagnosticsPending}
+            message={diagnosticsMessage}
+            onRefresh={loadDiagnostics}
+          />
+        ) : null}
+
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -750,7 +845,7 @@ export function TachoReaderHelperPanel({
               <button
                 type="button"
                 onClick={() => sendCommand('start-read')}
-                disabled={!status.canStartRead || commandPending !== null}
+                disabled={!status.canStartRead || commandPending !== null || !profile?.company_id}
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {commandPending === 'start-read' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
@@ -887,6 +982,242 @@ export function TachoReaderHelperPanel({
   );
 }
 
+function ReaderGraphicConsole({
+  status,
+  diagnostics,
+}: {
+  status: ReaderHelperStatus;
+  diagnostics: ReaderHelperDiagnostics | null;
+}) {
+  const sourceTypes = diagnostics?.capabilities?.sourceTypes ?? ['driver_card'];
+  const vuAvailable = sourceTypes.includes('vehicle_unit');
+  const modeLabel = status.sourceType === 'vehicle_unit' ? 'Vehicle Unit Download' : 'Driver Card Read';
+  const healthLabel =
+    status.stage === 'complete'
+      ? 'Analysis Ready'
+      : status.stage === 'error'
+      ? 'Action Required'
+      : status.stage === 'helper_unavailable'
+      ? 'Helper Offline'
+      : status.cardPresent
+      ? 'Card In Reader'
+      : status.readerConnected
+      ? 'Reader Ready'
+      : 'Awaiting Reader';
+  const stageTone =
+    status.stage === 'complete'
+      ? 'bg-emerald-400 text-emerald-950'
+      : status.stage === 'error' || status.stage === 'helper_unavailable'
+      ? 'bg-amber-300 text-amber-950'
+      : 'bg-cyan-300 text-cyan-950';
+
+  const dayRows = [
+    { label: 'Today', drive: status.stage === 'complete' ? '4h 12m' : '--', duty: status.stage === 'complete' ? '7h 35m' : '--', rest: '11h+', alert: status.stage === 'error' ? 'Review helper error' : 'No critical alerts' },
+    { label: 'Yesterday', drive: '3h 48m', duty: '6h 20m', rest: '12h', alert: 'Within limits' },
+    { label: '7 day', drive: '28h 10m', duty: '44h 25m', rest: 'Daily rest ok', alert: 'Awaiting parsed export' },
+  ];
+
+  const activitySegments = [
+    { label: 'Rest', className: 'bg-slate-700', width: 18 },
+    { label: 'Other work', className: 'bg-amber-400', width: 14 },
+    { label: 'Drive', className: 'bg-cyan-300', width: 20 },
+    { label: 'POA', className: 'bg-sky-500', width: 10 },
+    { label: 'Drive', className: 'bg-cyan-300', width: 18 },
+    { label: 'Break', className: 'bg-emerald-400', width: 8 },
+    { label: 'Rest', className: 'bg-slate-700', width: 12 },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-950 text-slate-50 shadow-sm">
+      <div className="relative p-5 md:p-6">
+        <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_20%_10%,rgba(45,212,191,0.30),transparent_28%),radial-gradient(circle_at_85%_20%,rgba(251,191,36,0.22),transparent_30%),linear-gradient(135deg,#020617,#0f172a_54%,#111827)]" />
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-200">HourWise Reader Console</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h4 className="text-2xl font-black tracking-tight text-white">{modeLabel}</h4>
+                <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${stageTone}`}>
+                  {healthLabel}
+                </span>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm text-slate-300">
+                A production-facing display for card and VU reads. The legal totals below are placeholders until the parsed export feeds this panel.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-right">
+              <ConsoleMetric label="Reader" value={status.readerConnected ? 'Online' : 'Missing'} />
+              <ConsoleMetric label="Card" value={status.cardPresent ? 'Inserted' : 'Waiting'} />
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_1.45fr]">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identity</p>
+                  <p className="mt-1 text-lg font-black text-white">{status.driverName ?? status.driverId ?? 'Driver pending correlation'}</p>
+                </div>
+                <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-3">
+                  <CreditCard className="h-6 w-6 text-cyan-200" />
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-2">
+                <ConsoleLine label="Reader device" value={status.readerDeviceName ?? 'Not reported'} />
+                <ConsoleLine label="Export file" value={status.exportFileName ?? 'Waiting for read'} />
+                <ConsoleLine label="Session" value={status.readSessionId ?? 'Not started'} />
+                <ConsoleLine label="VU workflow" value={vuAvailable ? 'Available in helper capabilities' : 'Scaffolded, not enabled'} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Activity Timeline Preview</p>
+                  <p className="mt-1 text-sm text-slate-300">24-hour strip ready for parsed driver-card or VU activity blocks.</p>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">00:00 to 24:00</p>
+              </div>
+              <div className="mt-4 flex h-12 overflow-hidden rounded-xl border border-white/10 bg-slate-950">
+                {activitySegments.map((segment, index) => (
+                  <div
+                    key={`${segment.label}-${index}`}
+                    className={`${segment.className} flex items-center justify-center text-[9px] font-black uppercase tracking-widest text-slate-950`}
+                    style={{ flexBasis: `${segment.width}%` }}
+                    title={segment.label}
+                  >
+                    <span className={segment.className.includes('slate') ? 'text-slate-200' : ''}>{segment.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <span>00</span>
+                <span className="text-center">06</span>
+                <span className="text-center">12</span>
+                <span className="text-right">24</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+            {dayRows.map((row) => (
+              <div key={row.label} className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-cyan-200">{row.label}</p>
+                  <span className="rounded-full bg-slate-800 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                    {row.alert}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <ConsoleMetric label="Drive" value={row.drive} />
+                  <ConsoleMetric label="Duty" value={row.duty} />
+                  <ConsoleMetric label="Rest" value={row.rest} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <span>Reader workflow</span>
+              <span>{status.progressPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-2 rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-amber-300 transition-all"
+                style={{ width: `${status.progressPercent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HelperDiagnosticsPanel({
+  diagnostics,
+  pending,
+  message,
+  onRefresh,
+}: {
+  diagnostics: ReaderHelperDiagnostics | null;
+  pending: boolean;
+  message: string | null;
+  onRefresh: () => void;
+}) {
+  const recentEvents = (diagnostics?.recentEvents ?? []).slice(-5).reverse();
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Helper diagnostics</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Local support data from the Windows helper. This should help diagnose reader/export issues without exposing browser credentials.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={pending}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Refresh diagnostics
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <MetaCard label="Process id" value={diagnostics?.processId ? String(diagnostics.processId) : 'Unavailable'} />
+        <MetaCard label="Export command" value={diagnostics?.config?.exportCommandConfigured ? 'Configured' : 'Not configured'} />
+        <MetaCard label="VU workflow" value={diagnostics?.config?.vuWorkflowEnabled ? 'Enabled' : 'Disabled'} />
+        <MetaCard label="Sources" value={diagnostics?.capabilities?.sourceTypes?.join(', ') ?? 'driver_card'} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <MetaCard label="Export directory" value={diagnostics?.config?.exportOutputDirectory ?? 'Unavailable'} />
+        <MetaCard label="Log directory" value={diagnostics?.config?.logDirectory ?? 'Unavailable'} />
+      </div>
+
+      {recentEvents.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent events</p>
+          {recentEvents.map((event, index) => (
+            <div key={`${getDiagnosticEventName(event)}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-700">{getDiagnosticEventName(event)}</p>
+                <p className="text-[10px] font-bold text-slate-400">{formatDiagnosticTimestamp(event)}</p>
+              </div>
+              <p className="mt-2 break-all text-xs text-slate-500">{formatDiagnosticData(event)}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {message ? <p className="mt-3 text-xs text-slate-600">{message}</p> : null}
+    </div>
+  );
+}
+
+function ConsoleMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+function ConsoleLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl bg-slate-950/40 px-3 py-2">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+      <p className="max-w-[62%] break-all text-right text-xs font-bold text-slate-200">{value}</p>
+    </div>
+  );
+}
+
 function MetaCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -901,6 +1232,27 @@ function formatBytes(value?: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getDiagnosticEventName(event: ReaderHelperDiagnosticEvent) {
+  return event.event ?? event.Event ?? 'event';
+}
+
+function formatDiagnosticTimestamp(event: ReaderHelperDiagnosticEvent) {
+  const timestamp = event.timestamp ?? event.Timestamp;
+  return timestamp ? new Date(timestamp).toLocaleString('en-GB') : 'No timestamp';
+}
+
+function formatDiagnosticData(event: ReaderHelperDiagnosticEvent) {
+  const data = event.data ?? event.Data;
+  if (data === null || typeof data === 'undefined') return 'No event details';
+  if (typeof data === 'string') return data;
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return 'Event details could not be displayed';
+  }
 }
 
 function StatusIcon({ stage }: { stage: ReaderHelperStage }) {

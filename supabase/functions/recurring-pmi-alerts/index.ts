@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-pmi-alerts-cron-token',
 };
 
 serve(async (req) => {
@@ -12,6 +12,22 @@ serve(async (req) => {
   }
 
   try {
+    const configuredCronToken = Deno.env.get("PMI_ALERTS_CRON_TOKEN");
+    if (!configuredCronToken) {
+      return new Response(JSON.stringify({ error: "PMI_ALERTS_CRON_TOKEN is not configured." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const suppliedCronToken = req.headers.get("x-pmi-alerts-cron-token");
+    if (suppliedCronToken !== configuredCronToken) {
+      return new Response(JSON.stringify({ error: "Invalid cron token." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -104,7 +120,8 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Recurring PMI alert job failed.";
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

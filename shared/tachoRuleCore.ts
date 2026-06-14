@@ -4,10 +4,14 @@ export type SharedTachoRuleCode =
   | 'DRV_DAILY_10H_EXCEEDED'
   | 'DRV_WEEKLY_56H_EXCEEDED'
   | 'DRV_FORTNIGHT_90H_EXCEEDED'
+  | 'DRV_MULTI_MANNING_DETECTED'
   | 'REST_DAILY_UNDER_9H'
   | 'REST_DAILY_REDUCED'
   | 'REST_WEEKLY_UNDER_24H'
   | 'REST_WEEKLY_REDUCED'
+  | 'REST_WEEKLY_COMPENSATION_PENDING'
+  | 'REST_WEEKLY_COMPENSATION_COMPLETED'
+  | 'REST_WEEKLY_COMPENSATION_MISSING'
   | 'WTD_BREAK_AFTER_6H_MISSING'
   | 'WTD_BREAK_AFTER_9H_MISSING'
   | 'DATA_INVALID_ACTIVITY'
@@ -33,6 +37,8 @@ export const TACHO_RULE_LIMITS = {
   DAILY_REST_REDUCED_MINS: 540,
   WEEKLY_REST_REDUCED_MINS: 1440,
   WEEKLY_REST_REGULAR_MINS: 2700,
+  WEEKLY_REST_COMPENSATION_WINDOW_DAYS: 21,
+  WEEKLY_REST_COMPENSATION_ATTACH_MIN_MINS: 540,
   WTD_BREAK_AFTER_6H_WORK_MINS: 30,
   WTD_BREAK_AFTER_9H_WORK_MINS: 45,
 } as const;
@@ -43,10 +49,14 @@ export const TACHO_RULE_TITLES: Record<SharedTachoRuleCode, string> = {
   DRV_DAILY_10H_EXCEEDED: 'Daily driving exceeded 10 hours',
   DRV_WEEKLY_56H_EXCEEDED: 'Weekly driving exceeded 56 hours',
   DRV_FORTNIGHT_90H_EXCEEDED: 'Fortnightly driving exceeded 90 hours',
+  DRV_MULTI_MANNING_DETECTED: 'Multi-manning session detected',
   REST_DAILY_UNDER_9H: 'Daily rest below 9 hours',
   REST_DAILY_REDUCED: 'Reduced daily rest taken',
   REST_WEEKLY_UNDER_24H: 'Weekly rest below 24 hours',
   REST_WEEKLY_REDUCED: 'Reduced weekly rest taken',
+  REST_WEEKLY_COMPENSATION_PENDING: 'Weekly rest compensation outstanding',
+  REST_WEEKLY_COMPENSATION_COMPLETED: 'Weekly rest compensation completed',
+  REST_WEEKLY_COMPENSATION_MISSING: 'Weekly rest compensation missing',
   WTD_BREAK_AFTER_6H_MISSING: 'Break requirement after 6 hours of work not met',
   WTD_BREAK_AFTER_9H_MISSING: 'Break requirement after 9 hours of work not met',
   DATA_INVALID_ACTIVITY: 'Invalid activity record detected',
@@ -69,10 +79,14 @@ export const TACHO_RULE_LEGAL_BASIS: Record<SharedTachoRuleCode, string> = {
   DRV_DAILY_10H_EXCEEDED: 'EU Drivers’ Hours: extended daily driving limit',
   DRV_WEEKLY_56H_EXCEEDED: 'EU Drivers’ Hours: weekly driving limit',
   DRV_FORTNIGHT_90H_EXCEEDED: 'EU Drivers’ Hours: fortnightly driving limit',
+  DRV_MULTI_MANNING_DETECTED: "EU Drivers' Hours: team-driving / multi-manning review context",
   REST_DAILY_UNDER_9H: 'EU Drivers’ Hours: minimum reduced daily rest',
   REST_DAILY_REDUCED: 'EU Drivers’ Hours: regular daily rest reduced below 11 hours',
   REST_WEEKLY_UNDER_24H: 'EU Drivers’ Hours: minimum reduced weekly rest',
   REST_WEEKLY_REDUCED: 'EU Drivers’ Hours: weekly rest reduced below 45 hours',
+  REST_WEEKLY_COMPENSATION_PENDING: 'EU Drivers’ Hours: reduced weekly rest compensation must be attached to another qualifying rest period',
+  REST_WEEKLY_COMPENSATION_COMPLETED: 'EU Drivers’ Hours: reduced weekly rest compensation attached to a later qualifying rest period',
+  REST_WEEKLY_COMPENSATION_MISSING: 'EU Drivers’ Hours: reduced weekly rest compensation not attached within the allowed tracking window',
   WTD_BREAK_AFTER_6H_MISSING: 'Working Time Directive: break requirement after 6 hours work',
   WTD_BREAK_AFTER_9H_MISSING: 'Working Time Directive: break requirement after 9 hours work',
   DATA_INVALID_ACTIVITY: 'Data quality review required',

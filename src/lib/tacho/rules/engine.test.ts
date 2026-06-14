@@ -188,6 +188,91 @@ describe('evaluateDriverRules', () => {
     expect(findByRule(result.findings, 'REST_WEEKLY_REDUCED')).toHaveLength(1);
   });
 
+  it('tracks reduced weekly rest compensation as pending when the due window has not yet expired', () => {
+    const activities = [
+      ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-02', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-03', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-04', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-05', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-06', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-07', [{ start: '18:00', end: '22:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-08', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-09', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.findings, 'REST_WEEKLY_REDUCED')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_PENDING')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_COMPLETED')).toHaveLength(0);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_MISSING')).toHaveLength(0);
+  });
+
+  it('marks reduced weekly rest compensation as completed when a later qualifying rest is long enough', () => {
+    const activities = [
+      ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-02', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-03', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-04', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-05', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-06', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-08', [{ start: '14:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-12', [{ start: '08:00', end: '16:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-13', [{ start: '08:00', end: '16:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-14', [{ start: '08:00', end: '16:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-17', [{ start: '18:00', end: '23:59', activityType: 'work' }]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.findings, 'REST_WEEKLY_REDUCED')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_COMPLETED')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_PENDING')).toHaveLength(0);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_MISSING')).toHaveLength(0);
+  });
+
+  it('marks reduced weekly rest compensation as missing after the tracking window passes without a qualifying rest', () => {
+    const activities = [
+      ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-02', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-03', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-04', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-05', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-06', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-07', [{ start: '18:00', end: '22:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-08', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-09', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-10', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-11', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-12', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-13', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-14', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-15', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-16', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-17', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-18', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-19', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-20', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-21', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-22', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-23', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-24', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-25', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-26', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-27', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-28', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-29', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+      ...buildDayActivities('2026-05-30', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.findings, 'REST_WEEKLY_REDUCED')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_MISSING')).toHaveLength(1);
+    expect(findByRule(result.findings, 'REST_WEEKLY_COMPENSATION_COMPLETED')).toHaveLength(0);
+  });
+
   it('raises a weekly rest breach when no 24-hour weekly rest exists in the 7-day window', () => {
     const activities = [
       ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),
@@ -202,5 +287,39 @@ describe('evaluateDriverRules', () => {
     const result = evaluate(activities);
 
     expect(findByRule(result.findings, 'REST_WEEKLY_UNDER_24H')).toHaveLength(1);
+  });
+
+  it('treats overlapping different-driver activity on one vehicle as multi-manning context instead of generic overlap noise', () => {
+    const activities = [
+      ...buildDayActivities('2026-05-22', [
+        { start: '05:00', end: '07:30', activityType: 'driving', driverId: 'driver-1', vehicleId: 'vehicle-1' },
+        { start: '07:30', end: '08:15', activityType: 'rest', driverId: 'driver-1', vehicleId: 'vehicle-1' },
+        { start: '08:15', end: '11:00', activityType: 'poa', driverId: 'driver-1', vehicleId: 'vehicle-1' },
+        { start: '11:00', end: '11:30', activityType: 'work', driverId: 'driver-1', vehicleId: 'vehicle-1' },
+        { start: '05:00', end: '07:30', activityType: 'poa', driverId: 'driver-2', vehicleId: 'vehicle-1' },
+        { start: '07:30', end: '08:15', activityType: 'work', driverId: 'driver-2', vehicleId: 'vehicle-1' },
+        { start: '08:15', end: '11:00', activityType: 'driving', driverId: 'driver-2', vehicleId: 'vehicle-1' },
+        { start: '11:00', end: '11:30', activityType: 'rest', driverId: 'driver-2', vehicleId: 'vehicle-1' },
+      ]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.dataQualityIssues, 'DATA_OVERLAPPING_ACTIVITY')).toHaveLength(0);
+    expect(findByRule(result.findings, 'DRV_MULTI_MANNING_DETECTED')).toHaveLength(1);
+  });
+
+  it('still flags impossible same-vehicle concurrent driving as overlap data quality', () => {
+    const activities = [
+      ...buildDayActivities('2026-05-23', [
+        { start: '05:00', end: '07:30', activityType: 'driving', driverId: 'driver-1', vehicleId: 'vehicle-1' },
+        { start: '05:30', end: '07:00', activityType: 'driving', driverId: 'driver-2', vehicleId: 'vehicle-1' },
+      ]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.dataQualityIssues, 'DATA_OVERLAPPING_ACTIVITY')).toHaveLength(1);
+    expect(findByRule(result.findings, 'DRV_MULTI_MANNING_DETECTED')).toHaveLength(0);
   });
 });

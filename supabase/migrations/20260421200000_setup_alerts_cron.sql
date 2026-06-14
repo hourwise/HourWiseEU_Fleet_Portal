@@ -27,7 +27,7 @@ SELECT cron.schedule(
     url := 'https://YOUR_PROJECT_REF.functions.supabase.co/recurring-pmi-alerts',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
+      'x-pmi-alerts-cron-token', 'CONFIGURE_IN_EDGE_FUNCTION_ENV'
     ),
     body := '{}'::jsonb
   )

@@ -81,6 +81,21 @@ describe('evaluateTachoSimulationScenario', () => {
     ).toHaveLength(1);
   });
 
+  it('models a reduced weekly rest with a later compensation window', () => {
+    const result = evaluateTachoSimulationScenario(getTachoSimulationScenario('weekly-rest-compensation-window')!);
+
+    expect(
+      result.result.findings.filter((finding) => finding.ruleCode === 'REST_WEEKLY_REDUCED')
+    ).toHaveLength(1);
+    expect(
+      result.result.findings.filter((finding) => finding.ruleCode === 'REST_WEEKLY_COMPENSATION_COMPLETED')
+    ).toHaveLength(1);
+    expect(
+      result.result.findings.filter((finding) => finding.ruleCode === 'REST_WEEKLY_COMPENSATION_MISSING')
+    ).toHaveLength(0);
+    expect(result.result.daySummaries.length).toBeGreaterThan(7);
+  });
+
   it('flags a WTD 6-hour break breach when the first qualifying break arrives too late', () => {
     const result = evaluateTachoSimulationScenario(getTachoSimulationScenario('wtd-break-breach')!);
 
@@ -116,6 +131,22 @@ describe('evaluateTachoSimulationScenario', () => {
 
     expect(result.technicalEvents.map((event) => event.ruleCode)).toEqual(['VU_DRIVING_WITHOUT_CARD']);
     expect(result.discrepancies.map((item) => item.status)).toEqual(['unassigned_motion']);
+  });
+
+  it('models multi-manning review windows with overlapping driver activity on one vehicle', () => {
+    const result = evaluateTachoSimulationScenario(getTachoSimulationScenario('vu-multi-manning-shared-duty')!);
+
+    expect([...new Set(result.activities.map((activity) => activity.driverId))]).toEqual([
+      'sim-driver-022',
+      'sim-driver-023',
+    ]);
+    expect(result.result.daySummaries).toHaveLength(1);
+    expect(
+      result.result.dataQualityIssues.filter((finding) => finding.ruleCode === 'DATA_OVERLAPPING_ACTIVITY')
+    ).toHaveLength(0);
+    expect(
+      result.result.findings.filter((finding) => finding.ruleCode === 'DRV_MULTI_MANNING_DETECTED')
+    ).toHaveLength(1);
   });
 
   it('compiles VU driver mismatch scenarios into conflict events and driver-mismatch discrepancies', () => {
@@ -178,11 +209,13 @@ describe('evaluateTachoSimulationScenario', () => {
       'fortnight-driving-breach',
       'reduced-daily-rest',
       'weekly-rest-under-24h',
+      'weekly-rest-compensation-window',
       'wtd-break-breach',
       'data-overlapping-activities',
       'data-missing-activity-timestamp',
       'data-malformed-discrepancy-timing',
       'vu-cardless-driving',
+      'vu-multi-manning-shared-duty',
       'vu-multi-driver-consecutive-days',
       'vu-same-day-handover',
       'vu-partial-assigned-motion-gap',

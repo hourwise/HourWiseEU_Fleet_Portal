@@ -16,6 +16,10 @@ For the Supabase-facing import handoff after a real reader export, see:
 
 - `docs/tacho-reader-helper-backend-handoff.md`
 
+For the production Windows helper build checklist, see:
+
+- `docs/tacho-reader-helper-production-checklist.md`
+
 ## Default Endpoint
 
 - default base URL: `http://127.0.0.1:47231`
@@ -37,6 +41,7 @@ Example response:
   "detail": "Reader connected. Waiting for supervisor confirmation.",
   "helperVersion": "0.1.0",
   "readerConnected": true,
+  "readerDeviceName": "ACS ACR39U ICC Reader",
   "cardPresent": true,
   "canStartRead": true,
   "canCancel": false,
@@ -65,8 +70,10 @@ When `stage` is `complete`, the frontend will try to open driver analysis automa
 Optional correlation fields:
 
 - `companyId`
+- `requestedByUserId`
 - `sourceType`
 - `driverName`
+- `readerDeviceName`
 - `readSessionId`
 - `exportFileName`
 - `exportFilePath`
@@ -84,13 +91,16 @@ Optional correlation fields:
 
 ### `POST /commands/start-read`
 
-Starts reading the currently inserted driver card.
+Starts the currently selected local reader workflow.
 
 Example request:
 
 ```json
 {
-  "requestedAt": "2026-05-29T14:56:00.000Z"
+  "requestedAt": "2026-05-29T14:56:00.000Z",
+  "companyId": "7f0ad8d2-1e0a-4a08-a4d3-93fb026e9b66",
+  "requestedByUserId": "manager-profile-uuid",
+  "sourceType": "driver_card"
 }
 ```
 
@@ -101,6 +111,22 @@ Suggested response:
   "accepted": true
 }
 ```
+
+Required request fields:
+
+- `companyId`
+
+Optional request fields:
+
+- `requestedByUserId`
+- `sourceType`, defaulting to `driver_card`
+
+The helper should reject `start-read` if `companyId` is missing. The browser owns company identity because it has the authenticated portal session.
+
+Supported source types:
+
+- `driver_card`: enabled by default.
+- `vehicle_unit`: reserved for the future VU-reader workflow and should only be accepted by helpers that explicitly advertise it in diagnostics/capabilities.
 
 ### `POST /commands/cancel`
 
@@ -149,6 +175,34 @@ Suggested response:
   "importId": "dc42b0a2-f6f6-4a13-a808-e5d4f2478a02"
 }
 ```
+
+### `GET /exports/:readSessionId/file`
+
+Returns the exported driver-card or VU file bytes for the active read session.
+
+The browser uses this endpoint to download the local export and then uploads it to Supabase Storage under the authenticated portal session.
+
+### `GET /diagnostics`
+
+Returns support diagnostics from the local helper.
+
+Expected fields:
+
+- `helperVersion`
+- `utcNow`
+- `processId`
+- `config`
+- `capabilities`
+- `state`
+- `recentEvents`
+
+The current `.NET` helper reports source-type capability here. `vehicle_unit` should not appear unless the helper has a real VU workflow path or an explicitly enabled development flag.
+
+### `GET /diagnostics/logs`
+
+Returns the recent in-memory diagnostic event ring plus the configured local log directory.
+
+Production helpers should also write JSONL logs locally so support can collect startup, reader, export, registration, and error events without needing browser credentials.
 
 ### Optional debug endpoints for the in-repo mock helper
 
@@ -215,11 +269,37 @@ The current frontend uses this contract in:
 - `src/components/manager/tachograph/TachoReaderHelperPanel.tsx`
 - `src/components/manager/tachograph/TachoImportCentre.tsx`
 
+## Future Reader UI Direction
+
+When the card-reader and VU-reader screens move from functional scaffold to final UI, use the attached Tachomaster-style screen reference as a structural benchmark, not a visual clone.
+
+Useful patterns to preserve:
+
+- Clear reader status header with a single obvious ready / reading / processing state.
+- Prominent action for file fallback or manual import.
+- Compact driver / vehicle identity card.
+- Compact quick-analysis card with operational figures such as last activity, available drive time, weekly counts, and rest markers.
+- Separate infringements / alerts panel that can be empty without looking broken.
+- Dense day-by-day timeline with a 0-24 hour ruler and colour-coded activity bands.
+- Detail / log split for supervisor troubleshooting.
+
+HourWise should apply its own visual language:
+
+- Use the portal colour scheme rather than Tachomaster's maroon / green desktop style.
+- Keep the layout cleaner, more spacious, and responsive for browser use.
+- Preserve density in the activity timeline because supervisors need scan speed.
+- Make status and error states more explicit than the legacy desktop UI.
+- Keep driver-card and VU-reader screens visually related, but use different accents for person-focused and vehicle-focused workflows.
+
 ## Local Mock Helper
 
 This repo includes a minimal helper prototype at:
 
 - `tools/tacho-reader-helper/mock-helper.mjs`
+
+This repo also includes the first production-shaped `.NET` helper shell at:
+
+- `tools/tacho-reader-helper/windows-helper/`
 
 Run it with:
 
@@ -227,11 +307,46 @@ Run it with:
 npm run tacho:helper:mock
 ```
 
+Run the `.NET` shell with:
+
+```bash
+npm run tacho:helper:windows
+```
+
+The `.NET` shell currently includes:
+
+- PC/SC reader/card detection through Windows smart-card APIs.
+- External export-command execution through `TACHO_HELPER_EXPORT_COMMAND`.
+- JSONL support logging and `/diagnostics` endpoints.
+- A disabled-by-default `vehicle_unit` workflow shape for future VU downloads.
+
 Run the automated scenario regression harness with:
 
 ```bash
 npm run tacho:helper:test
 ```
+
+Probe any already-running helper implementation with:
+
+```bash
+npm run tacho:helper:probe
+```
+
+The probe defaults to safe smoke mode:
+
+- calls `OPTIONS /status`
+- calls `GET /status`
+- validates core response shape, stage value, progress, and action booleans
+
+To exercise a full staged read/export/register cycle against a staging helper, run:
+
+```bash
+npm run tacho:helper:probe -- --mode read --company-id <company-id> --user-id <manager-user-id>
+```
+
+Use `--base-url <url>` to target a non-default helper endpoint.
+
+The read probe does not upload to Supabase. It simulates the browser-side registration callback so helper state transitions can be validated before wiring real storage and parser processing.
 
 Default behavior:
 

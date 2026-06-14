@@ -19,6 +19,8 @@ export function evaluateDriverRules(input: RuleEvaluationInput): RuleEvaluationR
   const sharedEvaluation = evaluateSharedRuleFindings({
     activities: normalizedActivities.map((activity) => ({
       id: activity.id,
+      driverId: activity.driverId,
+      vehicleId: activity.vehicleId,
       startTime: activity.startTime,
       endTime: activity.endTime,
       activityType: activity.activityType,
@@ -31,6 +33,8 @@ export function evaluateDriverRules(input: RuleEvaluationInput): RuleEvaluationR
       dutyEnd: window.dutyEnd,
       activities: window.activities.map((activity) => ({
         id: activity.id,
+        driverId: activity.driverId,
+        vehicleId: activity.vehicleId,
         startTime: activity.startTime,
         endTime: activity.endTime,
         activityType: activity.activityType,

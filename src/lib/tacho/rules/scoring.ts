@@ -16,5 +16,5 @@ function severityPenalty(severity: TachoFinding['severity']) {
   if (severity === 'high') return 12;
   if (severity === 'medium') return 8;
   if (severity === 'low') return 4;
-  return 2;
+  return 0;
 }

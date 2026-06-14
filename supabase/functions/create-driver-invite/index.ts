@@ -17,10 +17,15 @@ serve(async (req) => {
   }
 
   try {
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) {
+      throw new Error("Authentication required.");
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+      { global: { headers: { Authorization: authorization } } }
     );
 
     const serviceClient = createClient(
@@ -32,6 +37,28 @@ serve(async (req) => {
 
     if (!companyId || !inviteEmail || !inviteFullName) {
         throw new Error("Missing required fields: companyId, email, or name.");
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error("User not authenticated.");
+    }
+
+    const { data: actorProfile, error: actorProfileError } = await supabaseClient
+      .from("profiles")
+      .select("company_id, role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (actorProfileError || !actorProfile) {
+      throw new Error("Unable to verify manager profile.");
+    }
+
+    if (actorProfile.role !== "manager" || actorProfile.company_id !== companyId) {
+      throw new Error("You can only create invites for your own company.");
     }
 
     // --- Get Company Data ---
@@ -53,13 +80,10 @@ serve(async (req) => {
                     quantity: (subscription.items.data[0].quantity || 0) + 1,
                 }],
             });
-            console.log("Stripe subscription incremented.");
         } catch (sErr) {
-            console.error("Stripe error (skipping):", sErr.message);
+            console.error("Stripe seat increment failed; continuing invite creation:", sErr.message);
             // We don't throw here so the email still sends during testing
         }
-    } else {
-        console.log("Stripe not configured or no subscription ID found. Skipping billing increment.");
     }
 
     // --- Create the invite in the database ---
@@ -86,7 +110,7 @@ serve(async (req) => {
         expires_at: expires_at,
         status: 'pending',
       })
-      .select()
+      .select("id, company_id, email, full_name, invite_code, expires_at, status, accepted_by_user_id")
       .single();
 
     if (insertError) throw new Error(`Database error: ${insertError.message}`);

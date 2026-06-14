@@ -14,6 +14,7 @@ export interface ReaderHelperExportDescriptor {
   readSessionId: string;
   helperVersion?: string;
   companyId?: string;
+  requestedByUserId?: string;
   sourceType?: string;
   exportFileName?: string;
   exportDownloadPath?: string;
@@ -65,11 +66,28 @@ export interface TachoProcessingKickoffResult {
   error?: string;
 }
 
+interface TachographFileStatusRow {
+  id: string;
+  status: string;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  source_type: string | null;
+  filename: string | null;
+  file_path: string | null;
+  metadata: HelperImportMetadata | null;
+}
+
+interface TachographFileProcessingRow extends TachographFileStatusRow {
+  company_id: string;
+  file_type: string;
+}
+
 function deriveFileName(descriptor: ReaderHelperExportDescriptor) {
   if (descriptor.exportFileName) return descriptor.exportFileName;
   if (descriptor.exportDownloadPath) {
     const normalizedPath = descriptor.exportDownloadPath.replace(/\\/g, '/');
-    const lastSegment = normalizedPath.split('/').filter(Boolean).at(-1);
+    const pathSegments = normalizedPath.split('/').filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1];
     if (lastSegment && lastSegment.includes('.')) return lastSegment;
   }
   throw new Error('Helper export file name was not provided.');
@@ -382,6 +400,7 @@ export async function registerReaderHelperImport(args: {
     upload_origin: 'browser_assisted',
     helper_version: descriptor.helperVersion ?? null,
     read_session_id: descriptor.readSessionId,
+    requested_by_user_id: descriptor.requestedByUserId ?? null,
     export_file_name: fileName,
     export_file_size_bytes: descriptor.exportFileSizeBytes ?? fileBlob.size,
     export_sha256: descriptor.exportSha256 ?? null,
@@ -476,18 +495,19 @@ export async function fetchReaderHelperImportStatus(companyId: string, importId:
     });
     throw error;
   }
-  if (!data) return null;
+  const row = data as TachographFileStatusRow | null;
+  if (!row) return null;
 
-  const metadata = (data as { metadata?: HelperImportMetadata | null }).metadata ?? {};
+  const metadata = row.metadata ?? {};
 
   return {
-    importId: data.id,
-    status: data.status,
-    driverId: data.driver_id ?? null,
-    vehicleId: data.vehicle_id ?? null,
-    sourceType: data.source_type ?? null,
-    fileName: data.filename ?? null,
-    filePath: data.file_path ?? null,
+    importId: row.id,
+    status: row.status,
+    driverId: row.driver_id ?? null,
+    vehicleId: row.vehicle_id ?? null,
+    sourceType: row.source_type ?? null,
+    fileName: row.filename ?? null,
+    filePath: row.file_path ?? null,
     driverName: typeof metadata.driver_name === 'string' ? metadata.driver_name : null,
     vehicleReg: typeof metadata.vehicle_reg === 'string' ? metadata.vehicle_reg : null,
     summary: typeof metadata.summary === 'string' ? metadata.summary : null,
@@ -547,7 +567,9 @@ export async function retryTachoImportProcessing(companyId: string, importId: st
     throw error;
   }
 
-  if (!data) {
+  const row = data as TachographFileProcessingRow | null;
+
+  if (!row) {
     reportTachoImportTelemetry({
       level: 'warning',
       message: 'Retry was requested for an import that could not be found.',
@@ -560,16 +582,30 @@ export async function retryTachoImportProcessing(companyId: string, importId: st
     throw new Error('Import record not found for retry.');
   }
 
+  const filePath = row.file_path;
+  if (!filePath) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Retry was requested for an import without a storage path.',
+      context: {
+        stage: 'processing_retry',
+        companyId,
+        importId,
+      },
+    });
+    throw new Error('Import record has no storage path for retry.');
+  }
+
   const record = toProcessTachoRecord({
-    id: data.id,
-    companyId: data.company_id,
-    filePath: data.file_path,
-    fileType: data.file_type,
-    fileName: data.filename,
-    metadata: (data.metadata as HelperImportMetadata | null) ?? {},
-    sourceType: data.source_type,
-    driverId: data.driver_id,
-    vehicleId: data.vehicle_id,
+    id: row.id,
+    companyId: row.company_id,
+    filePath,
+    fileType: row.file_type,
+    fileName: row.filename ?? row.id,
+    metadata: row.metadata ?? {},
+    sourceType: row.source_type,
+    driverId: row.driver_id,
+    vehicleId: row.vehicle_id,
   });
 
   return kickoffTachoImportProcessing(record);

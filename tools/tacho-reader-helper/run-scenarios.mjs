@@ -63,6 +63,18 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+async function requestRaw(path, options = {}) {
+  const response = await fetch(`${BASE_URL}${path}`, options);
+  const text = await response.text();
+  let body = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = text;
+  }
+  return { response, body };
+}
+
 async function waitForHelper(timeoutMs = 10000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -89,6 +101,41 @@ async function applyScenario(name) {
   });
 }
 
+async function runProtocolNegativeChecks() {
+  await request('/debug/card-insert', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestedAt: new Date().toISOString() }),
+  });
+
+  const missingCompany = await requestRaw('/commands/start-read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestedAt: new Date().toISOString(),
+      requestedByUserId: 'scenario-runner',
+    }),
+  });
+  ensure(missingCompany.response.status === 400, `Expected missing company to be rejected with 400, got ${missingCompany.response.status}`);
+  ensure(missingCompany.body?.accepted === false, 'Expected missing company response to be rejected');
+
+  const unsupportedSource = await requestRaw('/commands/start-read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestedAt: new Date().toISOString(),
+      companyId: 'mock-company-001',
+      requestedByUserId: 'scenario-runner',
+      sourceType: 'vehicle_unit',
+    }),
+  });
+  ensure(
+    unsupportedSource.response.status === 400,
+    `Expected unsupported source type to be rejected with 400, got ${unsupportedSource.response.status}`
+  );
+  ensure(unsupportedSource.body?.accepted === false, 'Expected unsupported source response to be rejected');
+}
+
 async function startRead() {
   return request('/commands/start-read', {
     method: 'POST',
@@ -97,6 +144,7 @@ async function startRead() {
       requestedAt: new Date().toISOString(),
       companyId: 'mock-company-001',
       requestedByUserId: 'scenario-runner',
+      sourceType: 'driver_card',
     }),
   });
 }
@@ -225,6 +273,7 @@ async function main() {
 
   try {
     await waitForHelper();
+    await runProtocolNegativeChecks();
     const results = [];
 
     for (const scenario of scenarios) {

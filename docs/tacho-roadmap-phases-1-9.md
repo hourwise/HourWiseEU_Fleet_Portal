@@ -42,11 +42,21 @@ Based on the current frontend and this implementation pass:
 - Phase 8 is now scaffolded in frontend:
   - the import centre includes a reader-helper panel that polls a local helper endpoint
   - helper operator actions and a localhost API contract are now defined in-repo
+  - a production Windows helper implementation checklist is now defined in-repo
   - a local mock helper is now available for UI testing without the Windows executable
   - mock-only debug controls are now exposed in the reader panel when the mock helper is detected
   - the mock helper now simulates export file, upload receipt, backend job, and import correlation data
   - the mock helper now supports scenario switching for slow upload, backend failure, and missing-driver cases
   - a regression harness now validates all named mock-helper scenarios automatically
+  - a standalone contract probe now validates any running helper in smoke or staged read mode
+  - a first `.NET` Windows-helper shell now exists and passes the localhost smoke probe
+  - the `.NET` shell now polls Windows PC/SC smart-card readers and maps reader/card presence into helper status
+  - the `.NET` shell now has a configurable external export-command seam that can expose a produced card file through the browser handoff route
+  - the `.NET` shell now has JSONL support logging and `/diagnostics` endpoints for config, capabilities, state, and recent events
+  - the `.NET` shell now includes a disabled-by-default `vehicle_unit` source-type shape for the future VU reader/download workflow
+  - the `.NET` shell also supports explicit placeholder-reader mode for full read/register contract probing without hardware
+  - the helper contract has been validated with placeholder bytes and a simulated external export command producing fake bytes
+  - the reader panel now includes a first customer-facing HourWise reader console inspired by the Tachomaster-style reference without copying its visual scheme
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
   - browser-assisted helper imports now upload exported files into Supabase Storage and register `tachograph_files` rows
   - browser-originated imports now request `process-tacho` directly instead of depending on undeclared deployment glue
@@ -65,10 +75,16 @@ Based on the current frontend and this implementation pass:
 - the simulator preview now also covers VU technical events and motion-discrepancy presentation for cardless driving, driver mismatch, and overspeed-style scenarios
 - vehicle-history simulator coverage now includes multi-driver consecutive-day use, same-day handover, partial assigned motion gaps, and attribution-conflict scenarios
 - parser-like bad-data simulator coverage now includes overlapping activities, missing timestamps, and malformed timing, with the preview handling those cases as controlled errors instead of crashing
+- Phase 9 simulator coverage now also includes multi-manning review windows and reduced-weekly-rest compensation context
+- reduced weekly rest is now tracked through compensation `pending`, `completed`, and `missing` outcomes in the shared rules engine and simulator coverage
+- qualifying same-vehicle overlapping different-driver activity is now treated as multi-manning review context rather than generic overlap data quality, while impossible concurrent driving overlaps still raise data-quality issues
+- vehicle review surfaces now expose that context directly in the vehicle history ledger and day-detail drawer so supervisors can see team-driving periods without parsing raw findings
 
 Still external or not fully executable from this repo alone:
 
-- helper executable and localhost protocol implementation
+- production helper executable packaging
+- selected/validated real tachograph card export tool or library
+- selected/validated real VU download path and supported device list
 - backend deployment confirmation
 - real-file regression / parser validation
 - release hardening, monitoring, RLS review, and UAT
@@ -568,10 +584,18 @@ Make the full tacho system safe for operational rollout.
 #### 9.2 Rules-engine regression coverage
 
 - Add more targeted fixtures for:
-  - weekly rest compensation
-  - multi-manning
   - VU event categories from real files
   - reconciliation edge cases
+- Synthetic simulator coverage now also exercises:
+  - reduced weekly rest followed by a later compensation window
+  - multi-manning shared-duty timelines on one vehicle
+- Weekly-rest hardening now covers:
+  - reduced weekly rest compensation still pending
+  - reduced weekly rest compensation completed by a later qualifying rest
+  - reduced weekly rest compensation missing after the tracking window
+- Multi-manning hardening now covers:
+  - same-vehicle overlapping different-driver activity as explicit review context
+  - impossible concurrent same-vehicle driving still treated as invalid overlap
 - Synthetic simulator coverage now also exercises parser-like bad-data conditions:
   - overlapping activity records
   - missing timestamps

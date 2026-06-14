@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "tacho:helper:mock": "node tools/tacho-reader-helper/mock-helper.mjs",
+    "tacho:helper:probe": "node tools/tacho-reader-helper/contract-probe.mjs",
     "tacho:helper:test": "node tools/tacho-reader-helper/run-scenarios.mjs",
+    "tacho:helper:windows": "dotnet run --project tools/tacho-reader-helper/windows-helper/HourWise.TachoReaderHelper.csproj",
     "tacho:runtime": "node tools/tacho-processing/configure-runtime.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:rules": "vitest run src/lib/tacho/rules/engine.test.ts src/lib/tacho/rules/reconciliation.test.ts src/lib/tacho/adapters.test.ts src/lib/tacho/importObservability.test.ts src/lib/tacho/simulator/scenarioCompiler.test.ts"

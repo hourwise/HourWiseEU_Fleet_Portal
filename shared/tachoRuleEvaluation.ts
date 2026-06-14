@@ -7,10 +7,13 @@ import {
   evaluateSequentialWtdBreaks,
   findRollingBestRestGap,
   findRollingWindowTotal,
+  type SharedRestGap,
 } from './tachoRuleCore.ts';
 
 export type SharedRuleActivity = {
   id: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
   startTime: string;
   endTime: string;
   activityType: 'driving' | 'work' | 'poa' | 'rest' | 'break_rest' | 'unknown';
@@ -33,8 +36,8 @@ export type SharedRuleFinding = {
   ruleCode: keyof typeof TACHO_RULE_TITLES;
   title: string;
   summary: string;
-  severity: 'high' | 'medium';
-  status: 'breach' | 'warning';
+  severity: 'high' | 'medium' | 'info';
+  status: 'breach' | 'warning' | 'info';
   occurredAt: string;
   periodStart: string;
   periodEnd: string;
@@ -52,6 +55,14 @@ type SharedEvaluationInput = {
 
 function toMs(value: string) {
   return new Date(value).getTime();
+}
+
+function addDays(value: string, days: number) {
+  return new Date(toMs(value) + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function durationMins(startTime: string, endTime: string) {
+  return Math.max(0, Math.round((toMs(endTime) - toMs(startTime)) / 60000));
 }
 
 function makeFinding(
@@ -95,6 +106,93 @@ function dedupeAggregateFindings(findings: SharedRuleFinding[]) {
   });
 }
 
+function dedupeRestGaps(gaps: SharedRestGap[]) {
+  const seen = new Set<string>();
+
+  return gaps.filter((gap) => {
+    const key = `${gap.start}-${gap.end}-${gap.restMins}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isQualifyingMultiManningPair(current: SharedRuleActivity, next: SharedRuleActivity) {
+  if (!current.driverId || !next.driverId) return false;
+  if (!current.vehicleId || !next.vehicleId) return false;
+  if (current.driverId === next.driverId) return false;
+  if (current.vehicleId !== next.vehicleId) return false;
+  if (toMs(next.startTime) >= toMs(current.endTime)) return false;
+  if (current.activityType === 'driving' && next.activityType === 'driving') return false;
+
+  return true;
+}
+
+function buildMultiManningWindows(activities: SharedRuleActivity[]) {
+  const windows: Array<{
+    vehicleId: string;
+    startTime: string;
+    endTime: string;
+    driverIds: string[];
+    activityTypes: SharedRuleActivity['activityType'][];
+  }> = [];
+
+  for (let index = 0; index < activities.length - 1; index += 1) {
+    const current = activities[index];
+    const next = activities[index + 1];
+    if (!isQualifyingMultiManningPair(current, next)) continue;
+
+    const startTime = new Date(Math.max(toMs(current.startTime), toMs(next.startTime))).toISOString();
+    const endTime = new Date(Math.min(toMs(current.endTime), toMs(next.endTime))).toISOString();
+    const previous = windows[windows.length - 1];
+
+    if (
+      previous &&
+      previous.vehicleId === current.vehicleId &&
+      toMs(startTime) <= toMs(previous.endTime)
+    ) {
+      previous.endTime = new Date(Math.max(toMs(previous.endTime), toMs(endTime))).toISOString();
+      previous.driverIds = [...new Set([...previous.driverIds, current.driverId!, next.driverId!])];
+      previous.activityTypes = [...new Set([...previous.activityTypes, current.activityType, next.activityType])];
+      continue;
+    }
+
+    windows.push({
+      vehicleId: current.vehicleId!,
+      startTime,
+      endTime,
+      driverIds: [current.driverId!, next.driverId!],
+      activityTypes: [current.activityType, next.activityType],
+    });
+  }
+
+  return windows.map((window) => ({
+    ...window,
+    overlapMins: durationMins(window.startTime, window.endTime),
+  }));
+}
+
+function findCompensatingRestGap(reducedGap: SharedRestGap, restGaps: SharedRestGap[]) {
+  const owedMins = TACHO_RULE_LIMITS.WEEKLY_REST_REGULAR_MINS - reducedGap.restMins;
+  const dueBy = addDays(reducedGap.end, TACHO_RULE_LIMITS.WEEKLY_REST_COMPENSATION_WINDOW_DAYS);
+  const minimumAttachedRestMins = TACHO_RULE_LIMITS.WEEKLY_REST_COMPENSATION_ATTACH_MIN_MINS + owedMins;
+
+  const compensatingGap =
+    restGaps.find(
+      (gap) =>
+        toMs(gap.start) > toMs(reducedGap.end) &&
+        toMs(gap.end) <= toMs(dueBy) &&
+        gap.restMins >= minimumAttachedRestMins
+    ) ?? null;
+
+  return {
+    owedMins,
+    dueBy,
+    minimumAttachedRestMins,
+    compensatingGap,
+  };
+}
+
 export function detectSharedDataQualityIssues(input: SharedEvaluationInput) {
   const findings: SharedRuleFinding[] = [];
 
@@ -120,6 +218,10 @@ export function detectSharedDataQualityIssues(input: SharedEvaluationInput) {
 
     const next = input.activities[index + 1];
     if (next && toMs(next.startTime) < toMs(activity.endTime)) {
+      if (isQualifyingMultiManningPair(activity, next)) {
+        continue;
+      }
+
       findings.push(
         makeFinding(
           'DATA_OVERLAPPING_ACTIVITY',
@@ -144,6 +246,7 @@ export function detectSharedDataQualityIssues(input: SharedEvaluationInput) {
 export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
   const findings: SharedRuleFinding[] = [];
   const dataQualityIssues = detectSharedDataQualityIssues(input);
+  const reducedWeeklyRestGaps: SharedRestGap[] = [];
   const restGaps = buildRestGaps(
     input.dutyWindows,
     (window) => window.dutyDate,
@@ -299,6 +402,29 @@ export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
     }
   }
 
+  for (const window of buildMultiManningWindows(input.activities)) {
+    findings.push(
+      makeFinding(
+        'DRV_MULTI_MANNING_DETECTED',
+        `Concurrent driver activity was detected on vehicle ${window.vehicleId} for ${window.overlapMins} minutes, consistent with a multi-manning review period.`,
+        'info',
+        'info',
+        window.endTime,
+        window.startTime,
+        window.endTime,
+        'summary',
+        window.vehicleId,
+        'Multi-manning review',
+        {
+          vehicleId: window.vehicleId,
+          overlapMins: window.overlapMins,
+          driverIds: window.driverIds.join(','),
+          activityTypes: window.activityTypes.join(','),
+        }
+      )
+    );
+  }
+
   for (let index = 0; index < input.dutyWindows.length; index += 1) {
     const window = input.dutyWindows[index];
     const bestGap = findRollingBestRestGap(input.dutyWindows, restGaps, index, (dutyWindow) => dutyWindow.dutyDate);
@@ -321,6 +447,8 @@ export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
         )
       );
     } else if (bestGap.restMins < TACHO_RULE_LIMITS.WEEKLY_REST_REGULAR_MINS) {
+      const compensation = findCompensatingRestGap(bestGap, restGaps);
+      reducedWeeklyRestGaps.push(bestGap);
       findings.push(
         makeFinding(
           'REST_WEEKLY_REDUCED',
@@ -333,10 +461,89 @@ export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
           'summary',
           window.id,
           'Weekly rest review',
-          { measuredMins: bestGap.restMins, thresholdMins: TACHO_RULE_LIMITS.WEEKLY_REST_REGULAR_MINS, windowDays: 7 }
+          {
+            measuredMins: bestGap.restMins,
+            thresholdMins: TACHO_RULE_LIMITS.WEEKLY_REST_REGULAR_MINS,
+            windowDays: 7,
+            compensationMins: compensation.owedMins,
+            compensationDueBy: compensation.dueBy.slice(0, 10),
+            minimumAttachedRestMins: compensation.minimumAttachedRestMins,
+          }
         )
       );
     }
+  }
+
+  const latestKnownTimestamp = input.dutyWindows[input.dutyWindows.length - 1]?.dutyEnd ?? null;
+  for (const reducedGap of dedupeRestGaps(reducedWeeklyRestGaps)) {
+    const compensation = findCompensatingRestGap(reducedGap, restGaps);
+    if (compensation.compensatingGap) {
+      findings.push(
+        makeFinding(
+          'REST_WEEKLY_COMPENSATION_COMPLETED',
+          `Reduced weekly rest compensation of ${compensation.owedMins} minutes was attached to a later rest of ${compensation.compensatingGap.restMins} minutes.`,
+          'info',
+          'info',
+          compensation.compensatingGap.end,
+          reducedGap.start,
+          compensation.compensatingGap.end,
+          'summary',
+          reducedGap.start,
+          'Weekly rest compensation',
+          {
+            compensationMins: compensation.owedMins,
+            compensationDueBy: compensation.dueBy.slice(0, 10),
+            attachedRestMins: compensation.compensatingGap.restMins,
+            attachedRestStart: compensation.compensatingGap.start,
+            attachedRestEnd: compensation.compensatingGap.end,
+          }
+        )
+      );
+      continue;
+    }
+
+    if (latestKnownTimestamp && toMs(latestKnownTimestamp) > toMs(compensation.dueBy)) {
+      findings.push(
+        makeFinding(
+          'REST_WEEKLY_COMPENSATION_MISSING',
+          `Reduced weekly rest compensation of ${compensation.owedMins} minutes was not identified within ${TACHO_RULE_LIMITS.WEEKLY_REST_COMPENSATION_WINDOW_DAYS} days of the reduced weekly rest ending.`,
+          'high',
+          'breach',
+          compensation.dueBy,
+          reducedGap.start,
+          compensation.dueBy,
+          'summary',
+          reducedGap.start,
+          'Weekly rest compensation',
+          {
+            compensationMins: compensation.owedMins,
+            compensationDueBy: compensation.dueBy.slice(0, 10),
+            minimumAttachedRestMins: compensation.minimumAttachedRestMins,
+          }
+        )
+      );
+      continue;
+    }
+
+    findings.push(
+      makeFinding(
+        'REST_WEEKLY_COMPENSATION_PENDING',
+        `Reduced weekly rest compensation of ${compensation.owedMins} minutes is still outstanding and must be attached to a later rest of at least ${compensation.minimumAttachedRestMins} minutes by ${compensation.dueBy.slice(0, 10)}.`,
+        'info',
+        'info',
+        reducedGap.end,
+        reducedGap.start,
+        compensation.dueBy,
+        'summary',
+        reducedGap.start,
+        'Weekly rest compensation',
+        {
+          compensationMins: compensation.owedMins,
+          compensationDueBy: compensation.dueBy.slice(0, 10),
+          minimumAttachedRestMins: compensation.minimumAttachedRestMins,
+        }
+      )
+    );
   }
 
   for (let endIndex = 0; endIndex < input.dutyWindows.length; endIndex += 1) {
