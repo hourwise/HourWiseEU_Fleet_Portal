@@ -96,6 +96,12 @@ describe('adaptImportRecord', () => {
       status: 'pending',
       metadata: {
         ingest_source: 'reader_helper',
+        parser_status: 'partial_helper_capture',
+        helper_capture_schema: 'hourwise.tachograph.driver-card.read-only-capture.v1',
+        helper_capture_warning: 'Read-only helper capture is not parser-ready.',
+        helper_capture_file_count: 14,
+        helper_capture_selected_file_count: 12,
+        helper_capture_captured_bytes: 39444,
         processing_kickoff_error: 'Function returned 401.',
         processing_kickoff_requested_at: '2026-06-07T10:31:00.000Z',
         trigger_dispatch_error: 'pg_net timeout',
@@ -105,6 +111,12 @@ describe('adaptImportRecord', () => {
     });
 
     expect(record.ingestSource).toBe('reader_helper');
+    expect(record.parserStatus).toBe('partial_helper_capture');
+    expect(record.helperCaptureSchema).toBe('hourwise.tachograph.driver-card.read-only-capture.v1');
+    expect(record.helperCaptureWarning).toBe('Read-only helper capture is not parser-ready.');
+    expect(record.helperCaptureFileCount).toBe(14);
+    expect(record.helperCaptureSelectedFileCount).toBe(12);
+    expect(record.helperCaptureCapturedBytes).toBe(39444);
     expect(record.processingKickoffError).toBe('Function returned 401.');
     expect(record.processingKickoffRequestedAt).toBe('2026-06-07T10:31:00.000Z');
     expect(record.triggerDispatchError).toBe('pg_net timeout');

@@ -98,6 +98,8 @@ export function TachoImportCentre({
             {' '}
             {monitoringSummary.partialImports} partial parse{monitoringSummary.partialImports === 1 ? '' : 's'},
             {' '}
+            {monitoringSummary.helperCaptureWarnings} read-only helper capture{monitoringSummary.helperCaptureWarnings === 1 ? '' : 's'},
+            {' '}
             and {monitoringSummary.processingErrors} processor error{monitoringSummary.processingErrors === 1 ? '' : 's'}.
           </p>
         </div>
@@ -177,9 +179,19 @@ export function TachoImportCentre({
               {(selectedImport.status === 'failed' || selectedImport.status === 'partial') && (
                 <div className={`rounded-xl border p-4 text-sm ${selectedImport.status === 'failed' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
                   <p className="font-black uppercase tracking-widest text-[10px] mb-2">
-                    {selectedImport.status === 'failed' ? 'Parser Failure' : 'Partial Parse'}
+                    {selectedImport.status === 'failed'
+                      ? 'Parser Failure'
+                      : selectedImport.parserStatus === 'partial_helper_capture'
+                      ? 'Read-only Capture Held'
+                      : 'Partial Parse'}
                   </p>
-                  <p>{selectedImport.summary ?? 'This import did not complete cleanly. Supervisor review and a re-upload may be required.'}</p>
+                  <p>
+                    {selectedImport.summary ?? (
+                      selectedImport.parserStatus === 'partial_helper_capture'
+                        ? 'The desktop helper captured raw tachograph card EFs safely, but this format is not yet normalized into compliance records.'
+                        : 'This import did not complete cleanly. Supervisor review and a re-upload may be required.'
+                    )}
+                  </p>
                 </div>
               )}
 
@@ -278,6 +290,11 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
                 Dispatch issue
               </span>
             )}
+            {(item.parserStatus === 'partial_helper_capture' || item.helperCaptureSchema) && (
+              <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700">
+                Read-only capture
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {item.sourceType === 'driver_card' ? item.driverName : item.vehicleReg} • {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
@@ -286,6 +303,11 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
           {(item.processingKickoffError || item.triggerDispatchError) && (
             <p className="mt-2 text-xs text-amber-700">
               {item.processingKickoffError ?? item.triggerDispatchError}
+            </p>
+          )}
+          {(item.parserStatus === 'partial_helper_capture' || item.helperCaptureSchema) && (
+            <p className="mt-2 text-xs text-amber-700">
+              {item.helperCaptureWarning ?? 'Read-only helper capture stored locally for parser development.'}
             </p>
           )}
           {(item.technicalEventCount ?? 0) > 0 || (item.highSeverityCount ?? 0) > 0 ? (
@@ -367,6 +389,18 @@ function ImportObservabilityNotice({ item }: { item: TachoImportRecord }) {
       <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
         <p className="text-[10px] font-black uppercase tracking-widest mb-2">{issue.title}</p>
         <p>{issue.message}</p>
+      </div>
+    );
+  }
+
+  if (issue.kind === 'helper_capture') {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="text-[10px] font-black uppercase tracking-widest mb-2">{issue.title}</p>
+        <p>{issue.message}</p>
+        {item.helperCaptureSchema ? (
+          <p className="mt-2 text-xs text-amber-800">Capture schema: {item.helperCaptureSchema}</p>
+        ) : null}
       </div>
     );
   }

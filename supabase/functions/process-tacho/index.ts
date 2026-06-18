@@ -16,6 +16,8 @@ import {
 } from "../../../shared/tachoReconciliation.ts";
 
 const PARSER_VERSION = "readesm@1.0.17";
+const HOURWISE_READ_ONLY_CAPTURE_SCHEMA = "hourwise.tachograph.driver-card.read-only-capture.v1";
+const HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION = "hourwise-read-only-capture@1";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
 const corsHeaders = {
@@ -33,6 +35,35 @@ type ImportRecord = {
   filename?: string | null;
   metadata?: Record<string, unknown> | null;
   source_type?: string | null;
+};
+
+type HourWiseReadOnlyCaptureFile = {
+  fileId?: unknown;
+  name?: unknown;
+  selected?: unknown;
+  readSuccess?: unknown;
+  bytesRead?: unknown;
+  truncated?: unknown;
+  sha256?: unknown;
+  statusWord?: unknown;
+  statusMeaning?: unknown;
+  dataBase64?: unknown;
+};
+
+type HourWiseReadOnlyCapture = {
+  schema?: unknown;
+  warning?: unknown;
+  readSessionId?: unknown;
+  helperVersion?: unknown;
+  sourceType?: unknown;
+  exportedAt?: unknown;
+  readerName?: unknown;
+  activeProtocol?: unknown;
+  atr?: unknown;
+  applicationAid?: unknown;
+  maxBytesPerFile?: unknown;
+  readOnlyApduAllowlist?: unknown;
+  files?: unknown;
 };
 
 type RawActivityRow = {
@@ -287,6 +318,21 @@ serve(async (req) => {
     if (downloadError) throw downloadError;
 
     const buffer = await fileData.arrayBuffer();
+    const hourWiseCapture = parseHourWiseReadOnlyCapture(buffer);
+    if (hourWiseCapture) {
+      const captureSummary = summarizeHourWiseCapture(hourWiseCapture);
+      await handleHourWiseReadOnlyCapture(supabaseAdmin, record, hourWiseCapture, captureSummary);
+      return jsonResponse({
+        success: true,
+        source_type: "driver_card",
+        status: "partial",
+        parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
+        capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
+        selected_file_count: captureSummary.selectedFileCount,
+        captured_bytes: captureSummary.capturedBytes,
+      });
+    }
+
     const parsed = readesm.parse(new Uint8Array(buffer));
 
     const cardNumber = firstString(
@@ -628,6 +674,110 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function parseHourWiseReadOnlyCapture(buffer: ArrayBuffer): HourWiseReadOnlyCapture | null {
+  let text: string;
+  try {
+    text = new TextDecoder().decode(buffer);
+  } catch {
+    return null;
+  }
+
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith("{") || !trimmed.includes(HOURWISE_READ_ONLY_CAPTURE_SCHEMA)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as HourWiseReadOnlyCapture;
+    return parsed?.schema === HOURWISE_READ_ONLY_CAPTURE_SCHEMA ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function handleHourWiseReadOnlyCapture(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  record: ImportRecord,
+  capture: HourWiseReadOnlyCapture,
+  summary: ReturnType<typeof summarizeHourWiseCapture>
+) {
+  const processedAt = new Date().toISOString();
+  await clearImportData(supabaseAdmin, record.id);
+
+  const warning =
+    "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
+
+  await supabaseAdmin.from("tachograph_processing_runs").insert({
+    import_id: record.id,
+    company_id: record.company_id ?? null,
+    parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
+    source: "hourwise_read_only_capture",
+    warnings: [warning],
+    errors: [],
+    processed_at: processedAt,
+  });
+
+  const metadata = mergeMetadata(record.metadata, {
+    parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
+    parser_status: "partial_helper_capture",
+    helper_capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
+    helper_capture_warning: warning,
+    helper_capture_read_session_id: stringOrNull(capture.readSessionId),
+    helper_capture_helper_version: stringOrNull(capture.helperVersion),
+    helper_capture_exported_at: stringOrNull(capture.exportedAt),
+    helper_capture_reader_name: stringOrNull(capture.readerName),
+    helper_capture_active_protocol: stringOrNull(capture.activeProtocol),
+    helper_capture_application_aid: stringOrNull(capture.applicationAid),
+    helper_capture_max_bytes_per_file: numberOrNull(capture.maxBytesPerFile),
+    helper_capture_file_count: summary.fileCount,
+    helper_capture_selected_file_count: summary.selectedFileCount,
+    helper_capture_read_success_count: summary.readSuccessCount,
+    helper_capture_truncated_file_count: summary.truncatedFileCount,
+    helper_capture_captured_bytes: summary.capturedBytes,
+    helper_capture_files: summary.files,
+    summary: `Read-only helper capture received: ${summary.selectedFileCount} EF files selected, ${summary.capturedBytes} bytes captured. Parser conversion is pending.`,
+    normalized_segments: 0,
+    findings_count: 0,
+    technical_event_count: 0,
+    discrepancy_count: 0,
+    reconciliation_issue_count: 0,
+  });
+
+  await supabaseAdmin
+    .from("tachograph_files")
+    .update({
+      status: "partial",
+      processed_at: processedAt,
+      source_type: "driver_card",
+      metadata,
+    })
+    .eq("id", record.id);
+}
+
+function summarizeHourWiseCapture(capture: HourWiseReadOnlyCapture) {
+  const files = Array.isArray(capture.files) ? capture.files as HourWiseReadOnlyCaptureFile[] : [];
+  const summaries = files.map((file) => ({
+    fileId: stringOrNull(file.fileId),
+    name: stringOrNull(file.name),
+    selected: Boolean(file.selected),
+    readSuccess: Boolean(file.readSuccess),
+    bytesRead: numberOrNull(file.bytesRead) ?? 0,
+    truncated: Boolean(file.truncated),
+    sha256: stringOrNull(file.sha256),
+    statusWord: stringOrNull(file.statusWord),
+    statusMeaning: stringOrNull(file.statusMeaning),
+  }));
+
+  return {
+    fileCount: summaries.length,
+    selectedFileCount: summaries.filter((file) => file.selected).length,
+    readSuccessCount: summaries.filter((file) => file.readSuccess).length,
+    truncatedFileCount: summaries.filter((file) => file.truncated).length,
+    capturedBytes: summaries.reduce((total, file) => total + file.bytesRead, 0),
+    files: summaries,
+  };
 }
 
 async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, importId: string) {
@@ -1530,6 +1680,10 @@ function firstString(...values: unknown[]) {
   return null;
 }
 
+function stringOrNull(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function toIsoString(...values: unknown[]) {
   for (const value of values) {
     if (value === undefined || value === null || value === "") continue;
@@ -1555,6 +1709,12 @@ function toNumber(...values: unknown[]) {
     if (!Number.isNaN(parsed)) return parsed;
   }
   return null;
+}
+
+function numberOrNull(value: unknown) {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 function toInteger(...values: unknown[]) {

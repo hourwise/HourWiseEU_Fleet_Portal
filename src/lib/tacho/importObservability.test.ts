@@ -21,6 +21,12 @@ function buildImport(overrides: Partial<TachoImportRecord> = {}): TachoImportRec
     reconciliationIssueCount: overrides.reconciliationIssueCount,
     highSeverityCount: overrides.highSeverityCount,
     ingestSource: overrides.ingestSource,
+    parserStatus: overrides.parserStatus,
+    helperCaptureSchema: overrides.helperCaptureSchema,
+    helperCaptureWarning: overrides.helperCaptureWarning,
+    helperCaptureFileCount: overrides.helperCaptureFileCount,
+    helperCaptureSelectedFileCount: overrides.helperCaptureSelectedFileCount,
+    helperCaptureCapturedBytes: overrides.helperCaptureCapturedBytes,
     processingError: overrides.processingError,
     processingKickoffError: overrides.processingKickoffError,
     triggerDispatchError: overrides.triggerDispatchError,
@@ -76,6 +82,26 @@ describe('getTachoImportObservabilityIssue', () => {
     expect(issue?.tone).toBe('danger');
     expect(issue?.retryable).toBe(true);
   });
+
+  it('treats read-only helper captures as intentional non-retryable warnings', () => {
+    const issue = getTachoImportObservabilityIssue(
+      buildImport({
+        status: 'partial',
+        parserStatus: 'partial_helper_capture',
+        helperCaptureSchema: 'hourwise.tachograph.driver-card.read-only-capture.v1',
+        helperCaptureSelectedFileCount: 12,
+        helperCaptureCapturedBytes: 39444,
+      })
+    );
+
+    expect(issue).toEqual({
+      kind: 'helper_capture',
+      title: 'Read-only Helper Capture',
+      message: 'The desktop helper stored a read-only EF capture (12 tachograph card files, 39,444 bytes). It is preserved for parser development and is not yet normalized into compliance records.',
+      tone: 'warning',
+      retryable: false,
+    });
+  });
 });
 
 describe('canRetryTachoImportProcessing', () => {
@@ -87,6 +113,14 @@ describe('canRetryTachoImportProcessing', () => {
     expect(canRetryTachoImportProcessing(buildImport({ processingKickoffError: '401' }))).toBe(true);
     expect(canRetryTachoImportProcessing(buildImport({ triggerDispatchError: 'timeout' }))).toBe(true);
   });
+
+  it('does not retry read-only helper captures automatically', () => {
+    expect(canRetryTachoImportProcessing(buildImport({
+      status: 'partial',
+      parserStatus: 'partial_helper_capture',
+      helperCaptureSchema: 'hourwise.tachograph.driver-card.read-only-capture.v1',
+    }))).toBe(false);
+  });
 });
 
 describe('summarizeTachoImportObservability', () => {
@@ -97,6 +131,7 @@ describe('summarizeTachoImportObservability', () => {
         buildImport({ id: 'complete-1', status: 'complete', progressPercent: 100 }),
         buildImport({ id: 'failed-1', status: 'failed', progressPercent: 100, processingError: 'Parser failed.' }),
         buildImport({ id: 'partial-1', status: 'partial', progressPercent: 100, processingError: 'Partial parse.' }),
+        buildImport({ id: 'helper-capture-1', status: 'partial', progressPercent: 100, parserStatus: 'partial_helper_capture' }),
         buildImport({ id: 'kickoff-1', processingKickoffError: '401' }),
         buildImport({ id: 'dispatch-1', triggerDispatchError: 'timeout' }),
       ],
@@ -107,12 +142,13 @@ describe('summarizeTachoImportObservability', () => {
       processingNow: 1,
       completedToday: 1,
       failedImports: 1,
-      partialImports: 1,
+      partialImports: 2,
+      helperCaptureWarnings: 1,
       kickoffWarnings: 1,
       dispatchWarnings: 1,
       processingErrors: 2,
       retryBacklog: 3,
-      attentionQueue: 4,
+      attentionQueue: 5,
     });
   });
 });
@@ -136,12 +172,13 @@ describe('TACHO_REGRESSION_FIXTURES', () => {
       processingNow: 0,
       completedToday: 1,
       failedImports: 1,
-      partialImports: 1,
+      partialImports: 2,
+      helperCaptureWarnings: 1,
       kickoffWarnings: 1,
       dispatchWarnings: 1,
       processingErrors: 2,
       retryBacklog: 3,
-      attentionQueue: 4,
+      attentionQueue: 5,
     });
   });
 });

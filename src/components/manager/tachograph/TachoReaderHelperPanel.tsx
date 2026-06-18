@@ -55,6 +55,9 @@ interface ReaderHelperStatus {
   exportDownloadPath?: string;
   exportFileSizeBytes?: number;
   exportSha256?: string;
+  exportFormat?: string;
+  exportParserReady?: boolean;
+  exportNote?: string;
   driverCardNumberHint?: string;
   vehicleRegHint?: string;
   uploadReceiptId?: string;
@@ -96,6 +99,9 @@ interface ReaderHelperResponse {
   exportDownloadPath?: string;
   exportFileSizeBytes?: number;
   exportSha256?: string;
+  exportFormat?: string;
+  exportParserReady?: boolean;
+  exportNote?: string;
   driverCardNumberHint?: string;
   vehicleRegHint?: string;
   uploadReceiptId?: string;
@@ -314,6 +320,9 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
     exportDownloadPath: response.exportDownloadPath,
     exportFileSizeBytes: response.exportFileSizeBytes,
     exportSha256: response.exportSha256,
+    exportFormat: response.exportFormat,
+    exportParserReady: response.exportParserReady,
+    exportNote: response.exportNote,
     driverCardNumberHint: response.driverCardNumberHint,
     vehicleRegHint: response.vehicleRegHint,
     uploadReceiptId: response.uploadReceiptId,
@@ -535,6 +544,14 @@ export function TachoReaderHelperPanel({
 
   useEffect(() => {
     if (helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
+    if (helperStatus.exportParserReady === false) {
+      setImportPending(false);
+      setImportMessage(
+        helperStatus.exportNote ??
+          'The helper produced a read-only card capture, but it is not parser-ready yet. Supabase upload has been paused.'
+      );
+      return;
+    }
     const companyId = profile?.company_id;
     if (!companyId) return;
     const readSessionId = helperStatus.readSessionId;
@@ -617,6 +634,8 @@ export function TachoReaderHelperPanel({
     helperStatus.exportDownloadPath,
     helperStatus.exportFileName,
     helperStatus.exportFileSizeBytes,
+    helperStatus.exportNote,
+    helperStatus.exportParserReady,
     helperStatus.exportSha256,
     helperStatus.helperVersion,
     helperStatus.requestedByUserId,
@@ -806,7 +825,21 @@ export function TachoReaderHelperPanel({
             <MetaCard label="Storage path" value={status.uploadedStoragePath ?? 'Pending upload'} />
             <MetaCard label="Upload receipt" value={status.uploadReceiptId ?? 'Pending upload'} />
             <MetaCard label="Source type" value={status.sourceType ?? 'Not reported'} />
+            <MetaCard label="Export format" value={status.exportFormat ?? 'Not reported'} />
+            <MetaCard
+              label="Parser ready"
+              value={status.exportParserReady === false ? 'No - upload paused' : 'Yes'}
+            />
           </div>
+          {status.exportParserReady === false ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              <p className="font-black uppercase tracking-widest">Read-only capture held locally</p>
+              <p className="mt-1">
+                {status.exportNote ??
+                  'The helper produced a read-only card capture, but the Supabase parser is not ready for this container yet.'}
+              </p>
+            </div>
+          ) : null}
           <div className="mt-3">
             <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
               <span>File size</span>

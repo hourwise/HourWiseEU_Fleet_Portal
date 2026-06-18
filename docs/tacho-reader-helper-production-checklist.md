@@ -119,6 +119,22 @@ Failure mappings:
 - Export timeout: `error`, `errorCode: "card_export_timeout"`.
 - Export file missing after success: `error`, `errorCode: "export_file_missing"`.
 
+Current exporter milestone:
+
+- `/diagnostics/card-probe` now opens the inserted card through Windows PC/SC and sends safe ISO 7816 probe APDUs, including tachograph-oriented file-selection candidates.
+- The probe returns ATR, active protocol, APDU status words, and short response previews only.
+- All APDU transmission paths are guarded by a read-only allowlist before PC/SC transmit. Only `SELECT`, `READ BINARY`, `READ RECORD`, `GET RESPONSE`, and `GET DATA` are allowed.
+- Write/security-sensitive APDUs such as `UPDATE`, `ERASE`, `PUT DATA`, `VERIFY`, authentication, create/delete, and unknown instructions are blocked locally and are not sent to the card.
+- `/diagnostics/apdu-safety` verifies the local allowlist without connecting to a reader or transmitting to a card.
+- External exporter commands are disabled by default and require `TACHO_HELPER_ENABLE_EXTERNAL_EXPORTER=true`; external tools run outside the built-in APDU guard and must be reviewed separately before use.
+- The probe supports an optional `TACHO_HELPER_TACHOGRAPH_AID` environment variable for testing a candidate tachograph application `SELECT` without hardcoding unverified values.
+- Real-card probing has confirmed `SELECT FILE` with `P1=02/P2=0C`, EF.DIR application `FF544143484F`, and initial reads from tachograph application files `0501`, `050E`, `0520`, and `0504`.
+- `/diagnostics/tachograph-file-map` now performs a bounded read-only file-map probe against those confirmed application files and returns lengths, hashes, short previews, and truncation flags.
+- `POST /commands/start-read` now defaults to a built-in read-only driver-card capture when placeholder mode and external exporters are disabled.
+- The built-in capture emits a deterministic HourWise JSON container with real EF bytes, per-file hashes, and truncation flags under a `.C1B` handoff filename for the current browser upload contract.
+- `process-tacho` now detects `hourwise.tachograph.driver-card.read-only-capture.v1` before ReadESM parsing, stores sanitized EF summaries as partial metadata, and marks the import `partial` instead of failing as a parser error.
+- Final standards-certified `.C1B/.DDD` binary encoding is still to be implemented on top of the confirmed read-only EF traversal.
+
 Acceptance gate:
 
 ```bash
@@ -257,6 +273,7 @@ Required:
 Recommended:
 
 - Restrict CORS origins to production portal and local dev origins where practical.
+- Support Chromium Private Network Access preflights for hosted portal builds by returning `Access-Control-Allow-Private-Network: true` on local helper responses.
 - Consider a short-lived local pairing token later if browser/helper spoofing becomes a concern.
 - Avoid admin privileges unless hardware access demands it.
 
@@ -410,6 +427,9 @@ Diagnostics endpoints:
 
 - `GET /diagnostics`: helper version, process id, config, capabilities, state snapshot, and recent events.
 - `GET /diagnostics/logs`: recent events and the local log directory.
+- `GET /diagnostics/apdu-safety`: local APDU read-only allowlist self-test; does not connect to the card.
+- `GET /diagnostics/card-probe`: safe PC/SC APDU probe against the inserted card.
+- `GET /diagnostics/tachograph-file-map`: bounded read-only tachograph application EF probe against the inserted card.
 
 Default local folders:
 

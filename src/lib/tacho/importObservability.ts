@@ -1,7 +1,7 @@
 import type { TachoImportRecord } from './rules/types';
 
 export interface TachoImportObservabilityIssue {
-  kind: 'processing_kickoff' | 'trigger_dispatch' | 'processing_error';
+  kind: 'processing_kickoff' | 'trigger_dispatch' | 'helper_capture' | 'processing_error';
   title: string;
   message: string;
   timestamp?: string;
@@ -16,6 +16,7 @@ export interface TachoImportObservabilitySummary {
   partialImports: number;
   kickoffWarnings: number;
   dispatchWarnings: number;
+  helperCaptureWarnings: number;
   processingErrors: number;
   retryBacklog: number;
   attentionQueue: number;
@@ -41,6 +42,27 @@ export function getTachoImportObservabilityIssue(item: TachoImportRecord): Tacho
       timestamp: item.triggerDispatchRequestedAt,
       tone: 'warning',
       retryable: true,
+    };
+  }
+
+  if (item.parserStatus === 'partial_helper_capture' || item.helperCaptureSchema) {
+    const selectedFiles = item.helperCaptureSelectedFileCount ?? item.helperCaptureFileCount;
+    const capturedBytes = item.helperCaptureCapturedBytes;
+    const captureDetail = [
+      selectedFiles !== undefined ? `${selectedFiles} tachograph card file${selectedFiles === 1 ? '' : 's'}` : null,
+      capturedBytes !== undefined ? `${capturedBytes.toLocaleString()} bytes` : null,
+    ].filter(Boolean).join(', ');
+
+    return {
+      kind: 'helper_capture',
+      title: 'Read-only Helper Capture',
+      message: item.helperCaptureWarning ?? (
+        captureDetail
+          ? `The desktop helper stored a read-only EF capture (${captureDetail}). It is preserved for parser development and is not yet normalized into compliance records.`
+          : 'The desktop helper stored a read-only EF capture. It is preserved for parser development and is not yet normalized into compliance records.'
+      ),
+      tone: 'warning',
+      retryable: false,
     };
   }
 
@@ -101,6 +123,10 @@ export function summarizeTachoImportObservability(
         summary.dispatchWarnings += 1;
       }
 
+      if (issue?.kind === 'helper_capture') {
+        summary.helperCaptureWarnings += 1;
+      }
+
       if (issue?.kind === 'processing_error') {
         summary.processingErrors += 1;
       }
@@ -122,6 +148,7 @@ export function summarizeTachoImportObservability(
       partialImports: 0,
       kickoffWarnings: 0,
       dispatchWarnings: 0,
+      helperCaptureWarnings: 0,
       processingErrors: 0,
       retryBacklog: 0,
       attentionQueue: 0,

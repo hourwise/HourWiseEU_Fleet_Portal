@@ -56,6 +56,11 @@ Based on the current frontend and this implementation pass:
   - the `.NET` shell now includes a disabled-by-default `vehicle_unit` source-type shape for the future VU reader/download workflow
   - the `.NET` shell also supports explicit placeholder-reader mode for full read/register contract probing without hardware
   - the `.NET` shell now has first-pass Windows install/uninstall PowerShell scaffolding for published app placement, startup registration, version metadata, logs, and exports
+  - the `.NET` shell now includes a first PC/SC APDU probe endpoint for inserted cards as the foundation for the bundled exporter
+  - the PC/SC probe has now confirmed the first real-card tachograph application path via EF.DIR AID `FF544143484F` and initial reads from application files `0501`, `050E`, `0520`, and `0504`
+  - the helper now guards every APDU transmit with a read-only allowlist and includes a bounded file-map probe that reads confirmed tachograph EFs without write/security commands
+  - the helper now defaults `start-read` to a built-in read-only driver-card capture container with real EF bytes and per-file hashes while the final certified `.C1B` encoder remains outstanding
+  - `process-tacho` now recognizes the HourWise read-only capture container and records it as a controlled `partial` import with sanitized EF metadata instead of treating it as a parser failure
   - the helper contract has been validated with placeholder bytes and a simulated external export command producing fake bytes
   - the reader panel now includes a first customer-facing HourWise reader console inspired by the Tachomaster-style reference without copying its visual scheme
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
@@ -84,7 +89,7 @@ Based on the current frontend and this implementation pass:
 Still external or not fully executable from this repo alone:
 
 - production helper executable packaging beyond the first-pass PowerShell install scaffold
-- selected/validated real tachograph card export tool or library
+- full tachograph card file traversal and `.C1B/.DDD` writer on top of the new PC/SC APDU probe
 - selected/validated real VU download path and supported device list
 - backend deployment confirmation
 - real-file regression / parser validation
@@ -538,6 +543,7 @@ Primary design:
 - Supabase-facing handoff doc now exists at `docs/tacho-reader-helper-backend-handoff.md`.
 - Local mock helper now exists at `tools/tacho-reader-helper/mock-helper.mjs` for frontend testing.
 - First-pass Windows install/startup scaffolding now exists at `tools/tacho-reader-helper/windows-helper/install.ps1` and `tools/tacho-reader-helper/windows-helper/uninstall.ps1`.
+- First PC/SC APDU probing now exists at `GET /diagnostics/card-probe`; full exporter implementation remains next.
 
 #### 8.2 Reader page in portal
 

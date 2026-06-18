@@ -42,6 +42,12 @@ export interface TachoImportRecord {
   reconciliationIssueCount?: number;
   highSeverityCount?: number;
   ingestSource?: string;
+  parserStatus?: string;
+  helperCaptureSchema?: string;
+  helperCaptureWarning?: string;
+  helperCaptureFileCount?: number;
+  helperCaptureSelectedFileCount?: number;
+  helperCaptureCapturedBytes?: number;
   processingError?: string;
   processingKickoffError?: string;
   triggerDispatchError?: string;
@@ -60,7 +66,7 @@ export interface TachoEvidenceRef {
 export interface TachoProcessingRun {
   importId: string;
   parserVersion: string;
-  source: 'raw_activity' | 'normalized_findings';
+  source: 'raw_activity' | 'normalized_findings' | 'hourwise_read_only_capture';
   processedAt: string;
   warnings: string[];
   errors: string[];
