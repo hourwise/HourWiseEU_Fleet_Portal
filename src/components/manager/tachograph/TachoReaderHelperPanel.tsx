@@ -544,14 +544,6 @@ export function TachoReaderHelperPanel({
 
   useEffect(() => {
     if (helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
-    if (helperStatus.exportParserReady === false) {
-      setImportPending(false);
-      setImportMessage(
-        helperStatus.exportNote ??
-          'The helper produced a read-only card capture, but it is not parser-ready yet. Supabase upload has been paused.'
-      );
-      return;
-    }
     const companyId = profile?.company_id;
     if (!companyId) return;
     const readSessionId = helperStatus.readSessionId;
@@ -562,7 +554,11 @@ export function TachoReaderHelperPanel({
     let cancelled = false;
     importSessionRef.current = readSessionId;
     setImportPending(true);
-    setImportMessage('Uploading helper export to the portal and registering the import.');
+    setImportMessage(
+      helperStatus.exportParserReady === false
+        ? 'Uploading read-only helper capture for controlled partial import and diagnostics.'
+        : 'Uploading helper export to the portal and registering the import.'
+    );
 
     const registerImport = async () => {
       try {
@@ -579,6 +575,9 @@ export function TachoReaderHelperPanel({
             exportDownloadPath,
             exportFileSizeBytes: helperStatus.exportFileSizeBytes,
             exportSha256: helperStatus.exportSha256,
+            exportFormat: helperStatus.exportFormat,
+            exportParserReady: helperStatus.exportParserReady,
+            exportNote: helperStatus.exportNote,
             driverName: helperStatus.driverName,
             driverCardNumberHint: helperStatus.driverCardNumberHint,
             vehicleRegHint: helperStatus.vehicleRegHint,
@@ -605,7 +604,9 @@ export function TachoReaderHelperPanel({
         });
         setImportMessage(
           kickoff.started
-            ? `Import ${registration.importId} registered from the helper export and processing was requested.`
+            ? helperStatus.exportParserReady === false
+              ? `Import ${registration.importId} registered as a read-only diagnostic capture. Processing was requested and should complete as a partial import.`
+              : `Import ${registration.importId} registered from the helper export and processing was requested.`
             : `Import ${registration.importId} registered from the helper export, but processing kickoff did not confirm: ${kickoff.error ?? 'Unknown error'}.`
         );
         onImportRegistered?.();
@@ -633,6 +634,7 @@ export function TachoReaderHelperPanel({
     helperStatus.driverName,
     helperStatus.exportDownloadPath,
     helperStatus.exportFileName,
+    helperStatus.exportFormat,
     helperStatus.exportFileSizeBytes,
     helperStatus.exportNote,
     helperStatus.exportParserReady,
@@ -648,6 +650,7 @@ export function TachoReaderHelperPanel({
     profile?.company_id,
     refreshStatus,
     registeredImport?.readSessionId,
+    user?.id,
   ]);
 
   useEffect(() => {
@@ -828,15 +831,15 @@ export function TachoReaderHelperPanel({
             <MetaCard label="Export format" value={status.exportFormat ?? 'Not reported'} />
             <MetaCard
               label="Parser ready"
-              value={status.exportParserReady === false ? 'No - upload paused' : 'Yes'}
+              value={status.exportParserReady === false ? 'Diagnostic partial' : 'Yes'}
             />
           </div>
           {status.exportParserReady === false ? (
             <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-              <p className="font-black uppercase tracking-widest">Read-only capture held locally</p>
+              <p className="font-black uppercase tracking-widest">Read-only diagnostic capture</p>
               <p className="mt-1">
                 {status.exportNote ??
-                  'The helper produced a read-only card capture, but the Supabase parser is not ready for this container yet.'}
+                  'The helper produced a read-only card capture. It can be uploaded for controlled partial import and diagnostics, but it is not compliance-ready analysis yet.'}
               </p>
             </div>
           ) : null}

@@ -20,6 +20,9 @@ export interface ReaderHelperExportDescriptor {
   exportDownloadPath?: string;
   exportFileSizeBytes?: number;
   exportSha256?: string;
+  exportFormat?: string;
+  exportParserReady?: boolean;
+  exportNote?: string;
   driverName?: string;
   driverCardNumberHint?: string;
   vehicleRegHint?: string;
@@ -404,6 +407,9 @@ export async function registerReaderHelperImport(args: {
     export_file_name: fileName,
     export_file_size_bytes: descriptor.exportFileSizeBytes ?? fileBlob.size,
     export_sha256: descriptor.exportSha256 ?? null,
+    export_format: descriptor.exportFormat ?? null,
+    export_parser_ready: descriptor.exportParserReady ?? null,
+    export_note: descriptor.exportNote ?? null,
     driver_name: descriptor.driverName ?? null,
     driver_card_number_hint: descriptor.driverCardNumberHint ?? null,
     vehicle_reg: descriptor.vehicleRegHint ?? null,
