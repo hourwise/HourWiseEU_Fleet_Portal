@@ -1,4 +1,4 @@
-﻿-- Supabase security hardening for shared portal/mobile project.
+-- Supabase security hardening for shared portal/mobile project.
 -- Addresses exposed trigger secrets, public driver_invites reads,
 -- shift_jobs RLS, storage path policies, and SECURITY DEFINER search paths.
 

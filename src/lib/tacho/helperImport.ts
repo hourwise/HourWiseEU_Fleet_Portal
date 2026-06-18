@@ -234,7 +234,35 @@ async function insertPendingTachoImport(args: {
   });
 }
 
-async function persistImportMetadata(importId: string, metadata: HelperImportMetadata) {
+async function patchImportMetadata(importId: string, patch: HelperImportMetadata) {
+  const { data, error: fetchError } = await supabase
+    .from('tachograph_files' as never)
+    .select('metadata')
+    .eq('id', importId)
+    .maybeSingle();
+
+  if (fetchError) {
+    reportTachoImportTelemetry({
+      level: 'error',
+      message: 'Failed to reload tachograph import metadata before patching.',
+      error: fetchError,
+      context: {
+        stage: 'metadata_reload',
+        importId,
+      },
+    });
+    throw fetchError;
+  }
+
+  const currentMetadata =
+    data && typeof (data as { metadata?: unknown }).metadata === 'object' && (data as { metadata?: unknown }).metadata !== null
+      ? ((data as { metadata: HelperImportMetadata }).metadata)
+      : {};
+  const metadata = {
+    ...currentMetadata,
+    ...patch,
+  };
+
   const { error } = await supabase
     .from('tachograph_files' as never)
     .update({ metadata } as never)
@@ -256,6 +284,28 @@ async function persistImportMetadata(importId: string, metadata: HelperImportMet
 
 export async function kickoffTachoImportProcessing(record: ProcessTachoImportRecord): Promise<TachoProcessingKickoffResult> {
   const requestedAt = new Date().toISOString();
+  const kickoffMetadata: HelperImportMetadata = {
+    processing_kickoff_requested_at: requestedAt,
+    processing_kickoff_origin: 'browser_direct',
+    processing_kickoff_error: null,
+  };
+
+  try {
+    await patchImportMetadata(record.id, kickoffMetadata);
+    record.metadata = {
+      ...record.metadata,
+      ...kickoffMetadata,
+    };
+  } catch (metadataError) {
+    return {
+      started: false,
+      error:
+        metadataError instanceof Error
+          ? `Processing request could not be recorded before kickoff: ${metadataError.message}`
+          : 'Processing request could not be recorded before kickoff.',
+    };
+  }
+
   const { error } = await supabase.functions.invoke('process-tacho', {
     body: { record },
   });
@@ -277,16 +327,16 @@ export async function kickoffTachoImportProcessing(record: ProcessTachoImportRec
     });
   }
 
-  const nextMetadata: HelperImportMetadata = {
-    ...record.metadata,
-    processing_kickoff_requested_at: requestedAt,
-    processing_kickoff_origin: 'browser_direct',
-    processing_kickoff_error: error?.message ?? null,
-  };
-
   try {
-    await persistImportMetadata(record.id, nextMetadata);
-    record.metadata = nextMetadata;
+    if (error) {
+      await patchImportMetadata(record.id, {
+        processing_kickoff_error: error.message,
+      });
+      record.metadata = {
+        ...record.metadata,
+        processing_kickoff_error: error.message,
+      };
+    }
   } catch (metadataError) {
     return {
       started: false,
