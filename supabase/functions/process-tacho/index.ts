@@ -79,6 +79,22 @@ type HourWiseDriverCardIdentity = {
   cardHolderPreferredLanguage: string | null;
 };
 
+type HourWiseActivityParseResult = {
+  rawActivities: RawActivityRow[];
+  dayCount: number;
+  changeCount: number;
+  warning: string | null;
+};
+
+type HourWiseReadOnlyCaptureProcessingResult = {
+  status: "processed" | "partial";
+  normalizedSegments: number;
+  findingsCount: number;
+  reconciliationIssueCount: number;
+  activityDayCount: number;
+  activityChangeCount: number;
+};
+
 type RawActivityRow = {
   file_id: string;
   driver_id: string | null;
@@ -334,15 +350,20 @@ serve(async (req) => {
     const hourWiseCapture = parseHourWiseReadOnlyCapture(buffer);
     if (hourWiseCapture) {
       const captureSummary = summarizeHourWiseCapture(hourWiseCapture);
-      await handleHourWiseReadOnlyCapture(supabaseAdmin, record, hourWiseCapture, captureSummary);
+      const captureResult = await handleHourWiseReadOnlyCapture(supabaseAdmin, record, hourWiseCapture, captureSummary);
       return jsonResponse({
         success: true,
         source_type: "driver_card",
-        status: "partial",
+        status: captureResult.status,
         parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
         capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
         selected_file_count: captureSummary.selectedFileCount,
         captured_bytes: captureSummary.capturedBytes,
+        normalized_segments: captureResult.normalizedSegments,
+        findings_count: captureResult.findingsCount,
+        reconciliation_issue_count: captureResult.reconciliationIssueCount,
+        activity_day_count: captureResult.activityDayCount,
+        activity_change_count: captureResult.activityChangeCount,
       });
     }
 
@@ -715,10 +736,14 @@ async function handleHourWiseReadOnlyCapture(
   record: ImportRecord,
   capture: HourWiseReadOnlyCapture,
   summary: ReturnType<typeof summarizeHourWiseCapture>
-) {
+): Promise<HourWiseReadOnlyCaptureProcessingResult> {
   const processedAt = new Date().toISOString();
   await clearImportData(supabaseAdmin, record.id);
   const cardIdentity = parseHourWiseDriverCardIdentity(capture);
+  const activityParse = parseHourWiseDriverCardActivities(capture, {
+    importId: record.id,
+    driverId: null,
+  });
   const downloadedAt = stringOrNull(capture.exportedAt) ?? processedAt;
 
   let driverId = record.driver_id ?? null;
@@ -734,16 +759,144 @@ async function handleHourWiseReadOnlyCapture(
   }
 
   const warning =
-    "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
+    activityParse.rawActivities.length > 0
+      ? "HourWise read-only card capture was decoded from EF 0504 into provisional activity segments. Certified C1B/DDD export is still not implemented for this container."
+      : "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
+
+  const rawActivities = activityParse.rawActivities.map((activity) => ({
+    ...activity,
+    driver_id: driverId,
+  }));
+  const normalizedActivities = fromSharedNormalizedActivities(
+    mergeAdjacentNormalizedActivities(
+      toSharedNormalizedActivities(rawActivities.map((activity, index) => ({
+        id: `${activity.activity_type}-${activity.start_time}-${index}`,
+        import_id: record.id,
+        company_id: record.company_id ?? null,
+        driver_id: driverId,
+        vehicle_id: null,
+        source: "driver_card" as const,
+        activity_type: mapNormalizedActivityType(activity.activity_type),
+        start_time: activity.start_time,
+        end_time: activity.end_time,
+        duration_mins: minutesBetween(activity.start_time, activity.end_time),
+        distance_km: activity.distance_km,
+        confidence: "high" as const,
+        label: activity.is_manual_entry ? "Manual entry" : "EF 0504 read-only capture",
+      })))
+    ),
+    {
+      importId: record.id,
+      companyId: record.company_id ?? null,
+      driverId,
+      vehicleId: null,
+      sourceType: "driver_card",
+    }
+  );
+  const summaryWindow = resolvePeriodBounds(normalizedActivities);
+  const finalStatus = normalizedActivities.length > 0 ? "processed" : "partial";
+  const dutyWindows = buildDutyWindows(normalizedActivities);
+  const daySummaries = buildDaySummaries({
+    importId: record.id,
+    companyId: record.company_id ?? null,
+    driverId,
+    vehicleId: null,
+    dutyWindows,
+    speedLogsCountByDate: {},
+  });
+  const findings = buildFindings({
+    importId: record.id,
+    companyId: record.company_id ?? null,
+    driverId,
+    vehicleId: null,
+    sourceType: "driver_card",
+    dutyWindows,
+    daySummaries,
+    activities: normalizedActivities,
+  });
+  const workSessions =
+    driverId && summaryWindow.startTime && summaryWindow.endTime
+      ? await fetchWorkSessionsForRange(supabaseAdmin, {
+          companyId: record.company_id ?? null,
+          driverId,
+          startDate: summaryWindow.startTime.slice(0, 10),
+          endDate: summaryWindow.endTime.slice(0, 10),
+        })
+      : [];
+  const reconciliationRows = buildReconciliationRows({
+    importId: record.id,
+    companyId: record.company_id ?? null,
+    driverId,
+    vehicleId: null,
+    activities: normalizedActivities,
+    workSessions,
+  });
+  for (const summaryRow of daySummaries) {
+    const matchingReconciliation = reconciliationRows.find((row) => row.recon_date === summaryRow.summary_date);
+    summaryRow.app_driving_mins = matchingReconciliation?.app_driving_mins ?? null;
+  }
+
+  if (rawActivities.length > 0) {
+    const { error } = await supabaseAdmin.from("tachograph_activities").insert(rawActivities);
+    if (error) throw error;
+  }
+
+  if (normalizedActivities.length > 0) {
+    const { error } = await supabaseAdmin.from("tachograph_activity_segments").insert(normalizedActivities);
+    if (error) throw error;
+  }
+
+  if (daySummaries.length > 0) {
+    const { error } = await supabaseAdmin.from("tachograph_day_summaries").insert(daySummaries);
+    if (error) throw error;
+  }
+
+  if (findings.length > 0) {
+    const { error } = await supabaseAdmin.from("tachograph_findings").insert(findings);
+    if (error) throw error;
+  }
+
+  if (reconciliationRows.length > 0) {
+    const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(reconciliationRows);
+    if (error) throw error;
+  }
+
+  if (driverId && normalizedActivities.length > 0) {
+    const generatedAt = summaryWindow.endTime ?? downloadedAt;
+    const complianceSignals = buildComplianceSignals({
+      companyId: record.company_id ?? null,
+      driverId,
+      findings,
+      reconciliationRows,
+      generatedAt,
+    });
+    const riskSignals = buildRiskSignals({
+      companyId: record.company_id ?? null,
+      driverId,
+      complianceSignals,
+      reconciliationRows,
+      generatedAt,
+    });
+
+    if (complianceSignals.length > 0) {
+      const { error } = await supabaseAdmin.from("driver_tacho_compliance_signals").insert(complianceSignals);
+      if (error) throw error;
+    }
+
+    if (riskSignals.length > 0) {
+      const { error } = await supabaseAdmin.from("driver_tacho_risk_signals").insert(riskSignals);
+      if (error) throw error;
+    }
+  }
 
   await supabaseAdmin.from("tachograph_processing_runs").insert({
     import_id: record.id,
     company_id: record.company_id ?? null,
     parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
     source: "hourwise_read_only_capture",
-    warnings: [warning],
+    warnings: [warning, activityParse.warning].filter((item): item is string => Boolean(item)),
     errors: [],
-    processed_at: processedAt,
+    processed_at: summaryWindow.endTime ?? processedAt,
   });
 
   const metadata = mergeMetadata(record.metadata, {
@@ -771,14 +924,19 @@ async function handleHourWiseReadOnlyCapture(
     helper_capture_card_validity_begin: cardIdentity?.cardValidityBegin ?? null,
     helper_capture_card_expiry_date: cardIdentity?.cardExpiryDate ?? null,
     helper_capture_card_holder_preferred_language: cardIdentity?.cardHolderPreferredLanguage ?? null,
+    helper_capture_activity_day_count: activityParse.dayCount,
+    helper_capture_activity_change_count: activityParse.changeCount,
+    helper_capture_activity_warning: activityParse.warning,
     driver_name: cardIdentity?.driverName ?? record.metadata?.driver_name ?? null,
     driver_card_number_hint: cardIdentity?.cardNumber ?? record.metadata?.driver_card_number_hint ?? null,
-    summary: `Read-only helper capture received: ${summary.selectedFileCount} EF files selected, ${summary.capturedBytes} bytes captured. Parser conversion is pending.`,
-    normalized_segments: 0,
-    findings_count: 0,
+    summary: normalizedActivities.length > 0
+      ? `Read-only helper capture decoded ${normalizedActivities.length} provisional EF 0504 activity segment${normalizedActivities.length === 1 ? "" : "s"} across ${activityParse.dayCount} day${activityParse.dayCount === 1 ? "" : "s"}.`
+      : `Read-only helper capture received: ${summary.selectedFileCount} EF files selected, ${summary.capturedBytes} bytes captured. Parser conversion is pending.`,
+    normalized_segments: normalizedActivities.length,
+    findings_count: findings.length,
     technical_event_count: 0,
     discrepancy_count: 0,
-    reconciliation_issue_count: 0,
+    reconciliation_issue_count: reconciliationRows.filter((row) => row.status !== "matched").length,
   });
 
   if (cardIdentity?.cardNumber) {
@@ -790,10 +948,10 @@ async function handleHourWiseReadOnlyCapture(
       card_number: cardIdentity.cardNumber,
       card_expiry: cardIdentity.cardExpiryDate,
       issuing_country: cardIdentity.cardIssuingMemberState === null ? null : String(cardIdentity.cardIssuingMemberState),
-      downloaded_at: downloadedAt,
-      period_start: downloadedAt,
-      period_end: downloadedAt,
-      download_status: "partial_identity",
+      downloaded_at: summaryWindow.endTime ?? downloadedAt,
+      period_start: summaryWindow.startTime ?? downloadedAt,
+      period_end: summaryWindow.endTime ?? downloadedAt,
+      download_status: normalizedActivities.length > 0 ? "ok" : "partial_identity",
     });
     if (downloadError) throw downloadError;
   }
@@ -801,7 +959,7 @@ async function handleHourWiseReadOnlyCapture(
   await supabaseAdmin
     .from("tachograph_files")
     .update({
-      status: "partial",
+      status: finalStatus,
       processed_at: processedAt,
       external_card_number: cardIdentity?.cardNumber ?? null,
       driver_id: driverId,
@@ -809,6 +967,15 @@ async function handleHourWiseReadOnlyCapture(
       metadata,
     })
     .eq("id", record.id);
+
+  return {
+    status: finalStatus,
+    normalizedSegments: normalizedActivities.length,
+    findingsCount: findings.length,
+    reconciliationIssueCount: reconciliationRows.filter((row) => row.status !== "matched").length,
+    activityDayCount: activityParse.dayCount,
+    activityChangeCount: activityParse.changeCount,
+  };
 }
 
 function summarizeHourWiseCapture(capture: HourWiseReadOnlyCapture) {
@@ -837,7 +1004,7 @@ function summarizeHourWiseCapture(capture: HourWiseReadOnlyCapture) {
 
 function parseHourWiseDriverCardIdentity(capture: HourWiseReadOnlyCapture): HourWiseDriverCardIdentity | null {
   const file = findHourWiseCaptureFile(capture, "0520");
-  if (!file || !Boolean(file.readSuccess)) return null;
+  if (!file || !file.readSuccess) return null;
   const bytes = decodeBase64Bytes(stringOrNull(file.dataBase64));
   if (!bytes || bytes.length < 143) return null;
 
@@ -860,6 +1027,154 @@ function parseHourWiseDriverCardIdentity(capture: HourWiseReadOnlyCapture): Hour
     driverName,
     cardHolderPreferredLanguage: readAscii(bytes, 141, 2),
   };
+}
+
+function parseHourWiseDriverCardActivities(
+  capture: HourWiseReadOnlyCapture,
+  context: { importId: string; driverId: string | null }
+): HourWiseActivityParseResult {
+  const file = findHourWiseCaptureFile(capture, "0504");
+  if (!file || !file.readSuccess) {
+    return {
+      rawActivities: [],
+      dayCount: 0,
+      changeCount: 0,
+      warning: "EF 0504 driver activity file was not captured successfully.",
+    };
+  }
+
+  const bytes = decodeBase64Bytes(stringOrNull(file.dataBase64));
+  if (!bytes || bytes.length < 16) {
+    return {
+      rawActivities: [],
+      dayCount: 0,
+      changeCount: 0,
+      warning: "EF 0504 driver activity file was empty or too short to decode.",
+    };
+  }
+
+  const parsedRecords = parseActivityDailyRecords(bytes);
+  const rawActivities = parsedRecords.flatMap((record) =>
+    record.segments.map((segment, index) => ({
+      file_id: context.importId,
+      driver_id: context.driverId,
+      start_time: segment.startTime,
+      end_time: segment.endTime,
+      activity_type: segment.activityType,
+      slot: index + 1,
+      is_manual_entry: false,
+      distance_km: null,
+    }))
+  );
+
+  const warningParts = [
+    file.truncated ? "EF 0504 capture was truncated by the helper read limit." : null,
+    rawActivities.length === 0 ? "EF 0504 was captured but no sane activity intervals could be decoded." : null,
+  ].filter(Boolean);
+
+  return {
+    rawActivities,
+    dayCount: parsedRecords.length,
+    changeCount: parsedRecords.reduce((total, record) => total + record.changeCount, 0),
+    warning: warningParts.length > 0 ? warningParts.join(" ") : null,
+  };
+}
+
+function parseActivityDailyRecords(bytes: Uint8Array) {
+  const sequential = parseActivityDailyRecordsFromOffset(bytes, 4);
+  if (sequential.length > 0) return sequential;
+
+  const scanned: ReturnType<typeof parseActivityDailyRecordAt>[] = [];
+  const seenDates = new Set<string>();
+  for (let offset = 0; offset + 12 <= bytes.length; offset += 1) {
+    const record = parseActivityDailyRecordAt(bytes, offset);
+    if (!record || seenDates.has(record.date)) continue;
+    seenDates.add(record.date);
+    scanned.push(record);
+    offset += Math.max(0, record.length - 1);
+  }
+
+  return scanned.filter((record): record is NonNullable<typeof record> => record !== null);
+}
+
+function parseActivityDailyRecordsFromOffset(bytes: Uint8Array, startOffset: number) {
+  const records: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[] = [];
+  let offset = startOffset;
+
+  while (offset + 12 <= bytes.length) {
+    const record = parseActivityDailyRecordAt(bytes, offset);
+    if (!record) break;
+    records.push(record);
+    offset += record.length;
+  }
+
+  return records;
+}
+
+function parseActivityDailyRecordAt(bytes: Uint8Array, offset: number) {
+  if (offset < 0 || offset + 12 > bytes.length) return null;
+
+  const recordLength = readUint16(bytes, offset + 2);
+  if (!Number.isFinite(recordLength) || recordLength < 14 || recordLength % 2 !== 0 || offset + recordLength > bytes.length) {
+    return null;
+  }
+
+  const recordDate = readTimeReal(bytes, offset + 4);
+  if (!isPlausibleTachoDate(recordDate)) return null;
+
+  const dayStart = new Date(recordDate.slice(0, 10) + "T00:00:00.000Z");
+  const changes: Array<{ minute: number; activityType: RawActivityRow["activity_type"] }> = [];
+
+  for (let cursor = offset + 12; cursor + 1 < offset + recordLength; cursor += 2) {
+    const word = readUint16(bytes, cursor);
+    const minute = word & 0x07ff;
+    const activityType = mapActivityChangeInfoType((word >> 11) & 0x03);
+    if (minute >= 1440 || !activityType) continue;
+    changes.push({ minute, activityType });
+  }
+
+  const uniqueChanges = changes
+    .sort((left, right) => left.minute - right.minute)
+    .filter((change, index, sorted) => index === 0 || change.minute !== sorted[index - 1].minute);
+
+  if (uniqueChanges.length < 1) return null;
+
+  const segments = uniqueChanges
+    .map((change, index) => {
+      const nextMinute = uniqueChanges[index + 1]?.minute ?? 1440;
+      if (nextMinute <= change.minute) return null;
+      return {
+        startTime: addUtcMinutes(dayStart, change.minute),
+        endTime: addUtcMinutes(dayStart, nextMinute),
+        activityType: change.activityType,
+      };
+    })
+    .filter((segment): segment is { startTime: string; endTime: string; activityType: RawActivityRow["activity_type"] } => segment !== null);
+
+  if (segments.length === 0) return null;
+
+  return {
+    offset,
+    length: recordLength,
+    date: dayStart.toISOString().slice(0, 10),
+    changeCount: uniqueChanges.length,
+    segments,
+  };
+}
+
+function mapActivityChangeInfoType(code: number): RawActivityRow["activity_type"] | null {
+  switch (code) {
+    case 0:
+      return "rest";
+    case 1:
+      return "poa";
+    case 2:
+      return "work";
+    case 3:
+      return "driving";
+    default:
+      return null;
+  }
 }
 
 function findHourWiseCaptureFile(capture: HourWiseReadOnlyCapture, fileId: string) {
@@ -907,6 +1222,24 @@ function readTimeReal(bytes: Uint8Array, offset: number) {
   if (!seconds) return null;
   const date = new Date(seconds * 1000);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function readUint16(bytes: Uint8Array, offset: number) {
+  if (offset < 0 || offset + 2 > bytes.length) return Number.NaN;
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0);
+}
+
+function isPlausibleTachoDate(value: string | null) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const year = date.getUTCFullYear();
+  const now = new Date();
+  return year >= 2000 && date.getTime() <= now.getTime() + 366 * 24 * 60 * 60 * 1000;
+}
+
+function addUtcMinutes(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60 * 1000).toISOString();
 }
 
 async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, importId: string) {

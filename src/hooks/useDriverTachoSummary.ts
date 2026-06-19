@@ -20,6 +20,12 @@ interface DriverCardDownloadRow {
   download_status?: DriverTachoDownloadStatus | null;
 }
 
+interface TachoImportSummaryRow {
+  uploaded_at?: string | null;
+  processed_at?: string | null;
+  status?: string | null;
+}
+
 interface TachoProfileCardRow {
   tacho_card_number?: string | null;
 }
@@ -49,10 +55,37 @@ interface DriverCardDownloadQuery {
   select(columns: string): DriverCardDownloadQueryBuilder;
 }
 
+interface TachoImportSummaryQueryBuilder {
+  eq(column: string, value: string): TachoImportSummaryQueryBuilder;
+  order(column: string, options: { ascending: boolean }): TachoImportSummaryQueryBuilder;
+  limit(count: number): Promise<QueryResult<TachoImportSummaryRow[]>>;
+}
+
+interface TachoImportSummaryQuery {
+  select(columns: string): TachoImportSummaryQueryBuilder;
+}
+
 function newestDownload(rows: DriverCardDownloadRow[]) {
   return rows
     .filter((row) => row.downloaded_at)
     .sort((left, right) => new Date(right.downloaded_at ?? 0).getTime() - new Date(left.downloaded_at ?? 0).getTime())[0] ?? null;
+}
+
+function importToDownloadSummary(row: TachoImportSummaryRow): DriverCardDownloadRow | null {
+  const importedAt = row.processed_at ?? row.uploaded_at;
+  if (!importedAt) return null;
+
+  const downloadStatus =
+    row.status === 'processed' || row.status === 'complete'
+      ? 'ok'
+      : row.status === 'partial'
+        ? 'partial_identity'
+        : undefined;
+
+  return {
+    downloaded_at: importedAt,
+    download_status: downloadStatus,
+  };
 }
 
 function profileCardQuery() {
@@ -61,6 +94,10 @@ function profileCardQuery() {
 
 function driverCardDownloadQuery() {
   return supabase.from('driver_card_downloads') as unknown as DriverCardDownloadQuery;
+}
+
+function tachoImportSummaryQuery() {
+  return supabase.from('tachograph_files') as unknown as TachoImportSummaryQuery;
 }
 
 export function useDriverTachoSummary(companyId: string | undefined, driverId: string | undefined) {
@@ -118,9 +155,36 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
         const downloadError = downloadResults.find((result) => result.error)?.error;
         if (downloadError) throw downloadError;
 
-        const latestDownloadRow = newestDownload(
-          downloadResults.flatMap((result) => (result.data ?? []) as DriverCardDownloadRow[])
-        );
+        const importQueries = [
+          tachoImportSummaryQuery()
+            .select('uploaded_at, processed_at, status')
+            .eq('company_id', companyId)
+            .eq('driver_id', driverId)
+            .order('uploaded_at', { ascending: false })
+            .limit(1),
+        ];
+
+        if (tachoCardNumber) {
+          importQueries.push(
+            tachoImportSummaryQuery()
+              .select('uploaded_at, processed_at, status')
+              .eq('company_id', companyId)
+              .eq('external_card_number', tachoCardNumber)
+              .order('uploaded_at', { ascending: false })
+              .limit(1)
+          );
+        }
+
+        const importResults = await Promise.all(importQueries);
+        const importError = importResults.find((result) => result.error)?.error;
+        if (importError) throw importError;
+
+        const downloadRows = downloadResults.flatMap((result) => (result.data ?? []) as DriverCardDownloadRow[]);
+        const importRows = importResults
+          .flatMap((result) => (result.data ?? []) as TachoImportSummaryRow[])
+          .map(importToDownloadSummary)
+          .filter((row): row is DriverCardDownloadRow => row !== null);
+        const latestDownloadRow = newestDownload([...downloadRows, ...importRows]);
 
         const signal = signals.complianceSignals.find((entry) => entry.driverId === driverId);
 
