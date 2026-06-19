@@ -147,6 +147,7 @@ interface ReaderHelperDiagnostics {
 }
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_TACHO_HELPER_URL || 'http://127.0.0.1:47231';
+const AUTO_OPEN_REVIEW_STORAGE_KEY = 'hourwise:tacho-reader:auto-opened-review';
 
 const WORKFLOW_STEPS: { id: Exclude<ReaderHelperStage, 'helper_unavailable' | 'error'>; label: string }[] = [
   { id: 'ready', label: 'Helper ready' },
@@ -182,6 +183,22 @@ function defaultStatus(helperUrl: string): ReaderHelperStatus {
     canStartRead: false,
     canCancel: false,
   };
+}
+
+function getAutoOpenedReviewKey() {
+  try {
+    return window.sessionStorage.getItem(AUTO_OPEN_REVIEW_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setAutoOpenedReviewKey(key: string) {
+  try {
+    window.sessionStorage.setItem(AUTO_OPEN_REVIEW_STORAGE_KEY, key);
+  } catch {
+    // Non-critical: in private/restricted storage, the in-memory guard still prevents loops during this mount.
+  }
 }
 
 function buildImportedStatus(
@@ -362,6 +379,7 @@ export function TachoReaderHelperPanel({
   const [diagnosticsPending, setDiagnosticsPending] = useState(false);
   const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null);
   const openedReviewKeyRef = useRef<string | null>(null);
+  const canAutoOpenReviewRef = useRef(false);
   const importSessionRef = useRef<string | null>(null);
 
   const status = useMemo(
@@ -544,10 +562,20 @@ export function TachoReaderHelperPanel({
   }, [helperStatus.readSessionId, registeredImport]);
 
   useEffect(() => {
+    if (status.stage !== 'complete') {
+      canAutoOpenReviewRef.current = true;
+    }
+  }, [status.stage]);
+
+  useEffect(() => {
     if (status.stage !== 'complete' || !status.driverId || !onOpenDriverAnalysis) return;
-    const reviewKey = `${status.importId ?? 'no-import'}:${status.driverId}:${status.focusedDate ?? 'no-date'}`;
+    if (!canAutoOpenReviewRef.current) return;
+    const reviewKey = `${status.importId ?? status.readSessionId ?? 'no-import'}:${status.driverId}:${status.focusedDate ?? 'no-date'}`;
     if (openedReviewKeyRef.current === reviewKey) return;
+    if (getAutoOpenedReviewKey() === reviewKey) return;
     openedReviewKeyRef.current = reviewKey;
+    canAutoOpenReviewRef.current = false;
+    setAutoOpenedReviewKey(reviewKey);
     onOpenDriverAnalysis(status.driverId, status.focusedDate);
   }, [onOpenDriverAnalysis, status]);
 

@@ -62,6 +62,12 @@ const getDocumentStatus = (expiryDate: string | null | undefined, t: any) => {
   return { text: t('driverDetails.status.expiresOn', { date: expiry.toLocaleDateString() }), color: 'text-green-600', Icon: () => null };
 };
 
+function formatTachoDownloadStatus(status?: string) {
+  if (!status) return 'No card download yet';
+  if (status === 'partial_identity') return 'Partial identity capture';
+  return status.replace('_', ' ');
+}
+
 const LocationAnalysisMap = ({ driverId }: { driverId: string }) => {
   const { t } = useTranslation();
   const [locations, setLocations] = useState<{ lat: number, lng: number }[]>([]);
@@ -327,7 +333,7 @@ export function DriverDetailsModal({
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Card Status</p>
                       <p className="mt-2 text-sm font-bold text-slate-900">
-                        {tachoSummary?.downloadStatus ? tachoSummary.downloadStatus.replace('_', ' ') : 'No card download yet'}
+                        {formatTachoDownloadStatus(tachoSummary?.downloadStatus)}
                       </p>
                     </div>
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
