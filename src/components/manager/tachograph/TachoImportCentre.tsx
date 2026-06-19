@@ -11,8 +11,11 @@ import {
 import { retryTachoImportProcessing } from '../../../lib/tacho/helperImport';
 import {
   fetchTachoPairingDrivers,
+  fetchTachoPairingInvites,
   pairTachoImportToDriver,
+  pairTachoImportToInvite,
   type TachoPairingDriver,
+  type TachoPairingInvite,
 } from '../../../lib/tacho/driverPairing';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
 import { InviteDriverModal } from '../InviteDriverModal';
@@ -310,31 +313,42 @@ function DriverCardPairingPanel({
   const cardNumber = getImportCardNumber(item);
   const cardDriverName = item.cardDriverName ?? item.driverName;
   const [drivers, setDrivers] = useState<TachoPairingDriver[]>([]);
+  const [invites, setInvites] = useState<TachoPairingInvite[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState(item.driverId ?? '');
+  const [selectedInviteId, setSelectedInviteId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pairing, setPairing] = useState(false);
+  const [pairingInvite, setPairingInvite] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setSelectedDriverId(item.driverId ?? '');
+    setSelectedInviteId('');
     setMessage(null);
     setError(null);
 
     if (item.sourceType !== 'driver_card' || !companyId || !cardNumber) {
       setDrivers([]);
+      setInvites([]);
       return;
     }
 
     setLoading(true);
-    fetchTachoPairingDrivers(companyId)
-      .then((driverRows) => {
-        if (!cancelled) setDrivers(driverRows);
+    Promise.all([
+      fetchTachoPairingDrivers(companyId),
+      fetchTachoPairingInvites(companyId),
+    ])
+      .then(([driverRows, inviteRows]) => {
+        if (!cancelled) {
+          setDrivers(driverRows);
+          setInvites(inviteRows);
+        }
       })
       .catch((loadError) => {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : 'Failed to load driver profiles.');
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load driver profiles or pending invites.');
         }
       })
       .finally(() => {
@@ -349,9 +363,14 @@ function DriverCardPairingPanel({
   if (item.sourceType !== 'driver_card' || !cardNumber) return null;
 
   const selectedDriver = drivers.find((driver) => driver.id === selectedDriverId);
+  const selectedInvite = invites.find((invite) => invite.id === selectedInviteId);
   const selectedDriverHasDifferentCard = Boolean(
     selectedDriver?.tachoCardNumber &&
     selectedDriver.tachoCardNumber.toUpperCase() !== cardNumber.toUpperCase()
+  );
+  const selectedInviteHasDifferentCard = Boolean(
+    selectedInvite?.tachoCardNumber &&
+    selectedInvite.tachoCardNumber.toUpperCase() !== cardNumber.toUpperCase()
   );
 
   const handlePair = async () => {
@@ -381,6 +400,39 @@ function DriverCardPairingPanel({
       setError(pairError instanceof Error ? pairError.message : 'Failed to pair tachograph card.');
     } finally {
       setPairing(false);
+    }
+  };
+
+  const handlePairInvite = async () => {
+    if (!companyId || !selectedInviteId || !cardNumber) return;
+
+    if (selectedInviteHasDifferentCard) {
+      const shouldReplace = window.confirm(
+        `${selectedInvite?.fullName ?? 'This pending invite'} already has card ${selectedInvite?.tachoCardNumber}. Replace it with ${cardNumber}?`
+      );
+      if (!shouldReplace) return;
+    }
+
+    setPairingInvite(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await pairTachoImportToInvite({
+        companyId,
+        importId: item.id,
+        inviteId: selectedInviteId,
+        cardNumber,
+        holderName: cardDriverName,
+        cardExpiry: item.cardExpiryDate,
+        issuingAuthority: item.cardIssuingAuthorityName,
+      });
+      setMessage(`Card ${cardNumber} will pair to ${result.fullName} when the invite is accepted.`);
+      onPaired();
+    } catch (pairError) {
+      setError(pairError instanceof Error ? pairError.message : 'Failed to pair tachograph card to pending invite.');
+    } finally {
+      setPairingInvite(false);
     }
   };
 
@@ -439,7 +491,46 @@ function DriverCardPairingPanel({
             Selected driver currently has a different card number. Pairing will replace it.
           </p>
         ) : null}
-        {drivers.length === 0 && !loading ? (
+        <div className="rounded-lg border border-blue-200 bg-white/70 p-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Pair To Pending Invite</p>
+          <p className="mt-1 text-xs text-blue-800">
+            Use this when the driver has been invited but has not accepted yet. The card number will be stored on the invite and applied to the profile on acceptance.
+          </p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex-1">
+              <span className="block text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1">
+                Pending Invite
+              </span>
+              <select
+                value={selectedInviteId}
+                onChange={(event) => setSelectedInviteId(event.target.value)}
+                disabled={loading || pairingInvite}
+                className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value="">{loading ? 'Loading invites...' : 'Select pending invite'}</option>
+                {invites.map((invite) => (
+                  <option key={invite.id} value={invite.id}>
+                    {invite.fullName}{invite.email ? ` - ${invite.email}` : ''}{invite.tachoCardNumber ? ` - card ${invite.tachoCardNumber}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={handlePairInvite}
+              disabled={!selectedInviteId || !companyId || loading || pairingInvite}
+              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pairingInvite ? 'Pairing...' : 'Pair Pending Invite'}
+            </button>
+          </div>
+          {selectedInviteHasDifferentCard ? (
+            <p className="mt-2 text-xs text-amber-800">
+              Selected invite currently has a different card number. Pairing will replace it.
+            </p>
+          ) : null}
+        </div>
+        {drivers.length === 0 && invites.length === 0 && !loading ? (
           <div className="rounded-lg border border-blue-200 bg-white/70 p-3">
             <p className="text-xs text-blue-800">
               No driver profiles are available yet. Invite the driver from this card, then the card number will be applied when they accept the invite.

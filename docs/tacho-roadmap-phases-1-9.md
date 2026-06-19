@@ -208,6 +208,7 @@ Reader/import UI:
   - shows decoded card identity in Import Review
   - shows `Unmatched Card Identity` when card is decoded but no driver profile is matched
   - supports pairing a decoded card to an existing driver profile
+  - supports pairing a decoded card to an existing pending driver invite
   - supports `Invite Driver From Card` when no driver profile exists yet
   - passes decoded card snapshot into the invite modal
 - `src/components/manager/InviteDriverModal.tsx`
@@ -222,6 +223,7 @@ Reader/import UI:
 - `src/lib/tacho/driverPairing.ts`
   - fetches available company driver profiles for pairing
   - calls `pair_tacho_card_import_to_driver(...)`
+  - fetches pending company driver invites and writes decoded card identity onto the selected invite
 - `src/lib/tacho/adapters.ts` and `src/lib/tacho/rules/types.ts`
   - expose decoded card identity fields on `TachoImportRecord`
 
@@ -286,12 +288,19 @@ Known build warning:
    - select that driver in `Pair To Driver Profile`
    - click `Pair Card`
    - verify `tachograph_files.driver_id`, `driver_card_downloads.driver_id`, and `profiles.tacho_card_number`
-6. Start next parser milestone:
+6. Test pending-invite pairing flow:
+   - create a pending invite first
+   - read the card
+   - select the invite in `Pair To Pending Invite`
+   - click `Pair Pending Invite`
+   - verify `driver_invites.tacho_card_number` is set
+   - accept the invite and verify the new profile receives `profiles.tacho_card_number`
+7. Start next parser milestone:
    - decode EF `0504` driver activity records from the read-only capture
    - normalize activities into `tachograph_activity_segments`
    - feed those segments into the existing rules engine
    - replace reader-console placeholder totals with parsed activity/rule output
-7. Start UI-layout milestone from:
+8. Start UI-layout milestone from:
    - `docs/tacho-driver-card-view-build-plan.md`
    - target: analysis graph fills the page, reader state appears as an overlay/status layer
 
