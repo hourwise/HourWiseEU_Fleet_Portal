@@ -762,6 +762,8 @@ async function handleHourWiseReadOnlyCapture(
     activityParse.rawActivities.length > 0
       ? "HourWise read-only card capture was decoded from EF 0504 into provisional activity segments. Certified C1B/DDD export is still not implemented for this container."
       : "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
+  const processingWarnings = [warning, activityParse.warning].filter((item): item is string => Boolean(item));
+  let rawActivityInsertWarning: string | null = null;
 
   const rawActivities = activityParse.rawActivities.map((activity) => ({
     ...activity,
@@ -838,7 +840,10 @@ async function handleHourWiseReadOnlyCapture(
 
   if (rawActivities.length > 0) {
     const { error } = await supabaseAdmin.from("tachograph_activities").insert(rawActivities);
-    if (error) throw error;
+    if (error) {
+      rawActivityInsertWarning = `Raw tachograph activity compatibility insert skipped: ${error.message}`;
+      processingWarnings.push(rawActivityInsertWarning);
+    }
   }
 
   if (normalizedActivities.length > 0) {
@@ -894,14 +899,14 @@ async function handleHourWiseReadOnlyCapture(
     company_id: record.company_id ?? null,
     parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
     source: "hourwise_read_only_capture",
-    warnings: [warning, activityParse.warning].filter((item): item is string => Boolean(item)),
+    warnings: processingWarnings,
     errors: [],
     processed_at: summaryWindow.endTime ?? processedAt,
   });
 
   const metadata = mergeMetadata(record.metadata, {
     parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
-    parser_status: "partial_helper_capture",
+    parser_status: finalStatus === "processed" ? "processed_helper_capture" : "partial_helper_capture",
     helper_capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
     helper_capture_warning: warning,
     helper_capture_read_session_id: stringOrNull(capture.readSessionId),
@@ -927,6 +932,7 @@ async function handleHourWiseReadOnlyCapture(
     helper_capture_activity_day_count: activityParse.dayCount,
     helper_capture_activity_change_count: activityParse.changeCount,
     helper_capture_activity_warning: activityParse.warning,
+    helper_capture_raw_activity_insert_warning: rawActivityInsertWarning,
     driver_name: cardIdentity?.driverName ?? record.metadata?.driver_name ?? null,
     driver_card_number_hint: cardIdentity?.cardNumber ?? record.metadata?.driver_card_number_hint ?? null,
     summary: normalizedActivities.length > 0
@@ -1631,31 +1637,34 @@ function buildFindings(input: {
   daySummaries: DaySummaryRow[];
   activities: NormalizedActivityRow[];
 }): FindingRow[] {
-  const sharedEvaluation = evaluateSharedRuleFindings({
-    activities: input.activities.map((activity, index) => ({
+  const sharedActivities = input.activities.map((activity, index) => ({
+    id: `${activity.activity_type}-${activity.start_time}-${index}`,
+    startTime: activity.start_time,
+    endTime: activity.end_time,
+    activityType: activity.activity_type,
+    durationMins: activity.duration_mins,
+  }));
+  const sharedDutyWindows = input.dutyWindows.map((window) => ({
+    id: window.id,
+    dutyDate: window.dutyDate,
+    dutyStart: window.dutyStart,
+    dutyEnd: window.dutyEnd,
+    activities: window.activities.map((activity, index) => ({
       id: `${activity.activity_type}-${activity.start_time}-${index}`,
       startTime: activity.start_time,
       endTime: activity.end_time,
       activityType: activity.activity_type,
       durationMins: activity.duration_mins,
     })),
-    dutyWindows: input.dutyWindows.map((window) => ({
-      id: window.id,
-      dutyDate: window.duty_date,
-      dutyStart: window.duty_start,
-      dutyEnd: window.duty_end,
-      activities: window.activities.map((activity, index) => ({
-        id: `${activity.activity_type}-${activity.start_time}-${index}`,
-        startTime: activity.start_time,
-        endTime: activity.end_time,
-        activityType: activity.activity_type,
-        durationMins: activity.duration_mins,
-      })),
-      drivingMins: window.driving_mins,
-      workMins: window.work_mins,
-      poaMins: window.poa_mins,
-      restMins: window.rest_mins,
-    })),
+    drivingMins: window.drivingMins,
+    workMins: window.workMins,
+    poaMins: window.poaMins,
+    restMins: window.restMins,
+  }));
+
+  const sharedEvaluation = evaluateSharedRuleFindings({
+    activities: sharedActivities,
+    dutyWindows: sharedDutyWindows,
   });
 
   for (const summary of input.daySummaries) {

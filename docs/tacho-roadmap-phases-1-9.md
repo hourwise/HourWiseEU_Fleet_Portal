@@ -60,7 +60,8 @@ Based on the current frontend and this implementation pass:
   - the PC/SC probe has now confirmed the first real-card tachograph application path via EF.DIR AID `FF544143484F` and initial reads from application files `0501`, `050E`, `0520`, and `0504`
   - the helper now guards every APDU transmit with a read-only allowlist and includes a bounded file-map probe that reads confirmed tachograph EFs without write/security commands
   - the helper now defaults `start-read` to a built-in read-only driver-card capture container with real EF bytes and per-file hashes while the final certified `.C1B` encoder remains outstanding
-  - `process-tacho` now recognizes the HourWise read-only capture container and records it as a controlled `partial` import with sanitized EF metadata instead of treating it as a parser failure
+  - `process-tacho` now recognizes the HourWise read-only capture container and records it as a controlled import with sanitized EF metadata instead of treating it as a parser failure
+  - `process-tacho` now decodes EF `0520` card identity and provisional EF `0504` daily activity records from the HourWise read-only capture container
   - the helper contract has been validated with placeholder bytes and a simulated external export command producing fake bytes
   - the reader panel now includes a first customer-facing HourWise reader console inspired by the Tachomaster-style reference without copying its visual scheme
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
@@ -120,18 +121,28 @@ This section captures the current live-card progress so work can resume after a 
   - browser uploads to Supabase Storage
   - browser inserts `tachograph_files`
   - browser invokes `process-tacho`
-  - import completes as controlled `partial`
-- Current capture remains diagnostic:
+  - import now remains `partial` only when no sane EF `0504` activity intervals can be decoded
+  - import can now become `processed` when provisional EF `0504` activity segments are decoded
+- Current capture is still not a certified card download:
   - `export_format = hourwise_read_only_capture_v1`
-  - `parser_status = partial_helper_capture`
+  - `parser_status = partial_helper_capture` for identity-only captures
+  - `parser_status`/metadata summary should show decoded provisional activity counts where EF `0504` parsing succeeds
   - no certified `.C1B/.DDD` binary writer yet
-  - no normalized activity segments yet
-  - legal totals in the reader console remain placeholders until EF activity parsing is implemented
+  - EF `0504` parsing is provisional and should be validated against certified parser output before release/compliance claims
+  - reader-console legal totals still need to be wired to parsed activity/rule output
 
 ### Real Card Decode Progress
 
 - `process-tacho` now recognizes `hourwise.tachograph.driver-card.read-only-capture.v1`.
 - The read-only parser now decodes EF `0520` card identity.
+- The read-only parser now attempts to decode EF `0504` daily activity records.
+- EF `0504` decoded rows are converted into:
+  - `tachograph_activities`
+  - `tachograph_activity_segments`
+  - `tachograph_day_summaries`
+  - `tachograph_findings`
+  - `tachograph_reconciliation_items`
+  - driver compliance/risk signals when the card is linked to a driver profile
 - Confirmed decoded fields from the real test card include:
   - driver holder name
   - tachograph card number hint
@@ -144,6 +155,20 @@ This section captures the current live-card progress so work can resume after a 
 - Identity decode confirmed the key operational case:
   - if no profile has `profiles.tacho_card_number` matching the decoded card, the import remains unpaired with `driver_id = null`
   - the import review now treats this as an explicit supervisor workflow, not a parser failure
+- Invite acceptance has now been tested through a real pending invite path:
+  - pending invite was linked to card `DB18220162003911`
+  - invite lookup initially failed because the mobile app saw `status = undefined`
+  - root cause was the invite lookup RPC/function not returning a `status` field even though the DB row was `pending`
+  - `lookup-driver-invite` and the DB-side lookup contract were fixed so the response includes `status = pending`
+  - the invite was later accepted and linked to user `deb19e2f-d3fc-4b76-83dd-acd4ec2d7332`
+  - accepted invite row `6dcafb56-606d-4e62-9413-160e4386a3ad` has `status = accepted` and retains the decoded card fields
+- Driver file currently needs a fresh/retried processed import before it can show real tacho activity status instead of identity-only/no-download state.
+- Later live read `e872ed0c-b7d7-4894-b5a4-990da8a8acd8` failed during backend processing after the helper uploaded the HourWise capture:
+  - UI showed `Edge Function returned a non-2xx status code`
+  - likely cause was the newly exercised EF `0504` branch throwing before metadata update
+  - hotfix deployed to `process-tacho` so raw compatibility-table insert failures are non-fatal
+  - hotfix also corrected duty-window camelCase/snake_case mapping before shared rule evaluation
+  - retry this import from Import Centre after the hotfix deploy
 
 ### Supabase / Backend Changes Added
 
@@ -163,21 +188,30 @@ Recent migrations added during the live-card work:
   - updates `accept_driver_invite(...)`
   - when a driver accepts an invite, the accepted profile receives the stored `tacho_card_number`
   - prior unmatched imports/downloads for that card number are linked to the new profile where possible
+- `20260619160000_include_status_in_driver_invite_lookup.sql`
+  - fixes invite lookup response shape so mobile invite acceptance receives `status`
+  - prevents the app from treating a valid pending invite as `undefined, not pending`
 
 Backend functions changed:
 
 - `supabase/functions/process-tacho/index.ts`
   - detects the HourWise read-only capture container before ReadESM parsing
-  - stores sanitized helper EF metadata as a controlled partial import
+  - stores sanitized helper EF metadata as a controlled import
   - decodes EF `0520` identity from the capture
+  - decodes provisional EF `0504` daily activity records into normalized segments when possible
+  - updates `tachograph_files.status` to `processed` when activity segments are created, otherwise `partial`
+  - writes processing metadata including activity day count, activity change count, normalized segment count, findings count, and reconciliation issue count
+  - raw `tachograph_activities` compatibility insert is now non-fatal for HourWise captures; normalized processing can still complete
+  - shared rule evaluation now receives camelCase duty-window fields from the shared normalization layer
   - attempts exact card-number match against `profiles.tacho_card_number`
-  - writes a `driver_card_downloads` identity-only row with `download_status = partial_identity`
+  - writes `driver_card_downloads.download_status = ok` when provisional activity exists, otherwise `partial_identity`
 - `supabase/functions/create-driver-invite/index.ts`
   - accepts optional `tachographCardSnapshot`
   - stores decoded card number/name/expiry/issuer/source import id on the invite
 - `supabase/functions/lookup-driver-invite/index.ts`
   - added after mobile invite lookup reported `permission denied for table driver_invites`
   - mobile invite lookup must call this Edge Function or the `lookup_pending_driver_invite(...)` RPC, not read `driver_invites` directly
+  - now guarantees the returned invite includes `status`
 - `supabase/functions/accept-driver-invite/index.ts`
   - already calls the safe `accept_driver_invite(...)` RPC
   - deploy after invite/card migrations so accepted invites can write `profiles.tacho_card_number`
@@ -204,6 +238,7 @@ Reader/import UI:
   - shows `Diagnostic partial` instead of blocking on `exportParserReady=false`
   - preserves cancel/restart ability from helper state
   - clears stale tracked import state when helper read session resets
+  - now prevents stale completed helper state from auto-jumping the Import Centre straight into driver-card analysis on tab open
 - `src/components/manager/tachograph/TachoImportCentre.tsx`
   - shows decoded card identity in Import Review
   - shows `Unmatched Card Identity` when card is decoded but no driver profile is matched
@@ -220,6 +255,11 @@ Reader/import UI:
   - pending invites now expose `Invite Details`
   - managers can edit pending invite name/email/tachograph card fields before the driver accepts
   - this addresses the flow gap where pending invited drivers could not be amended because no `profiles` row exists yet
+- `src/hooks/useDriverTachoSummary.ts`
+  - driver personnel file tacho summary now checks `driver_card_downloads` by `driver_id`
+  - it also checks by profile `tacho_card_number`
+  - it falls back to matching `tachograph_files` by `driver_id` or decoded `external_card_number`
+  - `tachograph_files.status = processed` is treated as valid tacho data for the driver file
 - `src/lib/tacho/driverPairing.ts`
   - fetches available company driver profiles for pairing
   - calls `pair_tacho_card_import_to_driver(...)`
@@ -240,6 +280,8 @@ Recent validation commands that passed:
 
 ```powershell
 npx eslint src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\InviteDriverModal.tsx src\lib\tacho\driverPairing.ts
+npx eslint src\hooks\useDriverTachoSummary.ts
+npx eslint src\components\manager\tachograph\TachoReaderHelperPanel.tsx
 npm run test:rules
 npm run build
 ```
@@ -249,39 +291,67 @@ Known build warning:
 - Vite still warns that `index` and `react-pdf.browser` chunks exceed 500 kB.
 - This warning is pre-existing and not specific to the tachograph card-reader work.
 
+Known local validation limitation:
+
+- `npx tsc` against `supabase/functions/process-tacho/index.ts` is not clean locally because the file uses Deno remote imports/globals and also has pre-existing shared type drift.
+- `npx eslint supabase\functions\process-tacho\index.ts` still reports pre-existing file-level issues, mainly `any` usage and one old `_ignoredId` pattern.
+- The latest `process-tacho` Edge Function deploy succeeded after the EF `0504` parser changes.
+- A later `process-tacho` hotfix deploy also succeeded after import `e872ed0c-b7d7-4894-b5a4-990da8a8acd8` failed during processing.
+
 ### Current Known Limitations
 
 - The helper is still producing a read-only HourWise JSON capture, not a certified `.C1B/.DDD` tachograph download file.
-- EF identity parsing is working, but EF activity parsing is not yet normalized into driver activities.
-- Reader console legal totals are placeholders until EF `0504` driver activity is decoded and fed into the existing rules engine.
+- EF identity parsing is working.
+- EF `0504` activity parsing is now implemented provisionally, but needs validation against known-good/certified C1B or DDD parser output before release hardening.
+- Reader console legal totals are still placeholders until the UI consumes parsed activity/rule output.
 - VU workflow is still scaffolded/disabled in helper `0.5.9`.
 - Existing imports before identity parsing may remain `Unmatched card` if their metadata lacks decoded identity fields.
 - If a company has no driver profiles, the card can now create a prefilled invite, but the real `profiles` row is still only created/linked when the driver accepts the invite through the normal app flow.
+- If a card was accepted through invite after an identity-only import, the driver file may still show `No card download yet` until the existing import is retried or the card is read again through the deployed EF `0504` parser.
 
 ### Immediate Next Steps After Restart
 
 Latest confirmed checkpoint before restart:
 
-- `Pair To Pending Invite` has been tested in Import Review.
-- A decoded card was successfully attached to pending invite `Philip Christopher Geran - philgeran+test55@gmail.com`.
-- UI confirmation shown:
-  - `Card DB18220162003911 will pair to Philip Christopher Geran when the invite is accepted.`
-- Next external blocker is the EAS mobile app build in the app repo.
-- Resume by testing invite lookup/acceptance on the updated app build.
+- `Pair To Pending Invite` has been tested in Import Review and the invite acceptance issue has been fixed.
+- The relevant live test invite was accepted:
+  - invite id `6dcafb56-606d-4e62-9413-160e4386a3ad`
+  - invite code `TDMJ2AZB`
+  - accepted user id `deb19e2f-d3fc-4b76-83dd-acd4ec2d7332`
+  - card `DB18220162003911`
+- The latest deployed backend checkpoint is:
+  - `lookup-driver-invite` returns invite `status`
+  - `process-tacho` includes provisional EF `0504` decoding
+- Local env does not contain `PROCESS_TACHO_TRIGGER_TOKEN`, so the existing import cannot be safely retried from a local terminal unless that secret is provided.
 
 1. Confirm clean helper state:
    - restart helper if needed
    - confirm `/status` reports `dotnet-shell-0.5.9`
    - confirm reader/card state updates correctly when card is removed/reinserted
-2. Deploy pending DB/function changes:
-   - `supabase db push`
-   - `supabase functions deploy process-tacho`
-   - `supabase functions deploy create-driver-invite`
-   - `supabase functions deploy lookup-driver-invite`
-   - `supabase functions deploy accept-driver-invite`
-3. Push frontend to Vercel:
+2. Reprocess the existing accepted-driver import or read the card again:
+   - target import id from the invite/card flow: `ae681c85-fb6f-4b5a-aaf5-b7fa32312e39`
+   - latest failed helper-read import id: `e872ed0c-b7d7-4894-b5a4-990da8a8acd8`
+   - preferred path without trigger token: use Import Centre retry processing from the manager UI
+   - fallback path: read the same card again through the helper
+   - expected success state: `tachograph_files.status = processed`
+   - expected metadata: `normalized_segments > 0`, `helper_capture_activity_day_count > 0`, `helper_capture_activity_change_count > 0`
+   - expected driver file: Card Status no longer says `No card download yet`
+3. Verify DB linkage after reprocess:
+   - `tachograph_files.driver_id` should point to accepted user/profile
+   - `driver_card_downloads.driver_id` should point to accepted user/profile
+   - `profiles.tacho_card_number` should equal the decoded card number
+   - `driver_card_downloads.download_status` should be `ok` if EF `0504` produced activity, otherwise `partial_identity`
+4. Verify driver personnel file:
+   - open Philip Christopher Geran driver file
+   - confirm Last Download uses the new import/download timestamp
+   - confirm Truth Score moves from `Awaiting tacho signal` once compliance/risk signals exist
+   - confirm `Open Driver Card Analysis` shows the parsed activity strip for the decoded period
+5. Verify Import Centre tab behaviour:
+   - click the Import Centre tab after a completed helper read
+   - it should stay on Import Centre and not auto-jump to Driver Cards unless a new read session completes
+6. Push frontend to Vercel when ready:
    - `git push`
-4. Test unmatched-card invite flow:
+7. Test unmatched-card invite flow again as a regression:
    - read the card
    - open Import Review
    - click `Invite Driver From Card`
@@ -291,36 +361,36 @@ Latest confirmed checkpoint before restart:
    - accept invite as the driver
    - verify accepted profile has `profiles.tacho_card_number`
    - verify prior imports/downloads for the same card number are linked to the profile
-5. Test existing-profile pairing flow:
+8. Test existing-profile pairing flow:
    - create or use a driver profile without `tacho_card_number`
    - read the card
    - select that driver in `Pair To Driver Profile`
    - click `Pair Card`
    - verify `tachograph_files.driver_id`, `driver_card_downloads.driver_id`, and `profiles.tacho_card_number`
-6. Test pending-invite pairing flow:
+9. Test pending-invite pairing flow:
    - create a pending invite first
    - read the card
    - select the invite in `Pair To Pending Invite`
    - click `Pair Pending Invite`
    - verify `driver_invites.tacho_card_number` is set
    - accept the invite and verify the new profile receives `profiles.tacho_card_number`
-7. After EAS app build completes, test mobile invite acceptance:
+10. After EAS app build completes, regression-test mobile invite acceptance:
    - app must use `lookup-driver-invite` or `lookup_pending_driver_invite(...)`, not direct `driver_invites` reads
    - app must use `accept-driver-invite` or `accept_driver_invite(...)`, not direct `driver_invites` updates
    - confirm accepted user profile joins the company as `role = driver`
    - confirm `profiles.tacho_card_number` is populated from the pending invite
    - confirm the pending invite moves to `accepted`
    - confirm prior card imports/downloads for the same card number link to the accepted profile
-8. Re-read the same card after invite acceptance:
+11. Re-read the same card after invite acceptance:
    - import should auto-match the driver profile
    - Import Review should no longer show the card as unmatched
    - Reader console should show the driver target without manual pairing
-9. Start next parser milestone:
-   - decode EF `0504` driver activity records from the read-only capture
-   - normalize activities into `tachograph_activity_segments`
-   - feed those segments into the existing rules engine
+12. Start next parser milestone:
+   - validate EF `0504` provisional output against a certified parser or known-good DDD/C1B export
+   - inspect warnings in `metadata.helper_capture_activity_warning` if decoded segment count is zero
+   - add fixture coverage for a captured EF `0504` sample with expected daily records and activity changes
    - replace reader-console placeholder totals with parsed activity/rule output
-10. Start UI-layout milestone from:
+13. Start UI-layout milestone from:
    - `docs/tacho-driver-card-view-build-plan.md`
    - target: analysis graph fills the page, reader state appears as an overlay/status layer
 
@@ -358,7 +428,7 @@ The intended end state is:
 | 5 | Finish analysis workspaces | Largely complete in frontend | Explicit driver/vehicle targeting, selected-day context, follow-up actions, and stronger empty states are now in place. |
 | 6 | Embed tacho across portal | Largely complete in frontend | Driver and vehicle record integration, training links, infringement review linking, and focused tacho evidence exports are now in place. |
 | 7 | Navigation cleanup | Functionally complete in frontend | Grouped top-level workspaces and consolidated compliance destinations are now implemented while keeping legacy reachability. |
-| 8 | Reader helper | Live read-only card flow working | Windows helper `0.5.9` reads real driver-card EFs through PC/SC, browser uploads the helper capture, Supabase records controlled partial imports, EF `0520` identity decoding works, and manager pairing/invite-from-card flows are now in place. Certified `.C1B/.DDD` writer and activity parsing remain next. |
+| 8 | Reader helper | Live read-only card flow working | Windows helper `0.5.9` reads real driver-card EFs through PC/SC, browser uploads the helper capture, Supabase records controlled imports, EF `0520` identity decoding works, provisional EF `0504` activity decoding is deployed, and manager pairing/invite-from-card flows are now in place. Certified `.C1B/.DDD` writer and parser validation remain next. |
 | 9 | Hardening and release | Not started | Real file regression set, monitoring, RLS review, and rollout prep still to do. |
 
 ---
