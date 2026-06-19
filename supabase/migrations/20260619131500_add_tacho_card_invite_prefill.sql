@@ -12,9 +12,12 @@ create index if not exists idx_driver_invites_company_tacho_card
   on public.driver_invites(company_id, upper(tacho_card_number))
   where tacho_card_number is not null and btrim(tacho_card_number) <> '';
 
-create or replace function public.lookup_pending_driver_invite(p_invite_code text)
+drop function if exists public.lookup_pending_driver_invite(text);
+
+create function public.lookup_pending_driver_invite(p_invite_code text)
 returns table (
   invite_code text,
+  status text,
   email text,
   full_name text,
   company_name text,
@@ -33,6 +36,7 @@ begin
   return query
   select
     di.invite_code,
+    di.status::text,
     di.email,
     di.full_name,
     c.name as company_name,

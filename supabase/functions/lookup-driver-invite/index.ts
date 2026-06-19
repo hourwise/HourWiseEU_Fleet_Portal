@@ -39,7 +39,12 @@ serve(async (req) => {
       return jsonResponse({ error: "Invalid or expired invite code." }, 404);
     }
 
-    return jsonResponse({ invite });
+    return jsonResponse({
+      invite: {
+        ...invite,
+        status: typeof invite.status === "string" ? invite.status : "pending",
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invite lookup failed.";
     return jsonResponse({ error: message }, 400);

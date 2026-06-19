@@ -260,6 +260,15 @@ Known build warning:
 
 ### Immediate Next Steps After Restart
 
+Latest confirmed checkpoint before restart:
+
+- `Pair To Pending Invite` has been tested in Import Review.
+- A decoded card was successfully attached to pending invite `Philip Christopher Geran - philgeran+test55@gmail.com`.
+- UI confirmation shown:
+  - `Card DB18220162003911 will pair to Philip Christopher Geran when the invite is accepted.`
+- Next external blocker is the EAS mobile app build in the app repo.
+- Resume by testing invite lookup/acceptance on the updated app build.
+
 1. Confirm clean helper state:
    - restart helper if needed
    - confirm `/status` reports `dotnet-shell-0.5.9`
@@ -295,12 +304,23 @@ Known build warning:
    - click `Pair Pending Invite`
    - verify `driver_invites.tacho_card_number` is set
    - accept the invite and verify the new profile receives `profiles.tacho_card_number`
-7. Start next parser milestone:
+7. After EAS app build completes, test mobile invite acceptance:
+   - app must use `lookup-driver-invite` or `lookup_pending_driver_invite(...)`, not direct `driver_invites` reads
+   - app must use `accept-driver-invite` or `accept_driver_invite(...)`, not direct `driver_invites` updates
+   - confirm accepted user profile joins the company as `role = driver`
+   - confirm `profiles.tacho_card_number` is populated from the pending invite
+   - confirm the pending invite moves to `accepted`
+   - confirm prior card imports/downloads for the same card number link to the accepted profile
+8. Re-read the same card after invite acceptance:
+   - import should auto-match the driver profile
+   - Import Review should no longer show the card as unmatched
+   - Reader console should show the driver target without manual pairing
+9. Start next parser milestone:
    - decode EF `0504` driver activity records from the read-only capture
    - normalize activities into `tachograph_activity_segments`
    - feed those segments into the existing rules engine
    - replace reader-console placeholder totals with parsed activity/rule output
-8. Start UI-layout milestone from:
+10. Start UI-layout milestone from:
    - `docs/tacho-driver-card-view-build-plan.md`
    - target: analysis graph fills the page, reader state appears as an overlay/status layer
 

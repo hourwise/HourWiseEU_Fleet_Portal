@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import type { ElementType } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,27 +41,179 @@ type Workspace = 'dashboard' | 'people' | 'fleet' | 'compliance' | 'reports' | '
 type PeopleSection = 'drivers' | 'training' | 'shifts' | 'supervisors' | 'messages';
 type FleetSection = 'vehicles' | 'vehicle_checks' | 'fuel' | 'olicence' | 'incidents';
 type SettingsSection = 'account' | 'company';
+type TachoTab = 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' | 'simulator';
+
+interface DashboardRouteState {
+  workspace: Workspace;
+  people: PeopleSection;
+  fleet: FleetSection;
+  settings: SettingsSection;
+  tacho: TachoTab;
+  focusedDriverId?: string;
+  focusedVehicleId?: string;
+  focusedDate?: string;
+  reportDriverId?: string;
+  reportDate?: string;
+}
+
+const WORKSPACES: Workspace[] = ['dashboard', 'people', 'fleet', 'compliance', 'reports', 'settings'];
+const PEOPLE_SECTIONS: PeopleSection[] = ['drivers', 'training', 'shifts', 'supervisors', 'messages'];
+const FLEET_SECTIONS: FleetSection[] = ['vehicles', 'vehicle_checks', 'fuel', 'olicence', 'incidents'];
+const SETTINGS_SECTIONS: SettingsSection[] = ['account', 'company'];
+const TACHO_TABS: TachoTab[] = ['overview', 'imports', 'driver_cards', 'vehicle_units', 'simulator'];
+
+const DEFAULT_DASHBOARD_ROUTE: DashboardRouteState = {
+  workspace: 'dashboard',
+  people: 'drivers',
+  fleet: 'vehicles',
+  settings: 'account',
+  tacho: 'overview',
+};
+
+function readDashboardRouteState(): DashboardRouteState {
+  const params = new URLSearchParams(window.location.search);
+  const workspace = asOneOf(params.get('workspace'), WORKSPACES, DEFAULT_DASHBOARD_ROUTE.workspace);
+
+  return {
+    workspace,
+    people: asOneOf(params.get('people'), PEOPLE_SECTIONS, DEFAULT_DASHBOARD_ROUTE.people),
+    fleet: asOneOf(params.get('fleet'), FLEET_SECTIONS, DEFAULT_DASHBOARD_ROUTE.fleet),
+    settings: asOneOf(params.get('settings'), SETTINGS_SECTIONS, DEFAULT_DASHBOARD_ROUTE.settings),
+    tacho: asOneOf(params.get('tacho'), TACHO_TABS, DEFAULT_DASHBOARD_ROUTE.tacho),
+    focusedDriverId: params.get('driver') ?? undefined,
+    focusedVehicleId: params.get('vehicle') ?? undefined,
+    focusedDate: params.get('date') ?? undefined,
+    reportDriverId: params.get('reportDriver') ?? undefined,
+    reportDate: params.get('reportDate') ?? undefined,
+  };
+}
+
+function asOneOf<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+  return value && allowed.includes(value as T) ? value as T : fallback;
+}
+
+function buildDashboardUrl(state: DashboardRouteState) {
+  const params = new URLSearchParams();
+
+  if (state.workspace !== DEFAULT_DASHBOARD_ROUTE.workspace) params.set('workspace', state.workspace);
+  if (state.workspace === 'people' && state.people !== DEFAULT_DASHBOARD_ROUTE.people) params.set('people', state.people);
+  if (state.workspace === 'fleet' && state.fleet !== DEFAULT_DASHBOARD_ROUTE.fleet) params.set('fleet', state.fleet);
+  if (state.workspace === 'settings' && state.settings !== DEFAULT_DASHBOARD_ROUTE.settings) params.set('settings', state.settings);
+  if (state.workspace === 'compliance' && state.tacho !== DEFAULT_DASHBOARD_ROUTE.tacho) params.set('tacho', state.tacho);
+  if ((state.workspace === 'compliance' || state.workspace === 'people') && state.focusedDriverId) params.set('driver', state.focusedDriverId);
+  if ((state.workspace === 'compliance' || state.workspace === 'fleet') && state.focusedVehicleId) params.set('vehicle', state.focusedVehicleId);
+  if (state.workspace === 'compliance' && state.focusedDate) params.set('date', state.focusedDate);
+  if (state.workspace === 'reports' && state.reportDriverId) params.set('reportDriver', state.reportDriverId);
+  if (state.workspace === 'reports' && state.reportDate) params.set('reportDate', state.reportDate);
+
+  const query = params.toString();
+  return query ? `/dashboard?${query}` : '/dashboard';
+}
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
   const { t } = useTranslation();
-  const [activeWorkspace, setActiveWorkspace] = useState<Workspace>('dashboard');
-  const [activePeopleSection, setActivePeopleSection] = useState<PeopleSection>('drivers');
-  const [activeFleetSection, setActiveFleetSection] = useState<FleetSection>('vehicles');
-  const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>('account');
-  const [focusedDriverRecordId, setFocusedDriverRecordId] = useState<string | undefined>();
-  const [focusedVehicleRecordId, setFocusedVehicleRecordId] = useState<string | undefined>();
+  const initialRoute = readDashboardRouteState();
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(initialRoute.workspace);
+  const [activePeopleSection, setActivePeopleSection] = useState<PeopleSection>(initialRoute.people);
+  const [activeFleetSection, setActiveFleetSection] = useState<FleetSection>(initialRoute.fleet);
+  const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>(initialRoute.settings);
+  const [focusedDriverRecordId, setFocusedDriverRecordId] = useState<string | undefined>(initialRoute.focusedDriverId);
+  const [focusedVehicleRecordId, setFocusedVehicleRecordId] = useState<string | undefined>(initialRoute.focusedVehicleId);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [complianceWorkspaceState, setComplianceWorkspaceState] = useState<{
-    tab?: 'overview' | 'imports' | 'driver_cards' | 'vehicle_units';
+    tab?: TachoTab;
     focusedVehicleId?: string;
     focusedDriverId?: string;
     focusedDate?: string;
-  }>({});
+  }>({
+    tab: initialRoute.tacho,
+    focusedVehicleId: initialRoute.focusedVehicleId,
+    focusedDriverId: initialRoute.focusedDriverId,
+    focusedDate: initialRoute.focusedDate,
+  });
   const [reportsWorkspaceState, setReportsWorkspaceState] = useState<{
     focusedDriverId?: string;
     focusedDate?: string;
-  }>({});
+  }>({
+    focusedDriverId: initialRoute.reportDriverId,
+    focusedDate: initialRoute.reportDate,
+  });
+
+  const applyDashboardRoute = useCallback((next: Partial<DashboardRouteState>, mode: 'push' | 'replace' = 'push') => {
+    const has = (key: keyof DashboardRouteState) => Object.prototype.hasOwnProperty.call(next, key);
+    const routeState: DashboardRouteState = {
+      workspace: next.workspace ?? activeWorkspace,
+      people: next.people ?? activePeopleSection,
+      fleet: next.fleet ?? activeFleetSection,
+      settings: next.settings ?? activeSettingsSection,
+      tacho: next.tacho ?? complianceWorkspaceState.tab ?? 'overview',
+      focusedDriverId: has('focusedDriverId') ? next.focusedDriverId : complianceWorkspaceState.focusedDriverId,
+      focusedVehicleId: has('focusedVehicleId') ? next.focusedVehicleId : complianceWorkspaceState.focusedVehicleId,
+      focusedDate: has('focusedDate') ? next.focusedDate : complianceWorkspaceState.focusedDate,
+      reportDriverId: has('reportDriverId') ? next.reportDriverId : reportsWorkspaceState.focusedDriverId,
+      reportDate: has('reportDate') ? next.reportDate : reportsWorkspaceState.focusedDate,
+    };
+
+    setActiveWorkspace(routeState.workspace);
+    setActivePeopleSection(routeState.people);
+    setActiveFleetSection(routeState.fleet);
+    setActiveSettingsSection(routeState.settings);
+    setFocusedDriverRecordId(routeState.focusedDriverId);
+    setFocusedVehicleRecordId(routeState.focusedVehicleId);
+    setComplianceWorkspaceState({
+      tab: routeState.tacho,
+      focusedDriverId: routeState.focusedDriverId,
+      focusedVehicleId: routeState.focusedVehicleId,
+      focusedDate: routeState.focusedDate,
+    });
+    setReportsWorkspaceState({
+      focusedDriverId: routeState.reportDriverId,
+      focusedDate: routeState.reportDate,
+    });
+
+    const nextUrl = buildDashboardUrl(routeState);
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (currentUrl !== nextUrl) {
+      window.history[mode === 'replace' ? 'replaceState' : 'pushState']({}, '', nextUrl);
+    }
+  }, [
+    activeFleetSection,
+    activePeopleSection,
+    activeSettingsSection,
+    activeWorkspace,
+    complianceWorkspaceState.focusedDate,
+    complianceWorkspaceState.focusedDriverId,
+    complianceWorkspaceState.focusedVehicleId,
+    complianceWorkspaceState.tab,
+    reportsWorkspaceState.focusedDate,
+    reportsWorkspaceState.focusedDriverId,
+  ]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = readDashboardRouteState();
+      setActiveWorkspace(route.workspace);
+      setActivePeopleSection(route.people);
+      setActiveFleetSection(route.fleet);
+      setActiveSettingsSection(route.settings);
+      setFocusedDriverRecordId(route.focusedDriverId);
+      setFocusedVehicleRecordId(route.focusedVehicleId);
+      setComplianceWorkspaceState({
+        tab: route.tacho,
+        focusedDriverId: route.focusedDriverId,
+        focusedVehicleId: route.focusedVehicleId,
+        focusedDate: route.focusedDate,
+      });
+      setReportsWorkspaceState({
+        focusedDriverId: route.reportDriverId,
+        focusedDate: route.reportDate,
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Live unread count — messages sent to this manager that haven't been read
   useEffect(() => {
@@ -120,24 +272,24 @@ export function ManagerDashboard() {
   ];
 
   const openComplianceWorkspace = (
-    tab: 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' = 'overview',
+    tab: TachoTab = 'overview',
     options?: { focusedVehicleId?: string; focusedDriverId?: string; focusedDate?: string }
   ) => {
-    setComplianceWorkspaceState({
-      tab,
+    applyDashboardRoute({
+      workspace: 'compliance',
+      tacho: tab,
       focusedVehicleId: options?.focusedVehicleId,
       focusedDriverId: options?.focusedDriverId,
       focusedDate: options?.focusedDate,
     });
-    setActiveWorkspace('compliance');
   };
 
   const openReportsWorkspace = (options?: { focusedDriverId?: string; focusedDate?: string }) => {
-    setReportsWorkspaceState({
-      focusedDriverId: options?.focusedDriverId,
-      focusedDate: options?.focusedDate,
+    applyDashboardRoute({
+      workspace: 'reports',
+      reportDriverId: options?.focusedDriverId,
+      reportDate: options?.focusedDate,
     });
-    setActiveWorkspace('reports');
   };
 
   return (
@@ -178,15 +330,15 @@ export function ManagerDashboard() {
               return (
                 <button
                   key={workspace.id}
-                  onClick={() => {
-                    if (workspace.id === 'compliance') {
-                      setComplianceWorkspaceState({ tab: 'overview', focusedVehicleId: undefined, focusedDriverId: undefined, focusedDate: undefined });
-                    }
-                    if (workspace.id === 'reports') {
-                      setReportsWorkspaceState({ focusedDriverId: undefined, focusedDate: undefined });
-                    }
-                    setActiveWorkspace(workspace.id);
-                  }}
+                  onClick={() => applyDashboardRoute({
+                    workspace: workspace.id,
+                    tacho: workspace.id === 'compliance' ? 'overview' : complianceWorkspaceState.tab ?? 'overview',
+                    focusedDriverId: undefined,
+                    focusedVehicleId: undefined,
+                    focusedDate: undefined,
+                    reportDriverId: undefined,
+                    reportDate: undefined,
+                  })}
                   className={`flex items-center gap-2 px-6 py-4 font-black text-xs uppercase tracking-widest border-b-2 transition whitespace-nowrap ${
                     activeWorkspace === workspace.id
                       ? 'border-brand-accent text-brand-accent bg-brand-dark/50'
@@ -215,9 +367,13 @@ export function ManagerDashboard() {
                   <button
                     key={section.id}
                     onClick={() => {
-                      if (activeWorkspace === 'people') setActivePeopleSection(section.id as PeopleSection);
-                      if (activeWorkspace === 'fleet') setActiveFleetSection(section.id as FleetSection);
-                      if (activeWorkspace === 'settings') setActiveSettingsSection(section.id as SettingsSection);
+                      if (activeWorkspace === 'people') {
+                        applyDashboardRoute({ workspace: 'people', people: section.id as PeopleSection, focusedDriverId: undefined });
+                      }
+                      if (activeWorkspace === 'fleet') {
+                        applyDashboardRoute({ workspace: 'fleet', fleet: section.id as FleetSection, focusedVehicleId: undefined });
+                      }
+                      if (activeWorkspace === 'settings') applyDashboardRoute({ workspace: 'settings', settings: section.id as SettingsSection });
                     }}
                     className={`flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition ${
                       isActive ? 'bg-brand-dark text-white' : 'text-slate-400 hover:bg-brand-dark/40 hover:text-white'
@@ -244,17 +400,11 @@ export function ManagerDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <ComplianceSnapshot onAction={() => openComplianceWorkspace('overview')} />
                   <VehicleComplianceSnapshot
-                    onAction={() => {
-                      setActiveWorkspace('fleet');
-                      setActiveFleetSection('vehicles');
-                    }}
+                    onAction={() => applyDashboardRoute({ workspace: 'fleet', fleet: 'vehicles', focusedVehicleId: undefined })}
                     onReviewVehicle={(vehicleId, focusedDate) => openComplianceWorkspace('vehicle_units', { focusedVehicleId: vehicleId, focusedDate })}
                   />
                   <DriverComplianceSnapshot
-                    onAction={() => {
-                      setActiveWorkspace('people');
-                      setActivePeopleSection('drivers');
-                    }}
+                    onAction={() => applyDashboardRoute({ workspace: 'people', people: 'drivers', focusedDriverId: undefined })}
                     onReviewDriver={(driverId, focusedDate) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId, focusedDate })}
                   />
                 </div>
@@ -288,10 +438,7 @@ export function ManagerDashboard() {
                           Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
                         </p>
                         <button
-                          onClick={() => {
-                            setActiveWorkspace('people');
-                            setActivePeopleSection('training');
-                          }}
+                          onClick={() => applyDashboardRoute({ workspace: 'people', people: 'training', focusedDriverId: undefined })}
                           className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition"
                         >
                           Open Training Center
@@ -308,10 +455,7 @@ export function ManagerDashboard() {
                 focusedDriverId={focusedDriverRecordId}
                 onOpenDriverTacho={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
                 onOpenDriverCompliance={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
-                onOpenDriverTraining={() => {
-                  setActiveWorkspace('people');
-                  setActivePeopleSection('training');
-                }}
+                onOpenDriverTraining={() => applyDashboardRoute({ workspace: 'people', people: 'training', focusedDriverId: undefined })}
               />
             )}
             {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
@@ -323,13 +467,12 @@ export function ManagerDashboard() {
               <VehicleManagement
                 focusedVehicleId={focusedVehicleRecordId}
                 onOpenVehicleTacho={(vehicleId) => openComplianceWorkspace('vehicle_units', { focusedVehicleId: vehicleId })}
-                onOpenVehicleIncidents={() => {
-                  setActiveWorkspace('fleet');
-                  setActiveFleetSection('incidents');
-                }}
+                onOpenVehicleIncidents={() => applyDashboardRoute({ workspace: 'fleet', fleet: 'incidents', focusedVehicleId: undefined })}
               />
             )}
-            {activeWorkspace === 'fleet' && activeFleetSection === 'vehicle_checks' && <VehicleChecksModule onNavigateToFleet={() => setActiveFleetSection('vehicles')} />}
+            {activeWorkspace === 'fleet' && activeFleetSection === 'vehicle_checks' && (
+              <VehicleChecksModule onNavigateToFleet={() => applyDashboardRoute({ workspace: 'fleet', fleet: 'vehicles', focusedVehicleId: undefined })} />
+            )}
             {activeWorkspace === 'fleet' && activeFleetSection === 'fuel' && <FuelMileageTracker />}
             {activeWorkspace === 'fleet' && activeFleetSection === 'olicence' && <OLicenceComplianceCentre />}
             {activeWorkspace === 'fleet' && activeFleetSection === 'incidents' && <IncidentReporting />}
@@ -344,29 +487,18 @@ export function ManagerDashboard() {
                     })
                   }
                   onOpenPersonnelFile={(driverId) => {
-                    setFocusedDriverRecordId(driverId);
-                    setActiveWorkspace('people');
-                    setActivePeopleSection('drivers');
+                    applyDashboardRoute({ workspace: 'people', people: 'drivers', focusedDriverId: driverId });
                   }}
                   onOpenDriverCompliance={(driverId) => openComplianceWorkspace('driver_cards', { focusedDriverId: driverId })}
-                  onOpenDriverTraining={() => {
-                    setActiveWorkspace('people');
-                    setActivePeopleSection('training');
-                  }}
+                  onOpenDriverTraining={(driverId) => applyDashboardRoute({ workspace: 'people', people: 'training', focusedDriverId: driverId })}
                   onOpenFleetRecord={(vehicleId) => {
-                    setFocusedVehicleRecordId(vehicleId);
-                    setActiveWorkspace('fleet');
-                    setActiveFleetSection('vehicles');
+                    applyDashboardRoute({ workspace: 'fleet', fleet: 'vehicles', focusedVehicleId: vehicleId });
                   }}
                   onOpenVehicleMaintenance={(vehicleId) => {
-                    setFocusedVehicleRecordId(vehicleId);
-                    setActiveWorkspace('fleet');
-                    setActiveFleetSection('vehicles');
+                    applyDashboardRoute({ workspace: 'fleet', fleet: 'vehicles', focusedVehicleId: vehicleId });
                   }}
-                  onOpenVehicleIncidents={() => {
-                    setActiveWorkspace('fleet');
-                    setActiveFleetSection('incidents');
-                  }}
+                  onOpenVehicleIncidents={(vehicleId) => applyDashboardRoute({ workspace: 'fleet', fleet: 'incidents', focusedVehicleId: vehicleId })}
+                  onTabChange={(tab) => applyDashboardRoute({ workspace: 'compliance', tacho: tab })}
                   initialTab={complianceWorkspaceState.tab}
                   focusedVehicleId={complianceWorkspaceState.focusedVehicleId}
                   focusedDriverId={complianceWorkspaceState.focusedDriverId}

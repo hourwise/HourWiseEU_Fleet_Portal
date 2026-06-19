@@ -30,6 +30,7 @@ export function TachoComplianceWorkspace({
   focusedVehicleId,
   focusedDriverId,
   focusedDate,
+  onTabChange,
 }: {
   onViewSession?: (driverId: string, date: string) => void;
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
@@ -43,6 +44,7 @@ export function TachoComplianceWorkspace({
   focusedVehicleId?: string;
   focusedDriverId?: string;
   focusedDate?: string;
+  onTabChange?: (tab: Tab) => void;
 }) {
   const isDev = import.meta.env.DEV;
   const tabs: { id: Tab; label: string; icon: ElementType }[] = isDev
@@ -64,7 +66,10 @@ export function TachoComplianceWorkspace({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                onTabChange?.(tab.id);
+              }}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition ${
                 activeTab === tab.id
                   ? 'bg-slate-900 text-white shadow-sm'
