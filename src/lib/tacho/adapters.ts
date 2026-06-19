@@ -112,7 +112,18 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
     importedAt: asString(importedAt, new Date().toISOString()),
     status,
     progressPercent: asOptionalNumber(input.progressPercent) ?? buildProgress(status),
+    driverId: asOptionalString(input.driverId ?? input.driver_id) ?? null,
     driverName: asOptionalString(input.driverName ?? input.driver_name ?? metadata.driver_name),
+    externalCardNumber: asOptionalString(input.externalCardNumber ?? input.external_card_number ?? metadata.external_card_number),
+    driverCardNumberHint: asOptionalString(input.driverCardNumberHint ?? metadata.driver_card_number_hint),
+    cardDriverName: asOptionalString(input.cardDriverName ?? metadata.card_driver_name),
+    cardExpiryDate: asOptionalString(input.cardExpiryDate ?? metadata.helper_capture_card_expiry_date),
+    cardIssuingAuthorityName: asOptionalString(
+      input.cardIssuingAuthorityName ?? metadata.helper_capture_card_issuing_authority_name
+    ),
+    identityDecoded: typeof metadata.helper_capture_identity_decoded === 'boolean'
+      ? metadata.helper_capture_identity_decoded
+      : undefined,
     vehicleReg: asOptionalString(input.vehicleReg ?? input.vehicle_reg ?? metadata.vehicle_reg),
     summary: asOptionalString(input.summary ?? metadata.summary),
     technicalEventCount: asOptionalNumber(input.technicalEventCount ?? metadata.technical_event_count),

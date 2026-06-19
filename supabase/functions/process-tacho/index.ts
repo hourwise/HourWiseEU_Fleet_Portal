@@ -66,6 +66,19 @@ type HourWiseReadOnlyCapture = {
   files?: unknown;
 };
 
+type HourWiseDriverCardIdentity = {
+  cardNumber: string;
+  cardIssuingMemberState: number | null;
+  cardIssuingAuthorityName: string | null;
+  cardIssueDate: string | null;
+  cardValidityBegin: string | null;
+  cardExpiryDate: string | null;
+  cardHolderSurname: string | null;
+  cardHolderFirstNames: string | null;
+  driverName: string | null;
+  cardHolderPreferredLanguage: string | null;
+};
+
 type RawActivityRow = {
   file_id: string;
   driver_id: string | null;
@@ -705,6 +718,20 @@ async function handleHourWiseReadOnlyCapture(
 ) {
   const processedAt = new Date().toISOString();
   await clearImportData(supabaseAdmin, record.id);
+  const cardIdentity = parseHourWiseDriverCardIdentity(capture);
+  const downloadedAt = stringOrNull(capture.exportedAt) ?? processedAt;
+
+  let driverId = record.driver_id ?? null;
+  if (cardIdentity?.cardNumber && !driverId && record.company_id) {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("company_id", record.company_id)
+      .eq("tacho_card_number", cardIdentity.cardNumber)
+      .maybeSingle();
+
+    if (profile?.id) driverId = profile.id;
+  }
 
   const warning =
     "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
@@ -737,6 +764,15 @@ async function handleHourWiseReadOnlyCapture(
     helper_capture_truncated_file_count: summary.truncatedFileCount,
     helper_capture_captured_bytes: summary.capturedBytes,
     helper_capture_files: summary.files,
+    helper_capture_identity_decoded: Boolean(cardIdentity),
+    helper_capture_card_issuing_member_state: cardIdentity?.cardIssuingMemberState ?? null,
+    helper_capture_card_issuing_authority_name: cardIdentity?.cardIssuingAuthorityName ?? null,
+    helper_capture_card_issue_date: cardIdentity?.cardIssueDate ?? null,
+    helper_capture_card_validity_begin: cardIdentity?.cardValidityBegin ?? null,
+    helper_capture_card_expiry_date: cardIdentity?.cardExpiryDate ?? null,
+    helper_capture_card_holder_preferred_language: cardIdentity?.cardHolderPreferredLanguage ?? null,
+    driver_name: cardIdentity?.driverName ?? record.metadata?.driver_name ?? null,
+    driver_card_number_hint: cardIdentity?.cardNumber ?? record.metadata?.driver_card_number_hint ?? null,
     summary: `Read-only helper capture received: ${summary.selectedFileCount} EF files selected, ${summary.capturedBytes} bytes captured. Parser conversion is pending.`,
     normalized_segments: 0,
     findings_count: 0,
@@ -745,11 +781,30 @@ async function handleHourWiseReadOnlyCapture(
     reconciliation_issue_count: 0,
   });
 
+  if (cardIdentity?.cardNumber) {
+    const { error: downloadError } = await supabaseAdmin.from("driver_card_downloads").insert({
+      import_id: record.id,
+      company_id: record.company_id ?? null,
+      driver_id: driverId,
+      driver_name: cardIdentity.driverName,
+      card_number: cardIdentity.cardNumber,
+      card_expiry: cardIdentity.cardExpiryDate,
+      issuing_country: cardIdentity.cardIssuingMemberState === null ? null : String(cardIdentity.cardIssuingMemberState),
+      downloaded_at: downloadedAt,
+      period_start: downloadedAt,
+      period_end: downloadedAt,
+      download_status: "partial_identity",
+    });
+    if (downloadError) throw downloadError;
+  }
+
   await supabaseAdmin
     .from("tachograph_files")
     .update({
       status: "partial",
       processed_at: processedAt,
+      external_card_number: cardIdentity?.cardNumber ?? null,
+      driver_id: driverId,
       source_type: "driver_card",
       metadata,
     })
@@ -778,6 +833,80 @@ function summarizeHourWiseCapture(capture: HourWiseReadOnlyCapture) {
     capturedBytes: summaries.reduce((total, file) => total + file.bytesRead, 0),
     files: summaries,
   };
+}
+
+function parseHourWiseDriverCardIdentity(capture: HourWiseReadOnlyCapture): HourWiseDriverCardIdentity | null {
+  const file = findHourWiseCaptureFile(capture, "0520");
+  if (!file || !Boolean(file.readSuccess)) return null;
+  const bytes = decodeBase64Bytes(stringOrNull(file.dataBase64));
+  if (!bytes || bytes.length < 143) return null;
+
+  const cardNumber = readAscii(bytes, 1, 16);
+  if (!cardNumber) return null;
+
+  const cardHolderSurname = readCodePageString(bytes, 65, 36);
+  const cardHolderFirstNames = readCodePageString(bytes, 101, 36);
+  const driverName = [cardHolderFirstNames, cardHolderSurname].filter(Boolean).join(" ").trim() || null;
+
+  return {
+    cardNumber,
+    cardIssuingMemberState: bytes[0] ?? null,
+    cardIssuingAuthorityName: readCodePageString(bytes, 17, 36),
+    cardIssueDate: readTimeReal(bytes, 53),
+    cardValidityBegin: readTimeReal(bytes, 57),
+    cardExpiryDate: readTimeReal(bytes, 61)?.slice(0, 10) ?? null,
+    cardHolderSurname,
+    cardHolderFirstNames,
+    driverName,
+    cardHolderPreferredLanguage: readAscii(bytes, 141, 2),
+  };
+}
+
+function findHourWiseCaptureFile(capture: HourWiseReadOnlyCapture, fileId: string) {
+  const files = Array.isArray(capture.files) ? capture.files as HourWiseReadOnlyCaptureFile[] : [];
+  return files.find((file) => stringOrNull(file.fileId)?.toUpperCase() === fileId.toUpperCase()) ?? null;
+}
+
+function decodeBase64Bytes(value: string | null) {
+  if (!value) return null;
+  try {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function readAscii(bytes: Uint8Array, offset: number, length: number) {
+  if (offset < 0 || offset + length > bytes.length) return null;
+  return sanitizeDecodedText(String.fromCharCode(...bytes.slice(offset, offset + length)));
+}
+
+function readCodePageString(bytes: Uint8Array, offset: number, length: number) {
+  if (offset < 0 || offset + length > bytes.length || length < 2) return null;
+  const body = bytes.slice(offset + 1, offset + length - 1);
+  return sanitizeDecodedText(String.fromCharCode(...body));
+}
+
+function sanitizeDecodedText(value: string) {
+  const cleaned = value
+    .replace(/\0/g, " ")
+    .replace(/\u00ff/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || null;
+}
+
+function readTimeReal(bytes: Uint8Array, offset: number) {
+  if (offset < 0 || offset + 4 > bytes.length) return null;
+  const seconds = new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0);
+  if (!seconds) return null;
+  const date = new Date(seconds * 1000);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, importId: string) {

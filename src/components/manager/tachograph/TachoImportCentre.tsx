@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -9,6 +9,11 @@ import {
   summarizeTachoImportObservability,
 } from '../../../lib/tacho/importObservability';
 import { retryTachoImportProcessing } from '../../../lib/tacho/helperImport';
+import {
+  fetchTachoPairingDrivers,
+  pairTachoImportToDriver,
+  type TachoPairingDriver,
+} from '../../../lib/tacho/driverPairing';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
 import { TachoReaderHelperPanel } from './TachoReaderHelperPanel';
 import { TachoUploadZone } from './TachoUploadZone';
@@ -153,6 +158,11 @@ export function TachoImportCentre({
           ) : (
             <div className="space-y-4">
               <ImportObservabilityNotice item={selectedImport} />
+              <DriverCardPairingPanel
+                item={selectedImport}
+                companyId={profile?.company_id ?? null}
+                onPaired={reload}
+              />
 
               {selectedIssue?.retryable ? (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -257,7 +267,169 @@ export function TachoImportCentre({
   );
 }
 
+function DriverCardPairingPanel({
+  item,
+  companyId,
+  onPaired,
+}: {
+  item: TachoImportRecord;
+  companyId: string | null;
+  onPaired: () => void;
+}) {
+  const cardNumber = getImportCardNumber(item);
+  const cardDriverName = item.cardDriverName ?? item.driverName;
+  const [drivers, setDrivers] = useState<TachoPairingDriver[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState(item.driverId ?? '');
+  const [loading, setLoading] = useState(false);
+  const [pairing, setPairing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSelectedDriverId(item.driverId ?? '');
+    setMessage(null);
+    setError(null);
+
+    if (item.sourceType !== 'driver_card' || !companyId || !cardNumber) {
+      setDrivers([]);
+      return;
+    }
+
+    setLoading(true);
+    fetchTachoPairingDrivers(companyId)
+      .then((driverRows) => {
+        if (!cancelled) setDrivers(driverRows);
+      })
+      .catch((loadError) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load driver profiles.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cardNumber, companyId, item.driverId, item.id, item.sourceType]);
+
+  if (item.sourceType !== 'driver_card' || !cardNumber) return null;
+
+  const selectedDriver = drivers.find((driver) => driver.id === selectedDriverId);
+  const selectedDriverHasDifferentCard = Boolean(
+    selectedDriver?.tachoCardNumber &&
+    selectedDriver.tachoCardNumber.toUpperCase() !== cardNumber.toUpperCase()
+  );
+
+  const handlePair = async () => {
+    if (!companyId || !selectedDriverId || !cardNumber) return;
+
+    if (selectedDriverHasDifferentCard) {
+      const shouldReplace = window.confirm(
+        `${selectedDriver?.fullName ?? 'This driver'} already has card ${selectedDriver?.tachoCardNumber}. Replace it with ${cardNumber}?`
+      );
+      if (!shouldReplace) return;
+    }
+
+    setPairing(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await pairTachoImportToDriver({
+        companyId,
+        importId: item.id,
+        driverId: selectedDriverId,
+        cardNumber,
+      });
+      setMessage(`Paired ${result.cardNumber} to ${result.driverName}.`);
+      onPaired();
+    } catch (pairError) {
+      setError(pairError instanceof Error ? pairError.message : 'Failed to pair tachograph card.');
+    } finally {
+      setPairing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">
+            {item.driverId ? 'Driver Card Pairing' : 'Unmatched Card Identity'}
+          </p>
+          <p className="mt-1 text-sm text-blue-900">
+            {item.driverId
+              ? 'This card read is linked to a driver profile. You can re-pair it if the card or profile was matched incorrectly.'
+              : 'This card was decoded but did not auto-match a driver profile. Select the correct invited/app driver to store the tacho card number.'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 text-xs text-blue-900 sm:grid-cols-2">
+          <p><span className="font-black uppercase tracking-widest text-blue-600">Card:</span> {cardNumber}</p>
+          <p><span className="font-black uppercase tracking-widest text-blue-600">Card Name:</span> {cardDriverName ?? 'Not decoded'}</p>
+          <p><span className="font-black uppercase tracking-widest text-blue-600">Expiry:</span> {item.cardExpiryDate ?? 'Unknown'}</p>
+          <p><span className="font-black uppercase tracking-widest text-blue-600">Issuer:</span> {item.cardIssuingAuthorityName ?? 'Unknown'}</p>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex-1">
+            <span className="block text-[10px] font-black uppercase tracking-widest text-blue-700 mb-1">
+              Pair To Driver Profile
+            </span>
+            <select
+              value={selectedDriverId}
+              onChange={(event) => setSelectedDriverId(event.target.value)}
+              disabled={loading || pairing}
+              className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">{loading ? 'Loading drivers...' : 'Select driver'}</option>
+              {drivers.map((driver) => (
+                <option key={driver.id} value={driver.id}>
+                  {driver.fullName}{driver.tachoCardNumber ? ` - card ${driver.tachoCardNumber}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={handlePair}
+            disabled={!selectedDriverId || !companyId || loading || pairing}
+            className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pairing ? 'Pairing...' : item.driverId ? 'Update Pairing' : 'Pair Card'}
+          </button>
+        </div>
+
+        {selectedDriverHasDifferentCard ? (
+          <p className="text-xs text-amber-800">
+            Selected driver currently has a different card number. Pairing will replace it.
+          </p>
+        ) : null}
+        {drivers.length === 0 && !loading ? (
+          <p className="text-xs text-blue-800">
+            No driver profiles are available yet. Invite or create the app driver first, then return here to pair this card read.
+          </p>
+        ) : null}
+        {message ? <p className="text-xs font-bold text-emerald-700">{message}</p> : null}
+        {error ? <p className="text-xs font-bold text-rose-700">{error}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function getImportCardNumber(item: TachoImportRecord) {
+  return item.externalCardNumber ?? item.driverCardNumberHint ?? undefined;
+}
+
 function ImportRow({ item }: { item: TachoImportRecord }) {
+  const identityLabel =
+    item.sourceType === 'driver_card'
+      ? item.driverName ?? item.cardDriverName ?? item.externalCardNumber ?? item.driverCardNumberHint ?? 'Unmatched card'
+      : item.vehicleReg ?? 'Unknown vehicle';
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div className="flex items-start gap-4">
@@ -297,7 +469,7 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
             )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {item.sourceType === 'driver_card' ? item.driverName : item.vehicleReg} • {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
+            {identityLabel} - {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
           </p>
           <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
           {(item.processingKickoffError || item.triggerDispatchError) && (

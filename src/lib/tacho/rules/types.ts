@@ -34,7 +34,14 @@ export interface TachoImportRecord {
   importedAt: string;
   status: TachoImportStatus;
   progressPercent: number;
+  driverId?: string | null;
   driverName?: string;
+  externalCardNumber?: string;
+  driverCardNumberHint?: string;
+  cardDriverName?: string;
+  cardExpiryDate?: string;
+  cardIssuingAuthorityName?: string;
+  identityDecoded?: boolean;
   vehicleReg?: string;
   summary?: string;
   technicalEventCount?: number;
