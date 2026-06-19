@@ -97,6 +97,206 @@ Still external or not fully executable from this repo alone:
 
 ---
 
+## Latest Resume Snapshot (2026-06-19)
+
+This section captures the current live-card progress so work can resume after a machine restart without relying on chat history.
+
+### Live Reader / Helper State
+
+- Real hardware test has been performed with:
+  - Alcorlink USB Smart Card Reader
+  - real inserted driver card
+  - local helper endpoint `http://127.0.0.1:47231`
+- Expected helper version after the latest restart is:
+  - `dotnet-shell-0.5.9`
+- Helper `0.5.9` includes the state-machine fix for stale reader/card state:
+  - card/reader removal is no longer ignored after `processing` or `complete`
+  - helper can clear active workflow fields when hardware state changes
+  - browser UI can recover from completed/partial reads and start another read
+- Built-in read-only EF capture works on the real card:
+  - helper reads the confirmed tachograph AID path
+  - helper captures the safe EF set into the HourWise JSON container
+  - browser downloads the helper export
+  - browser uploads to Supabase Storage
+  - browser inserts `tachograph_files`
+  - browser invokes `process-tacho`
+  - import completes as controlled `partial`
+- Current capture remains diagnostic:
+  - `export_format = hourwise_read_only_capture_v1`
+  - `parser_status = partial_helper_capture`
+  - no certified `.C1B/.DDD` binary writer yet
+  - no normalized activity segments yet
+  - legal totals in the reader console remain placeholders until EF activity parsing is implemented
+
+### Real Card Decode Progress
+
+- `process-tacho` now recognizes `hourwise.tachograph.driver-card.read-only-capture.v1`.
+- The read-only parser now decodes EF `0520` card identity.
+- Confirmed decoded fields from the real test card include:
+  - driver holder name
+  - tachograph card number hint
+  - issuing authority
+  - issue date
+  - validity begin date
+  - expiry date
+  - preferred language
+- The exact card number/name are intentionally not repeated in this roadmap. They are visible in the relevant `tachograph_files.metadata` rows in the live DB if needed.
+- Identity decode confirmed the key operational case:
+  - if no profile has `profiles.tacho_card_number` matching the decoded card, the import remains unpaired with `driver_id = null`
+  - the import review now treats this as an explicit supervisor workflow, not a parser failure
+
+### Supabase / Backend Changes Added
+
+Recent migrations added during the live-card work:
+
+- `20260618210500_add_tachograph_storage_bucket.sql`
+  - creates the private `tachograph-files` bucket
+  - adds company-scoped storage policies
+- `20260619113000_add_tacho_card_pairing.sql`
+  - adds `profiles.tacho_card_number`
+  - adds a per-company unique index for tacho card numbers
+  - adds `pair_tacho_card_import_to_driver(...)`
+  - lets a manager safely pair a decoded card import to an existing driver profile
+  - backfills the import/download/normalized rows for that import
+- `20260619131500_add_tacho_card_invite_prefill.sql`
+  - adds tachograph card identity fields to `driver_invites`
+  - updates `accept_driver_invite(...)`
+  - when a driver accepts an invite, the accepted profile receives the stored `tacho_card_number`
+  - prior unmatched imports/downloads for that card number are linked to the new profile where possible
+
+Backend functions changed:
+
+- `supabase/functions/process-tacho/index.ts`
+  - detects the HourWise read-only capture container before ReadESM parsing
+  - stores sanitized helper EF metadata as a controlled partial import
+  - decodes EF `0520` identity from the capture
+  - attempts exact card-number match against `profiles.tacho_card_number`
+  - writes a `driver_card_downloads` identity-only row with `download_status = partial_identity`
+- `supabase/functions/create-driver-invite/index.ts`
+  - accepts optional `tachographCardSnapshot`
+  - stores decoded card number/name/expiry/issuer/source import id on the invite
+- `supabase/functions/lookup-driver-invite/index.ts`
+  - added after mobile invite lookup reported `permission denied for table driver_invites`
+  - mobile invite lookup must call this Edge Function or the `lookup_pending_driver_invite(...)` RPC, not read `driver_invites` directly
+- `supabase/functions/accept-driver-invite/index.ts`
+  - already calls the safe `accept_driver_invite(...)` RPC
+  - deploy after invite/card migrations so accepted invites can write `profiles.tacho_card_number`
+
+Deployment reminder:
+
+```powershell
+supabase db push
+supabase functions deploy process-tacho
+supabase functions deploy create-driver-invite
+supabase functions deploy lookup-driver-invite
+supabase functions deploy accept-driver-invite
+git push
+```
+
+If `supabase db push` fails near the start of `20260614115811_security_hardening_shared_database.sql`, check for a UTF-8 BOM. That BOM was previously removed locally after causing a syntax error at statement 0.
+
+### Frontend Changes Added
+
+Reader/import UI:
+
+- `src/components/manager/tachograph/TachoReaderHelperPanel.tsx`
+  - allows read-only helper captures to upload as controlled diagnostic partial imports
+  - shows `Diagnostic partial` instead of blocking on `exportParserReady=false`
+  - preserves cancel/restart ability from helper state
+  - clears stale tracked import state when helper read session resets
+- `src/components/manager/tachograph/TachoImportCentre.tsx`
+  - shows decoded card identity in Import Review
+  - shows `Unmatched Card Identity` when card is decoded but no driver profile is matched
+  - supports pairing a decoded card to an existing driver profile
+  - supports `Invite Driver From Card` when no driver profile exists yet
+  - passes decoded card snapshot into the invite modal
+- `src/components/manager/InviteDriverModal.tsx`
+  - accepts optional initial full name
+  - accepts optional tachograph card snapshot
+  - shows a tachograph-card prefill notice
+  - sends the card snapshot to `create-driver-invite`
+- `src/components/manager/DriverManagement.tsx`
+  - pending invites now expose `Invite Details`
+  - managers can edit pending invite name/email/tachograph card fields before the driver accepts
+  - this addresses the flow gap where pending invited drivers could not be amended because no `profiles` row exists yet
+- `src/lib/tacho/driverPairing.ts`
+  - fetches available company driver profiles for pairing
+  - calls `pair_tacho_card_import_to_driver(...)`
+- `src/lib/tacho/adapters.ts` and `src/lib/tacho/rules/types.ts`
+  - expose decoded card identity fields on `TachoImportRecord`
+
+Planning doc added:
+
+- `docs/tacho-driver-card-view-build-plan.md`
+  - full-page driver-card analysis UI plan
+  - reader overlay behaviour
+  - similar layout direction for VU reader/analysis flow
+
+### Validation Already Run Locally
+
+Recent validation commands that passed:
+
+```powershell
+npx eslint src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\InviteDriverModal.tsx src\lib\tacho\driverPairing.ts
+npm run test:rules
+npm run build
+```
+
+Known build warning:
+
+- Vite still warns that `index` and `react-pdf.browser` chunks exceed 500 kB.
+- This warning is pre-existing and not specific to the tachograph card-reader work.
+
+### Current Known Limitations
+
+- The helper is still producing a read-only HourWise JSON capture, not a certified `.C1B/.DDD` tachograph download file.
+- EF identity parsing is working, but EF activity parsing is not yet normalized into driver activities.
+- Reader console legal totals are placeholders until EF `0504` driver activity is decoded and fed into the existing rules engine.
+- VU workflow is still scaffolded/disabled in helper `0.5.9`.
+- Existing imports before identity parsing may remain `Unmatched card` if their metadata lacks decoded identity fields.
+- If a company has no driver profiles, the card can now create a prefilled invite, but the real `profiles` row is still only created/linked when the driver accepts the invite through the normal app flow.
+
+### Immediate Next Steps After Restart
+
+1. Confirm clean helper state:
+   - restart helper if needed
+   - confirm `/status` reports `dotnet-shell-0.5.9`
+   - confirm reader/card state updates correctly when card is removed/reinserted
+2. Deploy pending DB/function changes:
+   - `supabase db push`
+   - `supabase functions deploy process-tacho`
+   - `supabase functions deploy create-driver-invite`
+   - `supabase functions deploy lookup-driver-invite`
+   - `supabase functions deploy accept-driver-invite`
+3. Push frontend to Vercel:
+   - `git push`
+4. Test unmatched-card invite flow:
+   - read the card
+   - open Import Review
+   - click `Invite Driver From Card`
+   - send invite with decoded name/card snapshot
+   - in Driver Management, confirm pending invite has `Invite Details`
+   - edit pending invite/card fields there if needed before acceptance
+   - accept invite as the driver
+   - verify accepted profile has `profiles.tacho_card_number`
+   - verify prior imports/downloads for the same card number are linked to the profile
+5. Test existing-profile pairing flow:
+   - create or use a driver profile without `tacho_card_number`
+   - read the card
+   - select that driver in `Pair To Driver Profile`
+   - click `Pair Card`
+   - verify `tachograph_files.driver_id`, `driver_card_downloads.driver_id`, and `profiles.tacho_card_number`
+6. Start next parser milestone:
+   - decode EF `0504` driver activity records from the read-only capture
+   - normalize activities into `tachograph_activity_segments`
+   - feed those segments into the existing rules engine
+   - replace reader-console placeholder totals with parsed activity/rule output
+7. Start UI-layout milestone from:
+   - `docs/tacho-driver-card-view-build-plan.md`
+   - target: analysis graph fills the page, reader state appears as an overlay/status layer
+
+---
+
 ## End Goal
 
 The intended end state is:
@@ -129,7 +329,7 @@ The intended end state is:
 | 5 | Finish analysis workspaces | Largely complete in frontend | Explicit driver/vehicle targeting, selected-day context, follow-up actions, and stronger empty states are now in place. |
 | 6 | Embed tacho across portal | Largely complete in frontend | Driver and vehicle record integration, training links, infringement review linking, and focused tacho evidence exports are now in place. |
 | 7 | Navigation cleanup | Functionally complete in frontend | Grouped top-level workspaces and consolidated compliance destinations are now implemented while keeping legacy reachability. |
-| 8 | Reader helper | Frontend scaffold started | Import-centre helper polling, auto-open wiring, and upload fallback are now in place. The Windows helper itself still needs to be built and validated. |
+| 8 | Reader helper | Live read-only card flow working | Windows helper `0.5.9` reads real driver-card EFs through PC/SC, browser uploads the helper capture, Supabase records controlled partial imports, EF `0520` identity decoding works, and manager pairing/invite-from-card flows are now in place. Certified `.C1B/.DDD` writer and activity parsing remain next. |
 | 9 | Hardening and release | Not started | Real file regression set, monitoring, RLS review, and rollout prep still to do. |
 
 ---
@@ -658,15 +858,19 @@ Make the full tacho system safe for operational rollout.
 
 ## Recommended Next Order
 
-1. Finish backend deploy for final Phase 4 changes.
-2. Start Phase 5 with:
-   - explicit driver picker
-   - explicit vehicle picker
-   - stronger selected-day context
-3. Move into Phase 6 once analysis screens are stable enough to embed elsewhere.
-4. Then Phase 7 navigation cleanup.
-5. Then Phase 8 reader helper.
-6. Then Phase 9 hardening and release.
+1. After restart, deploy the pending tachograph DB/function/frontend changes listed in the 2026-06-19 snapshot.
+2. Retest the real-card reader flow with helper `dotnet-shell-0.5.9`.
+3. Test both decoded-card identity workflows:
+   - pair to existing driver profile
+   - invite driver from card, then accept invite and verify automatic card pairing
+4. Start the next parser milestone:
+   - decode EF `0504` driver activities from the read-only capture
+   - normalize to `tachograph_activity_segments`
+   - run existing rules engine against those segments
+   - replace placeholder reader-console totals
+5. Start the full-page analysis UI milestone from `docs/tacho-driver-card-view-build-plan.md`.
+6. Continue VU workflow once driver-card activity decode is stable.
+7. Then Phase 9 hardening, real binary regression files, monitoring, RLS review, and release prep.
 
 ---
 
@@ -674,17 +878,25 @@ Make the full tacho system safe for operational rollout.
 
 If work resumes after interruption, start with:
 
-1. Check whether these are deployed:
-   - `20260511093000_add_tacho_reconciliation_contract.sql`
-   - `20260512100000_add_tacho_signal_review_focus.sql`
+1. Check whether these latest reader/card migrations are deployed:
+   - `20260618210500_add_tachograph_storage_bucket.sql`
+   - `20260619113000_add_tacho_card_pairing.sql`
+   - `20260619131500_add_tacho_card_invite_prefill.sql`
+2. Check whether these functions are deployed:
    - latest `process-tacho`
-2. Confirm whether real test files are now available.
-3. If no real files yet:
-   - start Phase 5 driver/vehicle picker work
-4. If real files are available:
-   - test import pipeline first
-   - validate findings/discrepancies/reconciliation
-   - then continue Phase 5
+   - latest `create-driver-invite`
+   - latest `lookup-driver-invite`
+   - latest `accept-driver-invite`
+3. Confirm helper version:
+   - expected `dotnet-shell-0.5.9`
+4. Run a real card read and confirm:
+   - import reaches `partial`
+   - decoded identity appears in Import Review
+   - unmatched card panel appears if no profile card match exists
+5. Test one of:
+   - pair card to existing profile
+   - invite driver from card
+6. Continue with EF `0504` activity decode and the full-page analysis UI plan.
 
 ---
 
@@ -722,3 +934,14 @@ Current main implementation areas:
   - `tools/tacho-reader-helper/windows-helper/install.ps1`
   - `tools/tacho-reader-helper/windows-helper/uninstall.ps1`
   - `tools/tacho-reader-helper/windows-helper/README.md`
+- current reader/UI planning:
+  - `docs/tacho-driver-card-view-build-plan.md`
+- card identity pairing/invite flow:
+  - `src/lib/tacho/driverPairing.ts`
+  - `src/components/manager/InviteDriverModal.tsx`
+  - `src/components/manager/DriverManagement.tsx`
+  - `supabase/functions/create-driver-invite/index.ts`
+  - `supabase/functions/lookup-driver-invite/index.ts`
+  - `supabase/functions/accept-driver-invite/index.ts`
+  - `supabase/migrations/20260619113000_add_tacho_card_pairing.sql`
+  - `supabase/migrations/20260619131500_add_tacho_card_invite_prefill.sql`

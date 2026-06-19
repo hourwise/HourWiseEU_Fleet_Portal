@@ -12,6 +12,46 @@ create index if not exists idx_driver_invites_company_tacho_card
   on public.driver_invites(company_id, upper(tacho_card_number))
   where tacho_card_number is not null and btrim(tacho_card_number) <> '';
 
+create or replace function public.lookup_pending_driver_invite(p_invite_code text)
+returns table (
+  invite_code text,
+  email text,
+  full_name text,
+  company_name text,
+  expires_at timestamptz,
+  tacho_card_number text,
+  tacho_card_holder_name text,
+  tacho_card_expiry date,
+  tacho_card_issuing_authority text
+)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  return query
+  select
+    di.invite_code,
+    di.email,
+    di.full_name,
+    c.name as company_name,
+    di.expires_at,
+    di.tacho_card_number,
+    di.tacho_card_holder_name,
+    di.tacho_card_expiry,
+    di.tacho_card_issuing_authority
+  from public.driver_invites di
+  join public.companies c on c.id = di.company_id
+  where di.invite_code = upper(trim(p_invite_code))
+    and di.status = 'pending'
+    and di.expires_at > now()
+  limit 1;
+end;
+$$;
+
+grant execute on function public.lookup_pending_driver_invite(text) to anon, authenticated;
+
 create or replace function public.accept_driver_invite(p_invite_code text)
 returns jsonb
 language plpgsql

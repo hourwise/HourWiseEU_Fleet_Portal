@@ -11,6 +11,12 @@ import { useTranslation } from 'react-i18next';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Invite = Database['public']['Tables']['driver_invites']['Row'];
 type Document = Database['public']['Tables']['driver_documents']['Row'];
+type InviteWithTacho = Invite & {
+  tacho_card_number?: string | null;
+  tacho_card_holder_name?: string | null;
+  tacho_card_expiry?: string | null;
+  tacho_card_issuing_authority?: string | null;
+};
 
 const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t: any) => {
   const driverDocs = allDocuments.filter(doc => doc.user_id === driverId);
@@ -54,6 +60,142 @@ const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t
   return { level: 'green', text: t('driverManagement.status.compliant'), Icon: CheckCircle, color: 'text-green-600' };
 };
 
+interface PendingInviteUpdate {
+  full_name: string;
+  email: string;
+  tacho_card_number: string | null;
+  tacho_card_holder_name: string | null;
+  tacho_card_expiry: string | null;
+  tacho_card_issuing_authority: string | null;
+}
+
+interface PendingInviteUpdateQuery {
+  update(values: PendingInviteUpdate): {
+    eq(column: string, value: unknown): {
+      eq(column: string, value: unknown): Promise<{ error: { message: string } | null }>;
+    };
+  };
+}
+
+function PendingInviteDetailsModal({
+  invite,
+  onClose,
+  onSaved,
+}: {
+  invite: InviteWithTacho;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [fullName, setFullName] = useState(invite.full_name ?? '');
+  const [email, setEmail] = useState(invite.email ?? '');
+  const [tachoCardNumber, setTachoCardNumber] = useState(invite.tacho_card_number ?? '');
+  const [tachoCardHolderName, setTachoCardHolderName] = useState(invite.tacho_card_holder_name ?? invite.full_name ?? '');
+  const [tachoCardExpiry, setTachoCardExpiry] = useState(invite.tacho_card_expiry ?? '');
+  const [tachoCardIssuer, setTachoCardIssuer] = useState(invite.tacho_card_issuing_authority ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!fullName.trim() || !email.trim()) {
+      setError('Name and email are required.');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const updateData: PendingInviteUpdate = {
+      full_name: fullName.trim(),
+      email: email.trim(),
+      tacho_card_number: tachoCardNumber.trim() ? tachoCardNumber.trim().toUpperCase() : null,
+      tacho_card_holder_name: tachoCardHolderName.trim() || null,
+      tacho_card_expiry: tachoCardExpiry || null,
+      tacho_card_issuing_authority: tachoCardIssuer.trim() || null,
+    };
+
+    try {
+      const inviteTable = supabase.from('driver_invites') as unknown as PendingInviteUpdateQuery;
+      const { error: saveError } = await inviteTable
+        .update(updateData)
+        .eq('id', invite.id)
+        .eq('company_id', invite.company_id);
+
+      if (saveError) throw new Error(saveError.message);
+      onSaved();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save pending invite.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="border-b p-6 flex justify-between items-center">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending Invite</p>
+            <h2 className="text-2xl font-bold text-gray-900">Driver Invite Details</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">x</button>
+        </div>
+
+        <div className="p-6 space-y-5 overflow-y-auto">
+          {error ? <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700">{error}</div> : null}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="block">
+              <span className="block text-sm font-medium text-gray-700 mb-2">Full name</span>
+              <input value={fullName} onChange={(event) => setFullName(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900" />
+            </label>
+            <label className="block">
+              <span className="block text-sm font-medium text-gray-700 mb-2">Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900" />
+            </label>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Tachograph Pairing</p>
+            <p className="mt-1 text-sm text-blue-900">
+              These card details will be written to the driver profile when this invite is accepted.
+            </p>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="block">
+                <span className="block text-sm font-medium text-blue-900 mb-2">Card number</span>
+                <input value={tachoCardNumber} onChange={(event) => setTachoCardNumber(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg bg-white text-gray-900 font-mono uppercase" />
+              </label>
+              <label className="block">
+                <span className="block text-sm font-medium text-blue-900 mb-2">Card holder name</span>
+                <input value={tachoCardHolderName} onChange={(event) => setTachoCardHolderName(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg bg-white text-gray-900" />
+              </label>
+              <label className="block">
+                <span className="block text-sm font-medium text-blue-900 mb-2">Card expiry</span>
+                <input type="date" value={tachoCardExpiry} onChange={(event) => setTachoCardExpiry(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg bg-white text-gray-900" />
+              </label>
+              <label className="block">
+                <span className="block text-sm font-medium text-blue-900 mb-2">Issuing authority</span>
+                <input value={tachoCardIssuer} onChange={(event) => setTachoCardIssuer(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg bg-white text-gray-900" />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+            <p><span className="font-black uppercase tracking-widest text-slate-500">Invite code:</span> {invite.invite_code}</p>
+            <p className="mt-1"><span className="font-black uppercase tracking-widest text-slate-500">Status:</span> {invite.status}</p>
+          </div>
+        </div>
+
+        <div className="p-6 border-t bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
+          <button type="button" onClick={onClose} className="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="px-5 py-3 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 transition font-bold">
+            {saving ? 'Saving...' : 'Save Invite'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DriverManagement({
   onOpenDriverTacho,
   onOpenDriverCompliance,
@@ -77,6 +219,7 @@ export function DriverManagement({
   const [removingDriverId, setRemovingDriverId] = useState<string | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
   const [onboardingDriver, setOnboardingDriver] = useState<Profile | null>(null);
+  const [selectedInvite, setSelectedInvite] = useState<InviteWithTacho | null>(null);
 
   const isOnboardingIncomplete = (driver: Profile) =>
     !driver.phone_number || !driver.driving_licence_number || !driver.date_of_birth;
@@ -283,6 +426,11 @@ export function DriverManagement({
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverManagement.labels.name')}</label>
                       <p className="font-bold text-slate-900">{item.full_name || t('driverManagement.incompleteSetup')}</p>
+                      {isInvite && item.tacho_card_number && (
+                        <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                          Tacho: {item.tacho_card_number}
+                        </span>
+                      )}
                       {item.is_contractor && (
                         <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                           Agency: {item.agency_name || 'Unspecified'}
@@ -345,6 +493,24 @@ export function DriverManagement({
                       </button>
                     </div>
                   )}
+                  {isInvite && !isGhost && (
+                    <div className="ml-4 flex gap-2 items-center">
+                      <button
+                        onClick={() => setSelectedInvite(item as InviteWithTacho)}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition tracking-widest"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Invite Details</span>
+                      </button>
+                      <button
+                        onClick={() => handleClearInvite(item.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-100"
+                        title="Delete Pending Invite"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  )}
                   {isGhost && (
                     <div className="ml-4 flex gap-2">
                       <div className="group relative">
@@ -370,6 +536,13 @@ export function DriverManagement({
       </div>
 
       {showInviteModal && (<InviteDriverModal onClose={() => setShowInviteModal(false)} onInviteSent={loadData} />)}
+      {selectedInvite && (
+        <PendingInviteDetailsModal
+          invite={selectedInvite}
+          onClose={() => setSelectedInvite(null)}
+          onSaved={() => { setSelectedInvite(null); loadData(); }}
+        />
+      )}
       {selectedDriver && (
         <DriverDetailsModal
           driver={selectedDriver}
