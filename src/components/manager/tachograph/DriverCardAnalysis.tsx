@@ -9,12 +9,14 @@ import { supabase } from '../../../lib/supabase';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
+import { TachoReaderStatusOverlay } from './TachoReaderStatusOverlay';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
   focusedDate?: string;
+  onOpenImportCentre?: () => void;
   onOpenPersonnelFile?: (driverId: string) => void;
   onOpenComplianceActions?: (driverId: string) => void;
   onOpenTraining?: (driverId: string) => void;
@@ -30,7 +32,7 @@ interface TrainingRecommendation {
 const EMPTY_FINDINGS: TachoFinding[] = [];
 const EMPTY_RECONCILIATION: TachoReconciliationItem[] = [];
 
-export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile, onOpenComplianceActions, onOpenTraining }: DriverCardAnalysisProps) {
+export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, onOpenPersonnelFile, onOpenComplianceActions, onOpenTraining }: DriverCardAnalysisProps) {
   const { profile } = useAuth();
   const [range, setRange] = useState<TachoAnalysisRange>('7d');
   const [selectedDay, setSelectedDay] = useState<TachoDaySummary | null>(null);
@@ -112,16 +114,18 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenPersonnelFile,
   };
 
   const picker = <TachoWorkspacePicker title="Driver Workspace Target" searchLabel="Search drivers" selectLabel="Open driver" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedDriverId} onSelectChange={setSelectedDriverId} options={filteredDrivers} fallbackLabel="Latest imported driver card" />;
+  const readerOverlay = <TachoReaderStatusOverlay sourceType="driver_card" onOpenImportCentre={onOpenImportCentre} />;
 
-  if (loading) return <div className="space-y-6">{picker}<StateCard title="Loading driver card analysis..." /></div>;
-  if (error) return <div className="space-y-6">{picker}<StateCard title={error} tone="error" /></div>;
-  if (!data) return <div className="space-y-6">{picker}<StateCard title={emptyState?.title ?? 'No driver-card analysis available'} text={emptyState?.guidance ?? 'Pick a driver with imported card data or upload a new card file.'} tone="warning" /></div>;
+  if (loading) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title="Loading driver card analysis..." /></div>;
+  if (error) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={error} tone="error" /></div>;
+  if (!data) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={emptyState?.title ?? 'No driver-card analysis available'} text={emptyState?.guidance ?? 'Pick a driver with imported card data or upload a new card file.'} tone="warning" /></div>;
 
   const statusTone = data.identity.downloadStatus === 'overdue' ? 'bg-rose-100 text-rose-700' : data.identity.downloadStatus === 'due_soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
 
   return (
     <div className="space-y-6">
       {picker}
+      {readerOverlay}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">

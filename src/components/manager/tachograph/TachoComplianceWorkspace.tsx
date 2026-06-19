@@ -58,6 +58,11 @@ export function TachoComplianceWorkspace({
     }
   }, [initialTab, isDev]);
 
+  const openImportCentre = () => {
+    setActiveTab('imports');
+    onTabChange?.('imports');
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 flex flex-wrap gap-2">
@@ -103,6 +108,7 @@ export function TachoComplianceWorkspace({
         <DriverCardAnalysis
           driverId={focusedDriverId}
           focusedDate={focusedDate}
+          onOpenImportCentre={openImportCentre}
           onOpenPersonnelFile={onOpenPersonnelFile}
           onOpenComplianceActions={onOpenDriverCompliance}
           onOpenTraining={onOpenDriverTraining}
@@ -112,6 +118,7 @@ export function TachoComplianceWorkspace({
         <VehicleUnitAnalysis
           vehicleId={focusedVehicleId}
           focusedDate={focusedDate}
+          onOpenImportCentre={openImportCentre}
           onOpenFleetRecord={onOpenFleetRecord}
           onOpenMaintenance={onOpenVehicleMaintenance}
           onOpenIncidents={onOpenVehicleIncidents}

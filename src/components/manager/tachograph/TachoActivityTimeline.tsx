@@ -179,7 +179,7 @@ function MultiDayTimeline({
                 <div>
                   <p className="text-sm font-black text-slate-900">{format(day.date, 'EEE d MMM')}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {dayStartTime} - {dayEndTime} • {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
+                    {dayStartTime} - {dayEndTime} | {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
                   </p>
                 </div>
 
@@ -209,7 +209,7 @@ function MultiDayTimeline({
                         style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
                       >
                         <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap z-10">
-                          {activity.activityType.replace('_', ' ')} • {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
+                          {activity.activityType.replace('_', ' ')} | {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
                         </div>
                       </div>
                     );

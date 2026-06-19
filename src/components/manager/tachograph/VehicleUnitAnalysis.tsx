@@ -9,6 +9,7 @@ import { useVehicles } from '../../../hooks/useVehicles';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
+import { TachoReaderStatusOverlay } from './TachoReaderStatusOverlay';
 import { VehicleHistoryLedger } from './VehicleHistoryLedger';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
@@ -16,6 +17,7 @@ import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, VehicleMotionDi
 interface VehicleUnitAnalysisProps {
   vehicleId?: string;
   focusedDate?: string;
+  onOpenImportCentre?: () => void;
   onOpenFleetRecord?: (vehicleId: string) => void;
   onOpenMaintenance?: (vehicleId: string) => void;
   onOpenIncidents?: (vehicleId: string) => void;
@@ -24,7 +26,7 @@ interface VehicleUnitAnalysisProps {
 const EMPTY_VU_EVENTS: TachoFinding[] = [];
 const EMPTY_DISCREPANCIES: VehicleMotionDiscrepancy[] = [];
 
-export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord, onOpenMaintenance, onOpenIncidents }: VehicleUnitAnalysisProps) {
+export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre, onOpenFleetRecord, onOpenMaintenance, onOpenIncidents }: VehicleUnitAnalysisProps) {
   const { profile } = useAuth();
   const [range, setRange] = useState<TachoAnalysisRange>('7d');
   const [selectedDay, setSelectedDay] = useState<TachoDaySummary | null>(null);
@@ -88,16 +90,18 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenFleetRecord,
   })), [data, discrepancies, technicalEvents]);
 
   const picker = <TachoWorkspacePicker title="Vehicle Workspace Target" searchLabel="Search vehicles" selectLabel="Open vehicle" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedVehicleId} onSelectChange={setSelectedVehicleId} options={filteredVehicles} fallbackLabel="Latest imported vehicle unit" />;
+  const readerOverlay = <TachoReaderStatusOverlay sourceType="vehicle_unit" onOpenImportCentre={onOpenImportCentre} />;
 
-  if (loading) return <div className="space-y-6">{picker}<StateCard title="Loading vehicle unit analysis..." /></div>;
-  if (error) return <div className="space-y-6">{picker}<StateCard title={error} tone="error" /></div>;
-  if (!data) return <div className="space-y-6">{picker}<StateCard title={emptyState?.title ?? 'No vehicle-unit analysis available'} text={emptyState?.guidance ?? 'Pick a vehicle with imported VU data or upload a VU file.'} tone="warning" /></div>;
+  if (loading) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title="Loading vehicle unit analysis..." /></div>;
+  if (error) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={error} tone="error" /></div>;
+  if (!data) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={emptyState?.title ?? 'No vehicle-unit analysis available'} text={emptyState?.guidance ?? 'Pick a vehicle with imported VU data or upload a VU file.'} tone="warning" /></div>;
 
   const statusTone = data.identity.downloadStatus === 'overdue' ? 'bg-rose-100 text-rose-700' : data.identity.downloadStatus === 'due_soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
 
   return (
     <div className="space-y-6">
       {picker}
+      {readerOverlay}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">

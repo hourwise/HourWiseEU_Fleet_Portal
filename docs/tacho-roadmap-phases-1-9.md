@@ -76,6 +76,7 @@ Based on the current frontend and this implementation pass:
   - successful helper completion can auto-open focused driver analysis
   - the manual upload fallback now sits beside the helper workflow on the same page
   - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
+  - a reusable reader status overlay now appears inside both Driver Card Analysis and Vehicle Unit Analysis so the graph remains the stable workspace while reader state is monitored separately
 - parser-simulation infrastructure now exists in-repo so rule and reconciliation scenarios can be exercised without real tachograph binaries
 - the simulator library now covers split-break, weekly, fortnight, daily-rest, weekly-rest, WTD-break, and app-vs-tacho mismatch scenarios
 - a dev-only simulator preview tab now renders those scenarios through the actual tachograph timeline and day-detail components
@@ -239,6 +240,17 @@ Reader/import UI:
   - preserves cancel/restart ability from helper state
   - clears stale tracked import state when helper read session resets
   - now prevents stale completed helper state from auto-jumping the Import Centre straight into driver-card analysis on tab open
+- `src/components/manager/tachograph/TachoReaderStatusOverlay.tsx`
+  - reusable lightweight reader overlay for analysis workspaces
+  - polls the local helper `/status` endpoint without owning the full upload/register workflow
+  - shows reader/helper/card state, import/export hints, staged workflow progress, and a `Read / Import` action
+  - currently routes operators back to Import Centre for the full read/upload controls
+- `src/components/manager/tachograph/DriverCardAnalysis.tsx`
+  - now shows the reader status overlay above the analysis graph, including loading/error/empty states
+- `src/components/manager/tachograph/VehicleUnitAnalysis.tsx`
+  - now reuses the same overlay pattern for the VU workspace
+- `src/components/manager/tachograph/TachoComplianceWorkspace.tsx`
+  - analysis overlays can switch the compliance workspace to Import Centre
 - `src/components/manager/tachograph/TachoImportCentre.tsx`
   - shows decoded card identity in Import Review
   - shows `Unmatched Card Identity` when card is decoded but no driver profile is matched
@@ -282,6 +294,7 @@ Recent validation commands that passed:
 npx eslint src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\InviteDriverModal.tsx src\lib\tacho\driverPairing.ts
 npx eslint src\hooks\useDriverTachoSummary.ts
 npx eslint src\components\manager\tachograph\TachoReaderHelperPanel.tsx
+npx eslint src\components\manager\tachograph\TachoReaderStatusOverlay.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\VehicleUnitAnalysis.tsx src\components\manager\tachograph\TachoComplianceWorkspace.tsx src\components\manager\tachograph\TachoActivityTimeline.tsx
 npm run test:rules
 npm run build
 ```
@@ -393,6 +406,12 @@ Latest confirmed checkpoint before restart:
 13. Start UI-layout milestone from:
    - `docs/tacho-driver-card-view-build-plan.md`
    - target: analysis graph fills the page, reader state appears as an overlay/status layer
+   - first implementation now exists as `TachoReaderStatusOverlay`
+   - next UI-only build items:
+     - promote the analysis action bar to include `Read From Card`, `Import File`, `Export Report`, `Refresh`, and `Close`
+     - upgrade the driver/card and VU details panels with issuer/source/import timestamp/warning badges
+     - add analysis tabs inside the workspace: Overview, Activities, Infringements, Downloads, Vehicles, Reports, Diagnostics
+     - add manager review/sign-off UI for findings before persistence is finalized
 
 ---
 
