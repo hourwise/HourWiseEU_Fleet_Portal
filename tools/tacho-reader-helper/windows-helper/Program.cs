@@ -480,6 +480,10 @@ sealed class HelperState
             }
             else
             {
+                if (previousStage is "processing" or "complete")
+                {
+                    ClearWorkflowFieldsAfterReaderChange();
+                }
                 Stage = "ready";
                 ProgressPercent = snapshot.ReaderConnected ? 15 : 10;
                 Message = snapshot.ReaderConnected ? "Reader connected. Waiting for a driver card." : "No smart-card reader detected.";
@@ -793,8 +797,27 @@ sealed class HelperState
         HelperDiagnostics.Record("workflow_reset", new { previousReadSessionId, detail });
     }
 
+    private void ClearWorkflowFieldsAfterReaderChange()
+    {
+        CompanyId = null;
+        RequestedByUserId = null;
+        SourceType = null;
+        ReadSessionId = null;
+        ImportId = null;
+        BackendJobId = null;
+        UploadedStoragePath = null;
+        ExportFileName = null;
+        ExportDownloadPath = null;
+        ExportFileSizeBytes = null;
+        ExportSha256 = null;
+        ExportFormat = null;
+        ExportParserReady = true;
+        ExportNote = null;
+        ExportBytes = null;
+    }
+
     private bool CanApplyReaderSnapshot() =>
-        Stage is "ready" or "card_inserted" or "error";
+        Stage is "ready" or "card_inserted" or "error" or "processing" or "complete";
 }
 
 sealed record ReaderSnapshot(
@@ -2261,7 +2284,7 @@ sealed record CommandResponse(bool Accepted, string Error);
 
 static class HelperConstants
 {
-    public const string Version = "dotnet-shell-0.5.8";
+    public const string Version = "dotnet-shell-0.5.9";
     public const string DriverCardSourceType = "driver_card";
     public const string VehicleUnitSourceType = "vehicle_unit";
 

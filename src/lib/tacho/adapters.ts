@@ -100,6 +100,9 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
   const importedAt = input.importedAt ?? input.uploaded_at ?? new Date().toISOString();
   const status = normalizeImportStatus(input.status);
   const fileType = input.fileType ?? input.file_type ?? 'ddd';
+  const isReadOnlyHelperCapture =
+    metadata.export_format === 'hourwise_read_only_capture_v1' ||
+    (metadata.ingest_source === 'reader_helper' && metadata.export_parser_ready === false);
 
   return {
     id: asString(input.id, crypto.randomUUID()),
@@ -117,9 +120,15 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
     reconciliationIssueCount: asOptionalNumber(input.reconciliationIssueCount ?? metadata.reconciliation_issue_count),
     highSeverityCount: asOptionalNumber(input.highSeverityCount ?? metadata.high_severity_count),
     ingestSource: asOptionalString(input.ingestSource ?? metadata.ingest_source),
-    parserStatus: asOptionalString(input.parserStatus ?? metadata.parser_status),
-    helperCaptureSchema: asOptionalString(input.helperCaptureSchema ?? metadata.helper_capture_schema),
-    helperCaptureWarning: asOptionalString(input.helperCaptureWarning ?? metadata.helper_capture_warning),
+    parserStatus: asOptionalString(
+      input.parserStatus ?? metadata.parser_status ?? (isReadOnlyHelperCapture ? 'partial_helper_capture' : undefined)
+    ),
+    helperCaptureSchema: asOptionalString(
+      input.helperCaptureSchema ??
+        metadata.helper_capture_schema ??
+        (isReadOnlyHelperCapture ? 'hourwise.tachograph.driver-card.read-only-capture.v1' : undefined)
+    ),
+    helperCaptureWarning: asOptionalString(input.helperCaptureWarning ?? metadata.helper_capture_warning ?? metadata.export_note),
     helperCaptureFileCount: asOptionalNumber(input.helperCaptureFileCount ?? metadata.helper_capture_file_count),
     helperCaptureSelectedFileCount: asOptionalNumber(input.helperCaptureSelectedFileCount ?? metadata.helper_capture_selected_file_count),
     helperCaptureCapturedBytes: asOptionalNumber(input.helperCaptureCapturedBytes ?? metadata.helper_capture_captured_bytes),

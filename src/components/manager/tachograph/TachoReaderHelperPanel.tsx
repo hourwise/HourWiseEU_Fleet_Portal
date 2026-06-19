@@ -230,7 +230,7 @@ function buildImportedStatus(
     focusedDate: focusedDate ?? helperStatus.focusedDate,
     uploadedStoragePath: trackedImport.filePath ?? helperStatus.uploadedStoragePath,
     exportFileName: trackedImport.fileName ?? helperStatus.exportFileName,
-    canCancel: false,
+    canCancel: helperStatus.canCancel,
   };
 }
 
@@ -533,6 +533,15 @@ export function TachoReaderHelperPanel({
       window.clearInterval(intervalId);
     };
   }, [refreshStatus]);
+
+  useEffect(() => {
+    if (helperStatus.readSessionId || !registeredImport) return;
+    setRegisteredImport(null);
+    setTrackedImport(null);
+    setTrackedFocusedDate(null);
+    importSessionRef.current = null;
+    openedReviewKeyRef.current = null;
+  }, [helperStatus.readSessionId, registeredImport]);
 
   useEffect(() => {
     if (status.stage !== 'complete' || !status.driverId || !onOpenDriverAnalysis) return;
