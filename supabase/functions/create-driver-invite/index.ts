@@ -33,7 +33,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { companyId, inviteEmail, inviteFullName, payConfigSnapshot } = await req.json();
+    const { companyId, inviteEmail, inviteFullName, payConfigSnapshot, tachographCardSnapshot } = await req.json();
 
     if (!companyId || !inviteEmail || !inviteFullName) {
         throw new Error("Missing required fields: companyId, email, or name.");
@@ -107,6 +107,11 @@ serve(async (req) => {
         full_name: inviteFullName,
         invite_code: invite_code,
         pay_config_snapshot: payConfigSnapshot,
+        tacho_card_number: tachographCardSnapshot?.cardNumber ? String(tachographCardSnapshot.cardNumber).trim().toUpperCase() : null,
+        tacho_card_holder_name: tachographCardSnapshot?.holderName ?? null,
+        tacho_card_expiry: tachographCardSnapshot?.cardExpiry ?? null,
+        tacho_card_issuing_authority: tachographCardSnapshot?.issuingAuthority ?? null,
+        tacho_source_import_id: tachographCardSnapshot?.sourceImportId ?? null,
         expires_at: expires_at,
         status: 'pending',
       })

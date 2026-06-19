@@ -7,6 +7,14 @@ import { useTranslation } from 'react-i18next';
 interface InviteDriverModalProps {
   onClose: () => void;
   onInviteSent: () => void;
+  initialFullName?: string;
+  tachographCardSnapshot?: {
+    cardNumber: string;
+    holderName?: string | null;
+    cardExpiry?: string | null;
+    issuingAuthority?: string | null;
+    sourceImportId?: string | null;
+  };
 }
 
 type OvertimeUnit = 'day' | 'week' | 'month';
@@ -25,13 +33,13 @@ interface AllowanceTier {
   unit: AllowanceUnit;
 }
 
-export function InviteDriverModal({ onClose, onInviteSent }: InviteDriverModalProps) {
+export function InviteDriverModal({ onClose, onInviteSent, initialFullName = '', tachographCardSnapshot }: InviteDriverModalProps) {
   const { t } = useTranslation();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [fullName, setFullName] = useState('');
+  const [fullName, setFullName] = useState(initialFullName);
   const [email, setEmail] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [unpaidBreakMinutes, setUnpaidBreakMinutes] = useState('');
@@ -57,10 +65,17 @@ export function InviteDriverModal({ onClose, onInviteSent }: InviteDriverModalPr
         overtime_threshold_unit: overtimeThresholdUnit,
         overtime_rate_multiplier: parseFloat(overtimeMultiplier) || null,
         additional_overtime_tiers: additionalTiers
-          .map(({ id, ...rest }) => ({ ...rest, threshold: parseFloat(rest.threshold), rate: parseFloat(rest.rate) }))
+          .map((tier) => ({
+            threshold: parseFloat(tier.threshold),
+            unit: tier.unit,
+            rate: parseFloat(tier.rate),
+          }))
           .filter(t => !isNaN(t.threshold) && !isNaN(t.rate)),
         allowance_tiers: allowanceTiers
-          .map(({ id, ...rest }) => ({ ...rest, amount: parseFloat(rest.amount) }))
+          .map((tier) => ({
+            amount: parseFloat(tier.amount),
+            unit: tier.unit,
+          }))
           .filter(t => !isNaN(t.amount)),
     };
 
@@ -71,6 +86,7 @@ export function InviteDriverModal({ onClose, onInviteSent }: InviteDriverModalPr
                 inviteEmail: email,
                 inviteFullName: fullName,
                 payConfigSnapshot,
+                tachographCardSnapshot,
             },
         });
 
@@ -81,9 +97,9 @@ export function InviteDriverModal({ onClose, onInviteSent }: InviteDriverModalPr
 
         onInviteSent();
         onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Error sending invite:", err);
-        setError(err.message || t('inviteDriver.errors.generic'));
+        setError(err instanceof Error ? err.message : t('inviteDriver.errors.generic'));
     } finally {
         setLoading(false);
     }
@@ -99,6 +115,17 @@ export function InviteDriverModal({ onClose, onInviteSent }: InviteDriverModalPr
 
         <form onSubmit={handleSendInvite} className="p-6 space-y-6 overflow-y-auto">
             {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg">{error}</div>}
+
+            {tachographCardSnapshot?.cardNumber ? (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Tachograph Card Prefill</p>
+                <p className="mt-2">
+                  This invite will remember card {tachographCardSnapshot.cardNumber}
+                  {tachographCardSnapshot.cardExpiry ? `, expiring ${tachographCardSnapshot.cardExpiry}` : ''}.
+                  When the driver accepts, their profile will be paired to this card number.
+                </p>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

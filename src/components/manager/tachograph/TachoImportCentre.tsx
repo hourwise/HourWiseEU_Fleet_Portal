@@ -15,8 +15,17 @@ import {
   type TachoPairingDriver,
 } from '../../../lib/tacho/driverPairing';
 import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
+import { InviteDriverModal } from '../InviteDriverModal';
 import { TachoReaderHelperPanel } from './TachoReaderHelperPanel';
 import { TachoUploadZone } from './TachoUploadZone';
+
+interface TachoInvitePrefill {
+  fullName: string;
+  cardNumber: string;
+  cardExpiry?: string | null;
+  issuingAuthority?: string | null;
+  sourceImportId: string;
+}
 
 export function TachoImportCentre({
   onOpenDriverAnalysis,
@@ -28,6 +37,7 @@ export function TachoImportCentre({
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
   const [retryPending, setRetryPending] = useState(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const [invitePrefill, setInvitePrefill] = useState<TachoInvitePrefill | null>(null);
   const selectedImport = useMemo(
     () => data.find((item) => item.id === selectedImportId) ?? data[0] ?? null,
     [data, selectedImportId]
@@ -162,6 +172,7 @@ export function TachoImportCentre({
                 item={selectedImport}
                 companyId={profile?.company_id ?? null}
                 onPaired={reload}
+                onInviteFromCard={setInvitePrefill}
               />
 
               {selectedIssue?.retryable ? (
@@ -263,6 +274,24 @@ export function TachoImportCentre({
           text="Supervisors can now see unassigned motion, driver-link issues, and app-vs-tacho cross-check issues at the import level before navigating into deeper driver or vehicle analysis."
         />
       </div>
+
+      {invitePrefill ? (
+        <InviteDriverModal
+          initialFullName={invitePrefill.fullName}
+          tachographCardSnapshot={{
+            cardNumber: invitePrefill.cardNumber,
+            holderName: invitePrefill.fullName,
+            cardExpiry: invitePrefill.cardExpiry,
+            issuingAuthority: invitePrefill.issuingAuthority,
+            sourceImportId: invitePrefill.sourceImportId,
+          }}
+          onClose={() => setInvitePrefill(null)}
+          onInviteSent={() => {
+            setInvitePrefill(null);
+            reload();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -271,10 +300,12 @@ function DriverCardPairingPanel({
   item,
   companyId,
   onPaired,
+  onInviteFromCard,
 }: {
   item: TachoImportRecord;
   companyId: string | null;
   onPaired: () => void;
+  onInviteFromCard: (prefill: TachoInvitePrefill) => void;
 }) {
   const cardNumber = getImportCardNumber(item);
   const cardDriverName = item.cardDriverName ?? item.driverName;
@@ -409,9 +440,24 @@ function DriverCardPairingPanel({
           </p>
         ) : null}
         {drivers.length === 0 && !loading ? (
-          <p className="text-xs text-blue-800">
-            No driver profiles are available yet. Invite or create the app driver first, then return here to pair this card read.
-          </p>
+          <div className="rounded-lg border border-blue-200 bg-white/70 p-3">
+            <p className="text-xs text-blue-800">
+              No driver profiles are available yet. Invite the driver from this card, then the card number will be applied when they accept the invite.
+            </p>
+            <button
+              type="button"
+              onClick={() => onInviteFromCard({
+                fullName: cardDriverName ?? '',
+                cardNumber,
+                cardExpiry: item.cardExpiryDate,
+                issuingAuthority: item.cardIssuingAuthorityName,
+                sourceImportId: item.id,
+              })}
+              className="mt-3 inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-slate-800"
+            >
+              Invite Driver From Card
+            </button>
+          </div>
         ) : null}
         {message ? <p className="text-xs font-bold text-emerald-700">{message}</p> : null}
         {error ? <p className="text-xs font-bold text-rose-700">{error}</p> : null}
