@@ -30,6 +30,7 @@ export interface TachoImportRecord {
   id: string;
   sourceType: TachoImportSourceType;
   fileName: string;
+  filePath?: string | null;
   fileType: TachoImportFileType;
   importedAt: string;
   status: TachoImportStatus;
@@ -60,6 +61,20 @@ export interface TachoImportRecord {
   triggerDispatchError?: string;
   triggerDispatchRequestedAt?: string;
   processingKickoffRequestedAt?: string;
+  candidateReviewDecision?: 'reviewed' | 'no_hire' | 'defer';
+  candidateReviewedAt?: string;
+  candidateInviteStatus?: string;
+  candidateInvitedAt?: string;
+  pairedAt?: string;
+  pairedDriverName?: string;
+  supersededByImportId?: string;
+  supersededAt?: string;
+  activeAnalysisRows?: boolean;
+  archivedAt?: string;
+  archiveReason?: string;
+  archiveStorageAction?: 'keep_file' | 'delete_file';
+  storageDeleteRequestedAt?: string;
+  storageDeletedAt?: string;
   discrepancyPreview?: VehicleMotionDiscrepancy[];
   reconciliationPreview?: TachoReconciliationItem[];
 }

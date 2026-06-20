@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-r
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTachoImports } from '../../../hooks/useTachoImports';
+import { archiveTachoCandidateImport } from '../../../lib/tacho/api';
 import {
   canRetryTachoImportProcessing,
   getTachoImportObservabilityIssue,
@@ -30,6 +31,16 @@ interface TachoInvitePrefill {
   sourceImportId: string;
 }
 
+type ImportFilter = 'all' | 'candidate_checks' | 'linked_driver_reads' | 'failed_imports' | 'vu_manual_uploads';
+
+const IMPORT_FILTERS: Array<{ value: ImportFilter; label: string }> = [
+  { value: 'all', label: 'All active' },
+  { value: 'candidate_checks', label: 'Candidate card checks' },
+  { value: 'linked_driver_reads', label: 'Linked driver reads' },
+  { value: 'failed_imports', label: 'Failed imports' },
+  { value: 'vu_manual_uploads', label: 'VU / manual uploads' },
+];
+
 export function TachoImportCentre({
   onOpenDriverAnalysis,
   onOpenCandidateCardAnalysis,
@@ -38,20 +49,26 @@ export function TachoImportCentre({
   onOpenCandidateCardAnalysis?: (importId: string) => void;
 }) {
   const { profile } = useAuth();
-  const { data, loading, error, reload } = useTachoImports();
+  const [activeFilter, setActiveFilter] = useState<ImportFilter>('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const { data, loading, error, reload } = useTachoImports({ includeArchived: showArchived, limit: 50 });
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
   const [retryPending, setRetryPending] = useState(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [invitePrefill, setInvitePrefill] = useState<TachoInvitePrefill | null>(null);
+  const filteredImports = useMemo(
+    () => data.filter((item) => matchesImportFilter(item, activeFilter)),
+    [activeFilter, data]
+  );
   const selectedImport = useMemo(
-    () => data.find((item) => item.id === selectedImportId) ?? data[0] ?? null,
-    [data, selectedImportId]
+    () => filteredImports.find((item) => item.id === selectedImportId) ?? filteredImports[0] ?? null,
+    [filteredImports, selectedImportId]
   );
   const selectedIssue = useMemo(
     () => (selectedImport ? getTachoImportObservabilityIssue(selectedImport) : null),
     [selectedImport]
   );
-  const monitoringSummary = useMemo(() => summarizeTachoImportObservability(data), [data]);
+  const monitoringSummary = useMemo(() => summarizeTachoImportObservability(filteredImports), [filteredImports]);
 
   const handleRetryProcessing = async () => {
     if (!profile?.company_id || !selectedImport || !canRetryTachoImportProcessing(selectedImport)) return;
@@ -97,8 +114,8 @@ export function TachoImportCentre({
         <StatCard label="Processing Now" value={loading ? '...' : String(monitoringSummary.processingNow)} tone="warning" />
         <StatCard label="Completed Today" value={loading ? '...' : String(monitoringSummary.completedToday)} tone="good" />
         <StatCard label="Failed Imports" value={loading ? '...' : String(monitoringSummary.failedImports)} tone="danger" />
-        <StatCard label="Open Motion Issues" value={loading ? '...' : String(data.reduce((total, item) => total + (item.discrepancyCount ?? 0), 0))} tone="danger" />
-        <StatCard label="Cross-check Issues" value={loading ? '...' : String(data.reduce((total, item) => total + (item.reconciliationIssueCount ?? 0), 0))} tone="warning" />
+        <StatCard label="Open Motion Issues" value={loading ? '...' : String(filteredImports.reduce((total, item) => total + (item.discrepancyCount ?? 0), 0))} tone="danger" />
+        <StatCard label="Cross-check Issues" value={loading ? '...' : String(filteredImports.reduce((total, item) => total + (item.reconciliationIssueCount ?? 0), 0))} tone="warning" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -125,6 +142,42 @@ export function TachoImportCentre({
         </div>
       ) : null}
 
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Queue Filters</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Import Centre now defaults to a supervisor queue. Technical fields, archived candidate reads, and superseded helper reads stay out of the way unless expanded.
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(event) => setShowArchived(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900"
+            />
+            Show archived / audit rows
+          </label>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {IMPORT_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setActiveFilter(filter.value)}
+              className={`rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition ${
+                activeFilter === filter.value
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              {filter.label} ({data.filter((item) => matchesImportFilter(item, filter.value)).length})
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-[1.7fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
@@ -137,7 +190,9 @@ export function TachoImportCentre({
             <div className="p-8 text-center text-rose-600">{error}</div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {data.map((item) => (
+              {filteredImports.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">No imports match this filter.</div>
+              ) : filteredImports.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -160,9 +215,16 @@ export function TachoImportCentre({
               <h3 className="text-lg font-black text-slate-900 mt-1">{selectedImport?.fileName ?? 'Select an import'}</h3>
             </div>
             {selectedImport ? (
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusStyles(selectedImport.status)}`}>
-                {selectedImport.status}
-              </span>
+              <div className="flex flex-wrap justify-end gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusStyles(selectedImport.status)}`}>
+                  {selectedImport.status}
+                </span>
+                {getImportLifecycleLabels(selectedImport).map((label) => (
+                  <span key={label.text} className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${label.className}`}>
+                    {label.text}
+                  </span>
+                ))}
+              </div>
             ) : null}
           </div>
 
@@ -174,6 +236,11 @@ export function TachoImportCentre({
             <div className="space-y-4">
               <ImportObservabilityNotice item={selectedImport} />
               <CandidateCardCheckAction item={selectedImport} onOpenCandidateCardAnalysis={onOpenCandidateCardAnalysis} />
+              <CandidateArchiveControls
+                item={selectedImport}
+                companyId={profile?.company_id ?? null}
+                onArchived={reload}
+              />
               <DriverCardPairingPanel
                 item={selectedImport}
                 companyId={profile?.company_id ?? null}
@@ -258,6 +325,7 @@ export function TachoImportCentre({
                   </div>
                 )}
               </div>
+              <ImportDiagnostics item={selectedImport} />
             </div>
           )}
         </div>
@@ -298,6 +366,140 @@ export function TachoImportCentre({
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function hasCandidateIdentity(item: TachoImportRecord) {
+  return item.sourceType === 'driver_card' && Boolean(getImportCardNumber(item) || item.identityDecoded || item.cardDriverName || item.driverName);
+}
+
+function isCandidateCardCheck(item: TachoImportRecord) {
+  return hasCandidateIdentity(item) && !item.driverId;
+}
+
+function matchesImportFilter(item: TachoImportRecord, filter: ImportFilter) {
+  if (filter === 'candidate_checks') return isCandidateCardCheck(item);
+  if (filter === 'linked_driver_reads') return item.sourceType === 'driver_card' && Boolean(item.driverId || item.pairedAt);
+  if (filter === 'failed_imports') return item.status === 'failed' || item.status === 'partial' || Boolean(item.processingError);
+  if (filter === 'vu_manual_uploads') return item.sourceType === 'vehicle_unit' || item.ingestSource === 'manual_upload';
+  return true;
+}
+
+function getImportLifecycleLabels(item: TachoImportRecord) {
+  const labels: Array<{ text: string; className: string }> = [];
+
+  if (item.archivedAt) {
+    labels.push({ text: 'Archived', className: 'bg-slate-200 text-slate-700' });
+  }
+  if (item.supersededAt) {
+    labels.push({ text: 'Superseded', className: 'bg-slate-100 text-slate-700' });
+  }
+  if (item.driverId || item.pairedAt) {
+    labels.push({ text: 'Paired', className: 'bg-emerald-100 text-emerald-700' });
+  } else if (item.candidateInviteStatus) {
+    labels.push({ text: item.candidateInviteStatus === 'accepted' ? 'Invited accepted' : 'Invited', className: 'bg-blue-100 text-blue-700' });
+  } else if (item.candidateReviewDecision === 'no_hire') {
+    labels.push({ text: 'No hire', className: 'bg-rose-100 text-rose-700' });
+  } else if (item.candidateReviewDecision === 'reviewed') {
+    labels.push({ text: 'Reviewed only', className: 'bg-cyan-100 text-cyan-700' });
+  } else if (isCandidateCardCheck(item)) {
+    labels.push({ text: 'Candidate unreviewed', className: 'bg-amber-100 text-amber-700' });
+  }
+
+  return labels;
+}
+
+function CandidateArchiveControls({
+  item,
+  companyId,
+  onArchived,
+}: {
+  item: TachoImportRecord;
+  companyId: string | null;
+  onArchived: () => void;
+}) {
+  const canArchive = isCandidateCardCheck(item);
+  const [pendingAction, setPendingAction] = useState<'keep' | 'delete' | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!canArchive) return null;
+
+  const handleArchive = async (deleteStorageFile: boolean) => {
+    if (!companyId || pendingAction) return;
+    const action = deleteStorageFile ? 'delete' : 'keep';
+    const shouldArchive = window.confirm(
+      deleteStorageFile
+        ? 'Archive this candidate read and delete its stored tachograph upload? The import audit row will remain, but retry processing will no longer be useful.'
+        : 'Archive this candidate read and keep its stored tachograph upload for audit?'
+    );
+    if (!shouldArchive) return;
+
+    setPendingAction(action);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await archiveTachoCandidateImport(companyId, item.id, {
+        deleteStorageFile,
+        reason: deleteStorageFile
+          ? 'Archived candidate/no-hire card read and removed stored upload.'
+          : 'Archived candidate/no-hire card read and retained stored upload.',
+      });
+      setMessage(deleteStorageFile && result.storagePath
+        ? 'Archived and deleted the stored tachograph upload. The audit row is retained.'
+        : 'Archived. The stored tachograph upload is retained.');
+      onArchived();
+    } catch (archiveError) {
+      setError(archiveError instanceof Error ? archiveError.message : 'Failed to archive this candidate import.');
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  if (item.archivedAt) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Candidate Archive</p>
+        <p className="mt-1">
+          Archived {format(new Date(item.archivedAt), 'dd MMM yyyy HH:mm')}. Storage action: {item.archiveStorageAction === 'delete_file' ? 'delete file' : 'keep file'}.
+        </p>
+        {item.storageDeletedAt ? <p className="mt-1 text-xs">Stored upload deleted {format(new Date(item.storageDeletedAt), 'dd MMM yyyy HH:mm')}.</p> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Candidate Cleanup</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Archive test, screening, or no-hire card reads without creating or changing a driver file.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => void handleArchive(false)}
+            disabled={pendingAction !== null}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pendingAction === 'keep' ? 'Archiving...' : 'Archive, Keep File'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleArchive(true)}
+            disabled={pendingAction !== null}
+            className="rounded-xl bg-rose-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pendingAction === 'delete' ? 'Deleting...' : 'Archive + Delete File'}
+          </button>
+        </div>
+      </div>
+      {message ? <p className="mt-3 text-xs font-bold text-emerald-700">{message}</p> : null}
+      {error ? <p className="mt-3 text-xs font-bold text-rose-700">{error}</p> : null}
     </div>
   );
 }
@@ -648,21 +850,16 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
                 Read-only capture
               </span>
             )}
+            {getImportLifecycleLabels(item).map((label) => (
+              <span key={label.text} className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${label.className}`}>
+                {label.text}
+              </span>
+            ))}
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {identityLabel} - {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
           </p>
           <p className="text-sm text-slate-600 mt-2">{item.summary}</p>
-          {(item.processingKickoffError || item.triggerDispatchError) && (
-            <p className="mt-2 text-xs text-amber-700">
-              {item.processingKickoffError ?? item.triggerDispatchError}
-            </p>
-          )}
-          {(item.parserStatus === 'partial_helper_capture' || item.helperCaptureSchema) && (
-            <p className="mt-2 text-xs text-amber-700">
-              {item.helperCaptureWarning ?? 'Read-only helper capture stored locally for parser development.'}
-            </p>
-          )}
           {(item.technicalEventCount ?? 0) > 0 || (item.highSeverityCount ?? 0) > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {(item.technicalEventCount ?? 0) > 0 && (
@@ -759,6 +956,40 @@ function ImportObservabilityNotice({ item }: { item: TachoImportRecord }) {
   }
 
   return null;
+}
+
+function ImportDiagnostics({ item }: { item: TachoImportRecord }) {
+  const diagnostics = [
+    ['Import ID', item.id],
+    ['Storage path', item.filePath ?? 'Not recorded'],
+    ['Source type', item.sourceType],
+    ['Ingest source', item.ingestSource ?? 'Unknown'],
+    ['Parser status', item.parserStatus ?? item.status],
+    ['Helper schema', item.helperCaptureSchema ?? 'n/a'],
+    ['Helper files', item.helperCaptureFileCount === undefined ? 'n/a' : String(item.helperCaptureFileCount)],
+    ['Helper selected files', item.helperCaptureSelectedFileCount === undefined ? 'n/a' : String(item.helperCaptureSelectedFileCount)],
+    ['Captured bytes', item.helperCaptureCapturedBytes === undefined ? 'n/a' : String(item.helperCaptureCapturedBytes)],
+    ['Processing kickoff error', item.processingKickoffError ?? 'None'],
+    ['Trigger dispatch error', item.triggerDispatchError ?? 'None'],
+    ['Processing error', item.processingError ?? 'None'],
+    ['Superseded by import', item.supersededByImportId ?? 'No'],
+    ['Archived at', item.archivedAt ?? 'No'],
+  ];
+
+  return (
+    <details className="rounded-xl border border-slate-200 bg-white p-4">
+      <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-500">
+        Support Diagnostics
+      </summary>
+      <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-slate-600">
+        {diagnostics.map(([label, value]) => (
+          <p key={label} className="break-all">
+            <span className="font-black uppercase tracking-widest text-slate-400">{label}:</span> {value}
+          </p>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 function StatCard({ label, value, tone }: { label: string; value: string; tone: 'warning' | 'good' | 'danger' }) {

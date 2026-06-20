@@ -114,6 +114,7 @@ interface UseTachoImportsOptions {
   useLive?: boolean;
   fallbackToMock?: boolean;
   limit?: number;
+  includeArchived?: boolean;
 }
 
 function buildImportDiscrepancyPreview(discrepancies: VehicleMotionDiscrepancy[] | undefined) {
@@ -149,7 +150,9 @@ export function useTachoImports(options?: UseTachoImportsOptions) {
 
       try {
         if (shouldUseLive && companyId) {
-          const imports = await fetchRecentTachoImports(companyId, options?.limit ?? 12);
+          const imports = (await fetchRecentTachoImports(companyId, options?.limit ?? 50))
+            .filter((item) => options?.includeArchived || (!item.archivedAt && !item.supersededAt))
+            .slice(0, options?.limit ?? 12);
           const enrichedImports = await Promise.all(
             imports.map(async (item) => {
               if (item.status !== 'complete' && item.status !== 'partial') return item;
@@ -210,7 +213,7 @@ export function useTachoImports(options?: UseTachoImportsOptions) {
     return () => {
       cancelled = true;
     };
-  }, [options?.companyId, options?.fallbackToMock, options?.limit, options?.useLive, profile?.company_id, reloadKey]);
+  }, [options?.companyId, options?.fallbackToMock, options?.includeArchived, options?.limit, options?.useLive, profile?.company_id, reloadKey]);
 
   return { data, loading, error, reload };
 }

@@ -588,17 +588,34 @@ Keep:
 
 - `[ ]` VU import/download controls.
 - `[ ]` Manual driver-card file import fallback.
-- `[ ]` Import review and retry handling.
-- `[ ]` Candidate card review entry point.
-- `[ ]` Support diagnostics behind disclosure.
+- `[x]` Import review and retry handling.
+  - 2026-06-20: Import review remains in Import Centre with retry action preserved; verified with focused lint, `npm run test:rules`, and `npm run build`.
+- `[x]` Candidate card review entry point.
+  - 2026-06-20: Candidate card checks are filterable and still open Driver Card Analysis by import ID.
+- `[x]` Support diagnostics behind disclosure.
+  - 2026-06-20: Backend IDs, helper schema, storage path, kickoff/dispatch errors, parser status, and archive metadata are behind a Support Diagnostics disclosure.
 
 Demote/collapse:
 
-- `[ ]` Backend IDs.
-- `[ ]` Helper correlation fields.
-- `[ ]` Raw metadata.
-- `[ ]` Trigger dispatch debug state.
-- `[ ]` Processor error internals.
+- `[x]` Backend IDs.
+- `[x]` Helper correlation fields.
+- `[x]` Raw metadata.
+- `[x]` Trigger dispatch debug state.
+- `[x]` Processor error internals.
+  - 2026-06-20: Normal import rows show supervisor-readable badges; backend-heavy details are hidden by default.
+
+Candidate cleanup and retention:
+
+- `[x]` Add manager filters for candidate card checks, linked driver reads, failed imports, and VU/manual uploads.
+  - 2026-06-20: Import Centre now has queue filters and hides archived/superseded audit rows by default.
+- `[x]` Add status labels for candidate unreviewed, reviewed only, no hire, invited, paired, and superseded.
+  - 2026-06-20: Labels are derived from `tachograph_files.metadata`, pairing state, and invite metadata.
+- `[x]` Add safe manager archive action for candidate/no-hire reads.
+  - 2026-06-20: `archive_tacho_candidate_import(...)` rejects linked driver imports, clears candidate-derived analysis rows, retains the audit row, and can request storage deletion.
+- `[x]` Add storage deletion confirmation for archived candidate imports.
+  - 2026-06-20: UI archives first, deletes from the private `tachograph-files` bucket when requested, then calls `confirm_tacho_candidate_import_storage_deleted(...)`.
+- `[x]` Apply visible retention policy for helper reads.
+  - 2026-06-20: Latest active helper read remains visible; archived and superseded helper/candidate audit rows are hidden unless the manager enables archived/audit rows. Manual/VU uploads remain filterable separately.
 
 Remove or reduce:
 
@@ -1172,7 +1189,8 @@ Recommended next actions for the agent:
 4. `[ ]` Run real card read through Driver Card Analysis, not just Import Centre.
 5. `[ ]` Capture visual/UI issues from the real parsed card output.
 6. `[ ]` Polish Driver Card Analysis layout and labels.
-7. `[ ]` Collapse Import Centre technical noise.
+7. `[x]` Collapse Import Centre technical noise.
+   - 2026-06-20: Added supervisor filters, lifecycle labels, candidate archive/delete controls, default-hidden diagnostics, and hidden-by-default archived/superseded audit rows.
 8. `[ ]` Design review/sign-off persistence tables before implementing personnel-file persistence.
 9. `[ ]` Continue EF `0504` validation against known-good tachograph parser output.
 10. `[ ]` Leave Atlas implementation until the main portal data sources are stable.

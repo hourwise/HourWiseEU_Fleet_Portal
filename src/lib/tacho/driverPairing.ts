@@ -169,6 +169,39 @@ export async function pairTachoImportToDriver(
   };
 }
 
+async function patchTachoCandidateInviteMetadata(input: {
+  companyId: string;
+  importId: string;
+  inviteId: string;
+  inviteStatus?: string | null;
+}) {
+  const { data } = await supabase
+    .from('tachograph_files' as never)
+    .select('metadata')
+    .eq('id', input.importId)
+    .eq('company_id', input.companyId)
+    .maybeSingle();
+
+  const currentMetadata =
+    data && typeof (data as { metadata?: unknown }).metadata === 'object' && (data as { metadata?: unknown }).metadata !== null
+      ? (data as { metadata: Record<string, unknown> }).metadata
+      : {};
+
+  await supabase
+    .from('tachograph_files' as never)
+    .update({
+      metadata: {
+        ...currentMetadata,
+        candidate_invite_id: input.inviteId,
+        candidate_invite_status: input.inviteStatus ?? 'pending',
+        candidate_invited_at: new Date().toISOString(),
+      },
+    } as never)
+    .eq('id', input.importId)
+    .eq('company_id', input.companyId)
+    .is('driver_id', null);
+}
+
 export async function pairTachoImportToInvite(input: PairTachoImportToInviteInput): Promise<TachoPairingInvite> {
   const { data, error } = await tachoPairingClient
     .from('driver_invites')
@@ -185,6 +218,13 @@ export async function pairTachoImportToInvite(input: PairTachoImportToInviteInpu
     .single();
 
   if (error) throw error;
+
+  await patchTachoCandidateInviteMetadata({
+    companyId: input.companyId,
+    importId: input.importId,
+    inviteId: input.inviteId,
+    inviteStatus: data?.status,
+  });
 
   return {
     id: data?.id ?? input.inviteId,

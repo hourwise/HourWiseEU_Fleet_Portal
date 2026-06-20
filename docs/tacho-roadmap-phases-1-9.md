@@ -79,6 +79,7 @@ Based on the current frontend and this implementation pass:
   - the manual upload fallback now sits beside the helper workflow on the same page
   - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
   - Driver Card Analysis now owns the live driver-card read/import workflow through a reusable reader workflow hook; Vehicle Unit Analysis still uses the lightweight status overlay until the VU helper path is promoted
+  - Candidate/unlinked card analysis now has manager decision actions: create invite from decoded card identity, pair to an existing driver, mark reviewed only, or mark checked/no-hire without creating a personnel file
 - parser-simulation infrastructure now exists in-repo so rule and reconciliation scenarios can be exercised without real tachograph binaries
 - the simulator library now covers split-break, weekly, fortnight, daily-rest, weekly-rest, WTD-break, and app-vs-tacho mismatch scenarios
 - a dev-only simulator preview tab now renders those scenarios through the actual tachograph timeline and day-detail components
@@ -170,6 +171,12 @@ This section captures the current live-card progress so work can resume after a 
 - Identity decode confirmed the key operational case:
   - if no profile has `profiles.tacho_card_number` matching the decoded card, the import remains unpaired with `driver_id = null`
   - the import review now treats this as an explicit supervisor workflow, not a parser failure
+  - Driver Card Analysis now exposes the candidate decision workflow directly on unlinked card reads:
+    - create a driver invite with the decoded card number/name/expiry/authority prefilled
+    - pair the import/card to an existing driver through `pair_tacho_card_import_to_driver(...)`
+    - mark the candidate card as reviewed only
+    - mark the candidate check as checked/no-hire without creating an invite or profile
+  - `mark_tacho_candidate_card_review(...)` records candidate decisions in `tachograph_files.metadata` while preserving the audit/import row
 - Invite acceptance has now been tested through a real pending invite path:
   - pending invite was linked to card `DB18220162003911`
   - invite lookup initially failed because the mobile app saw `status = undefined`

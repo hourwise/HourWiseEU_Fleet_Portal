@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AlertTriangle, BadgeAlert, CreditCard, Download, FileText, GraduationCap, Laptop, Loader2, RefreshCw, ShieldAlert, UserRound } from 'lucide-react';
+import { AlertTriangle, BadgeAlert, CheckCircle2, CreditCard, Download, FileText, GraduationCap, Laptop, Link2, Loader2, RefreshCw, ShieldAlert, UserPlus, UserRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDriverCardAnalysis } from '../../../hooks/useDriverCardAnalysis';
 import { useDrivers } from '../../../hooks/useDrivers';
 import { useTachoReaderWorkflow, type TachoReaderAnalysisTarget } from '../../../hooks/useTachoReaderWorkflow';
 import { supabase } from '../../../lib/supabase';
+import { InviteDriverModal } from '../InviteDriverModal';
+import { pairTachoImportToDriver } from '../../../lib/tacho/driverPairing';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
@@ -55,6 +57,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const [liveReaderTargetActive, setLiveReaderTargetActive] = useState(false);
   const [assigningTrainingId, setAssigningTrainingId] = useState<string | null>(null);
   const [justAssignedTrainingId, setJustAssignedTrainingId] = useState<string | null>(null);
+  const [candidatePairDriverId, setCandidatePairDriverId] = useState('');
+  const [candidateActionPending, setCandidateActionPending] = useState<string | null>(null);
+  const [candidateActionError, setCandidateActionError] = useState<string | null>(null);
+  const [candidateActionMessage, setCandidateActionMessage] = useState<string | null>(null);
+  const [inviteFromCandidateOpen, setInviteFromCandidateOpen] = useState(false);
   const autoReadStartedRef = useRef(false);
   const handleReaderAnalysisReady = useCallback((target: TachoReaderAnalysisTarget) => {
     if (target.sourceType && target.sourceType !== 'driver_card') return;
@@ -225,7 +232,68 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setSelectedImportId('');
     setReaderFocusedDate(null);
     setLiveReaderTargetActive(false);
+    setCandidateActionError(null);
+    setCandidateActionMessage(null);
   };
+
+  const candidateImportId = data?.importId ?? selectedImportId;
+  const candidateCardSnapshot = data ? {
+    cardNumber: data.identity.cardNumber,
+    holderName: data.identity.driverName,
+    cardExpiry: data.identity.cardExpiry,
+    issuingAuthority: data.identity.issuingCountry,
+    sourceImportId: candidateImportId || null,
+  } : undefined;
+
+  const handlePairCandidateToDriver = async () => {
+    if (!profile?.company_id || !candidateImportId || !candidatePairDriverId || !data) return;
+    setCandidateActionPending('pair');
+    setCandidateActionError(null);
+    setCandidateActionMessage(null);
+    try {
+      const result = await pairTachoImportToDriver({
+        companyId: profile.company_id,
+        importId: candidateImportId,
+        driverId: candidatePairDriverId,
+        cardNumber: data.identity.cardNumber,
+      });
+      setSelectedDriverId(result.driverId);
+      setSelectedImportId('');
+      setLiveReaderTargetActive(false);
+      setCandidatePairDriverId('');
+      setCandidateActionMessage(`Paired card ${result.cardNumber} to ${result.driverName}.`);
+    } catch (err) {
+      setCandidateActionError(err instanceof Error ? err.message : 'Failed to pair this card to the selected driver.');
+    } finally {
+      setCandidateActionPending(null);
+    }
+  };
+
+  const handleMarkCandidateReviewed = async (decision: 'reviewed' | 'no_hire') => {
+    if (!profile?.company_id || !candidateImportId) return;
+    setCandidateActionPending(decision);
+    setCandidateActionError(null);
+    setCandidateActionMessage(null);
+    try {
+      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review', {
+        p_company_id: profile.company_id,
+        p_import_id: candidateImportId,
+        p_decision: decision,
+        p_note: decision === 'no_hire'
+          ? 'Candidate card check reviewed without creating an invite or driver profile.'
+          : 'Candidate card check reviewed.',
+      });
+      if (reviewError) throw reviewError;
+      setCandidateActionMessage(decision === 'no_hire'
+        ? 'Marked as checked / no hire. No profile or invite was created.'
+        : 'Marked as reviewed. No profile or invite was created.');
+    } catch (err) {
+      setCandidateActionError(err instanceof Error ? err.message : 'Failed to mark this candidate card as reviewed.');
+    } finally {
+      setCandidateActionPending(null);
+    }
+  };
+
   const picker = <TachoWorkspacePicker title="Driver Workspace Target" searchLabel="Search drivers" selectLabel="Open driver" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedDriverId} onSelectChange={handleSelectDriver} options={filteredDrivers} fallbackLabel={selectedImportId ? 'Candidate / unlinked card check' : 'Latest imported driver card'} />;
   const readerPanel = <DriverCardReaderPanel workflow={readerWorkflow} onOpenImportCentre={onOpenImportCentre} />;
 
@@ -296,7 +364,57 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
           <p className="mt-2 max-w-4xl text-sm font-medium text-blue-900">
             Review the decoded card identity and activity here before creating an invite or personnel file. This view does not update a driver file, assign training, or write compliance actions until the card is deliberately paired.
           </p>
+
+          {candidateActionError ? <div className="mt-4 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-700">{candidateActionError}</div> : null}
+          {candidateActionMessage ? <div className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-700">{candidateActionMessage}</div> : null}
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr,1fr]">
+            <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Create Driver Invite</p>
+              <h4 className="mt-1 text-base font-black text-slate-950">Invite this candidate using the decoded card identity</h4>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Opens the normal invite form with name, card number, expiry and issuing authority prefilled. The driver profile is only created when the app invite is accepted.
+              </p>
+              <button
+                type="button"
+                onClick={() => setInviteFromCandidateOpen(true)}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-blue-700"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create Invite From Card
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pair Existing Driver</p>
+              <h4 className="mt-1 text-base font-black text-slate-950">Use this if the employee already exists</h4>
+              <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                <select
+                  value={candidatePairDriverId}
+                  onChange={(event) => setCandidatePairDriverId(event.target.value)}
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+                >
+                  <option value="">Select existing driver profile</option>
+                  {filteredDrivers.map((driver) => (
+                    <option key={driver.id} value={driver.id}>{driver.label} - {driver.meta}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!candidatePairDriverId || candidateActionPending === 'pair'}
+                  onClick={() => void handlePairCandidateToDriver()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {candidateActionPending === 'pair' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Pair Card
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-3">
+            <ActionButton icon={<CheckCircle2 className="w-4 h-4" />} label={candidateActionPending === 'reviewed' ? 'Marking Reviewed' : 'Mark Reviewed Only'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('reviewed')} />
+            <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label={candidateActionPending === 'no_hire' ? 'Marking No Hire' : 'Checked / No Hire'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('no_hire')} />
             <ActionButton icon={<CreditCard className="w-4 h-4" />} label="Open Import Review" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
             <ActionButton icon={<FileText className="w-4 h-4" />} label="Screening Report" onClick={() => window.print()} />
           </div>
@@ -371,6 +489,17 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       </div>
 
       <TachoDayDetailDrawer day={selectedDay} findings={findings} technicalEvents={technicalEvents} reconciliation={reconciliation} selectedReason={dayReason} onClose={() => setSelectedDay(null)} />
+      {inviteFromCandidateOpen && candidateCardSnapshot ? (
+        <InviteDriverModal
+          initialFullName={data.identity.driverName === 'Candidate card' ? '' : data.identity.driverName}
+          tachographCardSnapshot={candidateCardSnapshot}
+          onClose={() => setInviteFromCandidateOpen(false)}
+          onInviteSent={() => {
+            setCandidateActionMessage('Invite sent with this tachograph card attached. The profile will be paired when the driver accepts.');
+            setCandidateActionError(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

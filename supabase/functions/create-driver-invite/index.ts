@@ -169,6 +169,35 @@ serve(async (req) => {
         throw new Error(`Resend error: ${errorBody.message || 'Unknown error'}`);
     }
 
+    if (tachographCardSnapshot?.sourceImportId) {
+      const { data: sourceImport } = await serviceClient
+        .from("tachograph_files")
+        .select("metadata")
+        .eq("id", tachographCardSnapshot.sourceImportId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      const currentMetadata =
+        sourceImport?.metadata && typeof sourceImport.metadata === "object" && !Array.isArray(sourceImport.metadata)
+          ? sourceImport.metadata
+          : {};
+
+      await serviceClient
+        .from("tachograph_files")
+        .update({
+          metadata: {
+            ...currentMetadata,
+            candidate_invite_id: invite.id,
+            candidate_invite_status: invite.status,
+            candidate_invited_at: new Date().toISOString(),
+            candidate_invited_by_user_id: user.id,
+          },
+        })
+        .eq("id", tachographCardSnapshot.sourceImportId)
+        .eq("company_id", companyId)
+        .is("driver_id", null);
+    }
+
     return new Response(JSON.stringify({ invite }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 201,

@@ -76,6 +76,18 @@ function asOptionalNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function asCandidateReviewDecision(value: unknown): TachoImportRecord['candidateReviewDecision'] {
+  return value === 'reviewed' || value === 'no_hire' || value === 'defer' ? value : undefined;
+}
+
+function asArchiveStorageAction(value: unknown): TachoImportRecord['archiveStorageAction'] {
+  return value === 'keep_file' || value === 'delete_file' ? value : undefined;
+}
+
 function asImportSourceType(value: unknown): TachoImportSourceType {
   return value === 'vehicle_unit' ? 'vehicle_unit' : 'driver_card';
 }
@@ -109,6 +121,7 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
     id: asString(input.id, crypto.randomUUID()),
     sourceType: asImportSourceType(sourceType),
     fileName: asString(input.fileName ?? input.filename, 'Unknown import'),
+    filePath: asOptionalString(input.filePath ?? input.file_path) ?? null,
     fileType: asImportFileType(fileType),
     importedAt: asString(importedAt, new Date().toISOString()),
     status,
@@ -149,6 +162,20 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
     triggerDispatchError: asOptionalString(input.triggerDispatchError ?? metadata.trigger_dispatch_error),
     triggerDispatchRequestedAt: asOptionalString(input.triggerDispatchRequestedAt ?? metadata.trigger_dispatch_requested_at),
     processingKickoffRequestedAt: asOptionalString(input.processingKickoffRequestedAt ?? metadata.processing_kickoff_requested_at),
+    candidateReviewDecision: asCandidateReviewDecision(metadata.candidate_review_decision),
+    candidateReviewedAt: asOptionalString(metadata.candidate_reviewed_at),
+    candidateInviteStatus: asOptionalString(metadata.candidate_invite_status),
+    candidateInvitedAt: asOptionalString(metadata.candidate_invited_at),
+    pairedAt: asOptionalString(metadata.paired_at),
+    pairedDriverName: asOptionalString(metadata.paired_driver_name),
+    supersededByImportId: asOptionalString(metadata.helper_capture_superseded_by_import_id),
+    supersededAt: asOptionalString(metadata.helper_capture_superseded_at),
+    activeAnalysisRows: asOptionalBoolean(metadata.helper_capture_active_analysis_rows),
+    archivedAt: asOptionalString(metadata.candidate_import_archived_at),
+    archiveReason: asOptionalString(metadata.candidate_import_archive_reason),
+    archiveStorageAction: asArchiveStorageAction(metadata.candidate_import_archive_storage_action),
+    storageDeleteRequestedAt: asOptionalString(metadata.candidate_import_storage_delete_requested_at),
+    storageDeletedAt: asOptionalString(metadata.candidate_import_storage_deleted_at),
     discrepancyPreview: asDiscrepancyPreview(input.discrepancyPreview),
     reconciliationPreview: asReconciliationPreview(input.reconciliationPreview),
   };

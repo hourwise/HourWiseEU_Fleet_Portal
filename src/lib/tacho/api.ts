@@ -15,6 +15,8 @@ const TACHO_RPC = {
   driverAnalysisBundle: 'get_driver_tacho_analysis_bundle',
   vehicleAnalysisBundle: 'get_vehicle_unit_analysis_bundle',
   importBundle: 'get_tacho_import_bundle',
+  archiveCandidateImport: 'archive_tacho_candidate_import',
+  confirmCandidateStorageDeleted: 'confirm_tacho_candidate_import_storage_deleted',
 } as const;
 
 interface CompanyTachoSignalsRow {
@@ -226,6 +228,54 @@ export async function fetchRecentTachoImports(
   if (error) throw error;
 
   return ((data as any[] | null) ?? []).map((row) => adaptImportRecord(row));
+}
+
+interface ArchiveCandidateImportResponse {
+  importId?: string;
+  archived?: boolean;
+  storagePath?: string | null;
+  storageDeleteRequested?: boolean;
+}
+
+export async function archiveTachoCandidateImport(
+  companyId: string,
+  importId: string,
+  options: { deleteStorageFile: boolean; reason?: string | null }
+): Promise<ArchiveCandidateImportResponse> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.archiveCandidateImport as any, {
+    p_company_id: companyId,
+    p_import_id: importId,
+    p_delete_storage_file: options.deleteStorageFile,
+    p_reason: options.reason ?? null,
+  } as any);
+
+  if (error) throw error;
+
+  const archiveResult = (data ?? {}) as ArchiveCandidateImportResponse;
+  const storagePath = archiveResult.storagePath ?? null;
+
+  if (options.deleteStorageFile && storagePath) {
+    const { error: storageError } = await supabase.storage
+      .from('tachograph-files')
+      .remove([storagePath]);
+
+    if (storageError) throw storageError;
+
+    const { error: confirmError } = await supabase.rpc(TACHO_RPC.confirmCandidateStorageDeleted as any, {
+      p_company_id: companyId,
+      p_import_id: importId,
+      p_storage_path: storagePath,
+    } as any);
+
+    if (confirmError) throw confirmError;
+
+    return {
+      ...archiveResult,
+      storageDeletedAt: new Date().toISOString(),
+    } as ArchiveCandidateImportResponse & { storageDeletedAt: string };
+  }
+
+  return archiveResult;
 }
 
 export async function fetchLatestDriverCardTarget(companyId: string): Promise<string | null> {
