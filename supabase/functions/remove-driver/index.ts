@@ -10,18 +10,73 @@ const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
   apiVersion: "2023-10-16",
 });
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
+
+async function unlinkDriverReference(
+  serviceClient: ReturnType<typeof createClient>,
+  table: string,
+  driverId: string,
+) {
+  const { error } = await serviceClient
+    .from(table)
+    .update({ driver_id: null })
+    .eq("driver_id", driverId);
+
+  if (!error) return;
+
+  // Some deployments may not have every optional tacho table yet.
+  if (error.code === "42P01" || error.code === "42703") {
+    console.warn(`Skipping optional driver unlink for ${table}: ${error.message}`);
+    return;
+  }
+
+  throw new Error(`Failed to unlink driver from ${table}: ${error.message}`);
+}
+
+async function unlinkAcceptedInviteReference(
+  serviceClient: ReturnType<typeof createClient>,
+  driverId: string,
+) {
+  const { error } = await serviceClient
+    .from("driver_invites")
+    .update({ accepted_by_user_id: null })
+    .eq("accepted_by_user_id", driverId);
+
+  if (!error) return;
+
+  if (error.code === "42P01" || error.code === "42703") {
+    console.warn(`Skipping optional invite unlink: ${error.message}`);
+    return;
+  }
+
+  throw new Error(`Failed to unlink accepted invite reference: ${error.message}`);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // This function requires the user to be a manager, which should be checked by RLS policies.
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      return jsonResponse({ error: "You must be signed in to remove a driver." }, 401);
+    }
 
     // Get the driverId to be removed from the request body
     const { driverId } = await req.json();
@@ -36,16 +91,37 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const { data: requester, error: requesterError } = await serviceClient
+      .from("profiles")
+      .select("id, company_id, role")
+      .eq("id", user.id)
+      .single();
+
+    if (requesterError || !requester || requester.role !== "manager") {
+      return jsonResponse({ error: "Only managers can remove drivers." }, 403);
+    }
+
+    if (requester.id === driverId) {
+      return jsonResponse({ error: "Managers cannot remove their own account from Driver Management." }, 400);
+    }
+
     // 1. Get the driver's company_id to find the subscription
-    // I am assuming your drivers table is named 'drivers' and the user profile table is 'profiles'
     const { data: driver, error: driverError } = await serviceClient
       .from("profiles") 
-      .select("company_id")
+      .select("company_id, role")
       .eq("id", driverId)
       .single();
 
     if (driverError || !driver) {
       throw new Error("Driver not found or you do not have permission to remove them.");
+    }
+
+    if (driver.company_id !== requester.company_id) {
+      return jsonResponse({ error: "You can only remove drivers from your own company." }, 403);
+    }
+
+    if (driver.role !== "driver") {
+      return jsonResponse({ error: "Only driver accounts can be removed from Driver Management." }, 400);
     }
     
     // 2. Get the company's stripe_subscription_id
@@ -78,7 +154,24 @@ serve(async (req) => {
         console.warn(`Company ${driver.company_id} has no subscription. Deleting driver only.`);
     }
 
-    // 4. Delete the user (driver) from the auth schema
+    // 4. Unlink optional records that should survive as company evidence/history.
+    const nullableDriverTables = [
+      "tachograph_files",
+      "driver_card_downloads",
+      "tachograph_activity_segments",
+      "tachograph_day_summaries",
+      "tachograph_findings",
+      "tachograph_technical_events",
+      "tachograph_vehicle_motion_discrepancies",
+      "tachograph_reconciliation_items",
+    ];
+
+    for (const table of nullableDriverTables) {
+      await unlinkDriverReference(serviceClient, table, driverId);
+    }
+    await unlinkAcceptedInviteReference(serviceClient, driverId);
+
+    // 5. Delete the user (driver) from the auth schema. Profile-owned rows with cascade FKs are removed by DB constraints.
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(driverId);
 
     if (deleteError) {
@@ -87,15 +180,9 @@ serve(async (req) => {
       throw new Error(`Failed to delete driver from database: ${deleteError.message}`);
     }
 
-    return new Response(JSON.stringify({ success: true, message: "Driver removed successfully." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return jsonResponse({ success: true, message: "Driver removed successfully." });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return jsonResponse({ error: error.message }, 400);
   }
 });

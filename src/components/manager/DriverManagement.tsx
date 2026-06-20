@@ -7,6 +7,7 @@ import { InviteDriverModal } from './InviteDriverModal';
 import { DriverDetailsModal } from './DriverDetailsModal';
 import { DriverOnboardingModal } from './DriverOnboardingModal';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Invite = Database['public']['Tables']['driver_invites']['Row'];
@@ -17,8 +18,35 @@ type InviteWithTacho = Invite & {
   tacho_card_expiry?: string | null;
   tacho_card_issuing_authority?: string | null;
 };
+type DriverListItem = Profile & {
+  type: 'driver';
+  compliance: ReturnType<typeof getDriverComplianceStatus>;
+};
+type InviteListItem = InviteWithTacho & {
+  type: 'invite';
+  isGhost: boolean;
+};
+type CombinedListItem = DriverListItem | InviteListItem;
 
-const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t: any) => {
+async function getFunctionErrorMessage(error: { message?: string; context?: unknown }) {
+  const fallback = error.message ?? 'Unknown error';
+  const context = error.context;
+
+  if (context instanceof Response) {
+    try {
+      const body = await context.clone().json();
+      if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
+        return body.error;
+      }
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+}
+
+const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t: TFunction) => {
   const driverDocs = allDocuments.filter(doc => doc.user_id === driverId);
   if (driverDocs.length === 0) {
     return { level: 'amber', text: t('driverManagement.status.noDocuments'), Icon: AlertTriangle, color: 'text-amber-600' };
@@ -274,8 +302,14 @@ export function DriverManagement({
     if (window.confirm(t('common.confirmDelete', { name: driverName }))) {
       setRemovingDriverId(driverId);
       try {
-        const { error } = await supabase.functions.invoke('remove-driver', { body: { driverId } });
-        if (error) throw new Error(`Failed to remove driver: ${error.message}`);
+        const { data, error } = await supabase.functions.invoke('remove-driver', { body: { driverId } });
+        if (error) {
+          const detail = await getFunctionErrorMessage(error);
+          throw new Error(`Failed to remove driver: ${detail}`);
+        }
+        if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
+          throw new Error(`Failed to remove driver: ${data.error}`);
+        }
         await loadData();
       } catch (error) {
         console.error('Removal error:', error);
@@ -297,7 +331,7 @@ export function DriverManagement({
     const activeEmails = new Set(drivers.map(d => d.email?.toLowerCase()));
     const activeIds = new Set(drivers.map(d => d.id));
 
-    const list = [
+    const list: CombinedListItem[] = [
       ...drivers.map(d => ({
         ...d,
         type: 'driver' as const,
@@ -322,7 +356,7 @@ export function DriverManagement({
     ];
 
     return list.filter(item => {
-      const name = (item as any).full_name || '';
+      const name = item.full_name || '';
       const email = item.email || '';
       const query = searchQuery.toLowerCase();
 
@@ -330,7 +364,7 @@ export function DriverManagement({
       if (!matchesSearch) return false;
 
       if (item.type === 'driver') {
-        const isAgency = (item as any).is_contractor;
+        const isAgency = item.is_contractor;
         if (filterType === 'direct') return !isAgency;
         if (filterType === 'agency') return isAgency;
       } else {
@@ -412,7 +446,7 @@ export function DriverManagement({
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('driverManagement.noDrivers')}</h3>
                     <p className="text-gray-600">{t('driverManagement.noDriversSubtitle', 'Invite drivers or click the refresh icon.')}</p>
                 </div>
-            ) : combinedList.map((item: any) => {
+            ) : combinedList.map((item) => {
               const isInvite = item.type === 'invite';
               const isGhost = isInvite && item.isGhost;
               const ComplianceIcon = !isInvite ? item.compliance.Icon : null;
