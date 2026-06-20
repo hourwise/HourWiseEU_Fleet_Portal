@@ -10,8 +10,12 @@ import { scanDocument } from '../../lib/ocr';
 import { useDriverTachoSummary } from '../../hooks/useDriverTachoSummary';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type ProfileWithTacho = Profile & {
+  tacho_card_number?: string | null;
+};
 type Document = Database['public']['Tables']['driver_documents']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
+type Translator = (key: string, options?: Record<string, unknown>) => string;
 
 interface DriverDetailsModalProps {
   driver: Profile;
@@ -52,7 +56,7 @@ const useDocumentUpload = () => {
   return { file, setFile, idNumber, setIdNumber, expiryDate, setExpiryDate, reset, isScanning, handleScan };
 };
 
-const getDocumentStatus = (expiryDate: string | null | undefined, t: any) => {
+const getDocumentStatus = (expiryDate: string | null | undefined, t: Translator) => {
   if (!expiryDate) return { text: t('driverDetails.status.missingExpiry'), color: 'text-gray-500', Icon: () => null };
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const expiry = new Date(expiryDate);
@@ -101,7 +105,7 @@ export function DriverDetailsModal({
 }: DriverDetailsModalProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [formData, setFormData] = useState<Partial<Profile>>(driver);
+  const [formData, setFormData] = useState<Partial<ProfileWithTacho>>(driver);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [shifts, setShifts] = useState<WorkSession[]>([]);
   const [editingShift, setEditingShift] = useState<WorkSession | null>(null);
@@ -111,6 +115,12 @@ export function DriverDetailsModal({
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
   const tachoState = useDocumentUpload();
+  const {
+    idNumber: tachoIdNumber,
+    setIdNumber: setTachoIdNumber,
+    expiryDate: tachoExpiryDate,
+    setExpiryDate: setTachoExpiryDate,
+  } = tachoState;
   const { data: tachoSummary } = useDriverTachoSummary(driver.company_id ?? undefined, driver.id);
 
   const fetchDocuments = useCallback(async () => {
@@ -127,6 +137,16 @@ export function DriverDetailsModal({
     fetchDocuments();
     fetchRecentShifts();
   }, [fetchDocuments, fetchRecentShifts]);
+
+  useEffect(() => {
+    const profileCardNumber = (driver as ProfileWithTacho).tacho_card_number ?? tachoSummary?.cardNumber ?? '';
+    if (profileCardNumber && !tachoIdNumber) {
+      setTachoIdNumber(profileCardNumber);
+    }
+    if (tachoSummary?.cardExpiry && !tachoExpiryDate) {
+      setTachoExpiryDate(tachoSummary.cardExpiry);
+    }
+  }, [driver, setTachoExpiryDate, setTachoIdNumber, tachoExpiryDate, tachoIdNumber, tachoSummary?.cardExpiry, tachoSummary?.cardNumber]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -179,6 +199,8 @@ export function DriverDetailsModal({
       } else if (type === 'CPC_Card') {
         profileUpdates.cpc_dqc_number = state.idNumber;
         profileUpdates.cpc_dqc_expiry = state.expiryDate;
+      } else if (type === 'Tacho_Card') {
+        (profileUpdates as Partial<ProfileWithTacho>).tacho_card_number = state.idNumber.trim().toUpperCase();
       }
 
       if (Object.keys(profileUpdates).length > 0) {
@@ -189,9 +211,9 @@ export function DriverDetailsModal({
 
       state.reset();
       fetchDocuments();
-    } catch (err: Error | unknown) {
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      alert(t('driverDetails.errors.uploadError', { message: err.message }));
+      alert(t('driverDetails.errors.uploadError', { message: errorMessage }));
     } finally { setIsUploading(false); }
   };
 
@@ -213,7 +235,8 @@ export function DriverDetailsModal({
       driving_licence_number: formData.driving_licence_number,
       driving_licence_expiry: formData.driving_licence_expiry,
       cpc_dqc_number: formData.cpc_dqc_number,
-      cpc_dqc_expiry: formData.cpc_dqc_expiry
+      cpc_dqc_expiry: formData.cpc_dqc_expiry,
+      tacho_card_number: tachoState.idNumber.trim() ? tachoState.idNumber.trim().toUpperCase() : formData.tacho_card_number
     };
 
     try {
@@ -221,9 +244,10 @@ export function DriverDetailsModal({
       if (error) throw error;
       onSave();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error("Save failed:", err);
-      alert(t('driverDetails.errors.updateFailed') + ": " + err.message);
+      alert(t('driverDetails.errors.updateFailed') + ": " + errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -340,6 +364,18 @@ export function DriverDetailsModal({
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Last Download</p>
                       <p className="mt-2 text-sm font-bold text-slate-900">
                         {tachoSummary?.lastDownloadAt ? new Date(tachoSummary.lastDownloadAt).toLocaleString() : 'Not imported'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Card Number</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">
+                        {tachoSummary?.cardNumber ?? (driver as ProfileWithTacho).tacho_card_number ?? 'Not paired'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Card Expiry</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900">
+                        {tachoSummary?.cardExpiry ? new Date(tachoSummary.cardExpiry).toLocaleDateString() : 'Not recorded'}
                       </p>
                     </div>
                     <div className="rounded-xl border border-blue-100 bg-white p-4">

@@ -7,6 +7,8 @@ type DriverTachoDownloadStatus = TachoDownloadComplianceStatus | 'partial_identi
 
 export interface DriverTachoSummary {
   driverId: string;
+  cardNumber?: string;
+  cardExpiry?: string;
   lastDownloadAt?: string;
   downloadStatus?: DriverTachoDownloadStatus;
   truthScore?: number;
@@ -18,6 +20,8 @@ export interface DriverTachoSummary {
 interface DriverCardDownloadRow {
   downloaded_at?: string | null;
   download_status?: DriverTachoDownloadStatus | null;
+  card_number?: string | null;
+  card_expiry?: string | null;
 }
 
 interface TachoImportSummaryRow {
@@ -133,7 +137,7 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
         const tachoCardNumber = ((profileRow as { tacho_card_number?: string | null } | null)?.tacho_card_number ?? '').trim().toUpperCase();
         const downloadQueries = [
           driverCardDownloadQuery()
-            .select('downloaded_at, download_status')
+            .select('downloaded_at, download_status, card_number, card_expiry')
             .eq('company_id', companyId)
             .eq('driver_id', driverId)
             .order('downloaded_at', { ascending: false })
@@ -143,7 +147,7 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
         if (tachoCardNumber) {
           downloadQueries.push(
             driverCardDownloadQuery()
-              .select('downloaded_at, download_status')
+              .select('downloaded_at, download_status, card_number, card_expiry')
               .eq('company_id', companyId)
               .eq('card_number', tachoCardNumber)
               .order('downloaded_at', { ascending: false })
@@ -191,6 +195,8 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
         if (!cancelled) {
           setData({
             driverId,
+            cardNumber: (latestDownloadRow?.card_number ?? tachoCardNumber) || undefined,
+            cardExpiry: latestDownloadRow?.card_expiry ?? undefined,
             lastDownloadAt: latestDownloadRow?.downloaded_at ?? undefined,
             downloadStatus: latestDownloadRow?.download_status ?? undefined,
             truthScore: signal?.averageScore,

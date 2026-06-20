@@ -347,9 +347,13 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <ActionButton icon={<UserRound className="w-4 h-4" />} label="Open Personnel File" disabled={!activeDriverId || !onOpenPersonnelFile} onClick={() => activeDriverId && onOpenPersonnelFile?.(activeDriverId)} />
-          <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label="Open Compliance Actions" disabled={!activeDriverId || !onOpenComplianceActions} onClick={() => activeDriverId && onOpenComplianceActions?.(activeDriverId)} />
-          <ActionButton icon={<GraduationCap className="w-4 h-4" />} label="Open Training" disabled={!activeDriverId || !onOpenTraining} onClick={() => activeDriverId && onOpenTraining?.(activeDriverId)} />
+          {!isCandidateCard ? (
+            <>
+              <ActionButton icon={<UserRound className="w-4 h-4" />} label="Open Personnel File" disabled={!activeDriverId || !onOpenPersonnelFile} onClick={() => activeDriverId && onOpenPersonnelFile?.(activeDriverId)} />
+              <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label="Open Compliance Actions" disabled={!activeDriverId || !onOpenComplianceActions} onClick={() => activeDriverId && onOpenComplianceActions?.(activeDriverId)} />
+              <ActionButton icon={<GraduationCap className="w-4 h-4" />} label="Open Training" disabled={!activeDriverId || !onOpenTraining} onClick={() => activeDriverId && onOpenTraining?.(activeDriverId)} />
+            </>
+          ) : null}
           <ActionButton icon={<Download className="w-4 h-4" />} label="Export CSV" onClick={handleExportCsv} />
           <ActionButton icon={<FileText className="w-4 h-4" />} label="Report View" onClick={() => window.print()} />
         </div>
