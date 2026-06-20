@@ -84,6 +84,10 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     importId: selectedDriverId ? undefined : selectedImportId || undefined,
   });
   const blankTimelineDays = useMemo(() => buildBlankTimelineDays(range), [range]);
+  const calendarSummaries = useMemo(
+    () => buildCalendarSummaries(range, data?.dailySummaries ?? []),
+    [data?.dailySummaries, range]
+  );
 
   useEffect(() => {
     setSelectedDriverId(driverId ?? '');
@@ -137,19 +141,19 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const activeFocusedDate = readerFocusedDate ?? focusedDate;
 
   useEffect(() => {
-    if (!data?.dailySummaries?.length) {
+    if (!data) {
       setSelectedDay(null);
       return;
     }
     if (activeFocusedDate) {
-      const match = data.dailySummaries.find((day) => day.date === activeFocusedDate);
+      const match = calendarSummaries.find((day) => day.date === activeFocusedDate);
       if (match) {
         setSelectedDay(match);
         return;
       }
     }
-    setSelectedDay((current) => current ? data.dailySummaries.find((day) => day.date === current.date) ?? null : null);
-  }, [activeFocusedDate, data]);
+    setSelectedDay((current) => current ? calendarSummaries.find((day) => day.date === current.date) ?? null : null);
+  }, [activeFocusedDate, calendarSummaries, data]);
 
   const isCandidateCard = Boolean(data?.isCandidateCard);
   const activeDriverId = isCandidateCard ? '' : selectedDriverId || data?.identity.driverId;
@@ -171,7 +175,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     return `Opened from a ${sourceLabel} focused on ${format(new Date(`${activeFocusedDate}T12:00:00`), 'dd MMM yyyy')}.`;
   }, [activeFocusedDate, readerFocusedDate, selectedDay]);
 
-  const timelineDays = useMemo(() => (data?.dailySummaries ?? []).map((day) => ({
+  const timelineDays = useMemo(() => calendarSummaries.map((day) => ({
     date: new Date(day.date),
     activities: day.activities,
     markers: day.findingsCount + technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date).length + reconciliation.filter((item) => item.date === day.date && item.status !== 'matched').length,
@@ -180,7 +184,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       { label: 'Linked VU', count: technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date).length, tone: 'warning' as const },
       { label: 'Cross-check', count: reconciliation.filter((item) => item.date === day.date && item.status !== 'matched').length, tone: 'warning' as const },
     ],
-  })), [data, reconciliation, technicalEvents]);
+  })), [calendarSummaries, reconciliation, technicalEvents]);
 
   const trainingRecommendations = useMemo(() => buildTrainingRecommendations(findings, reconciliation), [findings, reconciliation]);
   const analysisSummary = useMemo(() => data ? buildAnalysisSummary(data.dailySummaries, findings, reconciliation) : null, [data, findings, reconciliation]);
@@ -327,7 +331,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
             </div>
             <TachoFilters value={range} onChange={setRange} />
           </div>
-          <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
+          <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(calendarSummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
         </div>
 
         <div className="space-y-6">
@@ -421,6 +425,49 @@ function buildBlankTimelineDays(range: TachoAnalysisRange): TimelineDay[] {
         { label: 'Linked VU', count: 0, tone: 'warning' as const },
         { label: 'Cross-check', count: 0, tone: 'warning' as const },
       ],
+    };
+  });
+}
+
+function buildCalendarSummaries(range: TachoAnalysisRange, summaries: TachoDaySummary[]): TachoDaySummary[] {
+  const byDate = new Map<string, TachoDaySummary>();
+
+  summaries.forEach((summary) => {
+    const existing = byDate.get(summary.date);
+    if (!existing) {
+      byDate.set(summary.date, { ...summary, activities: [...summary.activities] });
+      return;
+    }
+
+    byDate.set(summary.date, {
+      ...existing,
+      drivingMins: existing.drivingMins + summary.drivingMins,
+      workMins: existing.workMins + summary.workMins,
+      poaMins: existing.poaMins + summary.poaMins,
+      restMins: existing.restMins + summary.restMins,
+      appDrivingMins: (existing.appDrivingMins ?? 0) + (summary.appDrivingMins ?? 0),
+      findingsCount: existing.findingsCount + summary.findingsCount,
+      vuEventCount: (existing.vuEventCount ?? 0) + (summary.vuEventCount ?? 0),
+      activities: [...existing.activities, ...summary.activities].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    });
+  });
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  return Array.from({ length: rangeDayCount(range) }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - index);
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return byDate.get(dateKey) ?? {
+      date: dateKey,
+      drivingMins: 0,
+      workMins: 0,
+      poaMins: 0,
+      restMins: 0,
+      findingsCount: 0,
+      vuEventCount: 0,
+      activities: [],
     };
   });
 }

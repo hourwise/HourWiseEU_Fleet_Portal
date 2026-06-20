@@ -142,7 +142,7 @@ function MultiDayTimeline({
         ))}
       </div>
 
-      <div className="grid grid-cols-[136px,1fr,96px] items-center gap-3 px-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+      <div className="grid grid-cols-[15%,70%,15%] items-center gap-2 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
         <span>Day</span>
         <div className="relative h-4">
           {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
@@ -171,19 +171,19 @@ function MultiDayTimeline({
             <button
               key={day.date.toISOString()}
               onClick={() => onSelectDate?.(day.date)}
-              className={`w-full text-left rounded-2xl border p-4 transition ${
+              className={`w-full text-left rounded-2xl border p-3 transition ${
                 isSelected ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
-              <div className="grid gap-3 xl:grid-cols-[136px,1fr,auto] xl:items-center">
-                <div>
+              <div className="grid gap-2 xl:grid-cols-[15%,70%,15%] xl:items-center">
+                <div className="min-w-0">
                   <p className="text-sm font-black text-slate-900">{format(day.date, 'EEE d MMM')}</p>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
                     {dayStartTime} - {dayEndTime} | {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
                   </p>
                 </div>
 
-                <div className="relative h-9 rounded-lg border border-slate-200 bg-slate-100 overflow-hidden">
+                <div className="relative h-12 rounded-lg border border-slate-200 bg-slate-100 overflow-visible">
                   {[0, 4, 8, 12, 16, 20].map((hour) => (
                     <div
                       key={`${day.date.toISOString()}-${hour}`}
@@ -205,7 +205,7 @@ function MultiDayTimeline({
                     return (
                       <div
                         key={activity.id}
-                        className={`absolute inset-y-0 ${getRangeActivityColor(activity.activityType)} group`}
+                        className={`absolute inset-y-0 ${getRangeActivityColor(activity.activityType)} group overflow-visible`}
                         style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
                       >
                         <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap z-10">
@@ -216,19 +216,20 @@ function MultiDayTimeline({
                   })}
                 </div>
 
-                <div className="flex flex-wrap gap-2 xl:justify-end">
+                <div className="flex flex-wrap gap-1 xl:flex-col xl:items-end">
                   {day.markerGroups?.filter((group) => group.count > 0).map((group) => (
                     <span
                       key={`${day.date.toISOString()}-${group.label}`}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getMarkerToneClass(group.tone)}`}
+                      title={`${group.label}: ${group.count}`}
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide whitespace-nowrap ${getMarkerToneClass(group.tone)}`}
                     >
-                      {group.label}: {group.count}
+                      {compactMarkerLabel(group.label)}: {group.count}
                     </span>
                   ))}
                   {(!day.markerGroups || day.markerGroups.every((group) => group.count === 0)) &&
                     typeof day.markers === 'number' &&
                     day.markers > 0 && (
-                      <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black uppercase tracking-widest">
+                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-rose-700">
                         {day.markers} marker{day.markers === 1 ? '' : 's'}
                       </span>
                     )}
@@ -265,5 +266,18 @@ function getMarkerToneClass(tone: 'danger' | 'warning' | 'neutral') {
       return 'bg-amber-100 text-amber-700';
     default:
       return 'bg-slate-100 text-slate-700';
+  }
+}
+
+function compactMarkerLabel(label: string) {
+  switch (label.toLowerCase()) {
+    case 'findings':
+      return 'F';
+    case 'cross-check':
+      return 'X';
+    case 'linked vu':
+      return 'VU';
+    default:
+      return label;
   }
 }
