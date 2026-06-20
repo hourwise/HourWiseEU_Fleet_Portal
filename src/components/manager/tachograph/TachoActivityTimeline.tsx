@@ -1,4 +1,4 @@
-import { format, differenceInMinutes, startOfDay, isSameDay } from 'date-fns';
+import { format, differenceInMinutes, startOfDay, isSameDay, addDays } from 'date-fns';
 import { TachoActivity } from '../../../lib/compliance';
 import type { TachoActivitySegment } from '../../../lib/tacho/rules/types';
 
@@ -126,6 +126,11 @@ function MultiDayTimeline({
     );
   }
 
+  const explicitActivities = days
+    .flatMap((day) => day.activities)
+    .filter((activity) => new Date(activity.endTime).getTime() > new Date(activity.startTime).getTime())
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
@@ -160,12 +165,11 @@ function MultiDayTimeline({
 
       <div className="max-h-[40rem] space-y-2 overflow-y-auto pr-1">
         {days.map((day) => {
-          const dayStart = startOfDay(day.date);
-          const totalMinutesInDay = 24 * 60;
           const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
           const dayStartTime = day.activities.length > 0 ? format(new Date(day.activities[0].startTime), 'HH:mm') : '--:--';
           const dayEndTime =
             day.activities.length > 0 ? format(new Date(day.activities[day.activities.length - 1].endTime), 'HH:mm') : '--:--';
+          const visibleSegments = buildVisibleDaySegments(day.date, explicitActivities);
 
           return (
             <button
@@ -192,24 +196,15 @@ function MultiDayTimeline({
                     />
                   ))}
 
-                  {day.activities.map((activity) => {
-                    const start = new Date(activity.startTime);
-                    const end = new Date(activity.endTime);
-                    const offsetMins = differenceInMinutes(start, dayStart);
-                    const durationMins = differenceInMinutes(end, start);
-                    const leftPercent = (Math.max(0, offsetMins) / totalMinutesInDay) * 100;
-                    const widthPercent = (durationMins / totalMinutesInDay) * 100;
-
-                    if (widthPercent <= 0) return null;
-
+                  {visibleSegments.map((segment) => {
                     return (
                       <div
-                        key={activity.id}
-                        className={`absolute inset-y-0 ${getRangeActivityColor(activity.activityType)} group overflow-visible`}
-                        style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                        key={segment.id}
+                        className={`absolute inset-y-0 ${getRangeActivityColor(segment.activityType, segment.inferred)} group overflow-visible`}
+                        style={{ left: `${segment.leftPercent}%`, width: `${segment.widthPercent}%` }}
                       >
                         <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap z-10">
-                          {activity.activityType.replace('_', ' ')} | {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
+                          {segment.inferred ? 'inferred rest' : segment.activityType.replace('_', ' ')} | {format(segment.start, 'HH:mm')} - {format(segment.end, 'HH:mm')}
                         </div>
                       </div>
                     );
@@ -243,7 +238,83 @@ function MultiDayTimeline({
   );
 }
 
-function getRangeActivityColor(type: TachoActivitySegment['activityType']) {
+interface VisibleDaySegment {
+  id: string;
+  activityType: TachoActivitySegment['activityType'];
+  start: Date;
+  end: Date;
+  leftPercent: number;
+  widthPercent: number;
+  inferred?: boolean;
+}
+
+function buildVisibleDaySegments(dayDate: Date, explicitActivities: TachoActivitySegment[]): VisibleDaySegment[] {
+  const dayStart = startOfDay(dayDate);
+  const dayEnd = addDays(dayStart, 1);
+  const totalMinutesInDay = 24 * 60;
+  const sourceSegments = [
+    ...explicitActivities.map((activity) => ({
+      id: activity.id,
+      activityType: activity.activityType,
+      start: new Date(activity.startTime),
+      end: new Date(activity.endTime),
+      inferred: false,
+    })),
+    ...buildInferredRestSegments(explicitActivities),
+  ];
+
+  return sourceSegments
+    .map((segment) => {
+      const start = new Date(Math.max(segment.start.getTime(), dayStart.getTime()));
+      const end = new Date(Math.min(segment.end.getTime(), dayEnd.getTime()));
+      const durationMins = differenceInMinutes(end, start);
+      if (durationMins <= 0) return null;
+
+      return {
+        id: `${segment.id}-${format(dayStart, 'yyyy-MM-dd')}-${start.getTime()}`,
+        activityType: segment.activityType,
+        start,
+        end,
+        leftPercent: (differenceInMinutes(start, dayStart) / totalMinutesInDay) * 100,
+        widthPercent: (durationMins / totalMinutesInDay) * 100,
+        inferred: segment.inferred,
+      };
+    })
+    .filter((segment): segment is VisibleDaySegment => Boolean(segment))
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+function buildInferredRestSegments(explicitActivities: TachoActivitySegment[]) {
+  const minimumQualifyingRestMinutes = 9 * 60;
+  const maximumDailyRestDisplayMinutes = 24 * 60;
+  const inferred: Array<{
+    id: string;
+    activityType: TachoActivitySegment['activityType'];
+    start: Date;
+    end: Date;
+    inferred: true;
+  }> = [];
+
+  for (let index = 0; index < explicitActivities.length - 1; index += 1) {
+    const currentEnd = new Date(explicitActivities[index].endTime);
+    const nextStart = new Date(explicitActivities[index + 1].startTime);
+    const gapMins = differenceInMinutes(nextStart, currentEnd);
+    if (gapMins < minimumQualifyingRestMinutes) continue;
+    if (gapMins > maximumDailyRestDisplayMinutes) continue;
+
+    inferred.push({
+      id: `inferred-rest-${explicitActivities[index].id}-${explicitActivities[index + 1].id}`,
+      activityType: 'break_rest',
+      start: currentEnd,
+      end: nextStart,
+      inferred: true,
+    });
+  }
+
+  return inferred;
+}
+
+function getRangeActivityColor(type: TachoActivitySegment['activityType'], inferred = false) {
   switch (type) {
     case 'driving':
       return 'bg-emerald-500';
@@ -252,7 +323,7 @@ function getRangeActivityColor(type: TachoActivitySegment['activityType']) {
     case 'poa':
       return 'bg-blue-400';
     case 'break_rest':
-      return 'bg-slate-300';
+      return inferred ? 'bg-slate-300/80' : 'bg-slate-300';
     default:
       return 'bg-slate-200';
   }
