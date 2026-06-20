@@ -430,26 +430,20 @@ function buildBlankTimelineDays(range: TachoAnalysisRange): TimelineDay[] {
 }
 
 function buildCalendarSummaries(range: TachoAnalysisRange, summaries: TachoDaySummary[]): TachoDaySummary[] {
-  const byDate = new Map<string, TachoDaySummary>();
+  const activitiesByDate = new Map<string, TachoDaySummary['activities']>();
 
   summaries.forEach((summary) => {
-    const existing = byDate.get(summary.date);
-    if (!existing) {
-      byDate.set(summary.date, { ...summary, activities: [...summary.activities] });
-      return;
-    }
+    const existing = activitiesByDate.get(summary.date) ?? [];
+    const bySignature = new Map(existing.map((activity) => [activitySignature(activity), activity]));
 
-    byDate.set(summary.date, {
-      ...existing,
-      drivingMins: existing.drivingMins + summary.drivingMins,
-      workMins: existing.workMins + summary.workMins,
-      poaMins: existing.poaMins + summary.poaMins,
-      restMins: existing.restMins + summary.restMins,
-      appDrivingMins: (existing.appDrivingMins ?? 0) + (summary.appDrivingMins ?? 0),
-      findingsCount: existing.findingsCount + summary.findingsCount,
-      vuEventCount: (existing.vuEventCount ?? 0) + (summary.vuEventCount ?? 0),
-      activities: [...existing.activities, ...summary.activities].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    summary.activities.forEach((activity) => {
+      bySignature.set(activitySignature(activity), activity);
     });
+
+    activitiesByDate.set(
+      summary.date,
+      Array.from(bySignature.values()).sort((left, right) => left.startTime.localeCompare(right.startTime))
+    );
   });
 
   const today = new Date();
@@ -459,7 +453,25 @@ function buildCalendarSummaries(range: TachoAnalysisRange, summaries: TachoDaySu
     const date = new Date(today);
     date.setDate(today.getDate() - index);
     const dateKey = format(date, 'yyyy-MM-dd');
-    return byDate.get(dateKey) ?? {
+    const activities = activitiesByDate.get(dateKey) ?? [];
+    if (activities.length > 0) {
+      return {
+        date: dateKey,
+        drivingMins: sumActivityMins(activities, 'driving'),
+        workMins: sumActivityMins(activities, 'work'),
+        poaMins: sumActivityMins(activities, 'poa'),
+        restMins: sumActivityMins(activities, 'break_rest'),
+        findingsCount: summaries
+          .filter((summary) => summary.date === dateKey)
+          .reduce((total, summary) => Math.max(total, summary.findingsCount), 0),
+        vuEventCount: summaries
+          .filter((summary) => summary.date === dateKey)
+          .reduce((total, summary) => Math.max(total, summary.vuEventCount ?? 0), 0),
+        activities,
+      };
+    }
+
+    return {
       date: dateKey,
       drivingMins: 0,
       workMins: 0,
@@ -470,6 +482,25 @@ function buildCalendarSummaries(range: TachoAnalysisRange, summaries: TachoDaySu
       activities: [],
     };
   });
+}
+
+function activitySignature(activity: TachoDaySummary['activities'][number]) {
+  return [
+    activity.driverId ?? '',
+    activity.vehicleId ?? '',
+    activity.source,
+    activity.activityType,
+    activity.startTime,
+    activity.endTime,
+    activity.durationMins,
+    activity.label ?? '',
+  ].join('|');
+}
+
+function sumActivityMins(activities: TachoDaySummary['activities'], activityType: TachoDaySummary['activities'][number]['activityType']) {
+  return activities
+    .filter((activity) => activity.activityType === activityType)
+    .reduce((total, activity) => total + activity.durationMins, 0);
 }
 
 function buildAnalysisSummary(

@@ -3,6 +3,7 @@ import type {
   ParserDriverCardDownload,
   ParserVehicleUnitDownload,
   TachoAnalysisRange,
+  TachoActivitySegment,
   TachoDaySummary,
   TachoFinding,
   TachoImportFileType,
@@ -178,6 +179,71 @@ function fallbackActivitySegments(bundle: TachoParserBundle) {
   return fallbackDaySummaries(bundle.daySummaries).flatMap((day) => day.activities);
 }
 
+function segmentDurationMins(segment: Pick<TachoActivitySegment, 'startTime' | 'endTime' | 'durationMins'>) {
+  if (Number.isFinite(segment.durationMins) && segment.durationMins > 0) return segment.durationMins;
+  return Math.max(0, Math.round((new Date(segment.endTime).getTime() - new Date(segment.startTime).getTime()) / 60000));
+}
+
+function dedupeActivitySegments(segments: TachoActivitySegment[]) {
+  const bySignature = new Map<string, TachoActivitySegment>();
+
+  segments.forEach((segment) => {
+    const durationMins = segmentDurationMins(segment);
+    const signature = [
+      segment.driverId ?? '',
+      segment.vehicleId ?? '',
+      segment.source,
+      segment.activityType,
+      segment.startTime,
+      segment.endTime,
+      durationMins,
+      segment.label ?? '',
+    ].join('|');
+
+    const existing = bySignature.get(signature);
+    if (!existing) {
+      bySignature.set(signature, { ...segment, durationMins });
+      return;
+    }
+
+    if (segment.confidence === 'high' && existing.confidence !== 'high') {
+      bySignature.set(signature, { ...segment, durationMins });
+    }
+  });
+
+  return Array.from(bySignature.values()).sort((left, right) => left.startTime.localeCompare(right.startTime));
+}
+
+function buildDaySummariesFromSegments(segments: TachoActivitySegment[]): TachoDaySummary[] {
+  const byDate = new Map<string, TachoDaySummary>();
+
+  segments.forEach((segment) => {
+    const date = segment.startTime.slice(0, 10);
+    const current = byDate.get(date) ?? {
+      date,
+      drivingMins: 0,
+      workMins: 0,
+      poaMins: 0,
+      restMins: 0,
+      findingsCount: 0,
+      vuEventCount: 0,
+      activities: [],
+    };
+    const durationMins = segmentDurationMins(segment);
+
+    if (segment.activityType === 'driving') current.drivingMins += durationMins;
+    if (segment.activityType === 'work') current.workMins += durationMins;
+    if (segment.activityType === 'poa') current.poaMins += durationMins;
+    if (segment.activityType === 'break_rest') current.restMins += durationMins;
+
+    current.activities.push({ ...segment, durationMins });
+    current.activities.sort((left, right) => left.startTime.localeCompare(right.startTime));
+    byDate.set(date, current);
+  });
+
+  return Array.from(byDate.values()).sort((left, right) => right.date.localeCompare(left.date));
+}
+
 export function deriveVehicleMotionDiscrepancies(
   technicalEvents: TachoFinding[],
   findings: TachoFinding[]
@@ -231,7 +297,8 @@ export function adaptDriverBundleToAnalysis(
   const importRecord = getBundleImportRecord(bundle);
   const resolvedDriverId = download?.driverId ?? importRecord.driverId ?? '';
   const isCandidateCard = !resolvedDriverId;
-  const daySummaries = fallbackDaySummaries(bundle.daySummaries);
+  const activitySegments = dedupeActivitySegments(fallbackActivitySegments(bundle));
+  const daySummaries = buildDaySummariesFromSegments(activitySegments);
   const findings = bundle.findings ?? [];
   const technicalEvents = bundle.technicalEvents ?? [];
   const drivingBreaches = findings.filter((finding) => finding.ruleCode.startsWith('DRV_')).length;
@@ -269,7 +336,7 @@ export function adaptDriverBundleToAnalysis(
         driverDownloadStatus(download) === 'ok' ? 'good' : 'warning'
       ),
     ],
-    activitySegments: fallbackActivitySegments(bundle),
+    activitySegments,
     dailySummaries: daySummaries,
     findings,
     technicalEvents,
