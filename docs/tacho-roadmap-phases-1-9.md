@@ -62,6 +62,8 @@ Based on the current frontend and this implementation pass:
   - the helper now defaults `start-read` to a built-in read-only driver-card capture container with real EF bytes and per-file hashes while the final certified `.C1B` encoder remains outstanding
   - `process-tacho` now recognizes the HourWise read-only capture container and records it as a controlled import with sanitized EF metadata instead of treating it as a parser failure
   - `process-tacho` now decodes EF `0520` card identity and provisional EF `0504` daily activity records from the HourWise read-only capture container
+  - `process-tacho` now supersedes older HourWise helper read-only captures for the same company/card or driver before inserting the latest derived analysis rows, so repeated live card reads no longer accumulate duplicate timeline totals
+  - helper-generated driver compliance/risk signals are now tagged with `source = hourwise_read_only_capture` so future helper snapshots can be replaced without touching certified/manual import signals
   - the helper contract has been validated with placeholder bytes and a simulated external export command producing fake bytes
   - the reader panel now includes a first customer-facing HourWise reader console inspired by the Tachomaster-style reference without copying its visual scheme
   - a production helper-to-Supabase handoff contract is now defined against the live import pipeline
@@ -144,6 +146,18 @@ This section captures the current live-card progress so work can resume after a 
   - `tachograph_findings`
   - `tachograph_reconciliation_items`
   - driver compliance/risk signals when the card is linked to a driver profile
+- Latest backend retention/idempotency checkpoint, 2026-06-20:
+  - `process-tacho` first clears existing derived rows for the current `import_id`, making retries of the same import safe
+  - for HourWise helper read-only driver-card captures, a newer successful read now supersedes older helper captures for the same decoded card number or linked driver profile
+  - superseded helper imports keep their `tachograph_files` audit row, but derived rows are removed from activity, day summary, finding, reconciliation, raw activity, speed, and download tables
+  - superseded import metadata is marked with `helper_capture_superseded_by_import_id`, `helper_capture_superseded_at`, and `helper_capture_active_analysis_rows = false`
+  - the new import metadata records `helper_capture_superseded_import_count` and the first superseded import ids
+  - remote indexes were added for helper retention lookups:
+    - `idx_tachograph_files_company_source_card_uploaded`
+    - `idx_tachograph_files_company_source_driver_uploaded`
+    - `idx_driver_tacho_compliance_signals_source`
+    - `idx_driver_tacho_risk_signals_source`
+  - this protects the Driver Card Analysis RPCs, which query driver/date activity ranges and would otherwise aggregate repeated helper reads across multiple imports
 - Confirmed decoded fields from the real test card include:
   - driver holder name
   - tachograph card number hint

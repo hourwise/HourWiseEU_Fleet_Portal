@@ -19,6 +19,7 @@ const PARSER_VERSION = "readesm@1.0.17";
 const HOURWISE_READ_ONLY_CAPTURE_SCHEMA = "hourwise.tachograph.driver-card.read-only-capture.v1";
 const HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT = "hourwise_read_only_capture_v1";
 const HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION = "hourwise-read-only-capture@1";
+const HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE = "hourwise_read_only_capture";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
 const corsHeaders = {
@@ -36,6 +37,13 @@ type ImportRecord = {
   filename?: string | null;
   metadata?: Record<string, unknown> | null;
   source_type?: string | null;
+};
+
+type TachographFileSupersedeCandidate = {
+  id: string;
+  driver_id: string | null;
+  external_card_number: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
 type HourWiseReadOnlyCaptureFile = {
@@ -888,6 +896,14 @@ async function handleHourWiseReadOnlyCapture(
     summaryRow.app_driving_mins = matchingReconciliation?.app_driving_mins ?? null;
   }
 
+  const supersededImportIds = await supersedePreviousHourWiseDriverCardReads(supabaseAdmin, {
+    companyId: record.company_id ?? null,
+    currentImportId: record.id,
+    driverId,
+    cardNumber: cardIdentity?.cardNumber ?? null,
+    supersededByProcessedAt: processedAt,
+  });
+
   if (rawActivities.length > 0) {
     const { error } = await supabaseAdmin.from("tachograph_activities").insert(rawActivities);
     if (error) {
@@ -918,20 +934,22 @@ async function handleHourWiseReadOnlyCapture(
 
   if (driverId && normalizedActivities.length > 0) {
     const generatedAt = summaryWindow.endTime ?? downloadedAt;
-    const complianceSignals = buildComplianceSignals({
-      companyId: record.company_id ?? null,
-      driverId,
-      findings,
-      reconciliationRows,
-      generatedAt,
-    });
-    const riskSignals = buildRiskSignals({
-      companyId: record.company_id ?? null,
-      driverId,
-      complianceSignals,
-      reconciliationRows,
-      generatedAt,
-    });
+      const complianceSignals = buildComplianceSignals({
+        companyId: record.company_id ?? null,
+        driverId,
+        findings,
+        reconciliationRows,
+        generatedAt,
+        source: HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE,
+      });
+      const riskSignals = buildRiskSignals({
+        companyId: record.company_id ?? null,
+        driverId,
+        complianceSignals,
+        reconciliationRows,
+        generatedAt,
+        source: HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE,
+      });
 
     if (complianceSignals.length > 0) {
       const { error } = await supabaseAdmin.from("driver_tacho_compliance_signals").insert(complianceSignals);
@@ -984,6 +1002,8 @@ async function handleHourWiseReadOnlyCapture(
     helper_capture_activity_change_count: activityParse.changeCount,
     helper_capture_activity_warning: activityParse.warning,
     helper_capture_raw_activity_insert_warning: rawActivityInsertWarning,
+    helper_capture_superseded_import_count: supersededImportIds.length,
+    helper_capture_superseded_import_ids: supersededImportIds.slice(0, 25),
     driver_name: cardIdentity?.driverName ?? record.metadata?.driver_name ?? null,
     driver_card_number_hint: cardIdentity?.cardNumber ?? record.metadata?.driver_card_number_hint ?? null,
     summary: normalizedActivities.length > 0
@@ -1311,6 +1331,132 @@ async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, i
   await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_reconciliation_items").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_processing_runs").delete().eq("import_id", importId);
+}
+
+async function clearDerivedImportData(supabaseAdmin: ReturnType<typeof createClient>, importIds: string[]) {
+  if (importIds.length === 0) return;
+  await supabaseAdmin.from("tachograph_activities").delete().in("file_id", importIds);
+  await supabaseAdmin.from("tachograph_speed_logs").delete().in("file_id", importIds);
+  await supabaseAdmin.from("driver_card_downloads").delete().in("import_id", importIds);
+  await supabaseAdmin.from("vehicle_unit_downloads").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_activity_segments").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_day_summaries").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_findings").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_technical_events").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").delete().in("import_id", importIds);
+  await supabaseAdmin.from("tachograph_reconciliation_items").delete().in("import_id", importIds);
+}
+
+async function supersedePreviousHourWiseDriverCardReads(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  input: {
+    companyId: string | null;
+    currentImportId: string;
+    driverId: string | null;
+    cardNumber: string | null;
+    supersededByProcessedAt: string;
+  }
+) {
+  if (!input.companyId || (!input.driverId && !input.cardNumber)) return [];
+
+  const candidates = new Map<string, TachographFileSupersedeCandidate>();
+
+  if (input.cardNumber) {
+    const { data, error } = await supabaseAdmin
+      .from("tachograph_files")
+      .select("id, driver_id, external_card_number, metadata")
+      .eq("company_id", input.companyId)
+      .eq("source_type", "driver_card")
+      .eq("external_card_number", normalizeCardNumber(input.cardNumber))
+      .neq("id", input.currentImportId)
+      .limit(500);
+    if (error) throw error;
+    for (const row of (data ?? []) as TachographFileSupersedeCandidate[]) candidates.set(row.id, row);
+  }
+
+  if (input.driverId) {
+    const { data, error } = await supabaseAdmin
+      .from("tachograph_files")
+      .select("id, driver_id, external_card_number, metadata")
+      .eq("company_id", input.companyId)
+      .eq("source_type", "driver_card")
+      .eq("driver_id", input.driverId)
+      .neq("id", input.currentImportId)
+      .limit(500);
+    if (error) throw error;
+    for (const row of (data ?? []) as TachographFileSupersedeCandidate[]) candidates.set(row.id, row);
+  }
+
+  const supersededRows = [...candidates.values()].filter((row) =>
+    isHourWiseReadOnlyTachographFile(row) &&
+    matchesSupersededCardOrDriver(row, {
+      driverId: input.driverId,
+      cardNumber: input.cardNumber,
+    })
+  );
+  const supersededImportIds = supersededRows.map((row) => row.id);
+  if (supersededImportIds.length === 0) return [];
+
+  await clearDerivedImportData(supabaseAdmin, supersededImportIds);
+
+  if (input.driverId) {
+    await supabaseAdmin
+      .from("driver_tacho_compliance_signals")
+      .delete()
+      .eq("company_id", input.companyId)
+      .eq("driver_id", input.driverId)
+      .eq("source", HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE);
+    await supabaseAdmin
+      .from("driver_tacho_risk_signals")
+      .delete()
+      .eq("company_id", input.companyId)
+      .eq("driver_id", input.driverId)
+      .eq("source", HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE);
+  }
+
+  for (const row of supersededRows) {
+    const metadata = mergeMetadata(row.metadata, {
+      helper_capture_superseded_by_import_id: input.currentImportId,
+      helper_capture_superseded_at: input.supersededByProcessedAt,
+      helper_capture_active_analysis_rows: false,
+      summary: "Superseded by a newer HourWise helper card read. Import audit record retained; derived analysis rows were replaced.",
+    });
+    const { error } = await supabaseAdmin
+      .from("tachograph_files")
+      .update({ metadata })
+      .eq("id", row.id);
+    if (error) throw error;
+  }
+
+  return supersededImportIds;
+}
+
+function isHourWiseReadOnlyTachographFile(row: TachographFileSupersedeCandidate) {
+  return (
+    isHourWiseReadOnlyCaptureMetadata(row.metadata) ||
+    stringOrNull(row.metadata?.parser_version) === HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION ||
+    stringOrNull(row.metadata?.helper_capture_schema) === HOURWISE_READ_ONLY_CAPTURE_SCHEMA
+  );
+}
+
+function matchesSupersededCardOrDriver(
+  row: TachographFileSupersedeCandidate,
+  input: { driverId: string | null; cardNumber: string | null }
+) {
+  if (input.driverId && row.driver_id === input.driverId) return true;
+  if (!input.cardNumber) return false;
+
+  const cardNumber = normalizeCardNumber(input.cardNumber);
+  const rowCardNumber =
+    normalizeCardNumber(row.external_card_number) ||
+    normalizeCardNumber(stringOrNull(row.metadata?.driver_card_number_hint)) ||
+    normalizeCardNumber(stringOrNull(row.metadata?.helper_capture_card_number));
+
+  return Boolean(rowCardNumber && rowCardNumber === cardNumber);
+}
+
+function normalizeCardNumber(value: string | null | undefined) {
+  return stringOrNull(value)?.replace(/\s+/g, "").toUpperCase() ?? null;
 }
 
 async function fetchWorkSessionsForRange(
@@ -1957,6 +2103,7 @@ function buildComplianceSignals(input: {
   findings: FindingRow[];
   reconciliationRows: ReconciliationRow[];
   generatedAt: string;
+  source?: string;
 }) {
   return SIGNAL_PERIODS.map((periodDays) => {
     const since = new Date(input.generatedAt);
@@ -2009,7 +2156,7 @@ function buildComplianceSignals(input: {
       reconciliation_summary: reconciliationSummary,
       review_focus: reviewFocus,
       has_data: true,
-      source: "normalized_findings",
+      source: input.source ?? "normalized_findings",
       generated_at: input.generatedAt,
     };
   });
@@ -2040,6 +2187,7 @@ function buildRiskSignals(input: {
   }>;
   reconciliationRows: ReconciliationRow[];
   generatedAt: string;
+  source?: string;
 }) {
   return SIGNAL_PERIODS.map((periodDays) => {
     const compliance = input.complianceSignals.find((signal) => signal.period_days === periodDays);
@@ -2079,7 +2227,7 @@ function buildRiskSignals(input: {
         }),
         missingMileage: [],
       }),
-      source: "normalized_findings",
+      source: input.source ?? "normalized_findings",
       generated_at: input.generatedAt,
     };
   });
