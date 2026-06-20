@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AlertTriangle, BadgeAlert, CreditCard, GraduationCap, ShieldAlert, UserRound } from 'lucide-react';
+import { AlertTriangle, BadgeAlert, CreditCard, Download, FileText, GraduationCap, Laptop, Loader2, RefreshCw, ShieldAlert, UserRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDriverCardAnalysis } from '../../../hooks/useDriverCardAnalysis';
 import { useDrivers } from '../../../hooks/useDrivers';
+import { useTachoReaderWorkflow, type TachoReaderAnalysisTarget } from '../../../hooks/useTachoReaderWorkflow';
 import { supabase } from '../../../lib/supabase';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
-import { TachoReaderStatusOverlay } from './TachoReaderStatusOverlay';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
+  importId?: string;
   focusedDate?: string;
   onOpenImportCentre?: () => void;
   onOpenPersonnelFile?: (driverId: string) => void;
@@ -32,35 +33,126 @@ interface TrainingRecommendation {
 const EMPTY_FINDINGS: TachoFinding[] = [];
 const EMPTY_RECONCILIATION: TachoReconciliationItem[] = [];
 
-export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, onOpenPersonnelFile, onOpenComplianceActions, onOpenTraining }: DriverCardAnalysisProps) {
+type TimelineDay = {
+  date: Date;
+  activities: TachoDaySummary['activities'];
+  markers?: number;
+  markerGroups?: {
+    label: string;
+    count: number;
+    tone: 'danger' | 'warning' | 'neutral';
+  }[];
+};
+
+export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImportCentre, onOpenPersonnelFile, onOpenComplianceActions, onOpenTraining }: DriverCardAnalysisProps) {
   const { profile } = useAuth();
   const [range, setRange] = useState<TachoAnalysisRange>('7d');
   const [selectedDay, setSelectedDay] = useState<TachoDaySummary | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState(driverId ?? '');
+  const [selectedImportId, setSelectedImportId] = useState(importId ?? '');
+  const [readerFocusedDate, setReaderFocusedDate] = useState<string | null>(null);
+  const [liveReaderTargetActive, setLiveReaderTargetActive] = useState(false);
   const [assigningTrainingId, setAssigningTrainingId] = useState<string | null>(null);
   const [justAssignedTrainingId, setJustAssignedTrainingId] = useState<string | null>(null);
+  const autoReadStartedRef = useRef(false);
+  const handleReaderAnalysisReady = useCallback((target: TachoReaderAnalysisTarget) => {
+    if (target.sourceType && target.sourceType !== 'driver_card') return;
+    if (target.driverId) {
+      setSelectedDriverId(target.driverId);
+      setSelectedImportId('');
+    } else {
+      setSelectedDriverId('');
+      setSelectedImportId(target.importId);
+    }
+    setReaderFocusedDate(target.focusedDate ?? null);
+    setLiveReaderTargetActive(true);
+  }, []);
+  const readerWorkflow = useTachoReaderWorkflow({
+    sourceType: 'driver_card',
+    onAnalysisReady: handleReaderAnalysisReady,
+  });
+  const {
+    status: readerStatus,
+    commandPending: readerCommandPending,
+    importPending: readerImportPending,
+    sendCommand: sendReaderCommand,
+  } = readerWorkflow;
   const { data: drivers = [] } = useDrivers(profile?.company_id ?? undefined);
-  const { data, loading, error, emptyState, isMock } = useDriverCardAnalysis(range, { driverId: selectedDriverId || undefined });
+  const { data, loading, error, emptyState, isMock } = useDriverCardAnalysis(range, {
+    driverId: selectedDriverId || undefined,
+    importId: selectedDriverId ? undefined : selectedImportId || undefined,
+  });
+  const blankTimelineDays = useMemo(() => buildBlankTimelineDays(range), [range]);
 
-  useEffect(() => { setSelectedDriverId(driverId ?? ''); }, [driverId]);
+  useEffect(() => {
+    setSelectedDriverId(driverId ?? '');
+    if (driverId) {
+      setReaderFocusedDate(null);
+      setLiveReaderTargetActive(false);
+    }
+  }, [driverId]);
+  useEffect(() => {
+    setSelectedImportId(importId ?? '');
+    if (importId) {
+      setSelectedDriverId('');
+      setReaderFocusedDate(null);
+      setLiveReaderTargetActive(false);
+    }
+  }, [importId]);
+
+  useEffect(() => {
+    if (!readerStatus.cardPresent || readerStatus.stage === 'ready' || readerStatus.stage === 'helper_unavailable') {
+      autoReadStartedRef.current = false;
+    }
+    if (
+      readerStatus.stage !== 'card_inserted' ||
+      !readerStatus.canStartRead ||
+      readerCommandPending ||
+      readerImportPending ||
+      autoReadStartedRef.current
+    ) {
+      return;
+    }
+    autoReadStartedRef.current = true;
+    sendReaderCommand('start-read');
+  }, [
+    readerCommandPending,
+    readerImportPending,
+    readerStatus.canStartRead,
+    readerStatus.cardPresent,
+    readerStatus.stage,
+    sendReaderCommand,
+  ]);
+
+  useEffect(() => {
+    if (!liveReaderTargetActive || readerStatus.cardPresent) return;
+    if (readerStatus.stage !== 'ready' && readerStatus.stage !== 'helper_unavailable') return;
+    setSelectedDriverId('');
+    setSelectedImportId('');
+    setReaderFocusedDate(null);
+    setLiveReaderTargetActive(false);
+  }, [liveReaderTargetActive, readerStatus.cardPresent, readerStatus.stage]);
+
+  const activeFocusedDate = readerFocusedDate ?? focusedDate;
 
   useEffect(() => {
     if (!data?.dailySummaries?.length) {
       setSelectedDay(null);
       return;
     }
-    if (focusedDate) {
-      const match = data.dailySummaries.find((day) => day.date === focusedDate);
+    if (activeFocusedDate) {
+      const match = data.dailySummaries.find((day) => day.date === activeFocusedDate);
       if (match) {
         setSelectedDay(match);
         return;
       }
     }
-    setSelectedDay((current) => current ? data.dailySummaries.find((day) => day.date === current.date) ?? data.dailySummaries[0] ?? null : data.dailySummaries[0] ?? null);
-  }, [data, focusedDate]);
+    setSelectedDay((current) => current ? data.dailySummaries.find((day) => day.date === current.date) ?? null : null);
+  }, [activeFocusedDate, data]);
 
-  const activeDriverId = selectedDriverId || data?.identity.driverId;
+  const isCandidateCard = Boolean(data?.isCandidateCard);
+  const activeDriverId = isCandidateCard ? '' : selectedDriverId || data?.identity.driverId;
   const filteredDrivers = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
     return drivers
@@ -73,10 +165,11 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
   const technicalEvents = data?.technicalEvents ?? EMPTY_FINDINGS;
   const reconciliation = data?.reconciliation ?? EMPTY_RECONCILIATION;
   const dayReason = useMemo(() => {
-    if (!selectedDay || !focusedDate) return null;
-    if (selectedDay.date !== focusedDate) return `Opened from a review queue focused on ${format(new Date(`${focusedDate}T12:00:00`), 'dd MMM yyyy')}. That day was not present in the current range, so the workspace fell back to the nearest loaded day.`;
-    return `Opened from a review queue or alert focused on ${format(new Date(`${focusedDate}T12:00:00`), 'dd MMM yyyy')}.`;
-  }, [focusedDate, selectedDay]);
+    if (!selectedDay || !activeFocusedDate) return null;
+    const sourceLabel = readerFocusedDate ? 'live card read' : 'review queue or alert';
+    if (selectedDay.date !== activeFocusedDate) return `Opened from a ${sourceLabel} focused on ${format(new Date(`${activeFocusedDate}T12:00:00`), 'dd MMM yyyy')}. That day was not present in the current range, so the workspace fell back to the nearest loaded day.`;
+    return `Opened from a ${sourceLabel} focused on ${format(new Date(`${activeFocusedDate}T12:00:00`), 'dd MMM yyyy')}.`;
+  }, [activeFocusedDate, readerFocusedDate, selectedDay]);
 
   const timelineDays = useMemo(() => (data?.dailySummaries ?? []).map((day) => ({
     date: new Date(day.date),
@@ -90,6 +183,16 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
   })), [data, reconciliation, technicalEvents]);
 
   const trainingRecommendations = useMemo(() => buildTrainingRecommendations(findings, reconciliation), [findings, reconciliation]);
+  const analysisSummary = useMemo(() => data ? buildAnalysisSummary(data.dailySummaries, findings, reconciliation) : null, [data, findings, reconciliation]);
+  const selectedDayFindings = selectedDay
+    ? findings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date)
+    : [];
+  const selectedDayEvents = selectedDay
+    ? technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date)
+    : [];
+  const selectedDayReconciliation = selectedDay
+    ? reconciliation.filter((item) => item.date === selectedDay.date && item.status !== 'matched')
+    : [];
 
   const handleAssignTraining = async (recommendation: TrainingRecommendation) => {
     if (!profile?.company_id || !profile.id || !activeDriverId) return;
@@ -113,19 +216,40 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
     }
   };
 
-  const picker = <TachoWorkspacePicker title="Driver Workspace Target" searchLabel="Search drivers" selectLabel="Open driver" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedDriverId} onSelectChange={setSelectedDriverId} options={filteredDrivers} fallbackLabel="Latest imported driver card" />;
-  const readerOverlay = <TachoReaderStatusOverlay sourceType="driver_card" onOpenImportCentre={onOpenImportCentre} />;
+  const handleSelectDriver = (value: string) => {
+    setSelectedDriverId(value);
+    setSelectedImportId('');
+    setReaderFocusedDate(null);
+    setLiveReaderTargetActive(false);
+  };
+  const picker = <TachoWorkspacePicker title="Driver Workspace Target" searchLabel="Search drivers" selectLabel="Open driver" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedDriverId} onSelectChange={handleSelectDriver} options={filteredDrivers} fallbackLabel={selectedImportId ? 'Candidate / unlinked card check' : 'Latest imported driver card'} />;
+  const readerPanel = <DriverCardReaderPanel workflow={readerWorkflow} onOpenImportCentre={onOpenImportCentre} />;
 
-  if (loading) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title="Loading driver card analysis..." /></div>;
-  if (error) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={error} tone="error" /></div>;
-  if (!data) return <div className="space-y-6">{picker}{readerOverlay}<StateCard title={emptyState?.title ?? 'No driver-card analysis available'} text={emptyState?.guidance ?? 'Pick a driver with imported card data or upload a new card file.'} tone="warning" /></div>;
+  if (loading) return <div className="space-y-6">{picker}{readerPanel}<StateCard title="Loading driver card analysis..." /></div>;
+  if (error) return <div className="space-y-6">{picker}{readerPanel}<StateCard title={error} tone="error" /></div>;
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        {picker}
+        {readerPanel}
+        <BlankDriverCardWorkspace
+          range={range}
+          onRangeChange={setRange}
+          timelineDays={blankTimelineDays}
+          title={emptyState?.title ?? 'Ready for driver card'}
+          guidance={emptyState?.guidance ?? 'Insert a card to read and display the latest activity, or use Import Centre for a manual file upload.'}
+        />
+      </div>
+    );
+  }
 
   const statusTone = data.identity.downloadStatus === 'overdue' ? 'bg-rose-100 text-rose-700' : data.identity.downloadStatus === 'due_soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+  const handleExportCsv = () => exportDriverCardCsv(data.identity.driverName, data.dailySummaries);
 
   return (
     <div className="space-y-6">
       {picker}
-      {readerOverlay}
+      {readerPanel}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
@@ -133,8 +257,9 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
             <div className="p-3 bg-blue-50 rounded-xl"><CreditCard className="w-7 h-7 text-blue-600" /></div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Driver Card Analysis</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isCandidateCard ? 'Candidate Card Check' : 'Driver Card Analysis'}</p>
                 {isMock ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">Mock Fallback</span> : null}
+                {isCandidateCard ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Unlinked</span> : null}
               </div>
               <h2 className="text-3xl font-black text-slate-900">{data.identity.driverName}</h2>
               <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-500">
@@ -146,7 +271,6 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
           </div>
           <div className="flex flex-col items-start xl:items-end gap-3">
             <span className={`px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest ${statusTone}`}>{data.identity.downloadStatus.replace('_', ' ')}</span>
-            <TachoFilters value={range} onChange={setRange} />
           </div>
         </div>
 
@@ -154,20 +278,54 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
           <ActionButton icon={<UserRound className="w-4 h-4" />} label="Open Personnel File" disabled={!activeDriverId || !onOpenPersonnelFile} onClick={() => activeDriverId && onOpenPersonnelFile?.(activeDriverId)} />
           <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label="Open Compliance Actions" disabled={!activeDriverId || !onOpenComplianceActions} onClick={() => activeDriverId && onOpenComplianceActions?.(activeDriverId)} />
           <ActionButton icon={<GraduationCap className="w-4 h-4" />} label="Open Training" disabled={!activeDriverId || !onOpenTraining} onClick={() => activeDriverId && onOpenTraining?.(activeDriverId)} />
+          <ActionButton icon={<Download className="w-4 h-4" />} label="Export CSV" onClick={handleExportCsv} />
+          <ActionButton icon={<FileText className="w-4 h-4" />} label="Report View" onClick={() => window.print()} />
         </div>
       </div>
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
 
+      {isCandidateCard ? (
+        <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Pre-employment screening mode</p>
+          <h3 className="mt-1 text-xl font-black text-blue-950">This card is not linked to a profile or invite</h3>
+          <p className="mt-2 max-w-4xl text-sm font-medium text-blue-900">
+            Review the decoded card identity and activity here before creating an invite or personnel file. This view does not update a driver file, assign training, or write compliance actions until the card is deliberately paired.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <ActionButton icon={<CreditCard className="w-4 h-4" />} label="Open Import Review" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
+            <ActionButton icon={<FileText className="w-4 h-4" />} label="Screening Report" onClick={() => window.print()} />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Provisional Reader Result</p>
+            <h3 className="mt-1 text-xl font-black text-amber-950">HourWise read-only capture, not certified C1B/DDD output</h3>
+            <p className="mt-2 max-w-4xl text-sm font-medium text-amber-900">
+              These rows come from the current read-only driver-card capture and provisional EF parsing. Use them for operational review and validation, but do not treat them as a certified tachograph download until the final C1B/DDD writer/parser path is complete.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4 xl:min-w-[34rem]">
+            <SummaryTile label="Parsed Period" value={analysisSummary?.periodLabel ?? 'No dated rows'} />
+            <SummaryTile label="Activity Blocks" value={String(data.activitySegments.length)} />
+            <SummaryTile label="Issues" value={String(analysisSummary?.issueCount ?? 0)} />
+            <SummaryTile label="Last Read" value={format(new Date(data.identity.lastDownloadAt), 'dd MMM HH:mm')} />
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-[2.25fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historical Timeline</p>
-              <h3 className="text-lg font-black text-slate-900">Driver Card Activity Strip</h3>
-              <p className="text-sm text-slate-500">This is the primary review surface: scroll the card history, then open any day for evidence and findings.</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{rangeLabel(range)} Calendar</p>
+              <h3 className="text-lg font-black text-slate-900">Driver Card Activity By Day</h3>
+              <p className="text-sm text-slate-500">Select a day to open the detailed evidence drawer. No day is opened automatically.</p>
             </div>
-            <button onClick={() => setSelectedDay(data.dailySummaries[0] ?? null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-black uppercase tracking-widest transition">Open Latest Day</button>
+            <TachoFilters value={range} onChange={setRange} />
           </div>
           <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
         </div>
@@ -178,7 +336,7 @@ export function DriverCardAnalysis({ driverId, focusedDate, onOpenImportCentre, 
           </InfoPanel>
 
           <InfoPanel title="Selected Day Cross-check" icon={<BadgeAlert className="w-5 h-5 text-amber-600" />}>
-            {selectedDay ? <StatList items={[`Legal findings: ${findings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Linked VU events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Cross-check issues: ${reconciliation.filter((item) => item.date === selectedDay.date && item.status !== 'matched').length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
+            {selectedDay ? <StatList items={[`Legal findings: ${selectedDayFindings.length}`, `Linked VU events: ${selectedDayEvents.length}`, `Cross-check issues: ${selectedDayReconciliation.length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
           </InfoPanel>
         </div>
       </div>
@@ -217,6 +375,103 @@ function minsToHours(mins: number) {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
+function rangeLabel(range: TachoAnalysisRange) {
+  switch (range) {
+    case '30d':
+      return '30 day';
+    case '3m':
+      return '3 month';
+    case '6m':
+      return '6 month';
+    case '12m':
+      return '12 month';
+    default:
+      return '7 day';
+  }
+}
+
+function rangeDayCount(range: TachoAnalysisRange) {
+  switch (range) {
+    case '30d':
+      return 30;
+    case '3m':
+      return 90;
+    case '6m':
+      return 180;
+    case '12m':
+      return 365;
+    default:
+      return 7;
+  }
+}
+
+function buildBlankTimelineDays(range: TachoAnalysisRange): TimelineDay[] {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  return Array.from({ length: rangeDayCount(range) }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - index);
+    return {
+      date,
+      activities: [],
+      markers: 0,
+      markerGroups: [
+        { label: 'Findings', count: 0, tone: 'danger' as const },
+        { label: 'Linked VU', count: 0, tone: 'warning' as const },
+        { label: 'Cross-check', count: 0, tone: 'warning' as const },
+      ],
+    };
+  });
+}
+
+function buildAnalysisSummary(
+  days: TachoDaySummary[],
+  findings: TachoFinding[],
+  reconciliation: TachoReconciliationItem[]
+) {
+  const sortedDates = days.map((day) => day.date).sort();
+  const start = sortedDates[0];
+  const end = sortedDates[sortedDates.length - 1];
+  const issueCount = findings.length + reconciliation.filter((item) => item.status !== 'matched').length;
+
+  return {
+    periodLabel: start && end
+      ? `${format(new Date(`${start}T12:00:00`), 'dd MMM')} - ${format(new Date(`${end}T12:00:00`), 'dd MMM yyyy')}`
+      : 'No dated rows',
+    issueCount,
+  };
+}
+
+function exportDriverCardCsv(driverName: string, days: TachoDaySummary[]) {
+  const rows = [
+    ['Date', 'Driving', 'Work', 'POA', 'Rest', 'Findings', 'Activity blocks'],
+    ...days.map((day) => [
+      day.date,
+      minsToHours(day.drivingMins),
+      minsToHours(day.workMins),
+      minsToHours(day.poaMins),
+      minsToHours(day.restMins),
+      String(day.findingsCount),
+      String(day.activities.length),
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${driverName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'driver-card'}-tachograph-summary.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsv(value: string) {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
 function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: TachoReconciliationItem[]): TrainingRecommendation[] {
   const items: TrainingRecommendation[] = [];
   const breakFindings = findings.filter((finding) => ['DRV_CONTINUOUS_4H30_EXCEEDED', 'WTD_BREAK_AFTER_6H_MISSING', 'WTD_BREAK_AFTER_9H_MISSING'].includes(finding.ruleCode));
@@ -228,8 +483,110 @@ function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: 
   return items;
 }
 
+function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: ReturnType<typeof useTachoReaderWorkflow>; onOpenImportCentre?: () => void }) {
+  const { status } = workflow;
+  const tone =
+    status.stage === 'complete'
+      ? 'border-emerald-200 bg-emerald-50'
+      : status.stage === 'error'
+      ? 'border-rose-200 bg-rose-50'
+      : status.stage === 'helper_unavailable'
+      ? 'border-amber-200 bg-amber-50'
+      : 'border-blue-200 bg-blue-50';
+  const canCancel = status.canCancel && !workflow.commandPending;
+  const canManualStart = status.canStartRead && !workflow.commandPending && !workflow.importPending;
+
+  return (
+    <div className={`rounded-3xl border p-5 shadow-sm ${tone}`}>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+            <Laptop className="h-6 w-6 text-blue-700" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live Driver Card Reader</p>
+            <h3 className="mt-1 text-xl font-black text-slate-950">{status.headline}</h3>
+            <p className="mt-2 max-w-4xl text-sm font-medium text-slate-700">{status.detail}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-widest text-slate-600">
+              <span className="rounded-full bg-white/80 px-3 py-1">Reader: {status.readerConnected ? status.readerDeviceName ?? 'Connected' : 'Not detected'}</span>
+              <span className="rounded-full bg-white/80 px-3 py-1">Card: {status.cardPresent ? 'Inserted' : 'Not inserted'}</span>
+              <span className="rounded-full bg-white/80 px-3 py-1">Import: {status.importId ? 'Ready' : 'Waiting'}</span>
+              {status.lastHeartbeatAt ? <span className="rounded-full bg-white/80 px-3 py-1">Seen {new Date(status.lastHeartbeatAt).toLocaleTimeString('en-GB')}</span> : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 xl:justify-end">
+          <button
+            type="button"
+            onClick={() => void workflow.refreshStatus()}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${workflow.refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={() => void workflow.sendCommand('start-read')}
+            disabled={!canManualStart}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {workflow.commandPending === 'start-read' || workflow.importPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+            {status.stage === 'card_inserted' ? 'Auto Reading' : 'Read Card'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void workflow.sendCommand('cancel')}
+            disabled={!canCancel}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onOpenImportCentre}
+            disabled={!onOpenImportCentre}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Manual Import
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <span>Read / Import Progress</span>
+          <span>{status.progressPercent}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-white/80">
+          <div
+            className={`h-2 rounded-full transition-all ${status.stage === 'error' ? 'bg-rose-500' : status.stage === 'complete' ? 'bg-emerald-500' : 'bg-blue-700'}`}
+            style={{ width: `${status.progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {status.exportParserReady === false ? (
+        <div className="mt-4 rounded-2xl border border-amber-300 bg-white/70 p-3 text-xs font-medium text-amber-950">
+          This is a provisional HourWise read-only capture. It can be displayed for review, but it is not certified C1B/DDD output yet.
+        </div>
+      ) : null}
+
+      {workflow.lastError || workflow.commandMessage || workflow.importMessage ? (
+        <div className="mt-4 rounded-2xl border border-white/80 bg-white/70 p-3 text-xs font-medium text-slate-700">
+          {workflow.lastError ? <p className="text-amber-800">{workflow.lastError}</p> : null}
+          {workflow.commandMessage ? <p>{workflow.commandMessage}</p> : null}
+          {workflow.importMessage ? <p>{workflow.importMessage}</p> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ActionButton({ icon, label, onClick, disabled }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean }) { return <button onClick={onClick} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">{icon}{label}</button>; }
-function StateCard({ title, text, tone = 'loading' }: { title: string; text?: string; tone?: 'loading' | 'error' | 'warning' }) { const isError = tone === 'error'; return <div className={`rounded-2xl border p-8 text-center ${isError ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-200'}`}>{isError ? <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto mb-3" /> : <div className="w-10 h-10 border-b-2 border-blue-600 rounded-full animate-spin mx-auto mb-3" />}<p className={`font-bold ${isError ? 'text-rose-700' : 'text-slate-700'}`}>{title}</p>{text ? <p className="mt-2 text-sm text-slate-500">{text}</p> : null}</div>; }
+function StateCard({ title, text, tone = 'loading' }: { title: string; text?: string; tone?: 'loading' | 'error' | 'warning' }) { const isError = tone === 'error'; const isWarning = tone === 'warning'; return <div className={`rounded-2xl border p-8 text-center ${isError ? 'bg-rose-50 border-rose-100' : isWarning ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'}`}>{isError || isWarning ? <AlertTriangle className={`w-10 h-10 mx-auto mb-3 ${isError ? 'text-rose-500' : 'text-amber-500'}`} /> : <div className="w-10 h-10 border-b-2 border-blue-600 rounded-full animate-spin mx-auto mb-3" />}<p className={`font-bold ${isError ? 'text-rose-700' : isWarning ? 'text-amber-900' : 'text-slate-700'}`}>{title}</p>{text ? <p className="mt-2 text-sm text-slate-500">{text}</p> : null}</div>; }
 function MetricTile({ label, value, tone }: { label: string; value: string; tone: 'neutral' | 'good' | 'warning' | 'danger' }) { const styles = { neutral: 'border-slate-200 bg-white text-slate-700', good: 'border-emerald-100 bg-emerald-50 text-emerald-700', warning: 'border-amber-100 bg-amber-50 text-amber-700', danger: 'border-rose-100 bg-rose-50 text-rose-700' }[tone]; return <div className={`rounded-2xl border p-5 shadow-sm ${styles}`}><p className="text-[10px] font-black uppercase tracking-widest opacity-80">{label}</p><p className="text-3xl font-black mt-2">{value}</p></div>; }
+function SummaryTile({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-amber-200 bg-white/70 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{label}</p><p className="mt-1 text-sm font-black text-amber-950">{value}</p></div>; }
 function InfoPanel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) { return <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"><div className="flex items-center gap-2 mb-4">{icon}<h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{title}</h3></div>{children}</div>; }
 function StatList({ items }: { items: string[] }) { return <div className="space-y-2">{items.map((item) => <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">{item}</div>)}</div>; }
+function BlankDriverCardWorkspace({ range, onRangeChange, timelineDays, title, guidance }: { range: TachoAnalysisRange; onRangeChange: (range: TachoAnalysisRange) => void; timelineDays: TimelineDay[]; title: string; guidance: string }) { return <div className="space-y-6"><StateCard title={title} text={guidance} tone="warning" /><div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{rangeLabel(range)} Calendar</p><h3 className="text-lg font-black text-slate-900">Blank Driver Card Workspace</h3><p className="text-sm text-slate-500">The calendar remains ready for the next inserted card. Parsed days will replace this blank state after a successful read/import.</p></div><TachoFilters value={range} onChange={onRangeChange} /></div><TachoActivityTimeline days={timelineDays} /></div></div>; }

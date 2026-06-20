@@ -229,6 +229,8 @@ export function adaptDriverBundleToAnalysis(
 ): DriverCardAnalysisData {
   const download = bundle.driverCardDownload;
   const importRecord = getBundleImportRecord(bundle);
+  const resolvedDriverId = download?.driverId ?? importRecord.driverId ?? '';
+  const isCandidateCard = !resolvedDriverId;
   const daySummaries = fallbackDaySummaries(bundle.daySummaries);
   const findings = bundle.findings ?? [];
   const technicalEvents = bundle.technicalEvents ?? [];
@@ -239,17 +241,19 @@ export function adaptDriverBundleToAnalysis(
 
   return {
     identity: {
-      driverId: download?.driverId ?? '',
-      driverName: download?.driverName ?? importRecord.driverName ?? 'Unlinked driver',
-      cardNumber: download?.cardNumber ?? 'Unknown card',
-      cardExpiry: download?.cardExpiry ?? new Date().toISOString().slice(0, 10),
-      issuingCountry: download?.issuingCountry ?? 'Unknown',
+      driverId: resolvedDriverId,
+      driverName: download?.driverName ?? importRecord.driverName ?? importRecord.cardDriverName ?? 'Candidate card',
+      cardNumber: download?.cardNumber ?? importRecord.externalCardNumber ?? importRecord.driverCardNumberHint ?? 'Unknown card',
+      cardExpiry: download?.cardExpiry ?? importRecord.cardExpiryDate ?? new Date().toISOString().slice(0, 10),
+      issuingCountry: download?.issuingCountry ?? importRecord.cardIssuingAuthorityName ?? 'Unknown',
       lastDownloadAt: download?.downloadedAt ?? importRecord.importedAt,
       downloadStatus: driverDownloadStatus(download),
       periodStart: download?.periodStart,
       periodEnd: download?.periodEnd,
     },
     range,
+    importId: importRecord.id,
+    isCandidateCard,
     metrics: [
       metric('Driving Breaches', String(drivingBreaches), drivingBreaches > 0 ? 'warning' : 'good'),
       metric('WTD Alerts', String(wtdAlerts), wtdAlerts > 0 ? 'warning' : 'good'),

@@ -441,5 +441,32 @@ Required behaviour:
 - When a card is inserted, the helper should automatically start reading where safe and supported.
 - During read, the overlay should show the staged workflow: card detected, reading card, uploading/importing, processing, analysis ready.
 - When results are ready, the overlay should collapse or become a compact status chip so the analysis screen remains the focus.
-- If the card is removed, the screen should preserve the last analysis result while showing reader status separately.
+- If the card is removed, the live reader workspace should return to the blank calendar state ready for the next card insert. Previously processed reads remain retrievable from stored analysis/history until superseded by a newer processed read.
 - The same layout pattern should be reused for VU reads, replacing driver-card identity with vehicle/VU identity and showing VU-specific discrepancies.
+
+### Current implementation checkpoint
+
+- First-pass `DriverCardAnalysis` polish is implemented:
+  - no automatic latest-day drawer selection
+  - blank calendar empty state
+  - prominent provisional HourWise read-only capture warning
+  - parsed-period summary before detailed rows
+  - day-level grouping with detail opened only by explicit day selection
+  - CSV export and report/print actions
+  - import-id based candidate card checks for unmatched/unlinked card reads
+- Candidate/pre-employment card check behavior:
+  - a decoded card can be reviewed before a driver invite or personnel file exists
+  - the analysis loads from the tachograph import bundle by `import_id`
+  - personnel, training, and compliance action buttons are disabled while the card is unlinked
+  - managers can return to Import Review to pair the card or create an invite from the decoded identity
+- Live reader workflow move is now implemented in first pass:
+  - `useTachoReaderWorkflow` owns helper polling, start/cancel commands, helper-export upload, import registration, processing kickoff, import tracking, and analysis routing
+  - Driver Card Analysis shows a compact live reader panel above the calendar instead of relying on Import Centre for normal driver-card reads
+  - inserted cards can auto-start a read when the helper reports `card_inserted`
+  - matched reads open linked-driver analysis; unmatched reads open candidate card mode by `import_id`
+  - card removal clears the auto-opened live result back to the blank calendar when the helper returns to ready/unavailable
+- Remaining workflow/UI cleanup:
+  - retest the new Driver Card Analysis live flow after frontend deployment with the real helper/card
+  - reduce Import Centre to VU import/download, manual driver-card file import, and collapsed technical diagnostics
+  - reuse the same reader workflow pattern for Vehicle Unit Analysis after the VU helper/download path is ready
+- Review/sign-off still needs persistence design before implementation because personnel files should store issues/actions/sign-offs, not full card reads.

@@ -32,8 +32,10 @@ interface TachoInvitePrefill {
 
 export function TachoImportCentre({
   onOpenDriverAnalysis,
+  onOpenCandidateCardAnalysis,
 }: {
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
+  onOpenCandidateCardAnalysis?: (importId: string) => void;
 }) {
   const { profile } = useAuth();
   const { data, loading, error, reload } = useTachoImports();
@@ -171,6 +173,7 @@ export function TachoImportCentre({
           ) : (
             <div className="space-y-4">
               <ImportObservabilityNotice item={selectedImport} />
+              <CandidateCardCheckAction item={selectedImport} onOpenCandidateCardAnalysis={onOpenCandidateCardAnalysis} />
               <DriverCardPairingPanel
                 item={selectedImport}
                 companyId={profile?.company_id ?? null}
@@ -559,6 +562,47 @@ function DriverCardPairingPanel({
 
 function getImportCardNumber(item: TachoImportRecord) {
   return item.externalCardNumber ?? item.driverCardNumberHint ?? undefined;
+}
+
+function CandidateCardCheckAction({
+  item,
+  onOpenCandidateCardAnalysis,
+}: {
+  item: TachoImportRecord;
+  onOpenCandidateCardAnalysis?: (importId: string) => void;
+}) {
+  const cardNumber = getImportCardNumber(item);
+  const canOpen =
+    item.sourceType === 'driver_card' &&
+    (item.status === 'complete' || item.status === 'partial') &&
+    Boolean(cardNumber || item.identityDecoded || item.cardDriverName || item.driverName);
+
+  if (!canOpen) return null;
+
+  return (
+    <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-cyan-700">
+            {item.driverId ? 'Open Card Analysis' : 'Candidate Card Check'}
+          </p>
+          <p className="mt-1 text-sm text-cyan-900">
+            {item.driverId
+              ? 'Open the parsed card read from this import.'
+              : 'Review this decoded card before creating an invite or personnel file. No driver record is changed by opening it.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onOpenCandidateCardAnalysis?.(item.id)}
+          disabled={!onOpenCandidateCardAnalysis}
+          className="inline-flex items-center justify-center rounded-xl bg-cyan-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Open Card Check
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function ImportRow({ item }: { item: TachoImportRecord }) {

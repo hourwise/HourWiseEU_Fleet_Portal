@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { fetchDriverTachoAnalysisBundle, fetchLatestDriverCardTarget } from '../lib/tacho/api';
+import { fetchDriverTachoAnalysisBundle, fetchLatestDriverCardTarget, fetchTachoImportBundle } from '../lib/tacho/api';
 import { adaptDriverBundleToAnalysis } from '../lib/tacho/adapters';
 import { getMockDriverCardAnalysis } from '../lib/tacho/mockDriverCardData';
 import { buildAppTachoReconciliationItems } from '../lib/tacho/rules/reconciliation';
@@ -32,6 +32,7 @@ function resolveRangeStart(range: TachoAnalysisRange) {
 interface UseDriverCardAnalysisOptions {
   companyId?: string;
   driverId?: string;
+  importId?: string;
   useLive?: boolean;
   fallbackToMock?: boolean;
 }
@@ -74,6 +75,27 @@ export function useDriverCardAnalysis(
 
       try {
         if (shouldUseLive && companyId) {
+          if (options?.importId) {
+            const bundle = await fetchTachoImportBundle(companyId, options.importId);
+            if (bundle?.importRecord?.sourceType === 'driver_card') {
+              if (!cancelled) {
+                setData(adaptDriverBundleToAnalysis(bundle, range, bundle.reconciliation ?? []));
+                setIsMock(false);
+                setLoading(false);
+              }
+              return;
+            }
+
+            if (!cancelled) {
+              setData(null);
+              setEmptyState({
+                title: 'No candidate card analysis found',
+                guidance: 'The selected import was not a processed driver-card read. Retry processing or select another card import.',
+              });
+            }
+            return;
+          }
+
           const resolvedDriverId = options?.driverId ?? await fetchLatestDriverCardTarget(companyId);
           if (resolvedDriverId) {
             const bundle = await fetchDriverTachoAnalysisBundle(companyId, resolvedDriverId, range);
@@ -173,7 +195,7 @@ export function useDriverCardAnalysis(
     return () => {
       cancelled = true;
     };
-  }, [options?.companyId, options?.driverId, options?.fallbackToMock, options?.useLive, profile?.company_id, range]);
+  }, [options?.companyId, options?.driverId, options?.fallbackToMock, options?.importId, options?.useLive, profile?.company_id, range]);
 
   return { data, loading, error, emptyState, isMock };
 }

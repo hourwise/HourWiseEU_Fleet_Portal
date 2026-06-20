@@ -51,6 +51,7 @@ export function TachoComplianceWorkspace({
     ? [...BASE_TABS, { id: 'simulator', label: 'Simulator', icon: FlaskConical }]
     : BASE_TABS;
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'overview');
+  const [focusedImportId, setFocusedImportId] = useState<string | undefined>();
 
   useEffect(() => {
     if (initialTab && (initialTab !== 'simulator' || isDev)) {
@@ -58,9 +59,19 @@ export function TachoComplianceWorkspace({
     }
   }, [initialTab, isDev]);
 
+  useEffect(() => {
+    if (focusedDriverId) setFocusedImportId(undefined);
+  }, [focusedDriverId]);
+
   const openImportCentre = () => {
     setActiveTab('imports');
     onTabChange?.('imports');
+  };
+
+  const openCandidateCardAnalysis = (importId: string) => {
+    setFocusedImportId(importId);
+    setActiveTab('driver_cards');
+    onTabChange?.('driver_cards');
   };
 
   return (
@@ -72,6 +83,7 @@ export function TachoComplianceWorkspace({
             <button
               key={tab.id}
               onClick={() => {
+                if (tab.id !== 'driver_cards') setFocusedImportId(undefined);
                 setActiveTab(tab.id);
                 onTabChange?.(tab.id);
               }}
@@ -103,10 +115,11 @@ export function TachoComplianceWorkspace({
           <InfringementManagement onOpenDriverTacho={onOpenDriverAnalysis} />
         </div>
       )}
-      {activeTab === 'imports' && <TachoImportCentre onOpenDriverAnalysis={onOpenDriverAnalysis} />}
+      {activeTab === 'imports' && <TachoImportCentre onOpenDriverAnalysis={onOpenDriverAnalysis} onOpenCandidateCardAnalysis={openCandidateCardAnalysis} />}
       {activeTab === 'driver_cards' && (
         <DriverCardAnalysis
           driverId={focusedDriverId}
+          importId={focusedImportId}
           focusedDate={focusedDate}
           onOpenImportCentre={openImportCentre}
           onOpenPersonnelFile={onOpenPersonnelFile}

@@ -17,6 +17,7 @@ import {
 
 const PARSER_VERSION = "readesm@1.0.17";
 const HOURWISE_READ_ONLY_CAPTURE_SCHEMA = "hourwise.tachograph.driver-card.read-only-capture.v1";
+const HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT = "hourwise_read_only_capture_v1";
 const HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION = "hourwise-read-only-capture@1";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
@@ -347,7 +348,9 @@ serve(async (req) => {
     if (downloadError) throw downloadError;
 
     const buffer = await fileData.arrayBuffer();
-    const hourWiseCapture = parseHourWiseReadOnlyCapture(buffer);
+    const hourWiseCapture =
+      parseHourWiseReadOnlyCapture(buffer) ??
+      (isHourWiseReadOnlyCaptureMetadata(record.metadata) ? buildMetadataOnlyHourWiseCapture(record) : null);
     if (hourWiseCapture) {
       const captureSummary = summarizeHourWiseCapture(hourWiseCapture);
       const captureResult = await handleHourWiseReadOnlyCapture(supabaseAdmin, record, hourWiseCapture, captureSummary);
@@ -487,7 +490,6 @@ serve(async (req) => {
     const workSessions =
       driverId && summaryWindow.startTime && summaryWindow.endTime
         ? await fetchWorkSessionsForRange(supabaseAdmin, {
-            companyId: record.company_id ?? null,
             driverId,
             startDate: summaryWindow.startTime.slice(0, 10),
             endDate: summaryWindow.endTime.slice(0, 10),
@@ -675,12 +677,13 @@ serve(async (req) => {
     console.error("Tacho processing error:", error);
 
     if (record?.id) {
-      const message = error instanceof Error ? error.message : "Unknown processing error";
+      const message = errorToMessage(error);
+      const isHourWiseReadOnlyCapture = isHourWiseReadOnlyCaptureMetadata(record.metadata);
       await supabaseAdmin.from("tachograph_processing_runs").insert({
         import_id: record.id,
         company_id: record.company_id ?? null,
-        parser_version: PARSER_VERSION,
-        source: "normalized_findings",
+        parser_version: isHourWiseReadOnlyCapture ? HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION : PARSER_VERSION,
+        source: isHourWiseReadOnlyCapture ? "hourwise_read_only_capture" : "normalized_findings",
         warnings: [],
         errors: [message],
         processed_at: new Date().toISOString(),
@@ -697,7 +700,7 @@ serve(async (req) => {
     }
 
     return jsonResponse(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: errorToMessage(error) },
       400
     );
   }
@@ -710,6 +713,16 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+function errorToMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown processing error";
+  }
+}
+
 function parseHourWiseReadOnlyCapture(buffer: ArrayBuffer): HourWiseReadOnlyCapture | null {
   let text: string;
   try {
@@ -718,17 +731,54 @@ function parseHourWiseReadOnlyCapture(buffer: ArrayBuffer): HourWiseReadOnlyCapt
     return null;
   }
 
-  const trimmed = text.trimStart();
-  if (!trimmed.startsWith("{") || !trimmed.includes(HOURWISE_READ_ONLY_CAPTURE_SCHEMA)) {
+  const markerIndex = Math.max(
+    text.indexOf(HOURWISE_READ_ONLY_CAPTURE_SCHEMA),
+    text.indexOf(HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT)
+  );
+  if (markerIndex < 0) {
+    return null;
+  }
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace < 0 || lastBrace <= firstBrace) {
     return null;
   }
 
   try {
-    const parsed = JSON.parse(trimmed) as HourWiseReadOnlyCapture;
-    return parsed?.schema === HOURWISE_READ_ONLY_CAPTURE_SCHEMA ? parsed : null;
+    const parsed = JSON.parse(text.slice(firstBrace, lastBrace + 1)) as HourWiseReadOnlyCapture & {
+      exportFormat?: string;
+      export_format?: string;
+    };
+    const schema = stringOrNull(parsed?.schema);
+    const exportFormat = stringOrNull(parsed?.exportFormat) ?? stringOrNull(parsed?.export_format);
+    return schema === HOURWISE_READ_ONLY_CAPTURE_SCHEMA || exportFormat === HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT
+      ? parsed
+      : null;
   } catch {
     return null;
   }
+}
+
+function isHourWiseReadOnlyCaptureMetadata(metadata: Record<string, unknown> | null | undefined) {
+  const exportFormat =
+    stringOrNull(metadata?.export_format) ??
+    stringOrNull(metadata?.exportFormat) ??
+    stringOrNull(metadata?.helper_capture_export_format);
+  const schema = stringOrNull(metadata?.helper_capture_schema);
+  return exportFormat === HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT || schema === HOURWISE_READ_ONLY_CAPTURE_SCHEMA;
+}
+
+function buildMetadataOnlyHourWiseCapture(record: ImportRecord): HourWiseReadOnlyCapture {
+  return {
+    schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
+    warning: "HourWise read-only capture metadata was present, but the stored file body could not be decoded as the expected JSON container.",
+    readSessionId: stringOrNull(record.metadata?.read_session_id) ?? stringOrNull(record.metadata?.helper_capture_read_session_id),
+    helperVersion: stringOrNull(record.metadata?.helper_version) ?? stringOrNull(record.metadata?.helper_capture_helper_version),
+    sourceType: record.source_type ?? "driver_card",
+    exportedAt: stringOrNull(record.metadata?.helper_capture_exported_at),
+    files: [],
+  };
 }
 
 async function handleHourWiseReadOnlyCapture(
@@ -762,7 +812,8 @@ async function handleHourWiseReadOnlyCapture(
     activityParse.rawActivities.length > 0
       ? "HourWise read-only card capture was decoded from EF 0504 into provisional activity segments. Certified C1B/DDD export is still not implemented for this container."
       : "HourWise read-only card capture was received and preserved as partial metadata. Certified C1B decoding is not implemented for this container yet.";
-  const processingWarnings = [warning, activityParse.warning].filter((item): item is string => Boolean(item));
+  const captureWarning = stringOrNull(capture.warning);
+  const processingWarnings = [warning, activityParse.warning, captureWarning].filter((item): item is string => Boolean(item));
   let rawActivityInsertWarning: string | null = null;
 
   const rawActivities = activityParse.rawActivities.map((activity) => ({
@@ -819,7 +870,6 @@ async function handleHourWiseReadOnlyCapture(
   const workSessions =
     driverId && summaryWindow.startTime && summaryWindow.endTime
       ? await fetchWorkSessionsForRange(supabaseAdmin, {
-          companyId: record.company_id ?? null,
           driverId,
           startDate: summaryWindow.startTime.slice(0, 10),
           endDate: summaryWindow.endTime.slice(0, 10),
@@ -909,6 +959,7 @@ async function handleHourWiseReadOnlyCapture(
     parser_status: finalStatus === "processed" ? "processed_helper_capture" : "partial_helper_capture",
     helper_capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
     helper_capture_warning: warning,
+    helper_capture_container_warning: captureWarning,
     helper_capture_read_session_id: stringOrNull(capture.readSessionId),
     helper_capture_helper_version: stringOrNull(capture.helperVersion),
     helper_capture_exported_at: stringOrNull(capture.exportedAt),
@@ -1264,9 +1315,9 @@ async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, i
 
 async function fetchWorkSessionsForRange(
   supabaseAdmin: ReturnType<typeof createClient>,
-  input: { companyId: string | null; driverId: string; startDate: string; endDate: string }
+  input: { driverId: string; startDate: string; endDate: string }
 ) {
-  const query = supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("work_sessions")
     .select("start_time, other_data")
     .eq("user_id", input.driverId)
@@ -1274,8 +1325,6 @@ async function fetchWorkSessionsForRange(
     .lte("date", input.endDate)
     .order("date", { ascending: false });
 
-  const scopedQuery = input.companyId ? query.eq("company_id", input.companyId) : query;
-  const { data, error } = await scopedQuery;
   if (error) throw error;
   return ((data ?? []) as WorkSessionRow[]).filter((session) => !!session.start_time);
 }

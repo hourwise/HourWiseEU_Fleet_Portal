@@ -196,6 +196,8 @@ export interface VehicleMotionDiscrepancy {
 export interface DriverCardAnalysisData {
   identity: DriverCardIdentity;
   range: TachoAnalysisRange;
+  importId?: string;
+  isCandidateCard?: boolean;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
   activitySegments: TachoActivitySegment[];

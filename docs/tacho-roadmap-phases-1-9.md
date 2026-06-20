@@ -76,7 +76,7 @@ Based on the current frontend and this implementation pass:
   - successful helper completion can auto-open focused driver analysis
   - the manual upload fallback now sits beside the helper workflow on the same page
   - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
-  - a reusable reader status overlay now appears inside both Driver Card Analysis and Vehicle Unit Analysis so the graph remains the stable workspace while reader state is monitored separately
+  - Driver Card Analysis now owns the live driver-card read/import workflow through a reusable reader workflow hook; Vehicle Unit Analysis still uses the lightweight status overlay until the VU helper path is promoted
 - parser-simulation infrastructure now exists in-repo so rule and reconciliation scenarios can be exercised without real tachograph binaries
 - the simulator library now covers split-break, weekly, fortnight, daily-rest, weekly-rest, WTD-break, and app-vs-tacho mismatch scenarios
 - a dev-only simulator preview tab now renders those scenarios through the actual tachograph timeline and day-detail components
@@ -170,6 +170,19 @@ This section captures the current live-card progress so work can resume after a 
   - hotfix deployed to `process-tacho` so raw compatibility-table insert failures are non-fatal
   - hotfix also corrected duty-window camelCase/snake_case mapping before shared rule evaluation
   - retry this import from Import Centre after the hotfix deploy
+- Later live read `3fa66667-7ebb-408d-af36-6359aab15df3` showed a separate detection failure:
+  - `tachograph_files.metadata.export_format = hourwise_read_only_capture_v1`
+  - processing run used `parser_version = readesm@1.0.17`, proving the HourWise detector missed the file and fell through to ReadESM
+  - hotfix deployed so `process-tacho` detects either the canonical schema marker or the `hourwise_read_only_capture_v1` export-format marker
+  - hotfix also uses row metadata as a fallback and stores a controlled partial import instead of failing if the body cannot be decoded as the expected JSON container
+  - retry this import from Import Centre after the detector hotfix deploy
+- Later live read `7e25babd-92e5-4b10-abf1-29ec17f0a12d` progressed further and failed during reconciliation:
+  - processing run error was `column work_sessions.company_id does not exist`
+  - root cause was `process-tacho` scoping `work_sessions` by a column that is not present in the live DB schema
+  - hotfix deployed so reconciliation fetches `work_sessions` by `user_id` and date range only
+  - hotfix also records failure runs as `hourwise-read-only-capture@1` / `hourwise_read_only_capture` when row metadata identifies a HourWise capture, instead of misleadingly reporting `readesm@1.0.17`
+  - retry from Import Centre then succeeded: the card read processed and parsed data was viewable in the analysis screen
+  - remaining issue is presentation quality: the parsed-data display is functional but still visually rough/janky
 
 ### Supabase / Backend Changes Added
 
@@ -197,6 +210,8 @@ Backend functions changed:
 
 - `supabase/functions/process-tacho/index.ts`
   - detects the HourWise read-only capture container before ReadESM parsing
+  - detection now accepts both `hourwise.tachograph.driver-card.read-only-capture.v1` and `hourwise_read_only_capture_v1`
+  - if the DB row metadata says the file is a HourWise read-only capture but the file body cannot be decoded, processing now records a controlled partial helper capture instead of falling through to ReadESM
   - stores sanitized helper EF metadata as a controlled import
   - decodes EF `0520` identity from the capture
   - decodes provisional EF `0504` daily activity records into normalized segments when possible
@@ -204,6 +219,8 @@ Backend functions changed:
   - writes processing metadata including activity day count, activity change count, normalized segment count, findings count, and reconciliation issue count
   - raw `tachograph_activities` compatibility insert is now non-fatal for HourWise captures; normalized processing can still complete
   - shared rule evaluation now receives camelCase duty-window fields from the shared normalization layer
+  - work-session reconciliation no longer queries `work_sessions.company_id`; live schema scoping is by driver `user_id` and date range
+  - failure logging now preserves the HourWise parser/source labels when a metadata-identified HourWise capture fails before handler completion
   - attempts exact card-number match against `profiles.tacho_card_number`
   - writes `driver_card_downloads.download_status = ok` when provisional activity exists, otherwise `partial_identity`
 - `supabase/functions/create-driver-invite/index.ts`
@@ -240,20 +257,37 @@ Reader/import UI:
   - preserves cancel/restart ability from helper state
   - clears stale tracked import state when helper read session resets
   - now prevents stale completed helper state from auto-jumping the Import Centre straight into driver-card analysis on tab open
+- `src/hooks/useTachoReaderWorkflow.ts`
+  - reusable production read/import lifecycle for the browser-assisted helper flow
+  - polls helper status, sends start/cancel commands, uploads helper exports, registers `tachograph_files`, kicks off processing, tracks import status, and opens analysis targets
+  - supports linked-driver analysis and unmatched/candidate card analysis by `import_id`
 - `src/components/manager/tachograph/TachoReaderStatusOverlay.tsx`
-  - reusable lightweight reader overlay for analysis workspaces
+  - reusable lightweight reader overlay for analysis workspaces that do not yet own the full helper workflow
   - polls the local helper `/status` endpoint without owning the full upload/register workflow
   - shows reader/helper/card state, import/export hints, staged workflow progress, and a `Read / Import` action
-  - currently routes operators back to Import Centre for the full read/upload controls
+  - currently remains useful for Vehicle Unit Analysis and routes operators back to Import Centre for full controls
 - `src/components/manager/tachograph/DriverCardAnalysis.tsx`
-  - now shows the reader status overlay above the analysis graph, including loading/error/empty states
+  - now shows a compact live reader panel above the analysis graph, including loading/error/empty states
+  - auto-starts a safe card read when the helper reports `card_inserted`
+  - uploads/imports/processes helper exports directly from the analysis screen
+  - opens linked-driver analysis when the processed import matches a driver profile
+  - opens candidate/unlinked-card analysis by `import_id` when the processed import has no matched driver
+  - clears the auto-opened live result back to the blank calendar when the card is removed and the helper returns to ready/unavailable
+  - no longer auto-opens the latest worked day; detailed day evidence opens only after a supervisor selects a day
+  - shows a blank calendar workspace when no card data is loaded, preserving the 7 day / 30 day / 3 month / 6 month / 12 month controls
+  - adds a prominent parsed-period summary and labels HourWise read-only capture data as provisional, not certified `.C1B/.DDD`
+  - adds first-pass CSV export and report/print actions
+  - can now load a driver-card analysis by `import_id`, allowing unmatched/candidate cards to be reviewed before any invite or personnel file exists
+  - candidate card mode disables personnel/training/compliance actions and explains that no driver file is updated until deliberate pairing/invite acceptance
 - `src/components/manager/tachograph/VehicleUnitAnalysis.tsx`
   - now reuses the same overlay pattern for the VU workspace
 - `src/components/manager/tachograph/TachoComplianceWorkspace.tsx`
   - analysis overlays can switch the compliance workspace to Import Centre
+  - Import Centre can now route a selected card import into Driver Card Analysis as a candidate/unlinked card check
 - `src/components/manager/tachograph/TachoImportCentre.tsx`
   - shows decoded card identity in Import Review
   - shows `Unmatched Card Identity` when card is decoded but no driver profile is matched
+  - shows `Candidate Card Check` / `Open Card Check` for decoded processed or partial driver-card imports
   - supports pairing a decoded card to an existing driver profile
   - supports pairing a decoded card to an existing pending driver invite
   - supports `Invite Driver From Card` when no driver profile exists yet
@@ -295,6 +329,7 @@ npx eslint src\components\manager\tachograph\TachoImportCentre.tsx src\component
 npx eslint src\hooks\useDriverTachoSummary.ts
 npx eslint src\components\manager\tachograph\TachoReaderHelperPanel.tsx
 npx eslint src\components\manager\tachograph\TachoReaderStatusOverlay.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\VehicleUnitAnalysis.tsx src\components\manager\tachograph\TachoComplianceWorkspace.tsx src\components\manager\tachograph\TachoActivityTimeline.tsx
+npx eslint src\hooks\useTachoReaderWorkflow.ts src\components\manager\tachograph\DriverCardAnalysis.tsx
 npm run test:rules
 npm run build
 ```
@@ -310,6 +345,9 @@ Known local validation limitation:
 - `npx eslint supabase\functions\process-tacho\index.ts` still reports pre-existing file-level issues, mainly `any` usage and one old `_ignoredId` pattern.
 - The latest `process-tacho` Edge Function deploy succeeded after the EF `0504` parser changes.
 - A later `process-tacho` hotfix deploy also succeeded after import `e872ed0c-b7d7-4894-b5a4-990da8a8acd8` failed during processing.
+- A later detector hotfix deploy also succeeded after import `3fa66667-7ebb-408d-af36-6359aab15df3` fell through to ReadESM despite HourWise export metadata.
+- A later work-session scope hotfix deploy also succeeded after import `7e25babd-92e5-4b10-abf1-29ec17f0a12d` failed on missing column `work_sessions.company_id`.
+- Import `7e25babd-92e5-4b10-abf1-29ec17f0a12d` was retried successfully from Import Centre after the work-session scope hotfix; parsed data became viewable in the manager analysis UI.
 
 ### Current Known Limitations
 
@@ -317,6 +355,10 @@ Known local validation limitation:
 - EF identity parsing is working.
 - EF `0504` activity parsing is now implemented provisionally, but needs validation against known-good/certified C1B or DDD parser output before release hardening.
 - Reader console legal totals are still placeholders until the UI consumes parsed activity/rule output.
+- Parsed card data can now be viewed after retry, but the analysis presentation still needs a dedicated polish pass for layout, labels, empty states, and supervisor-readable summary ordering.
+- Full driver-card auto-read/import/display from the analysis page is implemented in first pass through `useTachoReaderWorkflow`; it still needs frontend deployment and a real helper/card retest before it is treated as production-stable.
+- Import Centre still contains backend-oriented diagnostics and reader-helper details; target UX is to reduce it to VU import plus manual driver-card file import/fallback diagnostics after Driver Card Analysis owns live card reads.
+- Candidate/pre-employment card checks can be opened from Import Review by import id, and the new Driver Card Analysis live-reader flow can route newly processed unmatched card reads into candidate mode by `import_id`; this still needs real helper/card retesting after frontend deployment.
 - VU workflow is still scaffolded/disabled in helper `0.5.9`.
 - Existing imports before identity parsing may remain `Unmatched card` if their metadata lacks decoded identity fields.
 - If a company has no driver profiles, the card can now create a prefilled invite, but the real `profiles` row is still only created/linked when the driver accepts the invite through the normal app flow.
@@ -342,29 +384,54 @@ Latest confirmed checkpoint before restart:
    - confirm `/status` reports `dotnet-shell-0.5.9`
    - confirm reader/card state updates correctly when card is removed/reinserted
 2. Reprocess the existing accepted-driver import or read the card again:
-   - target import id from the invite/card flow: `ae681c85-fb6f-4b5a-aaf5-b7fa32312e39`
-   - latest failed helper-read import id: `e872ed0c-b7d7-4894-b5a4-990da8a8acd8`
+  - target import id from the invite/card flow: `ae681c85-fb6f-4b5a-aaf5-b7fa32312e39`
+  - latest failed helper-read import id: `e872ed0c-b7d7-4894-b5a4-990da8a8acd8`
+  - latest detector-fallback import id: `3fa66667-7ebb-408d-af36-6359aab15df3`
+   - latest successfully retried parsed import id: `7e25babd-92e5-4b10-abf1-29ec17f0a12d`
    - preferred path without trigger token: use Import Centre retry processing from the manager UI
    - fallback path: read the same card again through the helper
    - expected success state: `tachograph_files.status = processed`
    - expected metadata: `normalized_segments > 0`, `helper_capture_activity_day_count > 0`, `helper_capture_activity_change_count > 0`
    - expected driver file: Card Status no longer says `No card download yet`
-3. Verify DB linkage after reprocess:
+3. Verify the successful retry output:
+   - confirm `7e25babd-92e5-4b10-abf1-29ec17f0a12d` has `tachograph_files.status = processed`
+   - confirm the analysis screen shows the decoded period, segments, day summaries, and any findings without relying on raw metadata
+   - capture any obviously wrong dates, activity modes, or totals before polishing the UI
+4. Verify DB linkage after reprocess:
    - `tachograph_files.driver_id` should point to accepted user/profile
    - `driver_card_downloads.driver_id` should point to accepted user/profile
    - `profiles.tacho_card_number` should equal the decoded card number
    - `driver_card_downloads.download_status` should be `ok` if EF `0504` produced activity, otherwise `partial_identity`
-4. Verify driver personnel file:
+5. Polish the parsed-card analysis UI:
+   - completed first pass: parsed-period summary, provisional HourWise warning, blank calendar empty state, CSV export, report/print action, and no automatic latest-day drawer
+   - continue polish after live review: improve visual density, mobile behavior, and day-detail wording where the real parsed output still feels janky
+6. Verify driver personnel file:
    - open Philip Christopher Geran driver file
    - confirm Last Download uses the new import/download timestamp
    - confirm Truth Score moves from `Awaiting tacho signal` once compliance/risk signals exist
    - confirm `Open Driver Card Analysis` shows the parsed activity strip for the decoded period
-5. Verify Import Centre tab behaviour:
+7. Verify Import Centre tab behaviour:
    - click the Import Centre tab after a completed helper read
    - it should stay on Import Centre and not auto-jump to Driver Cards unless a new read session completes
-6. Push frontend to Vercel when ready:
+8. Live driver-card reader workflow in Driver Card Analysis:
+   - completed first pass: `useTachoReaderWorkflow` now owns read/download/upload/register/process/import-tracking from the analysis screen
+   - Driver Card Analysis opens as a blank 7 day calendar by default when no selected driver/import has data
+   - when a card is inserted, the helper can auto-read, upload/import, process, then refresh/open the analysis graph
+   - if the processed import has no matched driver profile, Driver Card Analysis opens candidate card mode by `import_id`
+   - when the card is removed and the helper returns to ready/unavailable, the auto-opened live workspace returns to the blank calendar
+   - remaining verification: run this against the real helper/card after frontend deployment and confirm the helper state transitions are exactly `card_inserted -> reading -> uploading -> processing -> complete -> ready`
+9. Tidy Import Centre after the driver-card workflow move:
+   - keep VU import/download controls
+   - keep manual driver-card file import fallback
+   - collapse backend IDs, helper diagnostics, metadata, retry details, and correlation fields behind a support/technical disclosure
+   - remove or demote driver-card live-reader duplication now that Driver Card Analysis owns that flow
+10. Add review/sign-off persistence:
+   - driver personnel file should store only issues/actions/sign-offs, not the full card read
+   - add a manager review/sign-off workflow for findings before writing personnel-file compliance notes
+   - include audit trail and optional driver acknowledgement later
+11. Push frontend to Vercel when ready:
    - `git push`
-7. Test unmatched-card invite flow again as a regression:
+12. Test unmatched-card invite flow again as a regression:
    - read the card
    - open Import Review
    - click `Invite Driver From Card`
@@ -986,9 +1053,10 @@ Make the full tacho system safe for operational rollout.
    - normalize to `tachograph_activity_segments`
    - run existing rules engine against those segments
    - replace placeholder reader-console totals
-5. Start the full-page analysis UI milestone from `docs/tacho-driver-card-view-build-plan.md`.
-6. Continue VU workflow once driver-card activity decode is stable.
-7. Then Phase 9 hardening, real binary regression files, monitoring, RLS review, and release prep.
+5. Deploy/push the frontend live-reader DriverCardAnalysis changes, then retest with the real helper/card.
+6. Tidy Import Centre so it focuses on VU import/download, manual driver-card file import, and collapsed technical diagnostics.
+7. Continue VU workflow once driver-card activity decode and analysis flow are stable.
+8. Then Phase 9 hardening, real binary regression files, monitoring, RLS review, and release prep.
 
 ---
 
@@ -1009,12 +1077,13 @@ If work resumes after interruption, start with:
    - expected `dotnet-shell-0.5.9`
 4. Run a real card read and confirm:
    - import reaches `partial`
-   - decoded identity appears in Import Review
-   - unmatched card panel appears if no profile card match exists
+   - decoded identity appears in Driver Card Analysis
+   - unmatched/candidate card mode opens by `import_id` if no profile card match exists
+   - removing the card returns the live Driver Card Analysis workspace to the blank calendar
 5. Test one of:
    - pair card to existing profile
    - invite driver from card
-6. Continue with EF `0504` activity decode and the full-page analysis UI plan.
+6. Tidy Import Centre, then continue VU workflow and review/sign-off persistence.
 
 ---
 
@@ -1033,6 +1102,7 @@ Current main implementation areas:
   - `src/hooks/useCompanyCompliance.ts`
   - `src/hooks/useDriverRiskScores.ts`
   - `src/hooks/useDriverCardAnalysis.ts`
+  - `src/hooks/useTachoReaderWorkflow.ts`
   - `src/hooks/useVehicleUnitAnalysis.ts`
   - `src/hooks/useTachoImports.ts`
 - tacho contracts and adapters:
