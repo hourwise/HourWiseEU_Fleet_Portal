@@ -212,9 +212,13 @@ This section is based on the latest tachograph roadmap. Verify in repo before re
 ## Supabase Security
 
 - `[?]` Verify whether exposed service-role/JWT secrets have been rotated.
-- `[?]` Verify whether trigger bearer tokens have been removed from SQL trigger definitions.
-- `[?]` Verify whether `driver_invites` anonymous broad read has been removed.
-- `[?]` Verify storage policies, RLS, SECURITY DEFINER functions, and Edge Function auth.
+  - 2026-06-21: `supabase secrets list` confirms current runtime secrets exist, but secret rotation history cannot be proven from the repo/CLI output alone.
+- `[~]` Verify whether trigger bearer tokens have been removed from SQL trigger definitions.
+  - 2026-06-21: Remote migrations are current through `20260621103000`; repo search found no hard-coded `Bearer ...` token in SQL migrations. Direct live catalog SQL could not be run because `psql` is unavailable and `supabase db dump` is blocked by missing Docker.
+- `[~]` Verify whether `driver_invites` anonymous broad read has been removed.
+  - 2026-06-21: Deployed hardening migration removes anon grants/public SELECT policies and uses safe lookup/accept RPCs. Direct `pg_policies` live query still pending due local tooling limitation.
+- `[~]` Verify storage policies, RLS, SECURITY DEFINER functions, and Edge Function auth.
+  - 2026-06-21: Repo/deployed migration audit is mostly positive, but deployed `calculate-compliance` belongs to the shared partner/mobile app surface and must be fixed/coordinated from the app repo before this review is complete.
 
 ---
 
@@ -244,8 +248,11 @@ These items should be checked before release or before inviting real customer da
 ## 6.1 Rotate Exposed Supabase Secrets
 
 - `[?]` Confirm whether Supabase service-role/JWT secret was rotated after exposed metadata.
-- `[?]` Confirm no service-role bearer tokens remain embedded in SQL trigger definitions.
-- `[ ]` If any token remains, rotate the secret and replace the pattern.
+  - 2026-06-21: Current secret names/digests are present in Supabase (`SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS`, `SUPABASE_JWKS`, etc.), but CLI output does not prove historical rotation. Confirm in Supabase dashboard/audit history if customer data is involved.
+- `[~]` Confirm no service-role bearer tokens remain embedded in SQL trigger definitions.
+  - 2026-06-21: Repo search across `supabase/` found no hard-coded `Bearer ...` tokens in SQL. Live trigger SQL query still pending because this machine lacks `psql` and Supabase CLI schema dump requires Docker.
+- `[~]` If any token remains, rotate the secret and replace the pattern.
+  - 2026-06-21: No embedded SQL bearer token found in repo review; leave open until direct live catalog query returns no rows.
 
 Verification SQL:
 
@@ -275,17 +282,25 @@ Preferred safe patterns:
 
 Checklist:
 
-- `[?]` Verify `public.broadcasts.on_new_broadcast` contains no embedded bearer token.
-- `[?]` Verify `public.tachograph_files.process_tacho_files` contains no embedded bearer token.
-- `[?]` Verify optional DB-trigger tacho dispatch uses dedicated trigger token/runtime config, not service-role bearer in SQL.
+- `[~]` Verify `public.broadcasts.on_new_broadcast` contains no embedded bearer token.
+  - 2026-06-21: Deployed hardening migration replaces it with `private.dispatch_new_broadcast()` using `private.broadcast_dispatch_runtime.trigger_token`; direct live trigger SQL still pending.
+- `[~]` Verify `public.tachograph_files.process_tacho_files` contains no embedded bearer token.
+  - 2026-06-21: Deployed hardening migration drops `process_tacho_files`; earlier tacho dispatch uses `private.tacho_processing_runtime.trigger_token`, not a service-role bearer token. Direct live trigger SQL still pending.
+- `[x]` Verify optional DB-trigger tacho dispatch uses dedicated trigger token/runtime config, not service-role bearer in SQL.
+  - 2026-06-21: `private.tacho_processing_runtime` and `private.broadcast_dispatch_runtime` store trigger-token config; `PROCESS_TACHO_TRIGGER_TOKEN` is configured in Supabase secrets.
 
 ## 6.3 Fix `driver_invites` Anonymous Read
 
-- `[?]` Verify `driver_invites` no longer has public SELECT policy with `qual = true`.
-- `[?]` Verify invite lookup now uses safe RPC or Edge Function.
-- `[?]` Verify lookup requires exact invite code, pending status, and non-expired invite.
-- `[?]` Verify lookup returns only safe signup fields.
-- `[?]` Verify manager invite management is company-scoped.
+- `[~]` Verify `driver_invites` no longer has public SELECT policy with `qual = true`.
+  - 2026-06-21: Hardening migration revokes anon table access and drops public/anon SELECT policies. Direct `pg_policies` live query still pending due missing `psql`/Docker.
+- `[x]` Verify invite lookup now uses safe RPC or Edge Function.
+  - 2026-06-21: `lookup-driver-invite` calls `lookup_pending_driver_invite(...)`; no broad table read is used by the function.
+- `[x]` Verify lookup requires exact invite code, pending status, and non-expired invite.
+  - 2026-06-21: `lookup_pending_driver_invite(...)` filters by normalized exact invite code, `status = 'pending'`, and `expires_at > now()`.
+- `[x]` Verify lookup returns only safe signup fields.
+  - 2026-06-21: RPC returns invite code/status, invitee name/email, company name, expiry, and tachograph card prefill fields; it does not expose pay config, internal IDs, or all invites.
+- `[x]` Verify manager invite management is company-scoped.
+  - 2026-06-21: `create-driver-invite` checks authenticated manager role and company match before service-role insert; table policies restrict manager read/update/delete by `get_my_company_id()`.
 
 Verification SQL:
 
@@ -305,10 +320,14 @@ No policy with roles = {public}, cmd = SELECT, qual = true.
 
 ## 6.4 `shift_jobs` RLS
 
-- `[?]` Verify `shift_jobs` has RLS enabled.
-- `[?]` Verify mobile users can read own shift jobs.
-- `[?]` Verify managers can read company driver shift jobs.
-- `[?]` Confirm whether `user_id` references `auth.users.id` or `profiles.id`.
+- `[~]` Verify `shift_jobs` has RLS enabled.
+  - 2026-06-21: Hardening migration enables RLS if `public.shift_jobs` exists. Direct live table check still pending.
+- `[x]` Verify mobile users can read own shift jobs.
+  - 2026-06-21: Migration policy permits authenticated SELECT where `user_id = auth.uid()`.
+- `[x]` Verify managers can read company driver shift jobs.
+  - 2026-06-21: Migration policy permits manager SELECT for `user_id` in same-company `profiles`.
+- `[~]` Confirm whether `user_id` references `auth.users.id` or `profiles.id`.
+  - 2026-06-21: Policy assumes `profiles.id` equals `auth.uid()`, which matches current profile model; direct FK/catalog check still pending.
 
 ## 6.5 Storage Policies
 
@@ -322,13 +341,20 @@ Buckets to verify:
 
 Checklist:
 
-- `[?]` Confirm canonical storage path conventions for mobile and portal.
-- `[?]` Confirm `defect-photos` has INSERT policy for app uploads.
-- `[?]` Confirm `driver-documents` supports intended driver/company paths.
-- `[?]` Confirm `vehicle-documents` supports intended vehicle/company paths.
-- `[?]` Confirm `tachograph-files` is private and company-scoped.
-- `[?]` Confirm private document buckets are not public.
-- `[?]` Confirm file size and MIME limits exist where appropriate.
+- `[x]` Confirm canonical storage path conventions for mobile and portal.
+  - 2026-06-21: Migration documents and enforces driver docs as `<userId>/...` or `<companyId>/<driverId>/...`, vehicle docs as `<userId>/...`, `<companyId>/<vehicleId>/...`, or guarded legacy `solo/<vehicleId>/...`, defect photos as `<userId>/...`, `<companyId>/...`, or `<vehicleCheckId>/...`, and tachograph files as `<companyId>/<timestamp>_<filename>`.
+- `[x]` Confirm `defect-photos` has INSERT policy for app uploads.
+  - 2026-06-21: `Users can insert defect photo objects` permits authenticated inserts through `can_access_defect_photo_object(...)`.
+- `[x]` Confirm `driver-documents` supports intended driver/company paths.
+  - 2026-06-21: `can_access_driver_document_object(...)` supports self-user and company manager paths.
+- `[x]` Confirm `vehicle-documents` supports intended vehicle/company paths.
+  - 2026-06-21: `can_access_vehicle_document_object(...)` supports self-user, company manager, and guarded legacy solo paths.
+- `[x]` Confirm `tachograph-files` is private and company-scoped.
+  - 2026-06-21: Bucket migration sets `public = false`; storage policies restrict insert/select/update/delete to authenticated managers whose company id matches the first path segment.
+- `[x]` Confirm private document buckets are not public.
+  - 2026-06-21: Migration sets `defect-photos`, `driver-documents`, `vehicle-documents`, and `tachograph-files` to `public = false`; `logos` remains public by design.
+- `[x]` Confirm file size and MIME limits exist where appropriate.
+  - 2026-06-21: Migrations set bucket size/MIME limits for logos, defect photos, driver documents, vehicle documents, and tachograph files.
 
 Verification SQL:
 
@@ -362,17 +388,22 @@ Functions to verify:
 
 Checklist:
 
-- `[?]` Each SECURITY DEFINER function sets safe `search_path`.
-- `[?]` Each validates `auth.uid()` ownership/company membership.
-- `[?]` Invite acceptance blocks expired/accepted invites.
-- `[?]` Role/company updates cannot escalate privileges.
-- `[?]` Card pairing validates manager company scope.
+- `[~]` Each SECURITY DEFINER function sets safe `search_path`.
+  - 2026-06-21: Reviewed current migrations for listed functions; new/replaced functions set `search_path = public, pg_temp` or stricter. `update_user_claims` is altered to safe search path when present, but direct live function catalog check is still pending.
+- `[x]` Each validates `auth.uid()` ownership/company membership.
+  - 2026-06-21: Reviewed listed functions: helpers use current profile via `auth.uid()`, invite acceptance requires authenticated matching email/company checks, and manager-only RPCs verify role/company.
+- `[x]` Invite acceptance blocks expired/accepted invites.
+  - 2026-06-21: `accept_driver_invite(...)` selects `status = 'pending'` and `expires_at > now()` with row lock, then updates only pending invite rows.
+- `[x]` Role/company updates cannot escalate privileges.
+  - 2026-06-21: `prevent_role_escalation()` blocks role/company changes unless service role or the controlled invite acceptance setting is active, and requires same-company manager for membership changes.
+- `[x]` Card pairing validates manager company scope.
+  - 2026-06-21: `pair_tacho_card_import_to_driver(...)` requires current user to be manager for `p_company_id`, validates import/company/source, selected driver/company/role, and duplicate card assignment.
 
 ## 6.7 Edge Function Auth Review
 
 Functions to review:
 
-- `delete-user-data`
+- `delete-user-data` / `request-account-deletion`
 - `send-broadcast`
 - `process-tacho`
 - `calculate-compliance`
@@ -382,10 +413,16 @@ Functions to review:
 
 Checklist:
 
-- `[?]` Server-side auth is checked.
-- `[?]` Company ownership is validated.
-- `[?]` Service-role use is limited to necessary operations.
-- `[?]` Logs do not contain tokens, PII, payroll data, private document URLs, or excessive tacho personal data.
+- `[!]` Resolve deployed-only/stale Edge Functions before closing review.
+  - 2026-06-21: `supabase functions list` shows remote `calculate-compliance` is ACTIVE. Source was temporarily downloaded locally for audit, then removed from the portal repo to avoid accidental deployment of app-owned code. Do not deploy/delete it from the portal repo because the shared DB also serves the partner/mobile app and solo-driver flow. App-repo handoff created at `docs/calculate-compliance-app-repo-handoff-2026-06-21.md`. `delete-user-data` is not deployed and appears replaced by `request-account-deletion`.
+- `[~]` Server-side auth is checked.
+  - 2026-06-21: Reviewed local functions: `create-driver-invite`, `accept-driver-invite`, and `process-tacho` authenticate users; `process-tacho` and `send-broadcast` also support dedicated trigger tokens; `lookup-driver-invite` intentionally uses safe anon RPC. Downloaded `calculate-compliance` currently trusts POST body data and needs app-repo hardening.
+- `[~]` Company ownership is validated.
+  - 2026-06-21: `create-driver-invite` validates manager/company; `process-tacho` validates manager company for user-triggered processing; `send-broadcast` is trigger-token protected and scopes driver token fetch by payload company. Downloaded `calculate-compliance` does not validate session ownership/company before service-role update.
+- `[~]` Service-role use is limited to necessary operations.
+  - 2026-06-21: Local reviewed portal functions use service role after auth/trigger checks for RLS-bypassing inserts, storage/file processing, and broadcast delivery. Downloaded `calculate-compliance` uses service role immediately and must be repaired in the app repo.
+- `[~]` Logs do not contain tokens, PII, payroll data, private document URLs, or excessive tacho personal data.
+  - 2026-06-21: No token logging found in local reviewed portal functions. Some error logging includes raw error messages and company ids; acceptable for support but review again before customer release. Downloaded `calculate-compliance` returns raw error messages and needs app-repo review.
 
 ---
 
@@ -439,6 +476,8 @@ Checklist:
 - `[ ]` Create/use driver profile without `tacho_card_number`.
 - `[ ]` Read card.
 - `[ ]` Pair decoded card import to driver profile.
+  - 2026-06-21 live test note: Pairing to an existing driver ultimately succeeded after screen refresh, but the initial UI message said it failed/could not pair. Treat as a UI/mutation-state follow-up: verify RPC response handling, stale query invalidation, and error-toast timing around successful pair operations.
+  - 2026-06-21: Frontend pairing wrapper now verifies final import/profile linkage after a transient RPC/client error before showing failure. Import Centre pairing refresh is separated from the pair RPC result so refresh issues do not become false pair failures. Focused ESLint, tachograph rule tests, and `npm run build` passed; live retest still required.
 - `[ ]` Verify `profiles.tacho_card_number` is set.
 - `[ ]` Verify `tachograph_files.driver_id` is linked.
 - `[ ]` Verify `driver_card_downloads.driver_id` is linked.
@@ -1235,12 +1274,17 @@ Do not consider customer release ready until these are complete.
 
 ## Security
 
-- `[ ]` No embedded bearer tokens in SQL triggers.
-- `[ ]` Supabase secrets rotated if previously exposed.
-- `[ ]` `driver_invites` anonymous broad read removed.
+- `[~]` No embedded bearer tokens in SQL triggers.
+  - 2026-06-21: Repo/deployed migration review found no SQL `Bearer` token pattern; direct live catalog SQL still pending due missing `psql`/Docker.
+- `[?]` Supabase secrets rotated if previously exposed.
+  - 2026-06-21: Secret names/digests exist, but rotation history still needs dashboard/audit confirmation.
+- `[~]` `driver_invites` anonymous broad read removed.
+  - 2026-06-21: Migration/RPC review confirms intended fix; direct live `pg_policies` query still pending.
 - `[ ]` RLS checked for new tachograph/Atlas/incident/accreditation tables.
-- `[ ]` Storage buckets private where needed.
-- `[ ]` Edge Functions reviewed for auth/company scope.
+- `[x]` Storage buckets private where needed.
+  - 2026-06-21: Bucket migrations set document/tachograph buckets private and enforce company/user path policies; `logos` remains public by design.
+- `[!]` Edge Functions reviewed for auth/company scope.
+  - 2026-06-21: Local reviewed portal functions are mostly scoped, but remote `calculate-compliance` is ACTIVE for the shared app/solo-driver surface and needs coordinated app-repo repair before this can be closed.
 
 ## Tachograph
 
@@ -1300,13 +1344,23 @@ Keep this markdown checklist updated as you complete or verify items.
 Recommended next actions for the agent:
 
 1. `[x]` Master plan exists in repo at `docs/hourwise-portal-master-build-plan.md`.
-2. `[ ]` Run security verification SQL and update Section 6 statuses.
-3. `[ ]` Confirm deployed helper/backend/frontend versions.
-4. `[ ]` Run real card read through Driver Card Analysis, not just Import Centre.
-5. `[ ]` Capture visual/UI issues from the real parsed card output.
-6. `[ ]` Polish Driver Card Analysis layout and labels.
-7. `[x]` Collapse Import Centre technical noise.
+2. `[~]` Run security verification SQL and update Section 6 statuses.
+   - 2026-06-21: Updated Section 6 from deployed migration/source review, `supabase migration list`, `supabase functions list`, and `supabase secrets list`. Direct SQL is still pending because this machine has no `psql` and Supabase CLI schema dump requires Docker.
+3. `[!]` Coordinate repair of active shared-app `calculate-compliance` Edge Function.
+   - 2026-06-21: `supabase functions list` shows `calculate-compliance` is ACTIVE remotely. Source was temporarily downloaded locally for audit, then removed from the portal repo to avoid accidental deployment of app-owned code. Do not delete or deploy it from the portal repo because the shared DB also serves partner/mobile app and solo-driver users. Hand off `docs/calculate-compliance-app-repo-handoff-2026-06-21.md` to the app repo owner/agent.
+4. `[ ]` Run direct live catalog checks when tooling is available:
+   - trigger `action_statement ilike '%Bearer%'`
+   - `driver_invites` `pg_policies`
+   - storage bucket/policy state
+   - SECURITY DEFINER `search_path`
+5. `[ ]` Confirm deployed helper/backend/frontend versions.
+6. `[ ]` Run real card read through Driver Card Analysis, not just Import Centre.
+7. `[ ]` Capture visual/UI issues from the real parsed card output.
+8. `[~]` Fix pairing success/error feedback if the existing-driver pair flow can show a failed message while the database update succeeds.
+   - 2026-06-21: Implemented client-side verification fallback and separated Import Centre refresh errors from pair RPC errors. Needs live retest with existing-driver card pairing.
+9. `[ ]` Polish Driver Card Analysis layout and labels.
+10. `[x]` Collapse Import Centre technical noise.
    - 2026-06-20: Added supervisor filters, lifecycle labels, candidate archive/delete controls, default-hidden diagnostics, and hidden-by-default archived/superseded audit rows.
-8. `[ ]` Design review/sign-off persistence tables before implementing personnel-file persistence.
-9. `[ ]` Continue EF `0504` validation against known-good tachograph parser output.
-10. `[ ]` Leave Atlas implementation until the main portal data sources are stable.
+11. `[ ]` Design review/sign-off persistence tables before implementing personnel-file persistence.
+12. `[ ]` Continue EF `0504` validation against known-good tachograph parser output.
+13. `[ ]` Leave Atlas implementation until the main portal data sources are stable.

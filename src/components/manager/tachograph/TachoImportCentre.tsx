@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -653,13 +653,20 @@ function DriverCardPairingPanel({
   const [pairingInvite, setPairingInvite] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pairingContextRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const pairingContext = `${companyId ?? ''}:${item.id}:${cardNumber ?? ''}`;
+    const contextChanged = pairingContextRef.current !== pairingContext;
+    pairingContextRef.current = pairingContext;
+
     setSelectedDriverId(item.driverId ?? '');
-    setSelectedInviteId('');
-    setMessage(null);
-    setError(null);
+    if (contextChanged) {
+      setSelectedInviteId('');
+      setMessage(null);
+      setError(null);
+    }
 
     if (item.sourceType !== 'driver_card' || !companyId || !cardNumber) {
       setDrivers([]);
@@ -726,8 +733,17 @@ function DriverCardPairingPanel({
         driverId: selectedDriverId,
         cardNumber,
       });
-      setMessage(`Paired ${result.cardNumber} to ${result.driverName}.`);
-      onPaired();
+      setSelectedDriverId(result.driverId);
+      setMessage(
+        result.recoveredFromClientError
+          ? `Paired ${result.cardNumber} to ${result.driverName}. The backend update was confirmed after a transient response error.`
+          : `Paired ${result.cardNumber} to ${result.driverName}.`
+      );
+      try {
+        onPaired();
+      } catch (refreshError) {
+        setError(refreshError instanceof Error ? `Pairing succeeded, but refresh failed: ${refreshError.message}` : 'Pairing succeeded, but refresh failed.');
+      }
     } catch (pairError) {
       setError(pairError instanceof Error ? pairError.message : 'Failed to pair tachograph card.');
     } finally {
@@ -760,7 +776,11 @@ function DriverCardPairingPanel({
         issuingAuthority: item.cardIssuingAuthorityName,
       });
       setMessage(`Card ${cardNumber} will pair to ${result.fullName} when the invite is accepted.`);
-      onPaired();
+      try {
+        onPaired();
+      } catch (refreshError) {
+        setError(refreshError instanceof Error ? `Invite pairing succeeded, but refresh failed: ${refreshError.message}` : 'Invite pairing succeeded, but refresh failed.');
+      }
     } catch (pairError) {
       setError(pairError instanceof Error ? pairError.message : 'Failed to pair tachograph card to pending invite.');
     } finally {

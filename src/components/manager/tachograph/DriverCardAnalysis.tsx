@@ -261,7 +261,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       setSelectedImportId('');
       setLiveReaderTargetActive(false);
       setCandidatePairDriverId('');
-      setCandidateActionMessage(`Paired card ${result.cardNumber} to ${result.driverName}.`);
+      setCandidateActionMessage(
+        result.recoveredFromClientError
+          ? `Paired card ${result.cardNumber} to ${result.driverName}. The backend update was confirmed after a transient response error.`
+          : `Paired card ${result.cardNumber} to ${result.driverName}.`
+      );
     } catch (err) {
       setCandidateActionError(err instanceof Error ? err.message : 'Failed to pair this card to the selected driver.');
     } finally {

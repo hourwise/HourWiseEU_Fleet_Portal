@@ -55,6 +55,7 @@ export interface PairTachoImportToDriverResult {
   driverName: string;
   cardNumber: string;
   paired: boolean;
+  recoveredFromClientError?: boolean;
 }
 
 export interface PairTachoImportToInviteInput {
@@ -105,6 +106,10 @@ interface TachoPairingSupabaseClient {
 }
 
 const tachoPairingClient = supabase as unknown as TachoPairingSupabaseClient;
+
+function normalizeCardNumber(value: string | null | undefined) {
+  return value?.trim().toUpperCase() ?? '';
+}
 
 export async function fetchTachoPairingDrivers(companyId: string): Promise<TachoPairingDriver[]> {
   const { data, error } = await tachoPairingClient
@@ -157,7 +162,13 @@ export async function pairTachoImportToDriver(
     p_card_number: input.cardNumber,
   });
 
-  if (error) throw error;
+  if (error) {
+    const verifiedPairing = await verifyTachoImportDriverPairing(input).catch(() => null);
+    if (verifiedPairing) {
+      return verifiedPairing;
+    }
+    throw error;
+  }
 
   const result = (data ?? {}) as Partial<PairTachoImportToDriverResult>;
   return {
@@ -166,6 +177,64 @@ export async function pairTachoImportToDriver(
     driverName: result.driverName ?? 'Selected driver',
     cardNumber: result.cardNumber ?? input.cardNumber,
     paired: result.paired ?? true,
+  };
+}
+
+async function verifyTachoImportDriverPairing(
+  input: PairTachoImportToDriverInput
+): Promise<PairTachoImportToDriverResult | null> {
+  const [{ data: importRow, error: importError }, { data: driverRow, error: driverError }] = await Promise.all([
+    supabase
+      .from('tachograph_files' as never)
+      .select('driver_id, external_card_number, metadata')
+      .eq('id', input.importId)
+      .eq('company_id', input.companyId)
+      .maybeSingle(),
+    supabase
+      .from('profiles' as never)
+      .select('id, full_name, tacho_card_number')
+      .eq('id', input.driverId)
+      .eq('company_id', input.companyId)
+      .maybeSingle(),
+  ]);
+
+  if (importError || driverError || !importRow || !driverRow) return null;
+
+  const importData = importRow as {
+    driver_id?: string | null;
+    external_card_number?: string | null;
+    metadata?: Record<string, unknown> | null;
+  };
+  const driverData = driverRow as {
+    id?: string | null;
+    full_name?: string | null;
+    tacho_card_number?: string | null;
+  };
+  const metadataCardNumber =
+    typeof importData.metadata?.driver_card_number_hint === 'string'
+      ? importData.metadata.driver_card_number_hint
+      : null;
+  const pairedCardNumber = normalizeCardNumber(
+    importData.external_card_number ?? metadataCardNumber ?? driverData.tacho_card_number
+  );
+  const expectedCardNumber = normalizeCardNumber(input.cardNumber);
+
+  if (
+    importData.driver_id !== input.driverId ||
+    driverData.id !== input.driverId ||
+    !pairedCardNumber ||
+    (expectedCardNumber && pairedCardNumber !== expectedCardNumber)
+  ) {
+    return null;
+  }
+
+  return {
+    importId: input.importId,
+    driverId: input.driverId,
+    driverName: driverData.full_name ?? 'Selected driver',
+    cardNumber: pairedCardNumber,
+    paired: true,
+    recoveredFromClientError: true,
   };
 }
 
