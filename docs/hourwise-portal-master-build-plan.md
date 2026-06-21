@@ -71,6 +71,14 @@ Implemented locally:
   - Added report caveat that current HourWise read-only capture/parser output is provisional and not certified `.C1B/.DDD` output.
   - Expanded CSV export into an evidence report containing metadata, daily totals, findings, and app-vs-tacho cross-check rows.
   - Added print/save-PDF report action.
+- Shared compliance trigger cleanup:
+  - App repo confirmed production shift-end flow calculates compliance client-side and writes `work_sessions.compliance_score` / `work_sessions.compliance_violations`.
+  - Portal repo search found no direct portal call to `calculate-compliance`; portal reporting reads stored `work_sessions` compliance columns.
+  - Added migration `20260621114500_remove_legacy_work_session_compliance_triggers.sql` to drop the two stale `work_sessions` HTTP triggers and `public.trigger_compliance_function()`.
+- Driver Card Analysis review/sign-off persistence:
+  - Added `tachograph_finding_reviews` and `tachograph_finding_review_events`.
+  - Added manager-scoped `save_tachograph_finding_review(...)` RPC so review edits write audit events.
+  - Added Driver Card Analysis review panel for finding status, manager note, and corrective action type.
 
 Files changed in this batch:
 
@@ -223,7 +231,7 @@ This section is based on the latest tachograph roadmap. Verify in repo before re
 - `[~]` Verify whether `driver_invites` anonymous broad read has been removed.
   - 2026-06-21: Deployed hardening migration removes anon grants/public SELECT policies and uses safe lookup/accept RPCs. Direct `pg_policies` live query still pending due local tooling limitation.
 - `[~]` Verify storage policies, RLS, SECURITY DEFINER functions, and Edge Function auth.
-  - 2026-06-21: Repo/deployed migration audit is mostly positive, but deployed `calculate-compliance` belongs to the shared partner/mobile app surface and must be fixed/coordinated from the app repo before this review is complete.
+  - 2026-06-21: Repo/deployed migration audit is mostly positive. App repo confirmed `calculate-compliance` is stale for current shift-end compliance writes; portal migration `20260621114500_remove_legacy_work_session_compliance_triggers.sql` removes the two shared `work_sessions` HTTP trigger paths. Deployed app-owned function hardening/removal remains coordinated with the app repo.
 
 ---
 
@@ -420,6 +428,7 @@ Checklist:
 
 - `[!]` Resolve deployed-only/stale Edge Functions before closing review.
   - 2026-06-21: `supabase functions list` shows remote `calculate-compliance` is ACTIVE. Source was temporarily downloaded locally for audit, then removed from the portal repo to avoid accidental deployment of app-owned code. Do not deploy/delete it from the portal repo because the shared DB also serves the partner/mobile app and solo-driver flow. App-repo handoff created at `docs/calculate-compliance-app-repo-handoff-2026-06-21.md`. `delete-user-data` is not deployed and appears replaced by `request-account-deletion`.
+  - 2026-06-21: App repo confirmed production shift-end code calculates compliance in-app and writes `work_sessions.compliance_score` / `work_sessions.compliance_violations`; portal search found no direct `calculate-compliance` call. Added DB migration to remove stale shared `work_sessions` HTTP triggers without touching the app-owned Edge Function deployment.
 - `[~]` Server-side auth is checked.
   - 2026-06-21: Reviewed local functions: `create-driver-invite`, `accept-driver-invite`, and `process-tacho` authenticate users; `process-tacho` and `send-broadcast` also support dedicated trigger tokens; `lookup-driver-invite` intentionally uses safe anon RPC. Downloaded `calculate-compliance` currently trusts POST body data and needs app-repo hardening.
 - `[~]` Company ownership is validated.
@@ -704,11 +713,16 @@ Important design rule:
 
 Checklist:
 
-- `[ ]` Design persistence tables for review/sign-off.
-- `[ ]` Store manager review state.
-- `[ ]` Store manager notes.
-- `[ ]` Store corrective action references.
-- `[ ]` Store audit log of review edits.
+- `[~]` Design persistence tables for review/sign-off.
+  - 2026-06-21: Added `tachograph_finding_reviews` and `tachograph_finding_review_events` in migration `20260621123000_add_tacho_finding_review_persistence.sql`. Deployment/live retest pending.
+- `[~]` Store manager review state.
+  - 2026-06-21: Driver Card Analysis can save `open`, `reviewed`, `action_required`, and `closed` through manager-scoped RPC. Deployment/live retest pending.
+- `[~]` Store manager notes.
+  - 2026-06-21: Review panel and RPC persist manager notes per generated tachograph finding. Deployment/live retest pending.
+- `[~]` Store corrective action references.
+  - 2026-06-21: Schema stores `corrective_action_type` and optional `corrective_action_ref_id`; first UI supports selecting the action type, later work should wire concrete training/debrief references.
+- `[~]` Store audit log of review edits.
+  - 2026-06-21: `save_tachograph_finding_review(...)` inserts `created`/`updated` events into `tachograph_finding_review_events`. Deployment/live retest pending.
 - `[ ]` Add optional driver acknowledgement later.
 - `[ ]` Link signed-off findings into personnel/training/compliance views.
 
@@ -1290,7 +1304,7 @@ Do not consider customer release ready until these are complete.
 - `[x]` Storage buckets private where needed.
   - 2026-06-21: Bucket migrations set document/tachograph buckets private and enforce company/user path policies; `logos` remains public by design.
 - `[!]` Edge Functions reviewed for auth/company scope.
-  - 2026-06-21: Local reviewed portal functions are mostly scoped, but remote `calculate-compliance` is ACTIVE for the shared app/solo-driver surface and needs coordinated app-repo repair before this can be closed.
+  - 2026-06-21: Local reviewed portal functions are mostly scoped. App repo confirmed `calculate-compliance` is no longer needed for normal shift-end compliance writes; portal migration removes stale DB trigger paths. Remote app-owned function still needs coordinated hardening/removal from the app repo before this can be closed.
 
 ## Tachograph
 
@@ -1352,8 +1366,8 @@ Recommended next actions for the agent:
 1. `[x]` Master plan exists in repo at `docs/hourwise-portal-master-build-plan.md`.
 2. `[~]` Run security verification SQL and update Section 6 statuses.
    - 2026-06-21: Updated Section 6 from deployed migration/source review, `supabase migration list`, `supabase functions list`, and `supabase secrets list`. Direct SQL is still pending because this machine has no `psql` and Supabase CLI schema dump requires Docker.
-3. `[!]` Coordinate repair of active shared-app `calculate-compliance` Edge Function.
-   - 2026-06-21: `supabase functions list` shows `calculate-compliance` is ACTIVE remotely. Source was temporarily downloaded locally for audit, then removed from the portal repo to avoid accidental deployment of app-owned code. Do not delete or deploy it from the portal repo because the shared DB also serves partner/mobile app and solo-driver users. Hand off `docs/calculate-compliance-app-repo-handoff-2026-06-21.md` to the app repo owner/agent.
+3. `[~]` Coordinate cleanup of active shared-app `calculate-compliance` Edge Function dependency.
+   - 2026-06-21: App repo confirmed production shift-end code writes compliance results directly to `work_sessions`; portal repo search found no direct Edge Function call. Added `supabase/migrations/20260621114500_remove_legacy_work_session_compliance_triggers.sql` to remove the two stale `work_sessions` HTTP trigger paths. Do not delete/deploy `calculate-compliance` itself from the portal repo; app repo still owns final function hardening/removal.
 4. `[ ]` Run direct live catalog checks when tooling is available:
    - trigger `action_statement ilike '%Bearer%'`
    - `driver_invites` `pg_policies`
@@ -1368,6 +1382,7 @@ Recommended next actions for the agent:
    - 2026-06-21: Added manager report panel, screening report toggle, provisional-capture caveat, print/save-PDF action, and expanded evidence CSV. Focused ESLint and `npm run build` passed. Needs live visual review after deployment.
 10. `[x]` Collapse Import Centre technical noise.
    - 2026-06-20: Added supervisor filters, lifecycle labels, candidate archive/delete controls, default-hidden diagnostics, and hidden-by-default archived/superseded audit rows.
-11. `[ ]` Design review/sign-off persistence tables before implementing personnel-file persistence.
+11. `[~]` Design review/sign-off persistence tables before implementing personnel-file persistence.
+   - 2026-06-21: Added review/sign-off tables, audit events table, manager-scoped save RPC, frontend API helpers, and Driver Card Analysis review panel. Verified with focused ESLint, `npm run build`, and `npm run test:rules`. Needs `supabase db push` and live save/reload retest.
 12. `[ ]` Continue EF `0504` validation against known-good tachograph parser output.
 13. `[ ]` Leave Atlas implementation until the main portal data sources are stable.

@@ -8,12 +8,13 @@ import { useDrivers } from '../../../hooks/useDrivers';
 import { useTachoReaderWorkflow, type TachoReaderAnalysisTarget } from '../../../hooks/useTachoReaderWorkflow';
 import { supabase } from '../../../lib/supabase';
 import { InviteDriverModal } from '../InviteDriverModal';
+import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
 import { pairTachoImportToDriver } from '../../../lib/tacho/driverPairing';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
-import type { DriverCardAnalysisData, TachoAnalysisRange, TachoDaySummary, TachoFinding, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
+import type { DriverCardAnalysisData, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
@@ -96,6 +97,9 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const [candidateActionMessage, setCandidateActionMessage] = useState<string | null>(null);
   const [inviteFromCandidateOpen, setInviteFromCandidateOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [findingReviews, setFindingReviews] = useState<Record<string, TachoFindingReview>>({});
+  const [reviewPendingId, setReviewPendingId] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const autoReadStartedRef = useRef(false);
   const handleReaderAnalysisReady = useCallback((target: TachoReaderAnalysisTarget) => {
     if (target.sourceType && target.sourceType !== 'driver_card') return;
@@ -209,6 +213,28 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const findings = data?.findings ?? EMPTY_FINDINGS;
   const technicalEvents = data?.technicalEvents ?? EMPTY_FINDINGS;
   const reconciliation = data?.reconciliation ?? EMPTY_RECONCILIATION;
+  const findingIds = useMemo(() => findings.map((finding) => finding.id), [findings]);
+  useEffect(() => {
+    if (!profile?.company_id || findingIds.length === 0) {
+      setFindingReviews({});
+      return;
+    }
+
+    let cancelled = false;
+    fetchTachoFindingReviews(profile.company_id, findingIds)
+      .then((reviews) => {
+        if (cancelled) return;
+        setFindingReviews(Object.fromEntries(reviews.map((review) => [review.findingId, review])));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setReviewError(error instanceof Error ? error.message : 'Unable to load finding reviews.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [findingIds, profile?.company_id]);
   const dayReason = useMemo(() => {
     if (!selectedDay || !activeFocusedDate) return null;
     const sourceLabel = readerFocusedDate ? 'live card read' : 'review queue or alert';
@@ -238,6 +264,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const selectedDayReconciliation = selectedDay
     ? reconciliation.filter((item) => item.date === selectedDay.date && item.status !== 'matched')
     : [];
+  const reviewPanelFindings = selectedDayFindings.length > 0 ? selectedDayFindings : findings.slice(0, 6);
 
   const handleAssignTraining = async (recommendation: TrainingRecommendation) => {
     if (!profile?.company_id || !profile.id || !activeDriverId) return;
@@ -258,6 +285,33 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       setTimeout(() => setJustAssignedTrainingId(null), 2500);
     } finally {
       setAssigningTrainingId(null);
+    }
+  };
+
+  const handleSaveFindingReview = async (
+    finding: TachoFinding,
+    values: {
+      status: TachoFindingReviewStatus;
+      managerNote: string;
+      correctiveActionType: TachoCorrectiveActionType | '';
+    }
+  ) => {
+    if (!profile?.company_id) return;
+    setReviewPendingId(finding.id);
+    setReviewError(null);
+    try {
+      const review = await saveTachoFindingReview({
+        companyId: profile.company_id,
+        findingId: finding.id,
+        status: values.status,
+        managerNote: values.managerNote,
+        correctiveActionType: values.correctiveActionType || null,
+      });
+      setFindingReviews((current) => ({ ...current, [review.findingId]: review }));
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : 'Unable to save finding review.');
+    } finally {
+      setReviewPendingId(null);
     }
   };
 
@@ -524,6 +578,17 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
       </div>
+
+      {!isCandidateCard ? (
+        <TachoFindingReviewPanel
+          findings={reviewPanelFindings}
+          reviewsByFindingId={findingReviews}
+          pendingFindingId={reviewPendingId}
+          error={reviewError}
+          selectedDay={selectedDay?.date ?? null}
+          onSave={handleSaveFindingReview}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1fr] gap-6">
         <InfoPanel title="Training / Action Follow-up" icon={<GraduationCap className="w-5 h-5 text-blue-600" />}>
@@ -996,6 +1061,163 @@ function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: 
   if (restFindings.length >= 2) items.push({ id: 'hours', moduleId: 'eu-hours', title: "EU Drivers' Hours Rules", reason: `${restFindings.length} hours or rest findings need a refresher on legal limits and recovery rules.` });
   if (mismatches.length >= 2) items.push({ id: 'cross-check', moduleId: 'tacho-modes', title: 'App Vs Tacho Record Discipline', reason: `${mismatches.length} cross-check mismatches indicate repeated app-vs-tacho alignment issues.` });
   return items;
+}
+
+function TachoFindingReviewPanel({
+  findings,
+  reviewsByFindingId,
+  pendingFindingId,
+  error,
+  selectedDay,
+  onSave,
+}: {
+  findings: TachoFinding[];
+  reviewsByFindingId: Record<string, TachoFindingReview>;
+  pendingFindingId: string | null;
+  error: string | null;
+  selectedDay: string | null;
+  onSave: (
+    finding: TachoFinding,
+    values: {
+      status: TachoFindingReviewStatus;
+      managerNote: string;
+      correctiveActionType: TachoCorrectiveActionType | '';
+    }
+  ) => Promise<void>;
+}) {
+  return (
+    <InfoPanel title="Finding Review / Sign-off" icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}>
+      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-600">
+        {selectedDay
+          ? `Showing findings for ${format(new Date(`${selectedDay}T12:00:00`), 'dd MMM yyyy')}.`
+          : 'No day selected. Showing the latest findings in this range.'}
+        {' '}Saved reviews are stored separately from generated parser findings.
+      </div>
+      {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div> : null}
+      {findings.length === 0 ? (
+        <p className="text-sm font-medium text-slate-500">No tachograph findings are available to review for this selection.</p>
+      ) : (
+        <div className="space-y-3">
+          {findings.map((finding) => (
+            <TachoFindingReviewCard
+              key={finding.id}
+              finding={finding}
+              review={reviewsByFindingId[finding.id]}
+              pending={pendingFindingId === finding.id}
+              onSave={onSave}
+            />
+          ))}
+        </div>
+      )}
+    </InfoPanel>
+  );
+}
+
+function TachoFindingReviewCard({
+  finding,
+  review,
+  pending,
+  onSave,
+}: {
+  finding: TachoFinding;
+  review?: TachoFindingReview;
+  pending: boolean;
+  onSave: (
+    finding: TachoFinding,
+    values: {
+      status: TachoFindingReviewStatus;
+      managerNote: string;
+      correctiveActionType: TachoCorrectiveActionType | '';
+    }
+  ) => Promise<void>;
+}) {
+  const [status, setStatus] = useState<TachoFindingReviewStatus>(review?.status ?? 'open');
+  const [managerNote, setManagerNote] = useState(review?.managerNote ?? '');
+  const [correctiveActionType, setCorrectiveActionType] = useState<TachoCorrectiveActionType | ''>(review?.correctiveActionType ?? '');
+
+  useEffect(() => {
+    setStatus(review?.status ?? 'open');
+    setManagerNote(review?.managerNote ?? '');
+    setCorrectiveActionType(review?.correctiveActionType ?? '');
+  }, [review?.correctiveActionType, review?.managerNote, review?.status]);
+
+  const statusTone = {
+    open: 'border-slate-200 bg-white text-slate-700',
+    reviewed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    action_required: 'border-amber-200 bg-amber-50 text-amber-800',
+    closed: 'border-blue-200 bg-blue-50 text-blue-700',
+  }[status];
+
+  return (
+    <div className={`rounded-2xl border p-4 ${statusTone}`}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest">{finding.severity}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{finding.ruleCode}</span>
+          </div>
+          <h4 className="mt-2 text-sm font-black text-slate-950">{finding.title}</h4>
+          <p className="mt-1 text-xs font-medium text-slate-600">{finding.summary}</p>
+          <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            {format(new Date(finding.periodStart), 'dd MMM HH:mm')} - {format(new Date(finding.periodEnd), 'dd MMM HH:mm')}
+          </p>
+          {review?.updatedAt ? <p className="mt-2 text-[11px] font-semibold text-slate-500">Last saved {format(new Date(review.updatedAt), 'dd MMM HH:mm')}</p> : null}
+        </div>
+        <div className="grid min-w-full gap-2 lg:min-w-[28rem]">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <label className="text-xs font-bold text-slate-600">
+              Review status
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value as TachoFindingReviewStatus)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+              >
+                <option value="open">Open</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="action_required">Action required</option>
+                <option value="closed">Closed</option>
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-600">
+              Corrective action
+              <select
+                value={correctiveActionType}
+                onChange={(event) => setCorrectiveActionType(event.target.value as TachoCorrectiveActionType | '')}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+              >
+                <option value="">None yet</option>
+                <option value="training">Training</option>
+                <option value="manager_debrief">Manager debrief</option>
+                <option value="manual_entry">Manual entry correction</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+          <label className="text-xs font-bold text-slate-600">
+            Manager note
+            <textarea
+              value={managerNote}
+              onChange={(event) => setManagerNote(event.target.value)}
+              rows={2}
+              placeholder="Record review decision, debrief note, or corrective action context."
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            />
+          </label>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void onSave(finding, { status, managerNote, correctiveActionType })}
+              disabled={pending}
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {pending ? 'Saving' : 'Save Review'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: ReturnType<typeof useTachoReaderWorkflow>; onOpenImportCentre?: () => void }) {

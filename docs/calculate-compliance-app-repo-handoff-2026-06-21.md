@@ -8,6 +8,8 @@ Context:
 - Remote Edge Function `calculate-compliance` is ACTIVE.
 - Source was temporarily downloaded in the portal repo for audit, then removed to avoid accidental portal-repo deployment of an app-owned function.
 - Do not delete or deploy this function from the portal repo without coordinating with the app repo owner.
+- App repo confirmation received on 2026-06-21: current production app code calculates compliance client-side on shift end and writes `work_sessions.compliance_score` / `work_sessions.compliance_violations` directly.
+- Portal repo search on 2026-06-21 found no direct portal call to `calculate-compliance`; portal reporting reads stored `work_sessions` compliance columns.
 
 Observed risk in the deployed source:
 
@@ -17,6 +19,33 @@ Observed risk in the deployed source:
 - Trusts client-supplied `session.user_id`, `session.start_time`, and `session.id`.
 - Updates `work_sessions.compliance_score` and `work_sessions.compliance_violations` by supplied `session.id`.
 - Returns raw error messages.
+
+Observed live DB trigger dependency:
+
+- `public.work_sessions` had two legacy `AFTER UPDATE` HTTP trigger paths to `calculate-compliance`.
+- Trigger `"On Shift Complete"` called the Edge Function directly with empty body `{}`.
+- Trigger `on_shift_complete_trigger` called `public.trigger_compliance_function()`, which sent `{ record: NEW }` and embedded an authorization header in SQL.
+- These triggers can fire from any shared-database updater, even though the app no longer needs them for normal shift-end compliance writes.
+
+Portal-side migration added:
+
+- `supabase/migrations/20260621114500_remove_legacy_work_session_compliance_triggers.sql`
+- Drops only the two stale `work_sessions` compliance HTTP triggers and `public.trigger_compliance_function()`.
+- Does not delete or deploy the app-owned `calculate-compliance` Edge Function.
+
+Deploy/verification:
+
+```sql
+select
+  trigger_name,
+  action_statement
+from information_schema.triggers
+where trigger_schema = 'public'
+  and event_object_table = 'work_sessions'
+order by trigger_name;
+```
+
+Expected after migration: no compliance HTTP triggers remain. Normal non-compliance triggers such as `set_work_sessions_updated_at` may remain.
 
 Required app-repo repair:
 

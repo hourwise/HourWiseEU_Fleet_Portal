@@ -5,6 +5,9 @@ import type {
   TachoImportRecord,
   TachoParserBundle,
   TachoAnalysisRange,
+  TachoCorrectiveActionType,
+  TachoFindingReview,
+  TachoFindingReviewStatus,
   TachoReconciliationItem,
   VehicleMotionDiscrepancy,
 } from './rules/types';
@@ -19,12 +22,48 @@ const TACHO_RPC = {
   confirmCandidateStorageDeleted: 'confirm_tacho_candidate_import_storage_deleted',
   prepareImportReprocess: 'prepare_tacho_import_reprocess',
   purgeCompanyDriverCardReads: 'purge_company_driver_card_reads',
+  saveFindingReview: 'save_tachograph_finding_review',
 } as const;
 
 interface CompanyTachoSignalsRow {
   driver_id: string;
   compliance_signal: ParserDriverTachoComplianceSignal | null;
   risk_signal: ParserDriverTachoRiskSignal | null;
+}
+
+interface TachoFindingReviewRow {
+  id: string;
+  finding_id?: string;
+  findingId?: string;
+  company_id?: string;
+  companyId?: string;
+  driver_id?: string | null;
+  driverId?: string | null;
+  import_id?: string;
+  importId?: string;
+  status: TachoFindingReviewStatus;
+  manager_note?: string | null;
+  managerNote?: string | null;
+  corrective_action_type?: TachoCorrectiveActionType | null;
+  correctiveActionType?: TachoCorrectiveActionType | null;
+  corrective_action_ref_id?: string | null;
+  correctiveActionRefId?: string | null;
+  reviewed_at?: string | null;
+  reviewedAt?: string | null;
+  reviewed_by_user_id?: string | null;
+  reviewedByUserId?: string | null;
+  closed_at?: string | null;
+  closedAt?: string | null;
+  closed_by_user_id?: string | null;
+  closedByUserId?: string | null;
+  driver_acknowledged_at?: string | null;
+  driverAcknowledgedAt?: string | null;
+  driver_acknowledged_by_user_id?: string | null;
+  driverAcknowledgedByUserId?: string | null;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
 }
 
 function resolveRangeStart(range: TachoAnalysisRange) {
@@ -214,6 +253,66 @@ export async function fetchTachoImportBundle(
     bundle.vehicleMotionDiscrepancies = await fetchVehicleMotionDiscrepanciesByImport(importId);
   }
   return bundle;
+}
+
+function adaptFindingReview(row: TachoFindingReviewRow): TachoFindingReview {
+  return {
+    id: row.id,
+    findingId: row.finding_id ?? row.findingId ?? '',
+    companyId: row.company_id ?? row.companyId ?? '',
+    driverId: row.driver_id ?? row.driverId ?? null,
+    importId: row.import_id ?? row.importId ?? '',
+    status: row.status,
+    managerNote: row.manager_note ?? row.managerNote ?? null,
+    correctiveActionType: row.corrective_action_type ?? row.correctiveActionType ?? null,
+    correctiveActionRefId: row.corrective_action_ref_id ?? row.correctiveActionRefId ?? null,
+    reviewedAt: row.reviewed_at ?? row.reviewedAt ?? null,
+    reviewedByUserId: row.reviewed_by_user_id ?? row.reviewedByUserId ?? null,
+    closedAt: row.closed_at ?? row.closedAt ?? null,
+    closedByUserId: row.closed_by_user_id ?? row.closedByUserId ?? null,
+    driverAcknowledgedAt: row.driver_acknowledged_at ?? row.driverAcknowledgedAt ?? null,
+    driverAcknowledgedByUserId: row.driver_acknowledged_by_user_id ?? row.driverAcknowledgedByUserId ?? null,
+    createdAt: row.created_at ?? row.createdAt ?? '',
+    updatedAt: row.updated_at ?? row.updatedAt ?? '',
+  };
+}
+
+export async function fetchTachoFindingReviews(
+  companyId: string,
+  findingIds: string[]
+): Promise<TachoFindingReview[]> {
+  const uniqueFindingIds = [...new Set(findingIds)].filter(Boolean);
+  if (uniqueFindingIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('tachograph_finding_reviews' as never)
+    .select('*')
+    .eq('company_id', companyId)
+    .in('finding_id', uniqueFindingIds);
+
+  if (error) throw error;
+  return ((data as unknown as TachoFindingReviewRow[] | null) ?? []).map(adaptFindingReview);
+}
+
+export async function saveTachoFindingReview(input: {
+  companyId: string;
+  findingId: string;
+  status: TachoFindingReviewStatus;
+  managerNote?: string | null;
+  correctiveActionType?: TachoCorrectiveActionType | null;
+  correctiveActionRefId?: string | null;
+}): Promise<TachoFindingReview> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.saveFindingReview as never, {
+    p_company_id: input.companyId,
+    p_finding_id: input.findingId,
+    p_status: input.status,
+    p_manager_note: input.managerNote ?? null,
+    p_corrective_action_type: input.correctiveActionType ?? null,
+    p_corrective_action_ref_id: input.correctiveActionRefId ?? null,
+  } as never);
+
+  if (error) throw error;
+  return adaptFindingReview(data as unknown as TachoFindingReviewRow);
 }
 
 export async function fetchRecentTachoImports(

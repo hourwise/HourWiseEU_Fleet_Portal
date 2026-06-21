@@ -126,6 +126,30 @@ export interface TachoFinding {
   metadata?: Record<string, string | number | boolean | null>;
 }
 
+export type TachoFindingReviewStatus = 'open' | 'reviewed' | 'action_required' | 'closed';
+
+export type TachoCorrectiveActionType = 'training' | 'manager_debrief' | 'manual_entry' | 'other';
+
+export interface TachoFindingReview {
+  id: string;
+  findingId: string;
+  companyId: string;
+  driverId?: string | null;
+  importId: string;
+  status: TachoFindingReviewStatus;
+  managerNote?: string | null;
+  correctiveActionType?: TachoCorrectiveActionType | null;
+  correctiveActionRefId?: string | null;
+  reviewedAt?: string | null;
+  reviewedByUserId?: string | null;
+  closedAt?: string | null;
+  closedByUserId?: string | null;
+  driverAcknowledgedAt?: string | null;
+  driverAcknowledgedByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TachoSummaryMetric {
   label: string;
   value: string;
