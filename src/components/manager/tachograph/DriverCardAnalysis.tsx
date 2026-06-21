@@ -13,7 +13,7 @@ import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
-import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
+import type { DriverCardAnalysisData, TachoAnalysisRange, TachoDaySummary, TachoFinding, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
@@ -30,6 +30,39 @@ interface TrainingRecommendation {
   moduleId: string;
   title: string;
   reason: string;
+}
+
+interface DriverCardReportSnapshot {
+  title: string;
+  kindLabel: string;
+  driverName: string;
+  cardNumber: string;
+  cardExpiry: string;
+  issuingCountry: string;
+  lastDownloadAt: string;
+  downloadStatus: string;
+  periodLabel: string;
+  generatedAt: string;
+  caveat: string;
+  totals: {
+    drivingMins: number;
+    workMins: number;
+    poaMins: number;
+    restMins: number;
+    activityBlocks: number;
+    loadedDays: number;
+  };
+  issueCounts: {
+    findings: number;
+    highSeverity: number;
+    warnings: number;
+    technicalEvents: number;
+    reconciliationIssues: number;
+  };
+  days: TachoDaySummary[];
+  findings: TachoFinding[];
+  technicalEvents: TachoFinding[];
+  reconciliationIssues: TachoReconciliationItem[];
 }
 
 const EMPTY_FINDINGS: TachoFinding[] = [];
@@ -62,6 +95,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const [candidateActionError, setCandidateActionError] = useState<string | null>(null);
   const [candidateActionMessage, setCandidateActionMessage] = useState<string | null>(null);
   const [inviteFromCandidateOpen, setInviteFromCandidateOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const autoReadStartedRef = useRef(false);
   const handleReaderAnalysisReady = useCallback((target: TachoReaderAnalysisTarget) => {
     if (target.sourceType && target.sourceType !== 'driver_card') return;
@@ -320,7 +354,15 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   }
 
   const statusTone = data.identity.downloadStatus === 'overdue' ? 'bg-rose-100 text-rose-700' : data.identity.downloadStatus === 'due_soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
-  const handleExportCsv = () => exportDriverCardCsv(data.identity.driverName, data.dailySummaries);
+  const reportSnapshot = buildDriverCardReportSnapshot({
+    data,
+    findings,
+    technicalEvents,
+    reconciliation,
+    periodLabel: analysisSummary?.periodLabel ?? 'No dated rows',
+    isCandidateCard,
+  });
+  const handleExportCsv = () => exportDriverCardCsv(reportSnapshot);
 
   return (
     <div className="space-y-6">
@@ -359,11 +401,19 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
             </>
           ) : null}
           <ActionButton icon={<Download className="w-4 h-4" />} label="Export CSV" onClick={handleExportCsv} />
-          <ActionButton icon={<FileText className="w-4 h-4" />} label="Report View" onClick={() => window.print()} />
+          <ActionButton icon={<FileText className="w-4 h-4" />} label={reportOpen ? 'Hide Report' : 'Report View'} onClick={() => setReportOpen((current) => !current)} />
         </div>
       </div>
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
+
+      {reportOpen ? (
+        <DriverCardReportPanel
+          snapshot={reportSnapshot}
+          onPrint={() => window.print()}
+          onExportCsv={() => exportDriverCardCsv(reportSnapshot)}
+        />
+      ) : null}
 
       {isCandidateCard ? (
         <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
@@ -424,7 +474,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
             <ActionButton icon={<CheckCircle2 className="w-4 h-4" />} label={candidateActionPending === 'reviewed' ? 'Marking Reviewed' : 'Mark Reviewed Only'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('reviewed')} />
             <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label={candidateActionPending === 'no_hire' ? 'Marking No Hire' : 'Checked / No Hire'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('no_hire')} />
             <ActionButton icon={<CreditCard className="w-4 h-4" />} label="Open Import Review" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
-            <ActionButton icon={<FileText className="w-4 h-4" />} label="Screening Report" onClick={() => window.print()} />
+            <ActionButton icon={<FileText className="w-4 h-4" />} label={reportOpen ? 'Hide Screening Report' : 'Screening Report'} onClick={() => setReportOpen((current) => !current)} />
           </div>
         </div>
       ) : null}
@@ -658,10 +708,71 @@ function buildAnalysisSummary(
   };
 }
 
-function exportDriverCardCsv(driverName: string, days: TachoDaySummary[]) {
+function buildDriverCardReportSnapshot(input: {
+  data: DriverCardAnalysisData;
+  findings: TachoFinding[];
+  technicalEvents: TachoFinding[];
+  reconciliation: TachoReconciliationItem[];
+  periodLabel: string;
+  isCandidateCard: boolean;
+}): DriverCardReportSnapshot {
+  const reconciliationIssues = input.reconciliation.filter((item) => item.status !== 'matched');
+  const totals = input.data.dailySummaries.reduce(
+    (acc, day) => ({
+      drivingMins: acc.drivingMins + day.drivingMins,
+      workMins: acc.workMins + day.workMins,
+      poaMins: acc.poaMins + day.poaMins,
+      restMins: acc.restMins + day.restMins,
+      activityBlocks: acc.activityBlocks + day.activities.length,
+      loadedDays: acc.loadedDays + (day.activities.length > 0 ? 1 : 0),
+    }),
+    { drivingMins: 0, workMins: 0, poaMins: 0, restMins: 0, activityBlocks: 0, loadedDays: 0 }
+  );
+  const highSeverity = input.findings.filter((finding) => finding.severity === 'critical' || finding.severity === 'high').length;
+  const warnings = input.findings.filter((finding) => finding.status === 'warning').length;
+
+  return {
+    title: input.isCandidateCard ? 'Candidate Driver Card Screening Report' : 'Driver Card Analysis Report',
+    kindLabel: input.isCandidateCard ? 'Candidate / unlinked card' : 'Linked driver card',
+    driverName: input.data.identity.driverName,
+    cardNumber: input.data.identity.cardNumber,
+    cardExpiry: input.data.identity.cardExpiry,
+    issuingCountry: input.data.identity.issuingCountry,
+    lastDownloadAt: input.data.identity.lastDownloadAt,
+    downloadStatus: input.data.identity.downloadStatus.replace('_', ' '),
+    periodLabel: input.periodLabel,
+    generatedAt: new Date().toISOString(),
+    caveat: 'HourWise read-only capture and provisional parser output. Use for operational review and validation; do not present as certified C1B/DDD output until the certified export/parser path is complete.',
+    totals,
+    issueCounts: {
+      findings: input.findings.length,
+      highSeverity,
+      warnings,
+      technicalEvents: input.technicalEvents.length,
+      reconciliationIssues: reconciliationIssues.length,
+    },
+    days: input.data.dailySummaries,
+    findings: input.findings,
+    technicalEvents: input.technicalEvents,
+    reconciliationIssues,
+  };
+}
+
+function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
   const rows = [
+    ['HourWise Driver Card Report'],
+    ['Generated', format(new Date(snapshot.generatedAt), 'dd MMM yyyy HH:mm')],
+    ['Report type', snapshot.kindLabel],
+    ['Driver/card holder', snapshot.driverName],
+    ['Card number', snapshot.cardNumber],
+    ['Card expiry', snapshot.cardExpiry],
+    ['Last download', snapshot.lastDownloadAt],
+    ['Period', snapshot.periodLabel],
+    ['Caveat', snapshot.caveat],
+    [],
+    ['Daily totals'],
     ['Date', 'Driving', 'Work', 'POA', 'Rest', 'Findings', 'Activity blocks'],
-    ...days.map((day) => [
+    ...snapshot.days.map((day) => [
       day.date,
       minsToHours(day.drivingMins),
       minsToHours(day.workMins),
@@ -670,17 +781,206 @@ function exportDriverCardCsv(driverName: string, days: TachoDaySummary[]) {
       String(day.findingsCount),
       String(day.activities.length),
     ]),
+    [],
+    ['Findings'],
+    ['Severity', 'Status', 'Rule', 'Title', 'Period start', 'Period end', 'Summary'],
+    ...snapshot.findings.map((finding) => [
+      finding.severity,
+      finding.status,
+      finding.ruleCode,
+      finding.title,
+      finding.periodStart,
+      finding.periodEnd,
+      finding.summary,
+    ]),
+    [],
+    ['App vs tacho cross-check'],
+    ['Date', 'Status', 'App', 'Tacho', 'Summary'],
+    ...snapshot.reconciliationIssues.map((item) => [
+      item.date,
+      item.status,
+      item.appLabel,
+      item.tachoLabel,
+      item.summary,
+    ]),
   ];
   const csv = rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${driverName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'driver-card'}-tachograph-summary.csv`;
+  link.download = `${snapshot.driverName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'driver-card'}-tachograph-report.csv`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function DriverCardReportPanel({
+  snapshot,
+  onPrint,
+  onExportCsv,
+}: {
+  snapshot: DriverCardReportSnapshot;
+  onPrint: () => void;
+  onExportCsv: () => void;
+}) {
+  const topFindings = snapshot.findings.slice(0, 6);
+  const topReconciliation = snapshot.reconciliationIssues.slice(0, 6);
+
+  return (
+    <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm print:border-0 print:shadow-none">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Manager Report</p>
+          <h3 className="mt-1 text-2xl font-black text-slate-950">{snapshot.title}</h3>
+          <p className="mt-2 max-w-4xl text-sm font-medium text-slate-600">
+            {snapshot.kindLabel} covering {snapshot.periodLabel}. Generated {format(new Date(snapshot.generatedAt), 'dd MMM yyyy HH:mm')}.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={onExportCsv}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100"
+          >
+            <Download className="h-4 w-4" />
+            Export Evidence CSV
+          </button>
+          <button
+            type="button"
+            onClick={onPrint}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800"
+          >
+            <FileText className="h-4 w-4" />
+            Print / Save PDF
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-950">
+        {snapshot.caveat}
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <ReportFact label="Driver / holder" value={snapshot.driverName} />
+        <ReportFact label="Card number" value={snapshot.cardNumber} />
+        <ReportFact label="Card expiry" value={format(new Date(snapshot.cardExpiry), 'dd MMM yyyy')} />
+        <ReportFact label="Download status" value={snapshot.downloadStatus} />
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <ReportMetric label="Driving" value={minsToHours(snapshot.totals.drivingMins)} />
+        <ReportMetric label="Work" value={minsToHours(snapshot.totals.workMins)} />
+        <ReportMetric label="POA" value={minsToHours(snapshot.totals.poaMins)} />
+        <ReportMetric label="Rest" value={minsToHours(snapshot.totals.restMins)} />
+        <ReportMetric label="Findings" value={String(snapshot.issueCounts.findings)} tone={snapshot.issueCounts.highSeverity > 0 ? 'danger' : 'neutral'} />
+        <ReportMetric label="Cross-check" value={String(snapshot.issueCounts.reconciliationIssues)} tone={snapshot.issueCounts.reconciliationIssues > 0 ? 'warning' : 'neutral'} />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <ReportList
+          title="Priority Findings"
+          empty="No findings were returned in this range."
+          items={topFindings.map((finding) => ({
+            id: finding.id,
+            heading: `${finding.severity.toUpperCase()} - ${finding.title}`,
+            detail: `${format(new Date(finding.periodStart), 'dd MMM HH:mm')} - ${finding.summary}`,
+          }))}
+        />
+        <ReportList
+          title="App Vs Tacho Cross-check"
+          empty="No app-vs-tacho issues were returned in this range."
+          items={topReconciliation.map((item) => ({
+            id: item.id,
+            heading: `${formatReconciliationStatus(item.status)} - ${item.date}`,
+            detail: item.summary,
+          }))}
+        />
+      </div>
+
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+        <table className="min-w-full divide-y divide-slate-200 text-sm">
+          <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <tr>
+              <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-right">Driving</th>
+              <th className="px-4 py-3 text-right">Work</th>
+              <th className="px-4 py-3 text-right">POA</th>
+              <th className="px-4 py-3 text-right">Rest</th>
+              <th className="px-4 py-3 text-right">Blocks</th>
+              <th className="px-4 py-3 text-right">Findings</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {snapshot.days.filter((day) => day.activities.length > 0 || day.findingsCount > 0).slice(0, 14).map((day) => (
+              <tr key={day.date}>
+                <td className="px-4 py-3 font-bold text-slate-800">{format(new Date(`${day.date}T12:00:00`), 'dd MMM yyyy')}</td>
+                <td className="px-4 py-3 text-right text-slate-600">{minsToHours(day.drivingMins)}</td>
+                <td className="px-4 py-3 text-right text-slate-600">{minsToHours(day.workMins)}</td>
+                <td className="px-4 py-3 text-right text-slate-600">{minsToHours(day.poaMins)}</td>
+                <td className="px-4 py-3 text-right text-slate-600">{minsToHours(day.restMins)}</td>
+                <td className="px-4 py-3 text-right text-slate-600">{day.activities.length}</td>
+                <td className="px-4 py-3 text-right font-bold text-slate-800">{day.findingsCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function ReportFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-black text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function ReportMetric({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'warning' | 'danger' }) {
+  const styles = {
+    neutral: 'border-slate-200 bg-white text-slate-800',
+    warning: 'border-amber-200 bg-amber-50 text-amber-800',
+    danger: 'border-rose-200 bg-rose-50 text-rose-800',
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border p-4 ${styles}`}>
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</p>
+      <p className="mt-1 text-xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function ReportList({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items: Array<{ id: string; heading: string; detail: string }>;
+  empty: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <h4 className="text-xs font-black uppercase tracking-widest text-slate-600">{title}</h4>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm font-medium text-slate-500">{empty}</p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {items.map((item) => (
+            <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-sm font-black text-slate-900">{item.heading}</p>
+              <p className="mt-1 text-xs font-medium text-slate-600">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function escapeCsv(value: string) {

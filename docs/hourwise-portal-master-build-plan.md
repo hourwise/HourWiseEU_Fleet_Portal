@@ -66,6 +66,11 @@ Implemented locally:
 - Test data cleanup controls:
   - Added `purge_company_driver_card_reads(...)` RPC with dry-run support.
   - Added Import Centre danger-zone panel: `Preview Delete`, optional storage deletion, then confirm by typing `DELETE CARD READS`.
+- Driver Card Analysis report/export polish:
+  - Added manager-facing report panel for linked cards and candidate screening cards.
+  - Added report caveat that current HourWise read-only capture/parser output is provisional and not certified `.C1B/.DDD` output.
+  - Expanded CSV export into an evidence report containing metadata, daily totals, findings, and app-vs-tacho cross-check rows.
+  - Added print/save-PDF report action.
 
 Files changed in this batch:
 
@@ -115,9 +120,9 @@ Live retest order:
 6. Verify Driver File shows card number/expiry, latest download, Driver Card Analysis rows, and non-empty/updated tacho signal where supported by the parsed card data.
 7. If existing Philip test record still shows `Awaiting tacho signal`, use `Rebuild Tacho Signals` from Driver File after deployment.
 
-Next planned product task after the above retest:
+Latest local follow-up after the above retest:
 
-- Return to Driver Card Analysis report/export polish and manager-facing report buttons.
+- Driver Card Analysis report/export polish and manager-facing report buttons are implemented locally. Live visual review after frontend deployment is still pending.
 
 ---
 
@@ -565,7 +570,8 @@ Add or verify actions:
 
 - `[ ]` `Read From Card`
 - `[ ]` `Import File`
-- `[ ]` `Export Report`
+- `[~]` `Export Report`
+  - 2026-06-21: Report View/Screening Report opens a manager-facing report panel with print/save-PDF action; Export CSV now produces an evidence-style report. Needs live UI review after deployment.
 - `[ ]` `Refresh`
 - `[ ]` `Close`
 - `[ ]` Progress bar/staged status during read/import.
@@ -1358,7 +1364,8 @@ Recommended next actions for the agent:
 7. `[ ]` Capture visual/UI issues from the real parsed card output.
 8. `[~]` Fix pairing success/error feedback if the existing-driver pair flow can show a failed message while the database update succeeds.
    - 2026-06-21: Implemented client-side verification fallback and separated Import Centre refresh errors from pair RPC errors. Needs live retest with existing-driver card pairing.
-9. `[ ]` Polish Driver Card Analysis layout and labels.
+9. `[~]` Polish Driver Card Analysis layout and labels.
+   - 2026-06-21: Added manager report panel, screening report toggle, provisional-capture caveat, print/save-PDF action, and expanded evidence CSV. Focused ESLint and `npm run build` passed. Needs live visual review after deployment.
 10. `[x]` Collapse Import Centre technical noise.
    - 2026-06-20: Added supervisor filters, lifecycle labels, candidate archive/delete controls, default-hidden diagnostics, and hidden-by-default archived/superseded audit rows.
 11. `[ ]` Design review/sign-off persistence tables before implementing personnel-file persistence.
