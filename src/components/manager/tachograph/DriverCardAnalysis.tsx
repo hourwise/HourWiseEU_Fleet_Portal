@@ -300,10 +300,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setReviewPendingId(finding.id);
     setReviewError(null);
     try {
+      const status = values.correctiveActionType && values.status === 'open' ? 'action_required' : values.status;
       const review = await saveTachoFindingReview({
         companyId: profile.company_id,
         findingId: finding.id,
-        status: values.status,
+        status,
         managerNote: values.managerNote,
         correctiveActionType: values.correctiveActionType || null,
       });
@@ -1182,7 +1183,11 @@ function TachoFindingReviewCard({
               Corrective action
               <select
                 value={correctiveActionType}
-                onChange={(event) => setCorrectiveActionType(event.target.value as TachoCorrectiveActionType | '')}
+                onChange={(event) => {
+                  const nextAction = event.target.value as TachoCorrectiveActionType | '';
+                  setCorrectiveActionType(nextAction);
+                  if (nextAction && status === 'open') setStatus('action_required');
+                }}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
               >
                 <option value="">None yet</option>

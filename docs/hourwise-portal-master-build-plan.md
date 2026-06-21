@@ -79,11 +79,19 @@ Implemented locally:
   - Added `tachograph_finding_reviews` and `tachograph_finding_review_events`.
   - Added manager-scoped `save_tachograph_finding_review(...)` RPC so review edits write audit events.
   - Added Driver Card Analysis review panel for finding status, manager note, and corrective action type.
+- Live retest follow-up fixes:
+  - Added stale deploy/chunk-load recovery so missing dynamic import chunks prompt a portal reload instead of routing home.
+  - Driver File now shows recent tacho review actions and assigned tacho refresher training records.
+  - Rest-rule evaluation now ignores no-data/rest-only/unknown-only placeholder days when calculating daily/weekly rest gaps; existing stored false-positive findings need import reprocessing to clear.
+  - Added migration `20260621133000_backfill_tacho_review_action_status.sql` so existing open reviews with corrective action types become `action_required`.
 
 Files changed in this batch:
 
 - `src/components/manager/DriverDetailsModal.tsx`
 - `src/components/manager/tachograph/DriverCardAnalysis.tsx`
+- `src/components/common/ErrorBoundary.tsx`
+- `shared/tachoRuleEvaluation.ts`
+- `src/lib/tacho/rules/engine.test.ts`
 - `src/components/manager/tachograph/TachoImportCentre.tsx`
 - `src/components/manager/tachograph/TachoReaderHelperPanel.tsx`
 - `src/hooks/useDriverTachoSummary.ts`
@@ -92,18 +100,23 @@ Files changed in this batch:
 - `supabase/functions/accept-driver-invite/index.ts`
 - `supabase/migrations/20260620222000_backfill_tacho_rows_on_invite_acceptance.sql`
 - `supabase/migrations/20260621103000_add_tacho_rebuild_and_reset_controls.sql`
+- `supabase/migrations/20260621114500_remove_legacy_work_session_compliance_triggers.sql`
+- `supabase/migrations/20260621123000_add_tacho_finding_review_persistence.sql`
+- `supabase/migrations/20260621133000_backfill_tacho_review_action_status.sql`
 
 Local verification completed:
 
 - Focused ESLint passed for changed frontend/helper files.
 - `git diff --check` passed with CRLF warnings only.
 - `npm run build` passed with existing large chunk warnings.
+- `npm run test:rules` passed after the no-duty/rest-only regression test was added.
 - Deno check was not run because Deno was not installed locally.
 
 Before live retest:
 
 ```powershell
 .\supabase.exe db push
+.\supabase.exe functions deploy process-tacho --use-api
 .\supabase.exe functions deploy accept-driver-invite --use-api
 .\supabase.exe secrets set PROCESS_TACHO_TRIGGER_TOKEN="your-long-random-token"
 git push
@@ -115,6 +128,7 @@ After Deno install/restart, recommended local checks:
 deno --version
 deno check supabase/functions/accept-driver-invite/index.ts
 npx eslint src\components\manager\DriverDetailsModal.tsx src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\TachoReaderHelperPanel.tsx src\hooks\useDriverTachoSummary.ts src\lib\tacho\api.ts src\lib\tacho\helperImport.ts
+npm run test:rules
 npm run build
 ```
 
@@ -127,10 +141,14 @@ Live retest order:
 5. Accept invite as driver.
 6. Verify Driver File shows card number/expiry, latest download, Driver Card Analysis rows, and non-empty/updated tacho signal where supported by the parsed card data.
 7. If existing Philip test record still shows `Awaiting tacho signal`, use `Rebuild Tacho Signals` from Driver File after deployment.
+8. For the 2026-06-17 onward false rest finding, use `Rebuild Tacho Signals` on the affected driver/import after deployment; the stored old finding will not disappear until the import is reprocessed with the updated rules evaluator.
+9. Open the Training button from Driver File after the Vercel deployment and confirm stale chunk errors show a reload prompt rather than logging the user out.
+10. Confirm Driver File shows `Tacho Review Actions` and `Assigned Tacho Training` for the saved Driver Card Analysis corrective actions.
 
 Latest local follow-up after the above retest:
 
 - Driver Card Analysis report/export polish and manager-facing report buttons are implemented locally. Live visual review after frontend deployment is still pending.
+- Review/action follow-up visibility and no-data rest false-positive fixes are implemented locally. Live retest after DB/function/frontend deployment is still pending.
 
 ---
 
@@ -720,11 +738,12 @@ Checklist:
 - `[~]` Store manager notes.
   - 2026-06-21: Review panel and RPC persist manager notes per generated tachograph finding. Deployment/live retest pending.
 - `[~]` Store corrective action references.
-  - 2026-06-21: Schema stores `corrective_action_type` and optional `corrective_action_ref_id`; first UI supports selecting the action type, later work should wire concrete training/debrief references.
+  - 2026-06-21: Schema stores `corrective_action_type` and optional `corrective_action_ref_id`; first UI supports selecting the action type, and Driver File now surfaces recent tacho review actions. Later work should wire concrete training/debrief record IDs into `corrective_action_ref_id`.
 - `[~]` Store audit log of review edits.
   - 2026-06-21: `save_tachograph_finding_review(...)` inserts `created`/`updated` events into `tachograph_finding_review_events`. Deployment/live retest pending.
 - `[ ]` Add optional driver acknowledgement later.
 - `[ ]` Link signed-off findings into personnel/training/compliance views.
+  - 2026-06-21: Driver File now shows recent tacho review actions and assigned tacho refresher training records. Wider personnel/training/compliance linking still needs final workflow polish.
 
 ---
 

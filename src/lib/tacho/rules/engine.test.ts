@@ -172,6 +172,22 @@ describe('evaluateDriverRules', () => {
     expect(findByRule(result.findings, 'REST_DAILY_UNDER_9H')).toHaveLength(0);
   });
 
+  it('does not treat rest-only no-duty days as daily rest breaches', () => {
+    const activities = [
+      ...buildDayActivities('2026-06-17', [
+        { start: '08:00', end: '17:00', activityType: 'work' },
+      ]),
+      ...buildDayActivities('2026-06-21', [
+        { start: '00:00', end: '23:59', activityType: 'rest', isManualEntry: true },
+      ]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.findings, 'REST_DAILY_REDUCED')).toHaveLength(0);
+    expect(findByRule(result.findings, 'REST_DAILY_UNDER_9H')).toHaveLength(0);
+  });
+
   it('raises a reduced weekly rest finding when the longest 7-day rest is between 24 and 45 hours', () => {
     const activities = [
       ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),

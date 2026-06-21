@@ -16,7 +16,16 @@ type ProfileWithTacho = Profile & {
 };
 type Document = Database['public']['Tables']['driver_documents']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
+type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
 type Translator = (key: string, options?: Record<string, unknown>) => string;
+
+type TachoFindingReviewSummary = {
+  id: string;
+  status: 'open' | 'reviewed' | 'action_required' | 'closed';
+  manager_note: string | null;
+  corrective_action_type: 'training' | 'manager_debrief' | 'manual_entry' | 'other' | null;
+  updated_at: string;
+};
 
 interface DriverDetailsModalProps {
   driver: Profile;
@@ -119,6 +128,8 @@ export function DriverDetailsModal({
   const [rebuildPending, setRebuildPending] = useState(false);
   const [rebuildMessage, setRebuildMessage] = useState<string | null>(null);
   const [rebuildError, setRebuildError] = useState<string | null>(null);
+  const [tachoTrainingActions, setTachoTrainingActions] = useState<TrainingRecord[]>([]);
+  const [tachoReviewActions, setTachoReviewActions] = useState<TachoFindingReviewSummary[]>([]);
 
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
@@ -151,10 +162,37 @@ export function DriverDetailsModal({
     setShifts(data || []);
   }, [driver.id]);
 
+  const fetchTachoFollowUps = useCallback(async () => {
+    if (!driver.company_id) return;
+
+    const [trainingResult, reviewResult] = await Promise.all([
+      supabase
+        .from('training_records')
+        .select('*')
+        .eq('company_id', driver.company_id)
+        .eq('driver_id', driver.id)
+        .eq('training_type', 'tacho_refresher')
+        .order('assigned_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('tachograph_finding_reviews' as never)
+        .select('id,status,manager_note,corrective_action_type,updated_at')
+        .eq('company_id', driver.company_id)
+        .eq('driver_id', driver.id)
+        .not('corrective_action_type', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(5),
+    ]);
+
+    setTachoTrainingActions(trainingResult.data || []);
+    setTachoReviewActions((reviewResult.data as unknown as TachoFindingReviewSummary[] | null) || []);
+  }, [driver.company_id, driver.id]);
+
   useEffect(() => {
     fetchDocuments();
     fetchRecentShifts();
-  }, [fetchDocuments, fetchRecentShifts]);
+    fetchTachoFollowUps();
+  }, [fetchDocuments, fetchRecentShifts, fetchTachoFollowUps]);
 
   useEffect(() => {
     const profileCardNumber = normalizeDocumentNumber(tachoSummary?.cardNumber) || normalizeDocumentNumber((driver as ProfileWithTacho).tacho_card_number);
@@ -424,6 +462,45 @@ export function DriverDetailsModal({
                       <p className="mt-2 text-sm font-medium text-slate-700">{tachoSummary.latestReviewFocus.summary}</p>
                     </div>
                   ) : null}
+                  <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tacho Review Actions</p>
+                      {tachoReviewActions.length === 0 ? (
+                        <p className="mt-2 text-sm font-medium text-slate-500">No saved tacho corrective actions yet.</p>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          {tachoReviewActions.map((action) => (
+                            <div key={action.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                              <p className="text-xs font-black uppercase tracking-widest text-slate-700">
+                                {action.corrective_action_type?.replace('_', ' ') ?? 'Action'} - {action.status.replace('_', ' ')}
+                              </p>
+                              {action.manager_note ? <p className="mt-1 text-xs font-medium text-slate-600">{action.manager_note}</p> : null}
+                              <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Saved {new Date(action.updated_at).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-blue-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Tacho Training</p>
+                      {tachoTrainingActions.length === 0 ? (
+                        <p className="mt-2 text-sm font-medium text-slate-500">No tacho refresher records assigned yet.</p>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          {tachoTrainingActions.map((record) => (
+                            <div key={record.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                              <p className="text-xs font-black text-slate-800">{record.title}</p>
+                              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                {record.status.replace('_', ' ')} - assigned {new Date(record.assigned_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <button

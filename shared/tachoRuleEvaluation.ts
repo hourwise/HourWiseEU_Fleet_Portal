@@ -193,6 +193,10 @@ function findCompensatingRestGap(reducedGap: SharedRestGap, restGaps: SharedRest
   };
 }
 
+function hasPositiveDuty(window: SharedRuleDutyWindow) {
+  return window.drivingMins + window.workMins + window.poaMins > 0;
+}
+
 export function detectSharedDataQualityIssues(input: SharedEvaluationInput) {
   const findings: SharedRuleFinding[] = [];
 
@@ -247,8 +251,9 @@ export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
   const findings: SharedRuleFinding[] = [];
   const dataQualityIssues = detectSharedDataQualityIssues(input);
   const reducedWeeklyRestGaps: SharedRestGap[] = [];
+  const positiveDutyWindows = input.dutyWindows.filter(hasPositiveDuty);
   const restGaps = buildRestGaps(
-    input.dutyWindows,
+    positiveDutyWindows,
     (window) => window.dutyDate,
     (window) => window.dutyStart,
     (window) => window.dutyEnd
@@ -425,9 +430,9 @@ export function evaluateSharedRuleFindings(input: SharedEvaluationInput) {
     );
   }
 
-  for (let index = 0; index < input.dutyWindows.length; index += 1) {
-    const window = input.dutyWindows[index];
-    const bestGap = findRollingBestRestGap(input.dutyWindows, restGaps, index, (dutyWindow) => dutyWindow.dutyDate);
+  for (let index = 0; index < positiveDutyWindows.length; index += 1) {
+    const window = positiveDutyWindows[index];
+    const bestGap = findRollingBestRestGap(positiveDutyWindows, restGaps, index, (dutyWindow) => dutyWindow.dutyDate);
     if (!bestGap) continue;
 
     if (bestGap.restMins < TACHO_RULE_LIMITS.WEEKLY_REST_REDUCED_MINS) {
