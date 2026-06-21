@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { reportTachoImportTelemetry } from './importTelemetry';
+import { prepareTachoImportReprocess } from './api';
 
 const SUPPORTED_TACHO_FILE_TYPES = ['ddd', 'v1b', 'c1b', 'tgd'] as const;
 
@@ -665,4 +666,50 @@ export async function retryTachoImportProcessing(companyId: string, importId: st
   });
 
   return kickoffTachoImportProcessing(record);
+}
+
+export async function rebuildLatestDriverCardSignals(
+  companyId: string,
+  driverId: string
+): Promise<TachoProcessingKickoffResult & { importId?: string }> {
+  const { data, error } = await supabase
+    .from('tachograph_files' as never)
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('driver_id', driverId)
+    .eq('source_type', 'driver_card')
+    .order('uploaded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: 'Failed to locate latest driver-card import for signal rebuild.',
+      error,
+      context: {
+        stage: 'signal_rebuild_lookup',
+        companyId,
+        driverId,
+      },
+    });
+    throw error;
+  }
+
+  const importId = (data as { id?: string } | null)?.id;
+  if (!importId) {
+    throw new Error('No linked driver-card import was found for this driver.');
+  }
+
+  await prepareTachoImportReprocess(
+    companyId,
+    importId,
+    'Manager requested signal rebuild from driver personnel file.'
+  );
+
+  const result = await retryTachoImportProcessing(companyId, importId);
+  return {
+    ...result,
+    importId,
+  };
 }

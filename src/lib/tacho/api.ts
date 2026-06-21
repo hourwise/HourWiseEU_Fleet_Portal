@@ -17,6 +17,8 @@ const TACHO_RPC = {
   importBundle: 'get_tacho_import_bundle',
   archiveCandidateImport: 'archive_tacho_candidate_import',
   confirmCandidateStorageDeleted: 'confirm_tacho_candidate_import_storage_deleted',
+  prepareImportReprocess: 'prepare_tacho_import_reprocess',
+  purgeCompanyDriverCardReads: 'purge_company_driver_card_reads',
 } as const;
 
 interface CompanyTachoSignalsRow {
@@ -276,6 +278,75 @@ export async function archiveTachoCandidateImport(
   }
 
   return archiveResult;
+}
+
+interface PrepareTachoImportReprocessResponse {
+  importId?: string;
+  driverId?: string;
+  prepared?: boolean;
+  preparedAt?: string;
+}
+
+export async function prepareTachoImportReprocess(
+  companyId: string,
+  importId: string,
+  reason?: string | null
+): Promise<PrepareTachoImportReprocessResponse> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.prepareImportReprocess as any, {
+    p_company_id: companyId,
+    p_import_id: importId,
+    p_reason: reason ?? null,
+  } as any);
+
+  if (error) throw error;
+  return (data ?? {}) as PrepareTachoImportReprocessResponse;
+}
+
+export interface PurgeDriverCardReadsResponse {
+  dryRun?: boolean;
+  deleted?: boolean;
+  importCount?: number;
+  linkedDriverCount?: number;
+  storagePaths?: string[];
+  storageDeletedCount?: number;
+  storageDeleteErrors?: string[];
+}
+
+export async function purgeCompanyDriverCardReads(
+  companyId: string,
+  options: {
+    dryRun?: boolean;
+    includeLinked?: boolean;
+    deleteStorageFiles?: boolean;
+    reason?: string | null;
+  } = {}
+): Promise<PurgeDriverCardReadsResponse> {
+  const dryRun = options.dryRun ?? true;
+  const { data, error } = await supabase.rpc(TACHO_RPC.purgeCompanyDriverCardReads as any, {
+    p_company_id: companyId,
+    p_dry_run: dryRun,
+    p_include_linked: options.includeLinked ?? true,
+    p_reason: options.reason ?? null,
+  } as any);
+
+  if (error) throw error;
+
+  const result = (data ?? {}) as PurgeDriverCardReadsResponse;
+  const storagePaths = result.storagePaths ?? [];
+
+  if (!dryRun && options.deleteStorageFiles && storagePaths.length > 0) {
+    const { data: storageResult, error: storageError } = await supabase.storage
+      .from('tachograph-files')
+      .remove(storagePaths);
+
+    return {
+      ...result,
+      storageDeletedCount: storageError ? 0 : storageResult?.length ?? 0,
+      storageDeleteErrors: storageError ? [storageError.message] : [],
+    };
+  }
+
+  return result;
 }
 
 export async function fetchLatestDriverCardTarget(companyId: string): Promise<string | null> {

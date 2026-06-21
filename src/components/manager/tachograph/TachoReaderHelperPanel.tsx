@@ -545,7 +545,7 @@ export function TachoReaderHelperPanel({
     refreshStatus();
     const intervalId = window.setInterval(() => {
       refreshStatus();
-    }, 4000);
+    }, 2000);
 
     return () => {
       window.clearInterval(intervalId);

@@ -40,6 +40,85 @@ When completing work:
 5. Keep safety/security issues above polish work.
 6. Do not remove fallback/manual upload paths until replacement workflows are proven.
 
+## Current Handover - 2026-06-21
+
+Latest local work is implemented but not yet pushed/deployed at the time of this note. The user plans to restart Android Studio, install Deno, then continue from this state.
+
+Implemented locally:
+
+- Driver File tachograph section cleanup:
+  - Removed duplicate top-level licence/DQC quick-edit fields.
+  - Kept evidence upload/OCR panels as the editable source for licence, CPC/DQC, and tacho card evidence.
+  - Added tacho evidence match/mismatch messaging against the latest physical card read.
+  - Added `Card Number` / `Card Expiry` summary cards from tacho summary/import fallback.
+- Driver-card identity fallback:
+  - `useDriverTachoSummary` now falls back to `tachograph_files.external_card_number` and helper metadata if `driver_card_downloads` does not have card identity.
+- Reader workflow:
+  - Auto-read now starts when the helper reports `cardPresent && canStartRead`, not only exact `card_inserted`.
+  - Reader helper polling changed from 4s to 2s.
+- Candidate/invite backend linking:
+  - `accept_driver_invite` now returns `linked_import_ids`.
+  - Existing invite-accept migration backfills candidate import ownership across derived tachograph rows.
+- Signal rebuild controls:
+  - Added `prepare_tacho_import_reprocess(...)` RPC.
+  - Added `Rebuild Tacho Signals` button in Driver File; it prepares latest linked card import and invokes `process-tacho`.
+  - `accept-driver-invite` Edge Function now attempts to auto-kick `process-tacho` for linked imports when `PROCESS_TACHO_TRIGGER_TOKEN` and service-role config exist.
+- Test data cleanup controls:
+  - Added `purge_company_driver_card_reads(...)` RPC with dry-run support.
+  - Added Import Centre danger-zone panel: `Preview Delete`, optional storage deletion, then confirm by typing `DELETE CARD READS`.
+
+Files changed in this batch:
+
+- `src/components/manager/DriverDetailsModal.tsx`
+- `src/components/manager/tachograph/DriverCardAnalysis.tsx`
+- `src/components/manager/tachograph/TachoImportCentre.tsx`
+- `src/components/manager/tachograph/TachoReaderHelperPanel.tsx`
+- `src/hooks/useDriverTachoSummary.ts`
+- `src/lib/tacho/api.ts`
+- `src/lib/tacho/helperImport.ts`
+- `supabase/functions/accept-driver-invite/index.ts`
+- `supabase/migrations/20260620222000_backfill_tacho_rows_on_invite_acceptance.sql`
+- `supabase/migrations/20260621103000_add_tacho_rebuild_and_reset_controls.sql`
+
+Local verification completed:
+
+- Focused ESLint passed for changed frontend/helper files.
+- `git diff --check` passed with CRLF warnings only.
+- `npm run build` passed with existing large chunk warnings.
+- Deno check was not run because Deno was not installed locally.
+
+Before live retest:
+
+```powershell
+.\supabase.exe db push
+.\supabase.exe functions deploy accept-driver-invite --use-api
+.\supabase.exe secrets set PROCESS_TACHO_TRIGGER_TOKEN="your-long-random-token"
+git push
+```
+
+After Deno install/restart, recommended local checks:
+
+```powershell
+deno --version
+deno check supabase/functions/accept-driver-invite/index.ts
+npx eslint src\components\manager\DriverDetailsModal.tsx src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\TachoReaderHelperPanel.tsx src\hooks\useDriverTachoSummary.ts src\lib\tacho\api.ts src\lib\tacho\helperImport.ts
+npm run build
+```
+
+Live retest order:
+
+1. Deploy DB/functions/frontend.
+2. Use Import Centre `Test Data Reset: Driver Card Reads` if clearing test reads is still desired.
+3. Re-read the driver card.
+4. Create invite from candidate card.
+5. Accept invite as driver.
+6. Verify Driver File shows card number/expiry, latest download, Driver Card Analysis rows, and non-empty/updated tacho signal where supported by the parsed card data.
+7. If existing Philip test record still shows `Awaiting tacho signal`, use `Rebuild Tacho Signals` from Driver File after deployment.
+
+Next planned product task after the above retest:
+
+- Return to Driver Card Analysis report/export polish and manager-facing report buttons.
+
 ---
 
 # 2. Current Product Direction
@@ -109,8 +188,11 @@ This section is based on the latest tachograph roadmap. Verify in repo before re
 - `[x]` EF `0520` card identity decode works.
 - `[~]` EF `0504` daily activity decode exists provisionally and has processed at least one retry successfully.
 - `[~]` Driver-card import pairing/invite-from-card workflows exist and have had live testing.
+  - 2026-06-21: Local code now backfills accepted candidate imports, returns linked import IDs from `accept_driver_invite`, and `accept-driver-invite` attempts post-accept signal rebuild via `process-tacho` when trigger-token config exists. Needs deployment/live retest.
 - `[~]` Driver Card Analysis now owns first-pass live card read/import workflow through `useTachoReaderWorkflow`.
+  - 2026-06-21: Auto-read trigger relaxed to `cardPresent && canStartRead`; reader helper polling reduced to 2s. Needs real helper/card retest after frontend deploy.
 - `[~]` Candidate/unmatched card analysis by `import_id` exists.
+  - 2026-06-21: Candidate mode hides driver-only personnel/compliance/training actions while preserving Export CSV and Report View. Needs frontend deploy/live retest.
 - `[x]` Local validation has passed for the latest Driver Card Analysis live-reader frontend work: focused ESLint, `npm run build`, and `git diff --check`.
 - `[ ]` Latest Driver Card Analysis live-reader frontend work still needs push/deployment and real helper/card retest before marking production-stable.
 
@@ -322,7 +404,8 @@ Checklist:
   - `complete`
   - `ready`
 - `[ ]` Confirm Driver Card Analysis resets to blank calendar after card removal when appropriate.
-- `[ ]` Confirm the compact live reader panel in Driver Card Analysis, not Import Centre, is the normal path for driver-card reads.
+- `[~]` Confirm the compact live reader panel in Driver Card Analysis, not Import Centre, is the normal path for driver-card reads.
+  - 2026-06-21: Code path has been moved/polished locally, but live helper/card retest is still required after deployment.
 
 ## 7.2 Reprocess / Re-read Known Driver Card Imports
 
@@ -337,6 +420,10 @@ Checklist:
 
 - `[ ]` Use Import Centre retry for known imports where available.
 - `[ ]` Prefer UI retry if local env lacks `PROCESS_TACHO_TRIGGER_TOKEN`.
+- `[~]` Use Driver File `Rebuild Tacho Signals` for linked driver-card imports showing `Awaiting tacho signal`.
+  - 2026-06-21: Local UI action added. It calls `prepare_tacho_import_reprocess(...)` then invokes existing `process-tacho` retry path for the latest linked card import.
+- `[~]` Auto-rebuild linked candidate imports after invite acceptance.
+  - 2026-06-21: `accept-driver-invite` now attempts `process-tacho` kickoff for `linked_import_ids` if `PROCESS_TACHO_TRIGGER_TOKEN` is configured. Needs function deploy and live invite retest.
 - `[ ]` Expected final import state: `processed` where EF `0504` activity exists.
 - `[ ]` Expected metadata includes:
   - `normalized_segments > 0`
@@ -378,7 +465,8 @@ Checklist:
 - `[ ]` Edit pending invite/card fields if needed before acceptance.
 - `[ ]` Accept invite as driver.
 - `[ ]` Verify profile joins company as `role = driver`.
-- `[ ]` Verify card imports/downloads link to accepted profile.
+- `[~]` Verify card imports/downloads link to accepted profile.
+  - 2026-06-21: Local migration updates `tachograph_files`, `driver_card_downloads`, activity/day/finding/event/reconciliation rows, profile `tacho_card_number`, and returns `linked_import_ids`; live deploy/retest pending.
 
 ## 7.4 Parser Milestone - EF `0504` Validation
 
@@ -428,7 +516,8 @@ Checklist:
 - `[ ]` Confirm blank 7-day calendar appears by default when no data is selected.
 - `[ ]` Confirm matched reads open linked-driver analysis.
 - `[ ]` Confirm unmatched reads open candidate card mode by `import_id`.
-- `[ ]` Confirm personnel/training/compliance actions are disabled in candidate mode.
+- `[~]` Confirm personnel/training/compliance actions are disabled in candidate mode.
+  - 2026-06-21: Code now hides these actions for candidate cards; frontend deploy/live retest pending.
 - `[ ]` Confirm card removal only clears the auto-opened live result and does not delete or hide stored historical imports.
 
 ## 8.2 Page Header / Action Bar
@@ -616,10 +705,15 @@ Candidate cleanup and retention:
   - 2026-06-20: UI archives first, deletes from the private `tachograph-files` bucket when requested, then calls `confirm_tacho_candidate_import_storage_deleted(...)`.
 - `[x]` Apply visible retention policy for helper reads.
   - 2026-06-20: Latest active helper read remains visible; archived and superseded helper/candidate audit rows are hidden unless the manager enables archived/audit rows. Manual/VU uploads remain filterable separately.
+- `[x]` Add manager reset control for test driver-card reads.
+  - 2026-06-21: Import Centre now has a danger-zone `Test Data Reset: Driver Card Reads` panel with dry-run preview, optional `tachograph-files` storage deletion, and typed confirmation `DELETE CARD READS`. Backend RPC `purge_company_driver_card_reads(...)` is manager/company-scoped. Locally verified with focused ESLint and `npm run build`; deployment pending.
+- `[x]` Add manager rebuild control for linked driver-card signals.
+  - 2026-06-21: Driver File now exposes `Rebuild Tacho Signals` for the latest linked driver-card import; backend RPC `prepare_tacho_import_reprocess(...)` clears import-derived rows before invoking the existing processor retry path. Locally verified; deployment/live retest pending.
 
 Remove or reduce:
 
-- `[ ]` Live driver-card reader duplication now owned by Driver Card Analysis.
+- `[~]` Live driver-card reader duplication now owned by Driver Card Analysis.
+  - 2026-06-21: Auto-read and compact reader path are implemented locally; Import Centre remains for support/manual fallback and reset controls. Needs live retest.
 
 Acceptance criteria:
 
@@ -627,6 +721,15 @@ Acceptance criteria:
 - `[ ]` Support staff can still expand diagnostics when needed.
 - `[ ]` Manual fallback remains obvious.
 - `[ ]` Retry processing remains available for failed/kickoff/partial states.
+
+Driver File tacho/evidence decisions:
+
+- `[x]` Remove duplicate top-level licence/DQC quick-edit fields from Driver File.
+  - 2026-06-21: Evidence upload/OCR panels are now the editable source for licence, CPC/DQC, and tacho-card evidence.
+- `[x]` Add tacho-card evidence cross-check.
+  - 2026-06-21: Driver File compares uploaded/OCR tacho card number to latest physical card read and shows match/mismatch/missing-read guidance.
+- `[x]` Add tacho-card identity fallback for Driver File summary.
+  - 2026-06-21: `useDriverTachoSummary` reads card number/expiry from `driver_card_downloads`, `profiles.tacho_card_number`, `tachograph_files.external_card_number`, and helper metadata fallback.
 
 ---
 
@@ -1073,6 +1176,7 @@ Known commands from roadmap/checklists:
 ```powershell
 npm run test:rules
 npm run build
+deno check supabase/functions/accept-driver-invite/index.ts
 ```
 
 Focused lint examples:
@@ -1083,6 +1187,7 @@ npx eslint src\hooks\useDriverTachoSummary.ts
 npx eslint src\components\manager\tachograph\TachoReaderHelperPanel.tsx
 npx eslint src\components\manager\tachograph\TachoReaderStatusOverlay.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\VehicleUnitAnalysis.tsx src\components\manager\tachograph\TachoComplianceWorkspace.tsx src\components\manager\tachograph\TachoActivityTimeline.tsx
 npx eslint src\hooks\useTachoReaderWorkflow.ts src\components\manager\tachograph\DriverCardAnalysis.tsx
+npx eslint src\components\manager\DriverDetailsModal.tsx src\components\manager\tachograph\TachoImportCentre.tsx src\components\manager\tachograph\DriverCardAnalysis.tsx src\components\manager\tachograph\TachoReaderHelperPanel.tsx src\hooks\useDriverTachoSummary.ts src\lib\tacho\api.ts src\lib\tacho\helperImport.ts
 ```
 
 Helper probes:
@@ -1095,13 +1200,24 @@ npm run tacho:helper:probe -- --mode read --company-id <company-id> --user-id <m
 Deployment reminders:
 
 ```powershell
-supabase db push
-supabase functions deploy process-tacho
-supabase functions deploy create-driver-invite
-supabase functions deploy lookup-driver-invite
-supabase functions deploy accept-driver-invite
+.\supabase.exe db push
+.\supabase.exe functions deploy process-tacho --use-api
+.\supabase.exe functions deploy create-driver-invite --use-api
+.\supabase.exe functions deploy lookup-driver-invite --use-api
+.\supabase.exe functions deploy accept-driver-invite --use-api
 git push
 ```
+
+Current tachograph deploy note:
+
+```powershell
+.\supabase.exe db push
+.\supabase.exe functions deploy accept-driver-invite --use-api
+.\supabase.exe secrets set PROCESS_TACHO_TRIGGER_TOKEN="your-long-random-token"
+git push
+```
+
+`PROCESS_TACHO_TRIGGER_TOKEN` must match the secret used by `process-tacho` for server-triggered processing. Without it, invite acceptance still links imports but automatic signal rebuild returns a warning and managers must use `Rebuild Tacho Signals`.
 
 Known warning:
 

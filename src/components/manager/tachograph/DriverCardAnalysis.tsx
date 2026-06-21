@@ -113,11 +113,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   }, [importId]);
 
   useEffect(() => {
-    if (!readerStatus.cardPresent || readerStatus.stage === 'ready' || readerStatus.stage === 'helper_unavailable') {
+    if (!readerStatus.cardPresent || readerStatus.stage === 'helper_unavailable') {
       autoReadStartedRef.current = false;
     }
     if (
-      readerStatus.stage !== 'card_inserted' ||
+      !readerStatus.cardPresent ||
       !readerStatus.canStartRead ||
       readerCommandPending ||
       readerImportPending ||

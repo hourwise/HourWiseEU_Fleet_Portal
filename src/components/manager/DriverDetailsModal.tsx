@@ -8,6 +8,7 @@ import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
 import { scanDocument } from '../../lib/ocr';
 import { useDriverTachoSummary } from '../../hooks/useDriverTachoSummary';
+import { rebuildLatestDriverCardSignals } from '../../lib/tacho/helperImport';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileWithTacho = Profile & {
@@ -72,6 +73,10 @@ function formatTachoDownloadStatus(status?: string) {
   return status.replace('_', ' ');
 }
 
+function normalizeDocumentNumber(value?: string | null) {
+  return (value ?? '').trim().toUpperCase();
+}
+
 const LocationAnalysisMap = ({ driverId }: { driverId: string }) => {
   const { t } = useTranslation();
   const [locations, setLocations] = useState<{ lat: number, lng: number }[]>([]);
@@ -111,6 +116,9 @@ export function DriverDetailsModal({
   const [editingShift, setEditingShift] = useState<WorkSession | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [rebuildPending, setRebuildPending] = useState(false);
+  const [rebuildMessage, setRebuildMessage] = useState<string | null>(null);
+  const [rebuildError, setRebuildError] = useState<string | null>(null);
 
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
@@ -122,6 +130,16 @@ export function DriverDetailsModal({
     setExpiryDate: setTachoExpiryDate,
   } = tachoState;
   const { data: tachoSummary } = useDriverTachoSummary(driver.company_id ?? undefined, driver.id);
+  const latestReadCardNumber = normalizeDocumentNumber(tachoSummary?.cardNumber) || normalizeDocumentNumber((driver as ProfileWithTacho).tacho_card_number);
+  const evidenceTachoNumber = normalizeDocumentNumber(tachoIdNumber);
+  const tachoEvidenceMatch =
+    !latestReadCardNumber
+      ? 'no-read'
+      : !evidenceTachoNumber
+        ? 'missing-evidence'
+        : evidenceTachoNumber === latestReadCardNumber
+          ? 'match'
+          : 'mismatch';
 
   const fetchDocuments = useCallback(async () => {
     const { data } = await supabase.from('driver_documents').select('*').eq('user_id', driver.id).order('uploaded_at', { ascending: false });
@@ -139,7 +157,7 @@ export function DriverDetailsModal({
   }, [fetchDocuments, fetchRecentShifts]);
 
   useEffect(() => {
-    const profileCardNumber = (driver as ProfileWithTacho).tacho_card_number ?? tachoSummary?.cardNumber ?? '';
+    const profileCardNumber = normalizeDocumentNumber(tachoSummary?.cardNumber) || normalizeDocumentNumber((driver as ProfileWithTacho).tacho_card_number);
     if (profileCardNumber && !tachoIdNumber) {
       setTachoIdNumber(profileCardNumber);
     }
@@ -232,10 +250,6 @@ export function DriverDetailsModal({
       is_contractor: formData.is_contractor,
       agency_name: formData.is_contractor ? formData.agency_name : null,
       full_address: formData.full_address,
-      driving_licence_number: formData.driving_licence_number,
-      driving_licence_expiry: formData.driving_licence_expiry,
-      cpc_dqc_number: formData.cpc_dqc_number,
-      cpc_dqc_expiry: formData.cpc_dqc_expiry,
       tacho_card_number: tachoState.idNumber.trim() ? tachoState.idNumber.trim().toUpperCase() : formData.tacho_card_number
     };
 
@@ -250,6 +264,32 @@ export function DriverDetailsModal({
       alert(t('driverDetails.errors.updateFailed') + ": " + errorMessage);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRebuildTachoSignals = async () => {
+    if (!driver.company_id || rebuildPending) return;
+
+    const shouldRebuild = window.confirm(
+      'Rebuild tacho analysis signals from the latest linked card read for this driver? This clears derived rows for that import and asks the backend processor to run again.'
+    );
+    if (!shouldRebuild) return;
+
+    setRebuildPending(true);
+    setRebuildMessage(null);
+    setRebuildError(null);
+
+    try {
+      const result = await rebuildLatestDriverCardSignals(driver.company_id, driver.id);
+      setRebuildMessage(
+        result.started
+          ? `Signal rebuild requested for import ${result.importId}. Refresh the driver file after processing completes.`
+          : `Rebuild prepared for import ${result.importId}, but processor kickoff was not confirmed: ${result.error ?? 'Unknown error'}.`
+      );
+    } catch (error) {
+      setRebuildError(error instanceof Error ? error.message : 'Failed to rebuild tacho signals.');
+    } finally {
+      setRebuildPending(false);
     }
   };
 
@@ -330,17 +370,6 @@ export function DriverDetailsModal({
                 </div>
               </div>
 
-              {/* QUICK COMPLIANCE EDIT */}
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compliance Details (Quick Edit)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {renderInput(t('driverDetails.labels.licenceNo'), "driving_licence_number")}
-                  {renderInput(t('driverDetails.labels.qualExpiry') + " (Licence)", "driving_licence_expiry", "date")}
-                  {renderInput(t('driverDetails.labels.cpcNo'), "cpc_dqc_number")}
-                  {renderInput(t('driverDetails.labels.qualExpiry') + " (CPC)", "cpc_dqc_expiry", "date")}
-                </div>
-              </div>
-
               <div className="mt-6">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverDetails.labels.address')}</label>
                 <textarea name="full_address" value={formData.full_address || ''} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 bg-white font-medium" />
@@ -369,7 +398,7 @@ export function DriverDetailsModal({
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Card Number</p>
                       <p className="mt-2 text-sm font-bold text-slate-900">
-                        {tachoSummary?.cardNumber ?? (driver as ProfileWithTacho).tacho_card_number ?? 'Not paired'}
+                        {latestReadCardNumber || 'Not paired'}
                       </p>
                     </div>
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
@@ -418,6 +447,15 @@ export function DriverDetailsModal({
                   >
                     Open Training
                   </button>
+                  <button
+                    onClick={() => void handleRebuildTachoSignals()}
+                    disabled={rebuildPending || !driver.company_id}
+                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    {rebuildPending ? 'Rebuilding...' : 'Rebuild Tacho Signals'}
+                  </button>
+                  {rebuildMessage ? <p className="text-xs font-bold text-emerald-700">{rebuildMessage}</p> : null}
+                  {rebuildError ? <p className="text-xs font-bold text-rose-700">{rebuildError}</p> : null}
                 </div>
               </div>
             </section>
@@ -495,7 +533,19 @@ export function DriverDetailsModal({
                   </div>
                   <input type="text" placeholder={t('driverDetails.labels.tachoNo')} value={tachoState.idNumber} onChange={e => tachoState.setIdNumber(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold uppercase" />
                   <input type="date" value={tachoState.expiryDate} onChange={e => tachoState.setExpiryDate(e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm text-slate-900 bg-slate-50 font-bold" />
-                  <div className="pt-[76px]">
+                  <div className={`rounded-lg border p-3 text-[10px] font-bold uppercase tracking-widest ${
+                    tachoEvidenceMatch === 'match'
+                      ? 'border-green-200 bg-green-50 text-green-700'
+                      : tachoEvidenceMatch === 'mismatch'
+                        ? 'border-red-200 bg-red-50 text-red-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-500'
+                  }`}>
+                    {tachoEvidenceMatch === 'match' ? 'Evidence card matches latest reader card' : null}
+                    {tachoEvidenceMatch === 'mismatch' ? `Evidence card does not match latest reader card ${latestReadCardNumber}` : null}
+                    {tachoEvidenceMatch === 'missing-evidence' ? `Latest reader card: ${latestReadCardNumber}` : null}
+                    {tachoEvidenceMatch === 'no-read' ? 'Read the physical card to cross-check renewal evidence' : null}
+                  </div>
+                  <div>
                     <input
                       type="file"
                       onChange={e => {

@@ -28,6 +28,8 @@ interface TachoImportSummaryRow {
   uploaded_at?: string | null;
   processed_at?: string | null;
   status?: string | null;
+  external_card_number?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface TachoProfileCardRow {
@@ -75,6 +77,11 @@ function newestDownload(rows: DriverCardDownloadRow[]) {
     .sort((left, right) => new Date(right.downloaded_at ?? 0).getTime() - new Date(left.downloaded_at ?? 0).getTime())[0] ?? null;
 }
 
+function metadataString(metadata: Record<string, unknown> | null | undefined, key: string) {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 function importToDownloadSummary(row: TachoImportSummaryRow): DriverCardDownloadRow | null {
   const importedAt = row.processed_at ?? row.uploaded_at;
   if (!importedAt) return null;
@@ -89,6 +96,8 @@ function importToDownloadSummary(row: TachoImportSummaryRow): DriverCardDownload
   return {
     downloaded_at: importedAt,
     download_status: downloadStatus,
+    card_number: row.external_card_number ?? metadataString(row.metadata, 'driver_card_number_hint'),
+    card_expiry: metadataString(row.metadata, 'helper_capture_card_expiry_date'),
   };
 }
 
@@ -161,7 +170,7 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
 
         const importQueries = [
           tachoImportSummaryQuery()
-            .select('uploaded_at, processed_at, status')
+            .select('uploaded_at, processed_at, status, external_card_number, metadata')
             .eq('company_id', companyId)
             .eq('driver_id', driverId)
             .order('uploaded_at', { ascending: false })
@@ -171,7 +180,7 @@ export function useDriverTachoSummary(companyId: string | undefined, driverId: s
         if (tachoCardNumber) {
           importQueries.push(
             tachoImportSummaryQuery()
-              .select('uploaded_at, processed_at, status')
+              .select('uploaded_at, processed_at, status, external_card_number, metadata')
               .eq('company_id', companyId)
               .eq('external_card_number', tachoCardNumber)
               .order('uploaded_at', { ascending: false })

@@ -203,7 +203,8 @@ begin
     'company_id', invite_record.company_id,
     'driver_id', current_user_id,
     'tacho_card_number', resolved_card_number,
-    'linked_import_count', coalesce(array_length(matched_import_ids, 1), 0)
+    'linked_import_count', coalesce(array_length(matched_import_ids, 1), 0),
+    'linked_import_ids', matched_import_ids
   );
 end;
 $$;

@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock3, CreditCard, Truck } from 'lucide-r
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTachoImports } from '../../../hooks/useTachoImports';
-import { archiveTachoCandidateImport } from '../../../lib/tacho/api';
+import { archiveTachoCandidateImport, purgeCompanyDriverCardReads, type PurgeDriverCardReadsResponse } from '../../../lib/tacho/api';
 import {
   canRetryTachoImportProcessing,
   getTachoImportObservabilityIssue,
@@ -177,6 +177,8 @@ export function TachoImportCentre({
           ))}
         </div>
       </div>
+
+      <DriverCardResetPanel companyId={profile?.company_id ?? null} onPurged={reload} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.7fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -408,6 +410,131 @@ function getImportLifecycleLabels(item: TachoImportRecord) {
   }
 
   return labels;
+}
+
+function DriverCardResetPanel({
+  companyId,
+  onPurged,
+}: {
+  companyId: string | null;
+  onPurged: () => void;
+}) {
+  const [preview, setPreview] = useState<PurgeDriverCardReadsResponse | null>(null);
+  const [deleteStorageFiles, setDeleteStorageFiles] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'preview' | 'purge' | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePreview = async () => {
+    if (!companyId || pendingAction) return;
+    setPendingAction('preview');
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await purgeCompanyDriverCardReads(companyId, {
+        dryRun: true,
+        includeLinked: true,
+      });
+      setPreview(result);
+      setMessage(`Preview found ${result.importCount ?? 0} driver-card read${result.importCount === 1 ? '' : 's'} to delete.`);
+    } catch (previewError) {
+      setError(previewError instanceof Error ? previewError.message : 'Failed to preview driver-card read purge.');
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handlePurge = async () => {
+    if (!companyId || pendingAction) return;
+    const importCount = preview?.importCount ?? 0;
+    if (importCount === 0) {
+      setMessage('No driver-card reads are queued for deletion.');
+      return;
+    }
+
+    const confirmation = window.prompt(
+      `This will delete ${importCount} driver-card read${importCount === 1 ? '' : 's'} and their derived tacho analysis rows for this company. Type DELETE CARD READS to confirm.`
+    );
+    if (confirmation !== 'DELETE CARD READS') return;
+
+    setPendingAction('purge');
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await purgeCompanyDriverCardReads(companyId, {
+        dryRun: false,
+        includeLinked: true,
+        deleteStorageFiles,
+        reason: 'Manager reset test driver-card reads from Import Centre.',
+      });
+      setPreview(null);
+      setMessage(
+        `Deleted ${result.importCount ?? 0} driver-card read${result.importCount === 1 ? '' : 's'} from the database${
+          deleteStorageFiles ? ` and removed ${result.storageDeletedCount ?? 0} storage object${result.storageDeletedCount === 1 ? '' : 's'}` : ''
+        }.`
+      );
+      if (result.storageDeleteErrors && result.storageDeleteErrors.length > 0) {
+        setError(`Storage cleanup warning: ${result.storageDeleteErrors.join('; ')}`);
+      }
+      onPurged();
+    } catch (purgeError) {
+      setError(purgeError instanceof Error ? purgeError.message : 'Failed to delete driver-card reads.');
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  return (
+    <details className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+      <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-rose-700">
+        Test Data Reset: Driver Card Reads
+      </summary>
+      <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm font-bold text-rose-950">Delete all driver-card reads for this company.</p>
+          <p className="mt-1 text-sm text-rose-800">
+            Use this for test resets only. It deletes card import rows, derived activity/findings/download rows, and linked driver tacho signals. Driver personnel files remain.
+          </p>
+          {preview ? (
+            <p className="mt-2 text-xs font-bold text-rose-900">
+              Preview: {preview.importCount ?? 0} imports, {preview.linkedDriverCount ?? 0} linked driver signal set{preview.linkedDriverCount === 1 ? '' : 's'}, {(preview.storagePaths ?? []).length} storage object{(preview.storagePaths ?? []).length === 1 ? '' : 's'}.
+            </p>
+          ) : null}
+          <label className="mt-3 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-800">
+            <input
+              type="checkbox"
+              checked={deleteStorageFiles}
+              onChange={(event) => setDeleteStorageFiles(event.target.checked)}
+              className="h-4 w-4 rounded border-rose-300 text-rose-700"
+            />
+            Also delete storage files
+          </label>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => void handlePreview()}
+            disabled={!companyId || pendingAction !== null}
+            className="rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pendingAction === 'preview' ? 'Checking...' : 'Preview Delete'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handlePurge()}
+            disabled={!companyId || pendingAction !== null || !preview}
+            className="rounded-xl bg-rose-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pendingAction === 'purge' ? 'Deleting...' : 'Delete Card Reads'}
+          </button>
+        </div>
+      </div>
+      {message ? <p className="mt-3 text-xs font-bold text-emerald-700">{message}</p> : null}
+      {error ? <p className="mt-3 text-xs font-bold text-rose-800">{error}</p> : null}
+    </details>
+  );
 }
 
 function CandidateArchiveControls({
