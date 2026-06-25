@@ -1,11 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --hw-navy-950: #07111F;
+  --hw-navy-900: #0B1628;
+  --hw-navy-800: #10233A;
+  --hw-blue-700: #1D4ED8;
+  --hw-blue-600: #2563EB;
+  --hw-cyan-500: #06B6D4;
+  --hw-teal-500: #14B8A6;
+  --hw-green-500: #22C55E;
+  --hw-amber-500: #F59E0B;
+  --hw-red-500: #EF4444;
+  --hw-slate-50: #F8FAFC;
+  --hw-slate-100: #F1F5F9;
+  --hw-slate-300: #CBD5E1;
+  --hw-slate-500: #64748B;
+  --hw-white: #FFFFFF;
+}
+
 @layer base {
   body {
-    @apply bg-brand-dark text-slate-200;
+    @apply bg-brand-dark text-slate-200 font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .timer-value,
+  .metric-value {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .hw-hero-bg {
+    background:
+      radial-gradient(circle at 20% 10%, rgba(37,99,235,0.25), transparent 35%),
+      radial-gradient(circle at 80% 20%, rgba(20,184,166,0.18), transparent 30%),
+      linear-gradient(180deg, #07111F 0%, #0B1628 55%, #10233A 100%);
+  }
+
+  .hw-grid-overlay {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }

@@ -31,6 +31,7 @@ interface TrainingRecommendation {
   moduleId: string;
   title: string;
   reason: string;
+  findingIds: string[];
 }
 
 interface DriverCardReportSnapshot {
@@ -91,6 +92,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const [liveReaderTargetActive, setLiveReaderTargetActive] = useState(false);
   const [assigningTrainingId, setAssigningTrainingId] = useState<string | null>(null);
   const [justAssignedTrainingId, setJustAssignedTrainingId] = useState<string | null>(null);
+  const [trainingAssignError, setTrainingAssignError] = useState<string | null>(null);
   const [candidatePairDriverId, setCandidatePairDriverId] = useState('');
   const [candidateActionPending, setCandidateActionPending] = useState<string | null>(null);
   const [candidateActionError, setCandidateActionError] = useState<string | null>(null);
@@ -269,8 +271,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const handleAssignTraining = async (recommendation: TrainingRecommendation) => {
     if (!profile?.company_id || !profile.id || !activeDriverId) return;
     setAssigningTrainingId(recommendation.id);
+    setTrainingAssignError(null);
     try {
-      await supabase.from('training_records').insert({
+      const trainingRecordId = crypto.randomUUID();
+      const { error } = await supabase.from('training_records').insert({
+        id: trainingRecordId,
         company_id: profile.company_id,
         driver_id: activeDriverId,
         training_type: 'tacho_refresher',
@@ -281,8 +286,37 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
         assigned_by: profile.id,
         notes: recommendation.reason,
       });
+
+      if (error) throw error;
+
+      const linkedReviews = await Promise.all(
+        recommendation.findingIds.map(async (findingId) => {
+          const finding = findings.find((entry) => entry.id === findingId);
+          if (!finding) return null;
+          const currentReview = findingReviews[findingId];
+          return saveTachoFindingReview({
+            companyId: profile.company_id,
+            findingId,
+            status: 'action_required',
+            managerNote: currentReview?.managerNote || recommendation.reason,
+            correctiveActionType: 'training',
+            correctiveActionRefId: trainingRecordId,
+          });
+        })
+      );
+
+      const savedReviews = linkedReviews.filter((review): review is TachoFindingReview => Boolean(review));
+      if (savedReviews.length > 0) {
+        setFindingReviews((current) => ({
+          ...current,
+          ...Object.fromEntries(savedReviews.map((review) => [review.findingId, review])),
+        }));
+      }
+
       setJustAssignedTrainingId(recommendation.id);
       setTimeout(() => setJustAssignedTrainingId(null), 2500);
+    } catch (error) {
+      setTrainingAssignError(error instanceof Error ? error.message : 'Unable to assign training.');
     } finally {
       setAssigningTrainingId(null);
     }
@@ -593,12 +627,19 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1fr] gap-6">
         <InfoPanel title="Training / Action Follow-up" icon={<GraduationCap className="w-5 h-5 text-blue-600" />}>
+            {trainingAssignError ? <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{trainingAssignError}</p> : null}
             {trainingRecommendations.length === 0 ? <p className="text-sm text-slate-500">No repeated tacho patterns currently map to a refresher recommendation for this selected range.</p> : (
               <div className="space-y-3">
                 {trainingRecommendations.map((recommendation) => (
                   <div key={recommendation.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-sm font-bold text-slate-900">{recommendation.title}</p><p className="mt-1 text-xs text-slate-500">{recommendation.reason}</p></div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{recommendation.title}</p>
+                        <p className="mt-1 text-xs text-slate-500">{recommendation.reason}</p>
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {recommendation.findingIds.length > 0 ? `Links ${recommendation.findingIds.length} finding review${recommendation.findingIds.length === 1 ? '' : 's'} to this training record` : 'Creates a driver training assignment'}
+                        </p>
+                      </div>
                       <button onClick={() => handleAssignTraining(recommendation)} disabled={assigningTrainingId === recommendation.id || !activeDriverId} className="rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-700 disabled:opacity-50">{justAssignedTrainingId === recommendation.id ? 'Assigned' : assigningTrainingId === recommendation.id ? 'Assigning' : 'Assign'}</button>
                     </div>
                   </div>
@@ -1058,9 +1099,9 @@ function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: 
   const breakFindings = findings.filter((finding) => ['DRV_CONTINUOUS_4H30_EXCEEDED', 'WTD_BREAK_AFTER_6H_MISSING', 'WTD_BREAK_AFTER_9H_MISSING'].includes(finding.ruleCode));
   const restFindings = findings.filter((finding) => finding.ruleCode.startsWith('REST_') || finding.ruleCode.startsWith('DRV_WEEKLY_'));
   const mismatches = reconciliation.filter((item) => item.status !== 'matched');
-  if (breakFindings.length >= 2) items.push({ id: 'breaks', moduleId: 'tacho-modes', title: 'Tachograph Mode Switching', reason: `${breakFindings.length} repeated break or mode-linked findings were returned in the selected range.` });
-  if (restFindings.length >= 2) items.push({ id: 'hours', moduleId: 'eu-hours', title: "EU Drivers' Hours Rules", reason: `${restFindings.length} hours or rest findings need a refresher on legal limits and recovery rules.` });
-  if (mismatches.length >= 2) items.push({ id: 'cross-check', moduleId: 'tacho-modes', title: 'App Vs Tacho Record Discipline', reason: `${mismatches.length} cross-check mismatches indicate repeated app-vs-tacho alignment issues.` });
+  if (breakFindings.length >= 2) items.push({ id: 'breaks', moduleId: 'tacho-modes', title: 'Tachograph Mode Switching', reason: `${breakFindings.length} repeated break or mode-linked findings were returned in the selected range.`, findingIds: breakFindings.map((finding) => finding.id) });
+  if (restFindings.length >= 2) items.push({ id: 'hours', moduleId: 'eu-hours', title: "EU Drivers' Hours Rules", reason: `${restFindings.length} hours or rest findings need a refresher on legal limits and recovery rules.`, findingIds: restFindings.map((finding) => finding.id) });
+  if (mismatches.length >= 2) items.push({ id: 'cross-check', moduleId: 'tacho-modes', title: 'App Vs Tacho Record Discipline', reason: `${mismatches.length} cross-check mismatches indicate repeated app-vs-tacho alignment issues.`, findingIds: [] });
   return items;
 }
 

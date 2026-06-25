@@ -23,7 +23,7 @@ export function Header() {
       scrolled ? 'bg-hw-navy-950/80 backdrop-blur-lg border-b border-white/5 py-3' : 'bg-transparent py-5'
     }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center bg-transparent">
+        <div className="flex justify-between items-center">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="h-10 w-10 bg-hw-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-hw-blue-600/30 group-hover:scale-110 transition-transform">

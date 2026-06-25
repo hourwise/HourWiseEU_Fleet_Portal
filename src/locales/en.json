@@ -1,12 +1,12 @@
 {
   "app": {
     "name": "HourWise EU",
-    "tagline": "Smart Fleet Management Made Simple",
-    "description": "Smart fleet management and compliance tracking for European transport companies. Stay compliant, stay efficient."
+    "tagline": "Connected Fleet Compliance",
+    "description": "Driver hours, tachograph insight and fleet compliance — connected in one platform."
   },
   "navigation": {
     "home": "Home",
-    "howTo": "How To",
+    "howTo": "How It Works",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "contact": "Contact",
@@ -29,16 +29,13 @@
   },
   "home": {
     "hero": {
-      "title": "Smart Fleet Management for European Transport",
-      "subtitle": "Streamline your operations, ensure driver compliance, and manage payroll with ease. Built specifically for EU transport regulations.",
+      "title": "Driver hours, tacho insight & fleet compliance.",
+      "subtitle": "HourWise EU connects the driver app with a powerful fleet portal. Track shifts, manage vehicle checks, and analyse tachograph data — all in one platform.",
       "cta": {
-        "primary": "Get Started Free",
-        "secondary": "Manager Sign In"
+        "primary": "Request Early Access",
+        "secondary": "Explore Features"
       },
-      "video": {
-        "title": "See HourWise in Action",
-        "placeholder": "2-minute platform overview"
-      }
+      "trust": "Built for HGV drivers, transport managers, small fleets and growing operators."
     },
     "gdpr": {
       "status": "GDPR Compliant",
