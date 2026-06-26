@@ -10,33 +10,25 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [view, setView] = useState<'signIn' | 'forgotPassword' | 'magicLink'>('signIn');
+  const [view, setView] = useState<'signIn' | 'forgotPassword'>('signIn');
   const { signIn, loading } = useAuth();
   const { t } = useTranslation();
 
   const handlePasswordSignIn = async () => {
     setError('');
     setMessage('');
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim().toLowerCase(), password);
     if (error) setError(error.message);
   };
   
   const handlePasswordReset = async () => {
     setError('');
     setMessage('');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: window.location.origin,
     });
     if (error) setError(error.message);
     else setMessage(t('auth.messages.resetSent'));
-  };
-
-  const handleMagicLinkSignIn = async () => {
-    setError('');
-    setMessage('');
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) setError(error.message);
-    else setMessage(t('auth.messages.magicLinkSent'));
   };
   
   const renderForm = () => {
@@ -49,16 +41,6 @@ export function LoginForm() {
                         <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="your.email@company.com" required /></div>
                     </div>
                     <button onClick={handlePasswordReset} disabled={loading} className="w-full bg-brand-accent-dark text-white py-3 rounded-lg font-medium hover:bg-brand-accent transition disabled:opacity-50">{loading ? t('common.loading') : t('auth.sendResetLink')}</button>
-                </div>
-            );
-        case 'magicLink':
-            return (
-                <div className="space-y-6">
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">{t('auth.email')}</label>
-                        <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="your.email@company.com" required /></div>
-                    </div>
-                    <button onClick={handleMagicLinkSignIn} disabled={loading} className="w-full bg-brand-accent-dark text-white py-3 rounded-lg font-medium hover:bg-brand-accent transition disabled:opacity-50">{loading ? t('common.loading') : t('auth.sendMagicLink')}</button>
                 </div>
             );
         case 'signIn':
@@ -87,7 +69,6 @@ export function LoginForm() {
           <p className="text-slate-400">
               {view === 'signIn' && t('auth.signInSubtitle')}
               {view === 'forgotPassword' && t('auth.forgotPasswordSubtitle')}
-              {view === 'magicLink' && t('auth.magicLinkSubtitle')}
           </p>
         </div>
         <Link href="/" className="p-2 text-slate-400 hover:text-white transition" title={t('navigation.home')}>
@@ -111,7 +92,6 @@ export function LoginForm() {
 
       <div className="mt-6 space-y-3">
         <div className="flex justify-between items-center text-sm">
-            <button onClick={() => setView('magicLink')} className="font-medium text-brand-accent hover:text-brand-accent-dark">{t('auth.magicLink')}</button>
             <button onClick={() => setView('forgotPassword')} className="font-medium text-brand-accent hover:text-brand-accent-dark">{t('auth.forgotPassword')}</button>
         </div>
         {view !== 'signIn' && <button onClick={() => setView('signIn')} className="w-full text-center font-medium text-slate-300 hover:text-white">{t('auth.backToSignIn')}</button>}
@@ -121,8 +101,8 @@ export function LoginForm() {
           <div className="relative flex justify-center text-sm"><span className="px-2 bg-brand-card text-slate-400">{t('auth.newToApp')}</span></div>
         </div>
 
-        <Link href="/signup" className="block w-full border border-brand-border text-slate-300 py-3 rounded-lg font-medium hover:bg-brand-dark transition text-center">
-          {t('auth.createAccount')}
+        <Link href="/contact" className="block w-full border border-brand-border text-slate-300 py-3 rounded-lg font-medium hover:bg-brand-dark transition text-center">
+          Request access
         </Link>
       </div>
     </div>

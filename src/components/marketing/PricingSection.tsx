@@ -100,8 +100,8 @@ function PricingCard({ title, price, subtitle, description, features, highlight 
         ))}
       </ul>
 
-      <HWButton variant={highlight ? 'primary' : 'outline'} className="w-full">
-        Get Started
+      <HWButton variant={highlight ? 'primary' : 'outline'} className="w-full" onClick={() => window.location.href = '/contact'}>
+        Contact us
       </HWButton>
     </HWCard>
   );

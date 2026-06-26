@@ -7,9 +7,10 @@ interface LinkProps {
   onClick?: () => void;
   target?: string;
   rel?: string;
+  title?: string;
 }
 
-export function Link({ href, children, className = '', onClick, target, rel }: LinkProps) {
+export function Link({ href, children, className = '', onClick, target, rel, title }: LinkProps) {
   const { navigate } = useRouter();
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -38,7 +39,7 @@ export function Link({ href, children, className = '', onClick, target, rel }: L
   };
 
   return (
-    <a href={href} onClick={handleClick} className={className} target={target} rel={rel}>
+    <a href={href} onClick={handleClick} className={className} target={target} rel={rel} title={title}>
       {children}
     </a>
   );

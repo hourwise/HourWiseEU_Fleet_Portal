@@ -139,6 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ) => {
       setIsSigningUp(true);
       try {
+        if (import.meta.env.VITE_ENABLE_PUBLIC_SIGNUP !== 'true') {
+          throw new Error('Self-service account creation is currently closed. Please contact info@hourwiseeu.co.uk to request access.');
+        }
+
         const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
         if (authError) throw authError;
         if (!authData.user) throw new Error('User creation failed');
@@ -147,10 +151,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         let companyId: string | null = null;
         if (role === 'manager' && companyName) {
+          const { data: authCode, error: authCodeError } = await supabase.rpc('generate_auth_code');
+          if (authCodeError) throw authCodeError;
+
           const { data: company, error: companyError } = await supabase
             .from('companies')
             .insert({
-              name: companyName,
+              name: companyName.trim(),
+              auth_code: authCode,
+              auth_code_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
               created_by: userId,
               require_vehicle_checklist: false // Explicitly set default
             })
@@ -166,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: email.toLowerCase().trim(),
           role,
           company_id: companyId,
-          full_name: fullName,
+          full_name: fullName.trim(),
           account_type: role === 'manager' ? 'fleet' : 'solo', // Auto-set for managers
           is_active: true
         }, {

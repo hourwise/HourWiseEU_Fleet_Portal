@@ -54,9 +54,9 @@ export function Header() {
                 variant="primary"
                 size="sm"
                 className="group"
-                onClick={() => window.location.href = '/signup'}
+                onClick={() => window.location.href = '/contact'}
               >
-                {t('navigation.getStarted')}
+                Request Early Access
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </HWButton>
             </div>
@@ -91,8 +91,8 @@ export function Header() {
                 <Link href="/login" className="text-center font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>
                   Manager Sign In
                 </Link>
-                <HWButton variant="primary" className="w-full" onClick={() => window.location.href = '/signup'}>
-                  Get Started Free
+                <HWButton variant="primary" className="w-full" onClick={() => window.location.href = '/contact'}>
+                  Request Early Access
                 </HWButton>
               </div>
             </div>

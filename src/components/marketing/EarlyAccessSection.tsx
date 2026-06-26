@@ -1,18 +1,24 @@
 import { Send, Sparkles } from 'lucide-react';
 import { HWCard } from '../ui/HWCard';
 import { HWButton } from '../ui/HWButton';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+
+const earlyAccessEmail = 'info@hourwiseeu.co.uk';
 
 export function EarlyAccessSection() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (email) {
-      setSubmitted(true);
-      // In a real app, this would send to an API
-    }
+    const requesterEmail = email.trim();
+    if (!requesterEmail) return;
+
+    const subject = encodeURIComponent('HourWise EU early access request');
+    const body = encodeURIComponent(`Please contact me about HourWise EU early access.\n\nEmail: ${requesterEmail}`);
+
+    setSubmitted(true);
+    window.location.href = `mailto:${earlyAccessEmail}?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -32,8 +38,8 @@ export function EarlyAccessSection() {
 
         {submitted ? (
           <HWCard variant="glass" className="py-12 border-hw-green-500/30 animate-in zoom-in duration-500">
-             <div className="text-hw-green-500 font-bold text-2xl mb-2">You're on the list!</div>
-             <p className="text-hw-slate-300">We'll reach out soon with more information about early access.</p>
+             <div className="text-hw-green-500 font-bold text-2xl mb-2">Email request ready</div>
+             <p className="text-hw-slate-300">Send the drafted email to {earlyAccessEmail} to request early access.</p>
           </HWCard>
         ) : (
           <form onSubmit={handleSubmit} className="relative max-w-lg mx-auto">

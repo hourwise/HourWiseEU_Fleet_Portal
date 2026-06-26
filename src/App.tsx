@@ -8,7 +8,6 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Lazy load components
 const LoginForm = lazy(() => import('./components/auth/LoginForm').then(m => ({ default: m.LoginForm })));
-const SignupForm = lazy(() => import('./components/auth/SignupForm').then(m => ({ default: m.SignupForm })));
 const ManagerDashboard = lazy(() => import('./components/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
 const HomePage = lazy(() => import('./components/public/HomePage').then(m => ({ default: m.HomePage })));
 const PrivacyPage = lazy(() => import('./components/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
@@ -20,8 +19,8 @@ const PrivacyRequestPage = lazy(() => import('./pages/PrivacyRequestPage').then(
 
 type Route = '/' | '/login' | '/signup' | '/privacy' | '/terms' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
 
-const PUBLIC_ROUTES: Route[] = ['/', '/privacy', '/terms', '/how-to', '/privacy-request', '/contact'];
-const AUTH_ROUTES: Route[] = ['/login', '/signup'];
+const PUBLIC_ROUTES: Route[] = ['/', '/signup', '/privacy', '/terms', '/how-to', '/privacy-request', '/contact'];
+const AUTH_ROUTES: Route[] = ['/login'];
 const PROTECTED_ROUTES: Route[] = ['/dashboard'];
 
 interface RouterContextType {
@@ -103,12 +102,12 @@ function LoadingScreen() {
   );
 }
 
-function AuthShell({ view }: { view: 'login' | 'signup' }) {
+function AuthShell() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-dark via-slate-800 to-brand-card flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
         <Suspense fallback={<LoadingScreen />}>
-          {view === 'login' ? <LoginForm /> : <SignupForm />}
+          <LoginForm />
         </Suspense>
       </div>
     </div>
@@ -178,7 +177,7 @@ function AppContent() {
             {currentPath === '/privacy' && <PrivacyPage />}
             {currentPath === '/terms' && <TermsPage />}
             {currentPath === '/how-to' && <HowToPage />}
-            {currentPath === '/contact' && <ContactPage />}
+            {(currentPath === '/contact' || currentPath === '/signup') && <ContactPage />}
           </Suspense>
         </PublicLayout>
         {debugOverlay}
@@ -189,7 +188,7 @@ function AppContent() {
   if (!user) {
     return (
       <>
-        <AuthShell view={currentPath === '/signup' ? 'signup' : 'login'} />
+        <AuthShell />
         {debugOverlay}
       </>
     );
@@ -250,7 +249,7 @@ function AppContent() {
   if (profile.role !== 'manager') {
     return (
       <>
-        <AuthShell view="login" />
+        <AuthShell />
         {debugOverlay}
       </>
     );

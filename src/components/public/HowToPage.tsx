@@ -32,10 +32,10 @@ export function HowToPage() {
                     {t('howTo.sections.gettingStarted.step1.description')}
                   </p>
                   <Link
-                    href="/signup"
+                    href="/contact"
                     className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
-                    {t('navigation.getStarted')}
+                    Contact us
                   </Link>
                 </div>
               </div>

@@ -31,7 +31,7 @@ export function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-              <HWButton size="lg" className="group" onClick={() => window.location.href = '/signup'}>
+              <HWButton size="lg" className="group" onClick={() => window.location.href = '/contact'}>
                 Request Early Access
                 <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </HWButton>
