@@ -97,16 +97,43 @@ export function TachoImportCentre({
         <div className="flex flex-col gap-6">
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tacho Import Centre</p>
-            <h2 className="text-3xl font-black text-slate-900 mt-1">Import Driver Cards And VU Files</h2>
+            <h2 className="text-3xl font-black text-slate-900 mt-1">Import VU Downloads And Manual Tacho Files</h2>
             <p className="text-sm text-slate-500 mt-2">
-              The import queue now surfaces unassigned motion, driver-link discrepancies, and app-vs-tacho cross-check issues directly in the import workflow.
+              Use this workspace for vehicle-unit downloads, manual driver-card file imports, and import monitoring. The live card-reader helper remains available as an advanced driver-card path.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1.25fr,1fr] gap-6">
-            <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
-            <TachoUploadZone onUploaded={reload} />
+          <div className="grid grid-cols-1 xl:grid-cols-[1.35fr,0.85fr] gap-6">
+            <TachoUploadZone
+              title="Primary Upload: VU And Manual Files"
+              description="Upload vehicle-unit downloads first, or use the same path for manual driver-card files. Choose the source type before dropping files so the queue and analysis workspace route correctly."
+              onUploaded={reload}
+            />
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational focus</p>
+              <h3 className="mt-2 text-lg font-black text-slate-900">Keep imports reviewable</h3>
+              <div className="mt-4 space-y-3 text-sm text-slate-600">
+                <p>
+                  VU/manual imports feed the same queue, discrepancy preview, retry controls, and processing diagnostics below.
+                </p>
+                <p>
+                  Driver-card reader diagnostics are collapsed so supervisors can focus on upload, review, and retry actions first.
+                </p>
+                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  Select <span className="font-black">Vehicle unit download / VU file</span> for VU files before upload. Use driver-card mode only for card exports or fallback card uploads.
+                </p>
+              </div>
+            </div>
           </div>
+
+          <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600">
+              Advanced: live driver-card reader helper
+            </summary>
+            <div className="mt-4">
+              <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
+            </div>
+          </details>
         </div>
       </div>
 
@@ -341,8 +368,8 @@ export function TachoImportCentre({
         />
         <InfoCard
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-          title="Driver card flow"
-          text="The same import lifecycle now supports both the desktop helper polling path and the manual upload fallback."
+          title="Manual and VU uploads"
+          text="The primary upload path now tags imports as VU or driver-card records before processing, so queue filters and analysis routing stay explicit."
         />
         <InfoCard
           icon={<AlertTriangle className="w-5 h-5 text-amber-600" />}

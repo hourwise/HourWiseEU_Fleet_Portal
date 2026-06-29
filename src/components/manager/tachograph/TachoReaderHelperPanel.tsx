@@ -898,12 +898,19 @@ export function TachoReaderHelperPanel({
         </div>
 
         {!isMockHelper ? (
-          <HelperDiagnosticsPanel
-            diagnostics={diagnostics}
-            pending={diagnosticsPending}
-            message={diagnosticsMessage}
-            onRefresh={loadDiagnostics}
-          />
+          <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Support diagnostics
+            </summary>
+            <div className="mt-4">
+              <HelperDiagnosticsPanel
+                diagnostics={diagnostics}
+                pending={diagnosticsPending}
+                message={diagnosticsMessage}
+                onRefresh={loadDiagnostics}
+              />
+            </div>
+          </details>
         ) : null}
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -939,7 +946,11 @@ export function TachoReaderHelperPanel({
         </div>
 
         {isMockHelper ? (
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+          <details className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-violet-700">
+              Mock helper controls
+            </summary>
+            <div className="mt-4">
             <div className="space-y-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -1013,7 +1024,8 @@ export function TachoReaderHelperPanel({
               </div>
               {debugMessage ? <p className="text-xs text-violet-900">{debugMessage}</p> : null}
             </div>
-          </div>
+            </div>
+          </details>
         ) : null}
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">

@@ -4,12 +4,23 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { registerManualTachoImport } from '../../../lib/tacho/helperImport';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, History } from 'lucide-react';
 
-export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
+type ManualUploadSourceType = 'driver_card' | 'vehicle_unit';
+
+export function TachoUploadZone({
+  onUploaded,
+  title = 'Manual Tachograph Upload',
+  description = 'Upload VU or driver-card files when the desktop helper is unavailable, the file came from a workshop/download tool, or a manual import is preferred.',
+}: {
+  onUploaded?: () => void;
+  title?: string;
+  description?: string;
+}) {
   const { profile } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [sourceType, setSourceType] = useState<ManualUploadSourceType>('vehicle_unit');
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!profile?.company_id || acceptedFiles.length === 0) return;
@@ -26,12 +37,13 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
         const fileExt = file.name.split('.').pop()?.toLowerCase();
         // Standard tachograph file extensions
         if (!['ddd', 'v1b', 'c1b', 'tgd'].includes(fileExt || '')) {
-          throw new Error(`Unsupported file type: .${fileExt}. Please upload .DDD or .V1B files.`);
+          throw new Error(`Unsupported file type: .${fileExt}. Please upload .DDD, .V1B, .C1B, or .TGD files.`);
         }
 
         const result = await registerManualTachoImport({
           companyId: profile.company_id,
           file,
+          sourceType,
         });
 
         if (!result.kickoff.started && result.kickoff.error) {
@@ -50,12 +62,12 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
     } finally {
       setUploading(false);
     }
-  }, [onUploaded, profile]);
+  }, [onUploaded, profile, sourceType]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/octet-stream': ['.ddd', '.v1b', '.c1b', '.tgd', '.esm'],
+      'application/octet-stream': ['.ddd', '.v1b', '.c1b', '.tgd'],
     },
     multiple: true
   });
@@ -65,12 +77,32 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Import Tachograph Data</h3>
-            <p className="text-sm text-slate-500 font-medium">Upload card or VU files when the desktop helper is unavailable or a manual import is preferred.</p>
+            <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+            <p className="text-sm text-slate-500 font-medium">{description}</p>
           </div>
           <div className="p-2 bg-blue-50 rounded-lg">
             <FileText className="w-6 h-6 text-blue-600" />
           </div>
+        </div>
+
+        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <label className="block">
+            <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Import source
+            </span>
+            <select
+              value={sourceType}
+              onChange={(event) => setSourceType(event.target.value as ManualUploadSourceType)}
+              disabled={uploading}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="vehicle_unit">Vehicle unit download / VU file</option>
+              <option value="driver_card">Driver card file / fallback card upload</option>
+            </select>
+          </label>
+          <p className="mt-2 text-xs text-slate-500">
+            This tags the import queue correctly. Choose VU for vehicle-unit downloads and driver card for C1B/DDD card exports.
+          </p>
         </div>
 
         <div
@@ -101,7 +133,7 @@ export function TachoUploadZone({ onUploaded }: { onUploaded?: () => void }) {
                isDragActive ? 'Drop files here' : 'Drag & drop tachograph files'}
             </p>
             <p className="text-sm text-slate-500 font-medium">
-              Supports .DDD, .V1B, .C1B, .TGD, .ESM (Max 50MB)
+              Supports .DDD, .V1B, .C1B, .TGD (Max 50MB)
             </p>
 
             {!uploading && !success && !error && (

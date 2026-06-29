@@ -591,12 +591,36 @@ type InfringementWithProfile = Infringement & {
 
 type TachoTrainingWithProfile = TrainingRecord & { profiles: { full_name: string } | null };
 
+type TachoFindingWithProfile = {
+  id: string;
+  driver_id: string | null;
+  occurred_at: string;
+  severity: string;
+  status: string;
+  rule_code: string;
+  title: string;
+  summary: string;
+  source: string;
+  profiles: { full_name: string } | null;
+};
+
+type TachoReconciliationWithProfile = {
+  id: string;
+  driver_id: string | null;
+  recon_date: string;
+  status: string;
+  app_label: string;
+  tacho_label: string;
+  summary: string;
+  profiles: { full_name: string } | null;
+};
+
 interface TachoFollowUpRow {
   id: string;
   driverId: string;
   driverName: string;
   reviewDate: string;
-  recordType: 'Infringement' | 'Training';
+  recordType: 'Finding' | 'Reconciliation' | 'Infringement' | 'Training';
   status: string;
   summary: string;
   origin: string;
@@ -638,17 +662,73 @@ function TachoFollowUpExportCard({
         .lte('assigned_at', range.end.toISOString())
         .order('assigned_at', { ascending: false });
 
+      let findingsQuery = supabase
+        .from('tachograph_findings' as any)
+        .select('id, driver_id, occurred_at, severity, status, rule_code, title, summary, source, profiles:driver_id(full_name)')
+        .eq('company_id', profile.company_id)
+        .gte('occurred_at', range.start.toISOString())
+        .lte('occurred_at', range.end.toISOString())
+        .order('occurred_at', { ascending: false });
+
+      let reconciliationQuery = supabase
+        .from('tachograph_reconciliation_items' as any)
+        .select('id, driver_id, recon_date, status, app_label, tacho_label, summary, profiles:driver_id(full_name)')
+        .eq('company_id', profile.company_id)
+        .neq('status', 'matched')
+        .gte('recon_date', toISO(range.start))
+        .lte('recon_date', toISO(range.end))
+        .order('recon_date', { ascending: false });
+
       if (focusedDriverId) {
         infringementsQuery = infringementsQuery.eq('driver_id', focusedDriverId);
         trainingQuery = trainingQuery.eq('driver_id', focusedDriverId);
+        findingsQuery = findingsQuery.eq('driver_id', focusedDriverId);
+        reconciliationQuery = reconciliationQuery.eq('driver_id', focusedDriverId);
       }
 
-      const [{ data: infringementData }, { data: trainingData }] = await Promise.all([
+      const [
+        { data: infringementData },
+        { data: trainingData },
+        { data: findingData },
+        { data: reconciliationData },
+      ] = await Promise.all([
         infringementsQuery,
         trainingQuery,
+        findingsQuery,
+        reconciliationQuery,
       ]);
 
       const tachoRows: TachoFollowUpRow[] = [];
+
+      ((findingData as unknown as TachoFindingWithProfile[]) ?? [])
+        .filter((row) => row.driver_id)
+        .forEach((row) => {
+          tachoRows.push({
+            id: `finding-${row.id}`,
+            driverId: row.driver_id!,
+            driverName: row.profiles?.full_name ?? '—',
+            reviewDate: row.occurred_at.slice(0, 10),
+            recordType: 'Finding',
+            status: `${row.severity} ${row.status}`.replace('_', ' '),
+            summary: `${row.title || row.rule_code}: ${row.summary}`,
+            origin: `${row.source} normalized finding`,
+          });
+        });
+
+      ((reconciliationData as unknown as TachoReconciliationWithProfile[]) ?? [])
+        .filter((row) => row.driver_id)
+        .forEach((row) => {
+          tachoRows.push({
+            id: `recon-${row.id}`,
+            driverId: row.driver_id!,
+            driverName: row.profiles?.full_name ?? '—',
+            reviewDate: row.recon_date,
+            recordType: 'Reconciliation',
+            status: row.status.replace('_', ' '),
+            summary: `${row.summary} App: ${row.app_label}; Tacho: ${row.tacho_label}`,
+            origin: 'App vs tacho reconciliation',
+          });
+        });
 
       ((infringementData as InfringementWithProfile[]) ?? [])
         .filter((row) => row.regulation === 'REG_561' || row.source === 'tacho')

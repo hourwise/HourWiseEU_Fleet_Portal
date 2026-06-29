@@ -361,10 +361,12 @@ export async function kickoffTachoImportProcessing(record: ProcessTachoImportRec
 export async function registerManualTachoImport(args: {
   companyId: string;
   file: File;
+  sourceType?: 'driver_card' | 'vehicle_unit';
 }) {
   const fileType = deriveFileType(args.file.name);
   const storageFileName = `${Date.now()}_${args.file.name}`;
   const filePath = `${args.companyId}/${storageFileName}`;
+  const sourceType = args.sourceType ?? (fileType === 'v1b' ? 'vehicle_unit' : 'driver_card');
 
   const { error: uploadError } = await supabase.storage
     .from('tachograph-files')
@@ -392,6 +394,7 @@ export async function registerManualTachoImport(args: {
   const metadata: HelperImportMetadata = {
     ingest_source: 'manual_upload',
     upload_origin: 'browser_manual',
+    selected_source_type: sourceType,
   };
 
   const record = await insertPendingTachoImport({
@@ -399,6 +402,7 @@ export async function registerManualTachoImport(args: {
     fileName: args.file.name,
     filePath,
     fileType,
+    sourceType,
     metadata,
   });
 

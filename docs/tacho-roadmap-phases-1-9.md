@@ -34,7 +34,7 @@ Based on the current frontend and this implementation pass:
   - vehicle files show VU summary status and direct analysis / maintenance / incident actions
   - training assignment from driver-card analysis is wired for repeated tacho patterns
   - infringement records can reopen the underlying driver tacho review context
-  - reports now support focused tacho follow-up exports and preselected evidence-pack generation
+  - reports now support focused tacho follow-up exports, direct normalized finding/reconciliation rows, and evidence-pack PDFs with tacho download/day/finding/review summaries
 - Phase 7 is now functionally implemented in the manager frontend:
   - navigation is grouped into Dashboard / People / Fleet / Compliance / Reports / Settings
   - legacy modules remain reachable through grouped subnavigation
@@ -76,7 +76,8 @@ Based on the current frontend and this implementation pass:
   - import monitoring now has repo-backed summary logic, telemetry hooks, and a synthetic regression fixture set for failure-state stability
   - imports with kickoff, dispatch, or failed-processing issues can now request a direct processing retry from the review pane
   - successful helper completion can auto-open focused driver analysis
-  - the manual upload fallback now sits beside the helper workflow on the same page
+  - the Import Centre now prioritizes VU downloads and manual tacho file imports, with explicit VU/driver-card source tagging and the live driver-card helper demoted behind an advanced disclosure
+  - helper diagnostics and mock controls are now collapsed behind support disclosures so routine import monitoring stays focused
   - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
   - Driver Card Analysis now owns the live driver-card read/import workflow through a reusable reader workflow hook; Vehicle Unit Analysis still uses the lightweight status overlay until the VU helper path is promoted
   - Candidate/unlinked card analysis now has manager decision actions: create invite from decoded card identity, pair to an existing driver, mark reviewed only, or mark checked/no-hire without creating a personnel file
@@ -441,11 +442,11 @@ Latest confirmed checkpoint before restart:
    - if the processed import has no matched driver profile, Driver Card Analysis opens candidate card mode by `import_id`
    - when the card is removed and the helper returns to ready/unavailable, the auto-opened live workspace returns to the blank calendar
    - remaining verification: run this against the real helper/card after frontend deployment and confirm the helper state transitions are exactly `card_inserted -> reading -> uploading -> processing -> complete -> ready`
-9. Tidy Import Centre after the driver-card workflow move:
-   - keep VU import/download controls
-   - keep manual driver-card file import fallback
-   - collapse backend IDs, helper diagnostics, metadata, retry details, and correlation fields behind a support/technical disclosure
-   - remove or demote driver-card live-reader duplication now that Driver Card Analysis owns that flow
+9. Import Centre tidy after the driver-card workflow move is now completed:
+   - VU/manual upload is the primary path
+   - manual uploads explicitly tag `vehicle_unit` vs `driver_card`
+   - the live driver-card helper is demoted to an advanced section
+   - helper diagnostics and mock controls are collapsed behind support disclosures
 10. Add review/sign-off persistence:
    - driver personnel file should store only issues/actions/sign-offs, not the full card read
    - add a manager review/sign-off workflow for findings before writing personnel-file compliance notes
@@ -954,7 +955,7 @@ Primary design:
 #### 8.2 Reader page in portal
 
 - Build card-reader page state machine.
-- Keep file-upload fallback on same page.
+- Keep file-upload fallback available, with Import Centre focused on VU/manual imports and Driver Card Analysis owning the live reader workflow.
 - Frontend scaffold is now in place with helper polling plus start/cancel command hooks.
 
 #### 8.3 Progress reporting
@@ -975,7 +976,7 @@ Primary design:
 ### Acceptance criteria
 
 - Supervisor can read a card with minimal manual steps.
-- Fallback upload still works if helper is missing.
+- Manual VU and driver-card upload still works if helper is missing.
 
 ---
 
@@ -1075,8 +1076,8 @@ Make the full tacho system safe for operational rollout.
    - run existing rules engine against those segments
    - replace placeholder reader-console totals
 5. Deploy/push the frontend live-reader DriverCardAnalysis changes, then retest with the real helper/card.
-6. Tidy Import Centre so it focuses on VU import/download, manual driver-card file import, and collapsed technical diagnostics.
-7. Continue VU workflow once driver-card activity decode and analysis flow are stable.
+6. Continue VU workflow once driver-card activity decode and analysis flow are stable.
+7. Add review/sign-off persistence for findings and personnel-file compliance notes.
 8. Then Phase 9 hardening, real binary regression files, monitoring, RLS review, and release prep.
 
 ---
@@ -1104,7 +1105,7 @@ If work resumes after interruption, start with:
 5. Test one of:
    - pair card to existing profile
    - invite driver from card
-6. Tidy Import Centre, then continue VU workflow and review/sign-off persistence.
+6. Continue VU workflow and review/sign-off persistence.
 
 ---
 

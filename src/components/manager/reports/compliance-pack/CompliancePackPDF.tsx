@@ -107,6 +107,16 @@ const styles = StyleSheet.create({
   },
   badgeGreen: { backgroundColor: '#DCFCE7', color: '#166534' },
   badgeRed: { backgroundColor: '#FEE2E2', color: '#991B1B' },
+  evidenceNote: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 4,
+    padding: 8,
+    marginBottom: 10,
+    fontSize: 8,
+    color: '#475569',
+  },
 });
 
 interface CompliancePackProps {
@@ -116,13 +126,51 @@ interface CompliancePackProps {
     training: any[];
     infringements: any[];
     checks: any[];
+    tacho?: {
+      downloads: any[];
+      imports: any[];
+      daySummaries: any[];
+      findings: any[];
+      reconciliation: any[];
+      totals: {
+        downloadCount: number;
+        importCount: number;
+        activeImportCount: number;
+        dayCount: number;
+        drivingMins: number;
+        workMins: number;
+        poaMins: number;
+        restMins: number;
+        findingCount: number;
+        criticalFindingCount: number;
+        unreviewedFindingCount: number;
+        reconciliationIssueCount: number;
+      };
+    };
     generatedAt: string;
     companyName?: string;
   };
 }
 
+const formatDate = (value?: string | null) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB');
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('en-GB');
+};
+
+const formatHours = (minutes?: number | null) => `${((minutes || 0) / 60).toFixed(2)}h`;
+
+const labelize = (value?: string | null) => (value || 'N/A').replace(/_/g, ' ').toUpperCase();
+
 export const CompliancePackPDF = ({ data }: CompliancePackProps) => {
-  const { driver, sessions, training, infringements, checks, generatedAt, companyName } = data;
+  const { driver, sessions, training, infringements, checks, tacho, generatedAt, companyName } = data;
+  const tachoTotals = tacho?.totals;
 
   return (
     <Document>
@@ -202,7 +250,7 @@ export const CompliancePackPDF = ({ data }: CompliancePackProps) => {
       {/* PAGE 2: WORK SESSIONS (13 WEEKS) */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>4. Tacho / Work Audit (Last 13 Weeks)</Text>
+          <Text style={styles.title}>4. App Work Audit (Last 13 Weeks)</Text>
         </View>
 
         <View style={styles.tableHeader}>
@@ -228,10 +276,135 @@ export const CompliancePackPDF = ({ data }: CompliancePackProps) => {
         </Text>
       </Page>
 
-      {/* PAGE 3: INFRINGEMENTS & DEBRIEFS */}
+      {/* PAGE 3: NORMALIZED TACHOGRAPH EVIDENCE */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>5. Infringement Debrief History</Text>
+          <View>
+            <Text style={styles.title}>5. Tachograph Evidence</Text>
+            <Text style={styles.subtitle}>Driver-card imports, legal findings, review state, and app-vs-tacho reconciliation.</Text>
+          </View>
+        </View>
+
+        <View style={styles.evidenceNote}>
+          <Text>
+            Tachograph rows are sourced from normalized parser output for the same 13-week audit window.
+            App work sessions remain separate so supervisors can compare portal clocking against driver-card evidence.
+          </Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 4 }}>
+            <Text style={{ fontSize: 8, color: '#64748B', textTransform: 'uppercase' }}>Imports</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0F172A' }}>{tachoTotals?.importCount || 0}</Text>
+            <Text style={{ fontSize: 7, color: '#64748B' }}>{tachoTotals?.activeImportCount || 0} active analysis sets</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 4 }}>
+            <Text style={{ fontSize: 8, color: '#64748B', textTransform: 'uppercase' }}>Tacho Days</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0F172A' }}>{tachoTotals?.dayCount || 0}</Text>
+            <Text style={{ fontSize: 7, color: '#64748B' }}>{formatHours(tachoTotals?.drivingMins)} driving</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 4 }}>
+            <Text style={{ fontSize: 8, color: '#64748B', textTransform: 'uppercase' }}>Findings</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: (tachoTotals?.criticalFindingCount || 0) > 0 ? '#991B1B' : '#0F172A' }}>
+              {tachoTotals?.findingCount || 0}
+            </Text>
+            <Text style={{ fontSize: 7, color: '#64748B' }}>{tachoTotals?.criticalFindingCount || 0} high/critical</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 4 }}>
+            <Text style={{ fontSize: 8, color: '#64748B', textTransform: 'uppercase' }}>Open Review</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: (tachoTotals?.unreviewedFindingCount || 0) > 0 ? '#92400E' : '#0F172A' }}>
+              {tachoTotals?.unreviewedFindingCount || 0}
+            </Text>
+            <Text style={{ fontSize: 7, color: '#64748B' }}>{tachoTotals?.reconciliationIssueCount || 0} recon issues</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Driver Card Downloads</Text>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableCellBold, { width: '22%' }]}>Downloaded</Text>
+            <Text style={[styles.tableCellBold, { width: '23%' }]}>Card</Text>
+            <Text style={[styles.tableCellBold, { width: '20%' }]}>Coverage Start</Text>
+            <Text style={[styles.tableCellBold, { width: '20%' }]}>Coverage End</Text>
+            <Text style={[styles.tableCellBold, { width: '15%' }]}>Status</Text>
+          </View>
+          {tacho?.downloads?.length ? tacho.downloads.slice(0, 5).map((download, i) => (
+            <View key={i} style={styles.row}>
+              <Text style={[styles.tableCell, { width: '22%' }]}>{formatDateTime(download.downloaded_at)}</Text>
+              <Text style={[styles.tableCell, { width: '23%' }]}>{download.card_number || 'N/A'}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{formatDate(download.period_start)}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{formatDate(download.period_end)}</Text>
+              <Text style={[styles.tableCell, { width: '15%', fontSize: 8 }]}>{labelize(download.download_status)}</Text>
+            </View>
+          )) : <Text style={{ padding: 10, fontStyle: 'italic', color: '#94A3B8' }}>No driver-card downloads found in this audit period.</Text>}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Latest Tacho Day Totals</Text>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableCellBold, { width: '18%' }]}>Date</Text>
+            <Text style={[styles.tableCellBold, { width: '16%' }]}>Driving</Text>
+            <Text style={[styles.tableCellBold, { width: '16%' }]}>Work</Text>
+            <Text style={[styles.tableCellBold, { width: '16%' }]}>POA</Text>
+            <Text style={[styles.tableCellBold, { width: '16%' }]}>Rest</Text>
+            <Text style={[styles.tableCellBold, { width: '18%' }]}>Findings</Text>
+          </View>
+          {tacho?.daySummaries?.length ? tacho.daySummaries.slice(0, 14).map((day, i) => (
+            <View key={i} style={styles.row}>
+              <Text style={[styles.tableCell, { width: '18%' }]}>{formatDate(day.summary_date)}</Text>
+              <Text style={[styles.tableCell, { width: '16%' }]}>{formatHours(day.driving_mins)}</Text>
+              <Text style={[styles.tableCell, { width: '16%' }]}>{formatHours(day.work_mins)}</Text>
+              <Text style={[styles.tableCell, { width: '16%' }]}>{formatHours(day.poa_mins)}</Text>
+              <Text style={[styles.tableCell, { width: '16%' }]}>{formatHours(day.rest_mins)}</Text>
+              <Text style={[styles.tableCell, { width: '18%' }]}>{day.findings_count || 0}</Text>
+            </View>
+          )) : <Text style={{ padding: 10, fontStyle: 'italic', color: '#94A3B8' }}>No normalized tacho day totals found.</Text>}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal / Data Quality Findings</Text>
+          {tacho?.findings?.length ? tacho.findings.slice(0, 10).map((finding, i) => {
+            const reviewStatus = finding.review?.status || 'open';
+            return (
+              <View key={i} style={{ marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 6 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#0F172A' }}>{finding.title || finding.rule_code}</Text>
+                  <Text style={{ fontSize: 8, color: finding.severity === 'critical' || finding.severity === 'high' ? '#991B1B' : '#64748B' }}>
+                    {labelize(finding.severity)} / {labelize(reviewStatus)}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 8, color: '#475569' }}>{finding.summary}</Text>
+                <Text style={{ fontSize: 7, color: '#94A3B8', marginTop: 2 }}>
+                  {formatDateTime(finding.occurred_at)} - {finding.rule_code} - Source: {labelize(finding.source)}
+                  {finding.review?.corrective_action_type ? ` - Action: ${labelize(finding.review.corrective_action_type)}` : ''}
+                </Text>
+              </View>
+            );
+          }) : <Text style={{ padding: 10, fontStyle: 'italic', color: '#94A3B8' }}>No normalized tacho findings found.</Text>}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App vs Tacho Reconciliation</Text>
+          {tacho?.reconciliation?.length ? tacho.reconciliation.slice(0, 8).map((item, i) => (
+            <View key={i} style={styles.row}>
+              <Text style={[styles.tableCell, { width: '18%' }]}>{formatDate(item.recon_date)}</Text>
+              <Text style={[styles.tableCell, { width: '17%', fontSize: 8 }]}>{labelize(item.status)}</Text>
+              <Text style={[styles.tableCell, { width: '27%', fontSize: 8 }]}>{item.app_label}</Text>
+              <Text style={[styles.tableCell, { width: '27%', fontSize: 8 }]}>{item.tacho_label}</Text>
+              <Text style={[styles.tableCell, { width: '11%', fontSize: 8 }]}>{formatHours(item.tacho_driving_mins)}</Text>
+            </View>
+          )) : <Text style={{ padding: 10, fontStyle: 'italic', color: '#94A3B8' }}>No reconciliation rows found for this audit period.</Text>}
+        </View>
+
+        <Text style={styles.footer}>
+          Page 3 - Normalized Tachograph Evidence
+        </Text>
+      </Page>
+
+      {/* PAGE 4: INFRINGEMENTS & DEBRIEFS */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={styles.title}>6. Infringement Debrief History</Text>
         </View>
 
         {infringements.length > 0 ? infringements.map((inf, i) => (
@@ -268,14 +441,14 @@ export const CompliancePackPDF = ({ data }: CompliancePackProps) => {
         </View>
 
         <Text style={styles.footer}>
-          Page 3 • Compliance Evidence Pack • Official Record
+          Page 4 • Compliance Evidence Pack • Official Record
         </Text>
       </Page>
 
-      {/* PAGE 4: VEHICLE CHECKS */}
+      {/* PAGE 5: VEHICLE CHECKS */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>6. Vehicle Daily Checks (Audit)</Text>
+          <Text style={styles.title}>7. Vehicle Daily Checks (Audit)</Text>
         </View>
 
         <View style={styles.tableHeader}>
@@ -303,7 +476,7 @@ export const CompliancePackPDF = ({ data }: CompliancePackProps) => {
         </View>
 
         <Text style={styles.footer}>
-          Page 4 • Vehicle Check Audit Trail
+          Page 5 • Vehicle Check Audit Trail
         </Text>
       </Page>
     </Document>

@@ -6,11 +6,13 @@ export type TachoImportTelemetryStage =
   | 'helper_download'
   | 'storage_upload'
   | 'import_insert'
+  | 'metadata_reload'
   | 'metadata_persist'
   | 'helper_acknowledge'
   | 'processing_kickoff'
   | 'import_status'
-  | 'processing_retry';
+  | 'processing_retry'
+  | 'signal_rebuild_lookup';
 
 export interface TachoImportTelemetryContext {
   stage: TachoImportTelemetryStage;
@@ -21,6 +23,7 @@ export interface TachoImportTelemetryContext {
   filePath?: string;
   sourceType?: string | null;
   ingestSource?: string;
+  driverId?: string;
 }
 
 function stringifyContext(context: TachoImportTelemetryContext) {
@@ -34,6 +37,7 @@ function stringifyContext(context: TachoImportTelemetryContext) {
     filePath: context.filePath ?? null,
     sourceType: context.sourceType ?? null,
     ingestSource: context.ingestSource ?? null,
+    driverId: context.driverId ?? null,
   };
 }
 
