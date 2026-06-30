@@ -12,7 +12,17 @@ import { TachoFilters } from './TachoFilters';
 import { TachoReaderStatusOverlay } from './TachoReaderStatusOverlay';
 import { VehicleHistoryLedger } from './VehicleHistoryLedger';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
-import type { TachoAnalysisRange, TachoDaySummary, TachoFinding, VehicleMotionDiscrepancy } from '../../../lib/tacho/rules/types';
+import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
+import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
+import type {
+  TachoAnalysisRange,
+  TachoCorrectiveActionType,
+  TachoDaySummary,
+  TachoFinding,
+  TachoFindingReview,
+  TachoFindingReviewStatus,
+  VehicleMotionDiscrepancy,
+} from '../../../lib/tacho/rules/types';
 
 interface VehicleUnitAnalysisProps {
   vehicleId?: string;
@@ -32,6 +42,9 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
   const [selectedDay, setSelectedDay] = useState<TachoDaySummary | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState(vehicleId ?? '');
+  const [findingReviews, setFindingReviews] = useState<Record<string, TachoFindingReview>>({});
+  const [reviewPendingId, setReviewPendingId] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const { data: vehicles = [] } = useVehicles(profile?.company_id ?? undefined);
   const { data: drivers = [] } = useDrivers(profile?.company_id ?? undefined);
   const { data, loading, error, emptyState, isMock } = useVehicleUnitAnalysis(range, { vehicleId: selectedVehicleId || undefined });
@@ -63,7 +76,77 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
 
   const discrepancies = data?.unassignedMotion ?? EMPTY_DISCREPANCIES;
   const technicalEvents = data?.technicalEvents ?? EMPTY_VU_EVENTS;
+  const reviewableFindings = useMemo(() => {
+    const byId = new Map<string, TachoFinding>();
+    [...(data?.findings ?? []), ...technicalEvents].forEach((finding) => byId.set(finding.id, finding));
+    return [...byId.values()];
+  }, [data?.findings, technicalEvents]);
+  const findingIds = useMemo(() => reviewableFindings.map((finding) => finding.id), [reviewableFindings]);
   const multiManningFindings = data?.findings.filter((finding) => finding.ruleCode === 'DRV_MULTI_MANNING_DETECTED') ?? [];
+  const selectedDayFindings = selectedDay
+    ? reviewableFindings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date)
+    : [];
+  const reviewPanelFindings = selectedDayFindings.length > 0 ? selectedDayFindings : reviewableFindings.slice(0, 8);
+  const reviewStats = useMemo(() => {
+    const reviews = Object.values(findingReviews);
+    return {
+      total: reviewableFindings.length,
+      open: reviewableFindings.filter((finding) => !findingReviews[finding.id] || findingReviews[finding.id].status === 'open').length,
+      actionRequired: reviews.filter((review) => review.status === 'action_required').length,
+      closed: reviews.filter((review) => review.status === 'closed').length,
+    };
+  }, [findingReviews, reviewableFindings]);
+
+  useEffect(() => {
+    if (!profile?.company_id || findingIds.length === 0) {
+      setFindingReviews({});
+      return;
+    }
+
+    let cancelled = false;
+    fetchTachoFindingReviews(profile.company_id, findingIds)
+      .then((reviews) => {
+        if (cancelled) return;
+        setFindingReviews(Object.fromEntries(reviews.map((review) => [review.findingId, review])));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setReviewError(error instanceof Error ? error.message : 'Unable to load VU finding reviews.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [findingIds, profile?.company_id]);
+
+  const handleSaveFindingReview = async (
+    finding: TachoFinding,
+    values: {
+      status: TachoFindingReviewStatus;
+      managerNote: string;
+      correctiveActionType: TachoCorrectiveActionType | '';
+    }
+  ) => {
+    if (!profile?.company_id) return;
+    setReviewPendingId(finding.id);
+    setReviewError(null);
+    try {
+      const status = values.correctiveActionType && values.status === 'open' ? 'action_required' : values.status;
+      const review = await saveTachoFindingReview({
+        companyId: profile.company_id,
+        findingId: finding.id,
+        status,
+        managerNote: values.managerNote,
+        correctiveActionType: values.correctiveActionType || null,
+      });
+      setFindingReviews((current) => ({ ...current, [review.findingId]: review }));
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : 'Unable to save VU finding review.');
+    } finally {
+      setReviewPendingId(null);
+    }
+  };
+
   const driverNameById = useMemo(
     () =>
       Object.fromEntries(
@@ -130,6 +213,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
           <ActionButton icon={<Truck className="w-4 h-4" />} label="Open Fleet Record" disabled={!activeVehicleId || !onOpenFleetRecord} onClick={() => activeVehicleId && onOpenFleetRecord?.(activeVehicleId)} />
           <ActionButton icon={<Wrench className="w-4 h-4" />} label="Open Maintenance" disabled={!activeVehicleId || !onOpenMaintenance} onClick={() => activeVehicleId && onOpenMaintenance?.(activeVehicleId)} />
           <ActionButton icon={<FileWarning className="w-4 h-4" />} label="Open Incidents" disabled={!activeVehicleId || !onOpenIncidents} onClick={() => activeVehicleId && onOpenIncidents?.(activeVehicleId)} />
+          <ActionButton icon={<FileWarning className="w-4 h-4" />} label="Import VU File" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
         </div>
       </div>
 
@@ -156,6 +240,10 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
           <InfoPanel title="Selected Day Review Context" icon={<Gauge className="w-5 h-5 text-blue-600" />}>
             {selectedDay ? <StatList items={[`Technical events: ${technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= selectedDay.date && event.periodEnd.slice(0, 10) >= selectedDay.date).length}`, `Discrepancies: ${discrepancies.filter((item) => item.date === selectedDay.date).length}`, `Linked drivers: ${new Set(discrepancies.filter((item) => item.date === selectedDay.date).map((item) => item.linkedDriverName).filter(Boolean)).size}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
           </InfoPanel>
+
+          <InfoPanel title="Sign-off State" icon={<ShieldCheck className="w-5 h-5 text-emerald-600" />}>
+            <StatList items={[`Reviewable VU findings: ${reviewStats.total}`, `Open: ${reviewStats.open}`, `Action required: ${reviewStats.actionRequired}`, `Closed: ${reviewStats.closed}`]} />
+          </InfoPanel>
         </div>
       </div>
 
@@ -173,6 +261,17 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
         driverNameById={driverNameById}
         selectedDate={selectedDay?.date ?? null}
         onSelectDate={(date) => setSelectedDay(data.dailySummaries.find((day) => day.date === date) ?? null)}
+      />
+
+      <TachoFindingReviewPanel
+        title="VU Finding Review / Sign-off"
+        findings={reviewPanelFindings}
+        reviewsByFindingId={findingReviews}
+        pendingFindingId={reviewPendingId}
+        error={reviewError}
+        selectedDay={selectedDay?.date ?? null}
+        emptyMessage="No VU findings or technical events are available to review for this selection."
+        onSave={handleSaveFindingReview}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1fr] gap-6">

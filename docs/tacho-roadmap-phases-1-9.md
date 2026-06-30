@@ -79,6 +79,10 @@ Based on the current frontend and this implementation pass:
   - the Import Centre now prioritizes VU downloads and manual tacho file imports, with explicit VU/driver-card source tagging and the live driver-card helper demoted behind an advanced disclosure
   - helper diagnostics and mock controls are now collapsed behind support disclosures so routine import monitoring stays focused
   - driver and vehicle workspaces now put the historical activity strip first, support a 12-month range, and expose a vehicle-history ledger focused on who drove which vehicle on each recorded day
+  - Vehicle Unit Analysis now exposes a VU finding review/sign-off panel for VU findings and technical events, backed by the same `tachograph_finding_reviews` persistence as driver-card findings
+  - the shared tacho finding review UI now records manager notes, review status, and corrective-action type so driver-linked reviews appear in the driver file tacho actions panel without storing full card/VU reads in the personnel file
+  - tacho finding reviews now have a driver acknowledgement RPC, acknowledgement badges in review screens, and driver-file filters/audit-event history for saved tacho actions
+  - driver-role web users now land on a focused driver dashboard for outstanding tacho review acknowledgements instead of being sent back to the auth screen
   - Driver Card Analysis now owns the live driver-card read/import workflow through a reusable reader workflow hook; Vehicle Unit Analysis still uses the lightweight status overlay until the VU helper path is promoted
   - Candidate/unlinked card analysis now has manager decision actions: create invite from decoded card identity, pair to an existing driver, mark reviewed only, or mark checked/no-hire without creating a personnel file
 - parser-simulation infrastructure now exists in-repo so rule and reconciliation scenarios can be exercised without real tachograph binaries
@@ -447,10 +451,14 @@ Latest confirmed checkpoint before restart:
    - manual uploads explicitly tag `vehicle_unit` vs `driver_card`
    - the live driver-card helper is demoted to an advanced section
    - helper diagnostics and mock controls are collapsed behind support disclosures
-10. Add review/sign-off persistence:
-   - driver personnel file should store only issues/actions/sign-offs, not the full card read
-   - add a manager review/sign-off workflow for findings before writing personnel-file compliance notes
-   - include audit trail and optional driver acknowledgement later
+10. Review/sign-off persistence first pass is now completed:
+   - driver personnel file surfaces issue/action/sign-off summaries from `tachograph_finding_reviews`, not full card/VU reads
+   - Driver Card Analysis and Vehicle Unit Analysis now share the manager review/sign-off workflow
+   - manager notes, status, and corrective-action type are persisted through the audited review RPC
+   - driver acknowledgement is supported by `acknowledge_tachograph_finding_review(...)`
+   - driver file tacho actions can now be filtered by status/acknowledgement and expose recent review audit events
+   - driver-facing acknowledgement UI now exists in the web driver dashboard
+   - remaining acknowledgement work is notification delivery/push into the mobile driver app if required
 11. Push frontend to Vercel when ready:
    - `git push`
 12. Test unmatched-card invite flow again as a regression:
@@ -1076,8 +1084,8 @@ Make the full tacho system safe for operational rollout.
    - run existing rules engine against those segments
    - replace placeholder reader-console totals
 5. Deploy/push the frontend live-reader DriverCardAnalysis changes, then retest with the real helper/card.
-6. Continue VU workflow once driver-card activity decode and analysis flow are stable.
-7. Add review/sign-off persistence for findings and personnel-file compliance notes.
+6. Continue VU workflow with real VU files, parser validation, supported download-device decisions, and eventual helper promotion.
+7. Add notification delivery/mobile-app entry point for saved tacho review acknowledgements if required.
 8. Then Phase 9 hardening, real binary regression files, monitoring, RLS review, and release prep.
 
 ---
@@ -1105,7 +1113,7 @@ If work resumes after interruption, start with:
 5. Test one of:
    - pair card to existing profile
    - invite driver from card
-6. Continue VU workflow and review/sign-off persistence.
+6. Continue VU real-file workflow, acknowledgement notifications/mobile entry point, and release hardening.
 
 ---
 

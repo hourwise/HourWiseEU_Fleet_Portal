@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 // Lazy load components
 const LoginForm = lazy(() => import('./components/auth/LoginForm').then(m => ({ default: m.LoginForm })));
 const ManagerDashboard = lazy(() => import('./components/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
+const DriverDashboard = lazy(() => import('./components/driver/DriverDashboard').then(m => ({ default: m.DriverDashboard })));
 const HomePage = lazy(() => import('./components/public/HomePage').then(m => ({ default: m.HomePage })));
 const PrivacyPage = lazy(() => import('./components/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./components/public/TermsPage').then(m => ({ default: m.TermsPage })));
@@ -246,19 +247,10 @@ function AppContent() {
     );
   }
 
-  if (profile.role !== 'manager') {
-    return (
-      <>
-        <AuthShell />
-        {debugOverlay}
-      </>
-    );
-  }
-
   return (
     <>
       <Suspense fallback={<LoadingScreen />}>
-        <ManagerDashboard />
+        {profile.role === 'manager' ? <ManagerDashboard /> : <DriverDashboard />}
       </Suspense>
       {debugOverlay}
     </>

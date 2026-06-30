@@ -23,6 +23,7 @@ const TACHO_RPC = {
   prepareImportReprocess: 'prepare_tacho_import_reprocess',
   purgeCompanyDriverCardReads: 'purge_company_driver_card_reads',
   saveFindingReview: 'save_tachograph_finding_review',
+  acknowledgeFindingReview: 'acknowledge_tachograph_finding_review',
 } as const;
 
 interface CompanyTachoSignalsRow {
@@ -64,6 +65,42 @@ interface TachoFindingReviewRow {
   createdAt?: string;
   updated_at?: string;
   updatedAt?: string;
+}
+
+export interface TachoFindingReviewEvent {
+  id: string;
+  reviewId: string;
+  findingId: string;
+  companyId: string;
+  actorUserId?: string | null;
+  eventType: 'created' | 'updated' | 'driver_acknowledged';
+  previousStatus?: TachoFindingReviewStatus | null;
+  newStatus: TachoFindingReviewStatus;
+  note?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+interface TachoFindingReviewEventRow {
+  id: string;
+  review_id?: string;
+  reviewId?: string;
+  finding_id?: string;
+  findingId?: string;
+  company_id?: string;
+  companyId?: string;
+  actor_user_id?: string | null;
+  actorUserId?: string | null;
+  event_type?: TachoFindingReviewEvent['eventType'];
+  eventType?: TachoFindingReviewEvent['eventType'];
+  previous_status?: TachoFindingReviewStatus | null;
+  previousStatus?: TachoFindingReviewStatus | null;
+  new_status?: TachoFindingReviewStatus;
+  newStatus?: TachoFindingReviewStatus;
+  note?: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at?: string;
+  createdAt?: string;
 }
 
 function resolveRangeStart(range: TachoAnalysisRange) {
@@ -277,6 +314,22 @@ function adaptFindingReview(row: TachoFindingReviewRow): TachoFindingReview {
   };
 }
 
+function adaptFindingReviewEvent(row: TachoFindingReviewEventRow): TachoFindingReviewEvent {
+  return {
+    id: row.id,
+    reviewId: row.review_id ?? row.reviewId ?? '',
+    findingId: row.finding_id ?? row.findingId ?? '',
+    companyId: row.company_id ?? row.companyId ?? '',
+    actorUserId: row.actor_user_id ?? row.actorUserId ?? null,
+    eventType: row.event_type ?? row.eventType ?? 'updated',
+    previousStatus: row.previous_status ?? row.previousStatus ?? null,
+    newStatus: row.new_status ?? row.newStatus ?? 'open',
+    note: row.note ?? null,
+    metadata: row.metadata ?? {},
+    createdAt: row.created_at ?? row.createdAt ?? '',
+  };
+}
+
 export async function fetchTachoFindingReviews(
   companyId: string,
   findingIds: string[]
@@ -289,6 +342,17 @@ export async function fetchTachoFindingReviews(
     .select('*')
     .eq('company_id', companyId)
     .in('finding_id', uniqueFindingIds);
+
+  if (error) throw error;
+  return ((data as unknown as TachoFindingReviewRow[] | null) ?? []).map(adaptFindingReview);
+}
+
+export async function fetchMyTachoFindingReviews(): Promise<TachoFindingReview[]> {
+  const { data, error } = await supabase
+    .from('tachograph_finding_reviews' as any)
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(50);
 
   if (error) throw error;
   return ((data as unknown as TachoFindingReviewRow[] | null) ?? []).map(adaptFindingReview);
@@ -313,6 +377,37 @@ export async function saveTachoFindingReview(input: {
 
   if (error) throw error;
   return adaptFindingReview(data as unknown as TachoFindingReviewRow);
+}
+
+export async function acknowledgeTachoFindingReview(input: {
+  reviewId: string;
+  note?: string | null;
+}): Promise<TachoFindingReview> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.acknowledgeFindingReview as any, {
+    p_review_id: input.reviewId,
+    p_note: input.note ?? null,
+  } as any);
+
+  if (error) throw error;
+  return adaptFindingReview(data as unknown as TachoFindingReviewRow);
+}
+
+export async function fetchTachoFindingReviewEvents(
+  companyId: string,
+  reviewIds: string[]
+): Promise<TachoFindingReviewEvent[]> {
+  const uniqueReviewIds = [...new Set(reviewIds)].filter(Boolean);
+  if (uniqueReviewIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('tachograph_finding_review_events' as any)
+    .select('*')
+    .eq('company_id', companyId)
+    .in('review_id', uniqueReviewIds)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return ((data as unknown as TachoFindingReviewEventRow[] | null) ?? []).map(adaptFindingReviewEvent);
 }
 
 export async function fetchRecentTachoImports(

@@ -14,6 +14,7 @@ import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
+import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
 import type { DriverCardAnalysisData, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
@@ -185,6 +186,30 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setLiveReaderTargetActive(false);
   }, [liveReaderTargetActive, readerStatus.cardPresent, readerStatus.stage]);
 
+  useEffect(() => {
+    if (readerStatus.stage !== 'complete' || !readerStatus.importId) return;
+    if (readerStatus.sourceType && readerStatus.sourceType !== 'driver_card') return;
+    const alreadyFocused = readerStatus.driverId
+      ? selectedDriverId === readerStatus.driverId
+      : selectedImportId === readerStatus.importId;
+    if (alreadyFocused) return;
+    handleReaderAnalysisReady({
+      importId: readerStatus.importId,
+      driverId: readerStatus.driverId ?? null,
+      focusedDate: readerStatus.focusedDate ?? null,
+      sourceType: readerStatus.sourceType ?? 'driver_card',
+    });
+  }, [
+    handleReaderAnalysisReady,
+    readerStatus.driverId,
+    readerStatus.focusedDate,
+    readerStatus.importId,
+    readerStatus.sourceType,
+    readerStatus.stage,
+    selectedDriverId,
+    selectedImportId,
+  ]);
+
   const activeFocusedDate = readerFocusedDate ?? focusedDate;
 
   useEffect(() => {
@@ -270,13 +295,14 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
 
   const handleAssignTraining = async (recommendation: TrainingRecommendation) => {
     if (!profile?.company_id || !profile.id || !activeDriverId) return;
+    const companyId = profile.company_id;
     setAssigningTrainingId(recommendation.id);
     setTrainingAssignError(null);
     try {
       const trainingRecordId = crypto.randomUUID();
       const { error } = await supabase.from('training_records').insert({
         id: trainingRecordId,
-        company_id: profile.company_id,
+        company_id: companyId,
         driver_id: activeDriverId,
         training_type: 'tacho_refresher',
         module_id: recommendation.moduleId,
@@ -295,7 +321,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
           if (!finding) return null;
           const currentReview = findingReviews[findingId];
           return saveTachoFindingReview({
-            companyId: profile.company_id,
+            companyId,
             findingId,
             status: 'action_required',
             managerNote: currentReview?.managerNote || recommendation.reason,
@@ -402,14 +428,14 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setCandidateActionError(null);
     setCandidateActionMessage(null);
     try {
-      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review', {
+      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review' as any, {
         p_company_id: profile.company_id,
         p_import_id: candidateImportId,
         p_decision: decision,
         p_note: decision === 'no_hire'
           ? 'Candidate card check reviewed without creating an invite or driver profile.'
           : 'Candidate card check reviewed.',
-      });
+      } as any);
       if (reviewError) throw reviewError;
       setCandidateActionMessage(decision === 'no_hire'
         ? 'Marked as checked / no hire. No profile or invite was created.'
@@ -1094,6 +1120,10 @@ function escapeCsv(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+function formatReconciliationStatus(status: TachoReconciliationItem['status']) {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: TachoReconciliationItem[]): TrainingRecommendation[] {
   const items: TrainingRecommendation[] = [];
   const breakFindings = findings.filter((finding) => ['DRV_CONTINUOUS_4H30_EXCEEDED', 'WTD_BREAK_AFTER_6H_MISSING', 'WTD_BREAK_AFTER_9H_MISSING'].includes(finding.ruleCode));
@@ -1103,167 +1133,6 @@ function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: 
   if (restFindings.length >= 2) items.push({ id: 'hours', moduleId: 'eu-hours', title: "EU Drivers' Hours Rules", reason: `${restFindings.length} hours or rest findings need a refresher on legal limits and recovery rules.`, findingIds: restFindings.map((finding) => finding.id) });
   if (mismatches.length >= 2) items.push({ id: 'cross-check', moduleId: 'tacho-modes', title: 'App Vs Tacho Record Discipline', reason: `${mismatches.length} cross-check mismatches indicate repeated app-vs-tacho alignment issues.`, findingIds: [] });
   return items;
-}
-
-function TachoFindingReviewPanel({
-  findings,
-  reviewsByFindingId,
-  pendingFindingId,
-  error,
-  selectedDay,
-  onSave,
-}: {
-  findings: TachoFinding[];
-  reviewsByFindingId: Record<string, TachoFindingReview>;
-  pendingFindingId: string | null;
-  error: string | null;
-  selectedDay: string | null;
-  onSave: (
-    finding: TachoFinding,
-    values: {
-      status: TachoFindingReviewStatus;
-      managerNote: string;
-      correctiveActionType: TachoCorrectiveActionType | '';
-    }
-  ) => Promise<void>;
-}) {
-  return (
-    <InfoPanel title="Finding Review / Sign-off" icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}>
-      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-600">
-        {selectedDay
-          ? `Showing findings for ${format(new Date(`${selectedDay}T12:00:00`), 'dd MMM yyyy')}.`
-          : 'No day selected. Showing the latest findings in this range.'}
-        {' '}Saved reviews are stored separately from generated parser findings.
-      </div>
-      {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div> : null}
-      {findings.length === 0 ? (
-        <p className="text-sm font-medium text-slate-500">No tachograph findings are available to review for this selection.</p>
-      ) : (
-        <div className="space-y-3">
-          {findings.map((finding) => (
-            <TachoFindingReviewCard
-              key={finding.id}
-              finding={finding}
-              review={reviewsByFindingId[finding.id]}
-              pending={pendingFindingId === finding.id}
-              onSave={onSave}
-            />
-          ))}
-        </div>
-      )}
-    </InfoPanel>
-  );
-}
-
-function TachoFindingReviewCard({
-  finding,
-  review,
-  pending,
-  onSave,
-}: {
-  finding: TachoFinding;
-  review?: TachoFindingReview;
-  pending: boolean;
-  onSave: (
-    finding: TachoFinding,
-    values: {
-      status: TachoFindingReviewStatus;
-      managerNote: string;
-      correctiveActionType: TachoCorrectiveActionType | '';
-    }
-  ) => Promise<void>;
-}) {
-  const [status, setStatus] = useState<TachoFindingReviewStatus>(review?.status ?? 'open');
-  const [managerNote, setManagerNote] = useState(review?.managerNote ?? '');
-  const [correctiveActionType, setCorrectiveActionType] = useState<TachoCorrectiveActionType | ''>(review?.correctiveActionType ?? '');
-
-  useEffect(() => {
-    setStatus(review?.status ?? 'open');
-    setManagerNote(review?.managerNote ?? '');
-    setCorrectiveActionType(review?.correctiveActionType ?? '');
-  }, [review?.correctiveActionType, review?.managerNote, review?.status]);
-
-  const statusTone = {
-    open: 'border-slate-200 bg-white text-slate-700',
-    reviewed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    action_required: 'border-amber-200 bg-amber-50 text-amber-800',
-    closed: 'border-blue-200 bg-blue-50 text-blue-700',
-  }[status];
-
-  return (
-    <div className={`rounded-2xl border p-4 ${statusTone}`}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest">{finding.severity}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{finding.ruleCode}</span>
-          </div>
-          <h4 className="mt-2 text-sm font-black text-slate-950">{finding.title}</h4>
-          <p className="mt-1 text-xs font-medium text-slate-600">{finding.summary}</p>
-          <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-            {format(new Date(finding.periodStart), 'dd MMM HH:mm')} - {format(new Date(finding.periodEnd), 'dd MMM HH:mm')}
-          </p>
-          {review?.updatedAt ? <p className="mt-2 text-[11px] font-semibold text-slate-500">Last saved {format(new Date(review.updatedAt), 'dd MMM HH:mm')}</p> : null}
-        </div>
-        <div className="grid min-w-full gap-2 lg:min-w-[28rem]">
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            <label className="text-xs font-bold text-slate-600">
-              Review status
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as TachoFindingReviewStatus)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
-              >
-                <option value="open">Open</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="action_required">Action required</option>
-                <option value="closed">Closed</option>
-              </select>
-            </label>
-            <label className="text-xs font-bold text-slate-600">
-              Corrective action
-              <select
-                value={correctiveActionType}
-                onChange={(event) => {
-                  const nextAction = event.target.value as TachoCorrectiveActionType | '';
-                  setCorrectiveActionType(nextAction);
-                  if (nextAction && status === 'open') setStatus('action_required');
-                }}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
-              >
-                <option value="">None yet</option>
-                <option value="training">Training</option>
-                <option value="manager_debrief">Manager debrief</option>
-                <option value="manual_entry">Manual entry correction</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-          </div>
-          <label className="text-xs font-bold text-slate-600">
-            Manager note
-            <textarea
-              value={managerNote}
-              onChange={(event) => setManagerNote(event.target.value)}
-              rows={2}
-              placeholder="Record review decision, debrief note, or corrective action context."
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800"
-            />
-          </label>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void onSave(finding, { status, managerNote, correctiveActionType })}
-              disabled={pending}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {pending ? 'Saving' : 'Save Review'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: ReturnType<typeof useTachoReaderWorkflow>; onOpenImportCentre?: () => void }) {
@@ -1277,7 +1146,8 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
       ? 'border-amber-200 bg-amber-50'
       : 'border-blue-200 bg-blue-50';
   const canCancel = status.canCancel && !workflow.commandPending;
-  const canManualStart = status.canStartRead && !workflow.commandPending && !workflow.importPending;
+  const canReadAgainFromComplete = status.stage === 'complete' && Boolean(status.cardPresent) && Boolean(status.readerConnected);
+  const canManualStart = (status.canStartRead || canReadAgainFromComplete) && !workflow.commandPending && !workflow.importPending;
 
   return (
     <div className={`rounded-3xl border p-5 shadow-sm ${tone}`}>
@@ -1315,7 +1185,7 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
             className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {workflow.commandPending === 'start-read' || workflow.importPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-            {status.stage === 'card_inserted' ? 'Auto Reading' : 'Read Card'}
+            {status.stage === 'card_inserted' ? 'Auto Reading' : status.stage === 'complete' ? 'Read Again' : 'Read Card'}
           </button>
           <button
             type="button"

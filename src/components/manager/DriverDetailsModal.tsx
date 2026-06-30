@@ -8,6 +8,7 @@ import { ShiftEditModal } from './ShiftEditModal';
 import { useTranslation } from 'react-i18next';
 import { scanDocument } from '../../lib/ocr';
 import { useDriverTachoSummary } from '../../hooks/useDriverTachoSummary';
+import { fetchTachoFindingReviewEvents, type TachoFindingReviewEvent } from '../../lib/tacho/api';
 import { rebuildLatestDriverCardSignals } from '../../lib/tacho/helperImport';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -24,8 +25,11 @@ type TachoFindingReviewSummary = {
   status: 'open' | 'reviewed' | 'action_required' | 'closed';
   manager_note: string | null;
   corrective_action_type: 'training' | 'manager_debrief' | 'manual_entry' | 'other' | null;
+  driver_acknowledged_at: string | null;
   updated_at: string;
 };
+
+type TachoReviewFilter = 'all' | 'open' | 'action_required' | 'closed' | 'acknowledged';
 
 interface DriverDetailsModalProps {
   driver: Profile;
@@ -130,6 +134,8 @@ export function DriverDetailsModal({
   const [rebuildError, setRebuildError] = useState<string | null>(null);
   const [tachoTrainingActions, setTachoTrainingActions] = useState<TrainingRecord[]>([]);
   const [tachoReviewActions, setTachoReviewActions] = useState<TachoFindingReviewSummary[]>([]);
+  const [tachoReviewEvents, setTachoReviewEvents] = useState<TachoFindingReviewEvent[]>([]);
+  const [tachoReviewFilter, setTachoReviewFilter] = useState<TachoReviewFilter>('all');
 
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
@@ -176,16 +182,27 @@ export function DriverDetailsModal({
         .limit(5),
       supabase
         .from('tachograph_finding_reviews' as never)
-        .select('id,status,manager_note,corrective_action_type,updated_at')
+        .select('id,status,manager_note,corrective_action_type,driver_acknowledged_at,updated_at')
         .eq('company_id', driver.company_id)
         .eq('driver_id', driver.id)
-        .not('corrective_action_type', 'is', null)
         .order('updated_at', { ascending: false })
-        .limit(5),
+        .limit(12),
     ]);
 
     setTachoTrainingActions(trainingResult.data || []);
-    setTachoReviewActions((reviewResult.data as unknown as TachoFindingReviewSummary[] | null) || []);
+    const reviews = (reviewResult.data as unknown as TachoFindingReviewSummary[] | null) || [];
+    setTachoReviewActions(reviews);
+
+    if (reviews.length > 0) {
+      try {
+        setTachoReviewEvents(await fetchTachoFindingReviewEvents(driver.company_id, reviews.map((review) => review.id)));
+      } catch (error) {
+        console.warn('Failed to load tacho review event history', error);
+        setTachoReviewEvents([]);
+      }
+    } else {
+      setTachoReviewEvents([]);
+    }
   }, [driver.company_id, driver.id]);
 
   useEffect(() => {
@@ -331,6 +348,20 @@ export function DriverDetailsModal({
     }
   };
 
+  const filteredTachoReviewActions = tachoReviewActions.filter((action) => {
+    if (tachoReviewFilter === 'all') return true;
+    if (tachoReviewFilter === 'acknowledged') return Boolean(action.driver_acknowledged_at);
+    return action.status === tachoReviewFilter;
+  });
+
+  const tachoReviewCounts = {
+    all: tachoReviewActions.length,
+    open: tachoReviewActions.filter((action) => action.status === 'open').length,
+    action_required: tachoReviewActions.filter((action) => action.status === 'action_required').length,
+    closed: tachoReviewActions.filter((action) => action.status === 'closed').length,
+    acknowledged: tachoReviewActions.filter((action) => Boolean(action.driver_acknowledged_at)).length,
+  };
+
   const renderInput = (label: string, name: keyof Profile, type = "text") => (
     <div>
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{label}</label>
@@ -465,23 +496,85 @@ export function DriverDetailsModal({
                   <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tacho Review Actions</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {([
+                          ['all', 'All'],
+                          ['open', 'Open'],
+                          ['action_required', 'Action'],
+                          ['closed', 'Closed'],
+                          ['acknowledged', 'Ack'],
+                        ] as Array<[TachoReviewFilter, string]>).map(([filter, label]) => (
+                          <button
+                            key={filter}
+                            type="button"
+                            onClick={() => setTachoReviewFilter(filter)}
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest transition ${
+                              tachoReviewFilter === filter
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {label} {tachoReviewCounts[filter]}
+                          </button>
+                        ))}
+                      </div>
                       {tachoReviewActions.length === 0 ? (
                         <p className="mt-2 text-sm font-medium text-slate-500">No saved tacho corrective actions yet.</p>
+                      ) : filteredTachoReviewActions.length === 0 ? (
+                        <p className="mt-3 text-sm font-medium text-slate-500">No tacho review actions match this filter.</p>
                       ) : (
                         <div className="mt-3 space-y-2">
-                          {tachoReviewActions.map((action) => (
+                          {filteredTachoReviewActions.map((action) => (
                             <div key={action.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                              <p className="text-xs font-black uppercase tracking-widest text-slate-700">
-                                {action.corrective_action_type?.replace('_', ' ') ?? 'Action'} - {action.status.replace('_', ' ')}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-xs font-black uppercase tracking-widest text-slate-700">
+                                  {action.corrective_action_type?.replace('_', ' ') ?? 'Review'} - {action.status.replace('_', ' ')}
+                                </p>
+                                {action.driver_acknowledged_at ? (
+                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-700">
+                                    Driver acknowledged
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700">
+                                    Awaiting driver
+                                  </span>
+                                )}
+                              </div>
                               {action.manager_note ? <p className="mt-1 text-xs font-medium text-slate-600">{action.manager_note}</p> : null}
                               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Saved {new Date(action.updated_at).toLocaleString()}
                               </p>
+                              {action.driver_acknowledged_at ? (
+                                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                                  Acknowledged {new Date(action.driver_acknowledged_at).toLocaleString()}
+                                </p>
+                              ) : null}
                             </div>
                           ))}
                         </div>
                       )}
+                      <details className="mt-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                        <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-500">
+                          Review audit events {tachoReviewEvents.length}
+                        </summary>
+                        {tachoReviewEvents.length === 0 ? (
+                          <p className="mt-2 text-xs font-medium text-slate-500">No audit events loaded for these review actions.</p>
+                        ) : (
+                          <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">
+                            {tachoReviewEvents.slice(0, 12).map((event) => (
+                              <div key={event.id} className="rounded-md bg-white px-2 py-1.5">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                                  {event.eventType.replace('_', ' ')} - {event.newStatus.replace('_', ' ')}
+                                </p>
+                                {event.note ? <p className="mt-1 text-xs font-medium text-slate-600">{event.note}</p> : null}
+                                <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                  {new Date(event.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </details>
                     </div>
                     <div className="rounded-xl border border-blue-100 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Tacho Training</p>
