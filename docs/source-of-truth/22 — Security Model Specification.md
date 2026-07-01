@@ -1,18 +1,11 @@
 # 22 — Security Model Specification
 
-**Document status:** Draft
-**Parent system:** HourWise Fleet Portal
-**Related documents:**
+## Related Documents
 
-* `18_Compliance_Intelligence_Platform/18.2_System_Architecture.md`
-* `18_Compliance_Intelligence_Platform/18.3_Import_Pipeline.md`
-* `18_Compliance_Intelligence_Platform/18.8_Evidence_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.9_Evidence_Reporting_Engine.md`
-* `19_Atlas_Specification.md`
-* `20_Reporting_Platform_Specification.md`
-* `21_Data_Model_Specification.md`
-* `23_Integration_Architecture.md`
-* `24_Architecture_Decision_Records.md`
+- `21_Data_Model_Specification.md` — defines the tables protected by RLS and the audit log schema.
+- `19_Atlas_Specification.md` — defines the permission boundaries and safety guardrails for the assistant.
+- `20_Reporting_Platform_Specification.md` — defines the permission requirements for report view, create, and export actions.
+- `23_Integration_Architecture.md` — defines the security requirements for external provider connections and webhooks.
 
 ---
 

@@ -1,17 +1,11 @@
 # 20 — Reporting Platform Specification
 
-**Document status:** Draft
-**Parent system:** HourWise Fleet Portal
-**Related documents:**
+## Related Documents
 
-* `18_Compliance_Intelligence_Platform/18.8_Evidence_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.9_Evidence_Reporting_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.10_Atlas_Interface.md`
-* `19_Atlas_Specification.md`
-* `21_Data_Model_Specification.md`
-* `22_Security_Model_Specification.md`
-* `23_Integration_Architecture.md`
-* `24_Architecture_Decision_Records.md`
+- `18.8_Evidence_Engine.md` — provides the evidence packs for report inclusion.
+- `19_Atlas_Specification.md` — provides the intelligence layer for explaining report readiness.
+- `21_Data_Model_Specification.md` — defines the `reports` and `report_exports` (snapshot) tables.
+- `22_Security_Model_Specification.md` — defines the permission and RLS requirements for report access.
 
 ---
 

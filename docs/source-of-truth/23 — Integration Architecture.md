@@ -1,18 +1,12 @@
 # 23 — Integration Architecture
 
-**Document status:** Draft
-**Parent system:** HourWise Fleet Portal
-**Related documents:**
+## Related Documents
 
-* `18_Compliance_Intelligence_Platform/18.2_System_Architecture.md`
-* `18_Compliance_Intelligence_Platform/18.3_Import_Pipeline.md`
-* `18_Compliance_Intelligence_Platform/18.8_Evidence_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.9_Evidence_Reporting_Engine.md`
-* `19_Atlas_Specification.md`
-* `20_Reporting_Platform_Specification.md`
-* `21_Data_Model_Specification.md`
-* `22_Security_Model_Specification.md`
-* `24_Architecture_Decision_Records.md`
+- `22_Security_Model_Specification.md` — defines the authentication and credential security requirements for integrations.
+- `21_Data_Model_Specification.md` — defines the `integrations` and `integration_events` tables.
+- `19_Atlas_Specification.md` — defines how Atlas uses integration data as supplementary context.
+- `20_Reporting_Platform_Specification.md` — defines how integration data is snapshotted in exported reports.
+- `24_Architecture_Decision_Records.md` — contains decisions regarding provider adapters and supplementary evidence (ADR-0010, ADR-0011).
 
 ---
 

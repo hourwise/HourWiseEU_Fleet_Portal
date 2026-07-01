@@ -1,22 +1,11 @@
 # 21 — Data Model Specification
 
-**Document status:** Draft
-**Parent system:** HourWise Fleet Portal
-**Related documents:**
+# Related Documents
 
-* `18_Compliance_Intelligence_Platform/18.2_System_Architecture.md`
-* `18_Compliance_Intelligence_Platform/18.3_Import_Pipeline.md`
-* `18_Compliance_Intelligence_Platform/18.4_Driver_Card_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.5_Vehicle_Unit_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.6_Timeline_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.7_Compliance_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.8_Evidence_Engine.md`
-* `18_Compliance_Intelligence_Platform/18.9_Evidence_Reporting_Engine.md`
-* `19_Atlas_Specification.md`
-* `20_Reporting_Platform_Specification.md`
-* `22_Security_Model_Specification.md`
-* `23_Integration_Architecture.md`
-* `24_Architecture_Decision_Records.md`
+- `22_Security_Model_Specification.md` — defines RLS policies and role-based permissions for these tables.
+- `20_Reporting_Platform_Specificati.md` — defines report templates, sections, and export snapshots.
+- `19_Atlas_Specification.md` — defines conversation, message, and action tables.
+- `23_Integration_Architecture.md` — defines integration, connection, and event tables.
 
 ---
 

@@ -4,12 +4,13 @@
 **Parent system:** HourWise Fleet Portal
 **Related documents:**
 
-* `18_Compliance_Intelligence_Platform`
-* `19_Atlas_Specification.md`
-* `20_Reporting_Platform_Specification.md`
-* `21_Data_Model_Specification.md`
-* `22_Security_Model_Specification.md`
-* `23_Integration_Architecture.md`
+* `18.3_Evidence_Import_Pipeline.md` — justifies ADR-0002 (Immutability) and ADR-0003 (Parser Versioning).
+* `18.7_Compliance_Engine.md` — justifies ADR-0004 (Calculated Outcomes).
+* `18.8_Evidence_Engine.md` — justifies ADR-0005 (Evidence Packs).
+* `20_Reporting_Platform_Specificati.md` — justifies ADR-0006 (Snapshots) and ADR-0013 (Cautious Language).
+* `19_Atlas_Specification.md` — justifies ADR-0007 (Evidence-led) and ADR-0008 (Permission Checks).
+* `22_Security_Model_Specification.md` — justifies ADR-0009 (RLS), ADR-0012 (Service Role), ADR-0014 (Secrets), and ADR-0015 (Feature Flags).
+* `23_Integration_Architecture.md` — justifies ADR-0010 (Adapters) and ADR-0011 (Supplementary Evidence).
 
 ---
 

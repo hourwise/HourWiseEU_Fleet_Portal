@@ -91,8 +91,39 @@ To avoid overwhelming the documentation suite, the updates should follow this or
 
 ---
 
-## 7. Open Questions & Risks
+---
 
-1.  **Capability Granularity**: Some capabilities in `11` are very broad (e.g., `CMP-001 Drivers' Hours Rules`). Should we add sub-IDs (e.g., `CMP-001.1`) for specific rules like "Weekly Rest"?
-2.  **Diagram Maintenance**: Who maintains the Mermaid code? Recommend keeping code in the Markdown files (as currently done in `21`).
-3.  **Cross-Fleet Logic**: The Data Model (21) and Security Model (22) need to be perfectly synced on "Support Access" logic before Phase 3 implementation.
+## 8. Pass 3 Completion Note (Cross-References)
+
+**Date:** 2026-07-01  
+**Status:** ✅ Completed
+
+### Files Changed:
+- `18.3 — Evidence Import Pipeline.md`
+- `18.4 — Driver Card Engine.md`
+- `18.5 — Vehicle Unit Engine.md`
+- `18.6 — Timeline Engine.md`
+- `18.7 — Compliance Engine.md`
+- `18.8 — Evidence Engine.md`
+- `18.9 — Evidence & Reporting Engine.md`
+- `18.10 — Atlas Interface.md`
+- `19 — Atlas Specification.md`
+- `20 — Reporting Platform Specificati.md`
+- `21 — Data Model Specification.md`
+- `22 — Security Model Specification.md`
+- `23 — Integration Architecture.md`
+- `24 — Architecture Decision Records.md`
+
+### Cross-Reference Patterns Added:
+- **Engine Logic**: Linked engines in order of data flow (Import → Decoding → Timeline → Compliance → Evidence → Reporting).
+- **Security & Data**: Every functional specification now links to the Data Model (tables) and Security Model (permissions/RLS).
+- **Intelligence**: Atlas specifications now explicitly link to the underlying evidence and compliance engines it explains.
+- **Decision Traceability**: ADRs now reference the specific engine or architecture documents that justify each decision.
+
+### Manual Review Required:
+- The file `20 — Reporting Platform Specificati.md` has a truncated name in the filesystem; this should be checked by a human developer.
+- Review links in `18.1` and `18.2` which were not updated in this pass but may contain older, broken relative links.
+
+### Broken/Uncertain Links:
+- Some references to `18.11 — Future Roadmap.md` were maintained but the file was not extensively cross-linked as it is a roadmap rather than a specification.
+- Link between `18.10` and `18.11` exists in the "Next document" header but not in a formal "Related Documents" section.

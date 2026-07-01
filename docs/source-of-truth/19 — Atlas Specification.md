@@ -4,13 +4,11 @@
 **Parent system:** HourWise Fleet Portal
 **Related documents:**
 
-* `18_Compliance_Intelligence_Platform/18.10_Atlas_Interface.md`
-* `18_Compliance_Intelligence_Platform/18.11_Future_Roadmap.md`
-* `20_Reporting_Platform_Specification.md`
-* `21_Data_Model_Specification.md`
-* `22_Security_Model_Specification.md`
-* `23_Integration_Architecture.md`
-* `24_Architecture_Decision_Records.md`
+* `18.7_Compliance_Engine.md` — defines the compliance outcomes Atlas explains.
+* `18.8_Evidence_Engine.md` — defines the evidence packs Atlas summarises.
+* `18.9_Evidence_Reporting_Engine.md` — Atlas provides prioritisation and summaries for reporting.
+* `22_Security_Model_Specification.md` — defines the permission boundaries Atlas must respect.
+* `21_Data_Model_Specification.md` — defines the Atlas conversation and audit tables.
 
 ---
 
