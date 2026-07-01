@@ -70,24 +70,15 @@ HourWise must always be able to answer:
 
 ---
 
-## 3. Data Model Goals
+## Implemented Capabilities
 
-The data model should:
+The Data Model supports all platform capabilities, specifically:
 
-* keep tenant data isolated
-* preserve raw tachograph files
-* track parser runs and parser versions
-* separate raw data from normalised data
-* separate calculated outcomes from human notes
-* link every outcome to evidence
-* support report snapshotting
-* support Atlas retrieval safely
-* support role-based access control
-* support audit logging
-* support future integrations
-* avoid destructive updates
-* make debugging possible
-* make testing possible
+* **SYS-001**: Security Model
+* **SYS-002**: Row Level Security
+* **CORE-005**: Audit Trail
+* **CMP-004**: Compliance Evidence
+* **INT-001**: Atlas Rule Engine
 
 ---
 
