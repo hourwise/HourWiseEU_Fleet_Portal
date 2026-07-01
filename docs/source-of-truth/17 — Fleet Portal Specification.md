@@ -106,20 +106,20 @@ Everything should support better operational decisions.
 
 # Implemented Capabilities
 
-Primary capability groups:
+The Fleet Portal primarily implements:
 
-* AUTH
-* CORE
-* FLT
-* CMP
-* OPS
-* FIN
-* COM
-* REP
-* SYS
-* INT (Atlas integration)
+* **AUTH**: `AUTH-001` to `AUTH-006`
+* **CORE**: `CORE-001` to `CORE-007`
+* **FLT**: `FLT-001` to `FLT-008`
+* **CMP**: `CMP-001` to `CMP-007`
+* **OPS**: `OPS-001` to `OPS-008`
+* **FIN**: `FIN-001` to `FIN-007`
+* **COM**: `COM-001` to `COM-006`
+* **REP**: `REP-001` to `REP-007`
+* **SYS**: `SYS-001` to `SYS-008`
+* **INT**: `INT-001` to `INT-008` (Atlas integration)
 
-Refer to the Platform Capability Model for the complete capability list.
+Refer to the [Platform Capability Model](file:///docs/source-of-truth/11%20—%20Platform%20Capability%20Model.md) for the complete capability list.
 
 ---
 
