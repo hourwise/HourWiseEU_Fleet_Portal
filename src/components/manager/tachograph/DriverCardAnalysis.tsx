@@ -10,12 +10,13 @@ import { supabase } from '../../../lib/supabase';
 import { InviteDriverModal } from '../InviteDriverModal';
 import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
 import { pairTachoImportToDriver } from '../../../lib/tacho/driverPairing';
+import { evaluateDriverRules } from '../../../lib/tacho/rules/engine';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
-import type { DriverCardAnalysisData, TachoActivitySegment, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
+import type { DriverCardAnalysisData, RuleActivitySegment, TachoActivitySegment, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
@@ -237,7 +238,18 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       .map((entry) => ({ id: entry.id, label: entry.full_name || entry.email, meta: entry.email }));
   }, [drivers, searchValue]);
 
-  const findings = data?.findings ?? EMPTY_FINDINGS;
+  const persistedFindings = data?.findings ?? EMPTY_FINDINGS;
+  const restFindingRefresh = useMemo(
+    () => data
+      ? refreshRestFindingsFromActivityEvidence({
+        persistedFindings,
+        days: calendarSummaries,
+        driverId: activeDriverId || data.identity.driverId || 'driver-card',
+      })
+      : { findings: persistedFindings, suppressedCount: 0, addedCount: 0 },
+    [activeDriverId, calendarSummaries, data, persistedFindings]
+  );
+  const findings = restFindingRefresh.findings;
   const technicalEvents = data?.technicalEvents ?? EMPTY_FINDINGS;
   const reconciliation = data?.reconciliation ?? EMPTY_RECONCILIATION;
   const findingIds = useMemo(() => findings.map((finding) => finding.id), [findings]);
@@ -269,19 +281,33 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     return `Opened from a ${sourceLabel} focused on ${format(new Date(`${activeFocusedDate}T12:00:00`), 'dd MMM yyyy')}.`;
   }, [activeFocusedDate, readerFocusedDate, selectedDay]);
 
-  const timelineDays = useMemo(() => calendarSummaries.map((day) => ({
-    date: new Date(day.date),
-    activities: day.activities,
-    markers: day.findingsCount + technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date).length + reconciliation.filter((item) => item.date === day.date && item.status !== 'matched').length,
-    markerGroups: [
-      { label: 'Findings', count: day.findingsCount, tone: 'danger' as const },
-      { label: 'Linked VU', count: technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date).length, tone: 'warning' as const },
-      { label: 'Cross-check', count: reconciliation.filter((item) => item.date === day.date && item.status !== 'matched').length, tone: 'warning' as const },
-    ],
-  })), [calendarSummaries, reconciliation, technicalEvents]);
+  const timelineDays = useMemo(() => calendarSummaries.map((day) => {
+    const legalFindingCount = findings.filter((finding) => finding.periodStart.slice(0, 10) <= day.date && finding.periodEnd.slice(0, 10) >= day.date).length;
+    const linkedVuEventCount = technicalEvents.filter((event) => event.periodStart.slice(0, 10) <= day.date && event.periodEnd.slice(0, 10) >= day.date).length;
+    const crossCheckCount = reconciliation.filter((item) => item.date === day.date && item.status !== 'matched').length;
+
+    return {
+      date: new Date(day.date),
+      activities: day.activities,
+      markers: legalFindingCount + linkedVuEventCount + crossCheckCount,
+      markerGroups: [
+        { label: 'Findings', count: legalFindingCount, tone: 'danger' as const },
+        { label: 'Linked VU', count: linkedVuEventCount, tone: 'warning' as const },
+        { label: 'Cross-check', count: crossCheckCount, tone: 'warning' as const },
+      ],
+    };
+  }), [calendarSummaries, findings, reconciliation, technicalEvents]);
 
   const trainingRecommendations = useMemo(() => buildTrainingRecommendations(findings, reconciliation), [findings, reconciliation]);
   const analysisSummary = useMemo(() => data ? buildAnalysisSummary(data.dailySummaries, findings, reconciliation) : null, [data, findings, reconciliation]);
+  const displayMetrics = useMemo(() => data?.metrics.map((metric) => {
+    if (metric.label.toLowerCase() !== 'findings') return metric;
+    return {
+      ...metric,
+      value: String(findings.length),
+      tone: findings.length > 0 ? 'danger' as const : 'good' as const,
+    };
+  }) ?? [], [data?.metrics, findings]);
   const selectedDayFindings = selectedDay
     ? findings.filter((finding) => finding.periodStart.slice(0, 10) <= selectedDay.date && finding.periodEnd.slice(0, 10) >= selectedDay.date)
     : [];
@@ -531,6 +557,12 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
         />
       ) : null}
 
+      {restFindingRefresh.suppressedCount > 0 ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-950">
+          Rest findings refreshed from the loaded activity evidence. {restFindingRefresh.suppressedCount} stale persisted rest finding{restFindingRefresh.suppressedCount === 1 ? '' : 's'} suppressed from this view and report; reprocess the import after deploying the parser to update stored database findings.
+        </div>
+      ) : null}
+
       {isCandidateCard ? (
         <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Pre-employment screening mode</p>
@@ -638,7 +670,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        {data.metrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
+        {displayMetrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
       </div>
 
       {!isCandidateCard ? (
@@ -822,6 +854,102 @@ function sumActivityMins(activities: TachoDaySummary['activities'], activityType
   return activities
     .filter((activity) => activity.activityType === activityType)
     .reduce((total, activity) => total + activity.durationMins, 0);
+}
+
+function refreshRestFindingsFromActivityEvidence(input: {
+  persistedFindings: TachoFinding[];
+  days: TachoDaySummary[];
+  driverId: string;
+}) {
+  const explicitActivities = getUniqueDayActivities(input.days);
+  const ruleActivities = buildRuleActivitiesFromReportEvidence(explicitActivities, input.driverId);
+  if (ruleActivities.length === 0) {
+    return { findings: input.persistedFindings, suppressedCount: 0, addedCount: 0 };
+  }
+
+  const refreshedRestFindings = evaluateDriverRules({
+    driverId: input.driverId,
+    activities: ruleActivities,
+    vehicleId: ruleActivities[0]?.vehicleId ?? null,
+    source: 'driver_card',
+  }).findings.filter(isRestFinding);
+
+  const filteredFindings = input.persistedFindings.filter((finding) => {
+    if (!isRestFinding(finding)) return true;
+    return refreshedRestFindings.some((refreshed) => sameRestFinding(finding, refreshed));
+  });
+  const existingRestFindings = filteredFindings.filter(isRestFinding);
+  const addedRestFindings = refreshedRestFindings.filter(
+    (finding) => !existingRestFindings.some((existing) => sameRestFinding(existing, finding))
+  );
+  const persistedRestCount = input.persistedFindings.filter(isRestFinding).length;
+
+  return {
+    findings: [...filteredFindings, ...addedRestFindings],
+    suppressedCount: Math.max(0, persistedRestCount - existingRestFindings.length),
+    addedCount: addedRestFindings.length,
+  };
+}
+
+function buildRuleActivitiesFromReportEvidence(
+  explicitActivities: TachoActivitySegment[],
+  fallbackDriverId: string
+): RuleActivitySegment[] {
+  const inferredRestActivities: TachoActivitySegment[] = buildReportInferredRestSegments(explicitActivities).map((segment) => ({
+    id: segment.id,
+    source: 'driver_card',
+    activityType: 'break_rest',
+    driverId: fallbackDriverId,
+    vehicleId: null,
+    startTime: segment.start.toISOString(),
+    endTime: segment.end.toISOString(),
+    durationMins: differenceInMinutes(segment.end, segment.start),
+    confidence: 'medium',
+    label: segment.sourceLabel,
+  }));
+
+  return [...explicitActivities, ...inferredRestActivities]
+    .filter((activity) => activity.activityType !== 'unknown')
+    .filter((activity) => new Date(activity.endTime).getTime() > new Date(activity.startTime).getTime())
+    .sort((left, right) => left.startTime.localeCompare(right.startTime))
+    .map((activity): RuleActivitySegment => ({
+      id: activity.id,
+      driverId: activity.driverId ?? fallbackDriverId,
+      vehicleId: activity.vehicleId ?? null,
+      startTime: activity.startTime,
+      endTime: activity.endTime,
+      activityType: activity.activityType === 'break_rest' ? 'rest' : activity.activityType,
+      distanceKm: activity.distanceKm ?? null,
+      isManualEntry: activity.label === 'Manual entry',
+      source: 'normalized_findings',
+    }));
+}
+
+function isRestFinding(finding: TachoFinding) {
+  return finding.ruleCode.startsWith('REST_');
+}
+
+function sameRestFinding(left: TachoFinding, right: TachoFinding) {
+  if (left.id === right.id) return true;
+  if (left.ruleCode !== right.ruleCode) return false;
+  if (!sameTimestamp(left.occurredAt, right.occurredAt)) return false;
+  if (!sameTimestamp(left.periodStart, right.periodStart)) return false;
+  if (!sameTimestamp(left.periodEnd, right.periodEnd)) return false;
+
+  const leftMeasured = left.metadata?.measuredMins;
+  const rightMeasured = right.metadata?.measuredMins;
+  if (typeof leftMeasured === 'number' && typeof rightMeasured === 'number') {
+    return Math.abs(leftMeasured - rightMeasured) <= 1;
+  }
+
+  return true;
+}
+
+function sameTimestamp(left: string, right: string) {
+  const leftMs = new Date(left).getTime();
+  const rightMs = new Date(right).getTime();
+  if (!Number.isFinite(leftMs) || !Number.isFinite(rightMs)) return left === right;
+  return Math.abs(leftMs - rightMs) <= 60_000;
 }
 
 function buildAnalysisSummary(
@@ -1099,16 +1227,20 @@ type ReportVisibleSegment = {
   sourceLabel: string;
 };
 
-function getSnapshotActivities(snapshot: DriverCardReportSnapshot) {
+function getUniqueDayActivities(days: TachoDaySummary[]) {
   const bySignature = new Map<string, TachoActivitySegment>();
 
-  snapshot.days.flatMap((day) => day.activities).forEach((activity) => {
+  days.flatMap((day) => day.activities).forEach((activity) => {
     bySignature.set(activitySignature(activity), activity);
   });
 
   return Array.from(bySignature.values())
     .filter((activity) => new Date(activity.endTime).getTime() > new Date(activity.startTime).getTime())
     .sort((left, right) => left.startTime.localeCompare(right.startTime));
+}
+
+function getSnapshotActivities(snapshot: DriverCardReportSnapshot) {
+  return getUniqueDayActivities(snapshot.days);
 }
 
 function buildReportVisibleDaySegments(dayDate: string, explicitActivities: TachoActivitySegment[]): ReportVisibleSegment[] {
