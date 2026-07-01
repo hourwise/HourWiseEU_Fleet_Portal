@@ -188,6 +188,30 @@ describe('evaluateDriverRules', () => {
     expect(findByRule(result.findings, 'REST_DAILY_UNDER_9H')).toHaveLength(0);
   });
 
+  it('counts off-card/pre-shift rest blocks as inter-duty rest when manual entry is not required', () => {
+    const activities = [
+      ...buildDayActivities('2026-06-25', [
+        { start: '00:00', end: '08:06', activityType: 'rest' },
+        { start: '08:06', end: '17:00', activityType: 'work' },
+        { start: '17:00', end: '23:59', activityType: 'rest' },
+      ]),
+      ...buildDayActivities('2026-06-26', [
+        { start: '00:00', end: '08:07', activityType: 'rest' },
+        { start: '08:07', end: '16:39', activityType: 'work' },
+        { start: '16:39', end: '23:59', activityType: 'rest' },
+      ]),
+      ...buildDayActivities('2026-06-29', [
+        { start: '00:00', end: '08:39', activityType: 'rest' },
+        { start: '08:39', end: '17:00', activityType: 'work' },
+      ]),
+    ];
+
+    const result = evaluate(activities);
+
+    expect(findByRule(result.findings, 'REST_DAILY_UNDER_9H')).toHaveLength(0);
+    expect(findByRule(result.findings, 'REST_WEEKLY_UNDER_24H')).toHaveLength(0);
+  });
+
   it('raises a reduced weekly rest finding when the longest 7-day rest is between 24 and 45 hours', () => {
     const activities = [
       ...buildDayActivities('2026-05-01', [{ start: '08:00', end: '18:00', activityType: 'work' }]),

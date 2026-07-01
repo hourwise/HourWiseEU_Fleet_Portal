@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { AlertTriangle, BadgeAlert, CheckCircle2, CreditCard, Download, FileText, GraduationCap, Laptop, Link2, Loader2, RefreshCw, ShieldAlert, UserPlus, UserRound } from 'lucide-react';
-import { format } from 'date-fns';
+import { addDays, differenceInMinutes, format } from 'date-fns';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDriverCardAnalysis } from '../../../hooks/useDriverCardAnalysis';
 import { useDrivers } from '../../../hooks/useDrivers';
@@ -15,7 +15,7 @@ import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
-import type { DriverCardAnalysisData, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
+import type { DriverCardAnalysisData, TachoActivitySegment, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
   driverId?: string;
@@ -471,6 +471,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const statusTone = data.identity.downloadStatus === 'overdue' ? 'bg-rose-100 text-rose-700' : data.identity.downloadStatus === 'due_soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
   const reportSnapshot = buildDriverCardReportSnapshot({
     data,
+    days: calendarSummaries,
     findings,
     technicalEvents,
     reconciliation,
@@ -843,6 +844,7 @@ function buildAnalysisSummary(
 
 function buildDriverCardReportSnapshot(input: {
   data: DriverCardAnalysisData;
+  days: TachoDaySummary[];
   findings: TachoFinding[];
   technicalEvents: TachoFinding[];
   reconciliation: TachoReconciliationItem[];
@@ -850,7 +852,7 @@ function buildDriverCardReportSnapshot(input: {
   isCandidateCard: boolean;
 }): DriverCardReportSnapshot {
   const reconciliationIssues = input.reconciliation.filter((item) => item.status !== 'matched');
-  const totals = input.data.dailySummaries.reduce(
+  const totals = input.days.reduce(
     (acc, day) => ({
       drivingMins: acc.drivingMins + day.drivingMins,
       workMins: acc.workMins + day.workMins,
@@ -884,7 +886,7 @@ function buildDriverCardReportSnapshot(input: {
       technicalEvents: input.technicalEvents.length,
       reconciliationIssues: reconciliationIssues.length,
     },
-    days: input.data.dailySummaries,
+    days: input.days,
     findings: input.findings,
     technicalEvents: input.technicalEvents,
     reconciliationIssues,
@@ -892,6 +894,20 @@ function buildDriverCardReportSnapshot(input: {
 }
 
 function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
+  const explicitActivities = getSnapshotActivities(snapshot);
+  const blockRows = snapshot.days.flatMap((day) =>
+    buildReportVisibleDaySegments(day.date, explicitActivities).map((segment, index) => [
+      day.date,
+      String(index + 1),
+      segment.inferred ? 'inferred_rest_off_card_gap' : segment.activityType,
+      format(segment.start, 'HH:mm'),
+      format(segment.end, 'HH:mm'),
+      minsToHours(segment.durationMins),
+      segment.inferred ? 'Inferred from off-card gap between parsed card activities' : 'Parsed tachograph activity segment',
+      segment.sourceLabel,
+      overlappingFindingCodes(snapshot.findings, segment.start, segment.end),
+    ])
+  );
   const rows = [
     ['HourWise Driver Card Report'],
     ['Generated', format(new Date(snapshot.generatedAt), 'dd MMM yyyy HH:mm')],
@@ -914,6 +930,10 @@ function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
       String(day.findingsCount),
       String(day.activities.length),
     ]),
+    [],
+    ['Daily activity blocks'],
+    ['Date', 'Block', 'Activity', 'Start', 'End', 'Duration', 'Evidence', 'Source / label', 'Overlapping finding rules'],
+    ...blockRows,
     [],
     ['Findings'],
     ['Severity', 'Status', 'Rule', 'Title', 'Period start', 'Period end', 'Summary'],
@@ -960,6 +980,7 @@ function DriverCardReportPanel({
 }) {
   const topFindings = snapshot.findings.slice(0, 6);
   const topReconciliation = snapshot.reconciliationIssues.slice(0, 6);
+  const reportDays = snapshot.days.filter((day) => day.activities.length > 0 || buildReportVisibleDaySegments(day.date, getSnapshotActivities(snapshot)).length > 0 || day.findingsCount > 0);
 
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm print:border-0 print:shadow-none">
@@ -1032,6 +1053,8 @@ function DriverCardReportPanel({
         />
       </div>
 
+      <ReportActivityEvidence days={reportDays} snapshot={snapshot} />
+
       <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500">
@@ -1062,6 +1085,275 @@ function DriverCardReportPanel({
       </div>
     </section>
   );
+}
+
+type ReportVisibleSegment = {
+  id: string;
+  activityType: TachoActivitySegment['activityType'];
+  start: Date;
+  end: Date;
+  leftPercent: number;
+  widthPercent: number;
+  durationMins: number;
+  inferred: boolean;
+  sourceLabel: string;
+};
+
+function getSnapshotActivities(snapshot: DriverCardReportSnapshot) {
+  const bySignature = new Map<string, TachoActivitySegment>();
+
+  snapshot.days.flatMap((day) => day.activities).forEach((activity) => {
+    bySignature.set(activitySignature(activity), activity);
+  });
+
+  return Array.from(bySignature.values())
+    .filter((activity) => new Date(activity.endTime).getTime() > new Date(activity.startTime).getTime())
+    .sort((left, right) => left.startTime.localeCompare(right.startTime));
+}
+
+function buildReportVisibleDaySegments(dayDate: string, explicitActivities: TachoActivitySegment[]): ReportVisibleSegment[] {
+  const dayStart = new Date(`${dayDate}T00:00:00.000Z`);
+  const dayEnd = addDays(dayStart, 1);
+  const totalMinutesInDay = 24 * 60;
+  const sourceSegments = [
+    ...explicitActivities.map((activity) => ({
+      id: activity.id,
+      activityType: activity.activityType,
+      start: new Date(activity.startTime),
+      end: new Date(activity.endTime),
+      inferred: false,
+      sourceLabel: activity.label ?? activity.source,
+    })),
+    ...buildReportInferredRestSegments(explicitActivities),
+  ];
+
+  return sourceSegments
+    .map((segment) => {
+      const start = new Date(Math.max(segment.start.getTime(), dayStart.getTime()));
+      const end = new Date(Math.min(segment.end.getTime(), dayEnd.getTime()));
+      const durationMins = differenceInMinutes(end, start);
+      if (durationMins <= 0) return null;
+
+      return {
+        id: `${segment.id}-${dayDate}-${start.getTime()}`,
+        activityType: segment.activityType,
+        start,
+        end,
+        leftPercent: (differenceInMinutes(start, dayStart) / totalMinutesInDay) * 100,
+        widthPercent: (durationMins / totalMinutesInDay) * 100,
+        durationMins,
+        inferred: segment.inferred,
+        sourceLabel: segment.sourceLabel,
+      };
+    })
+    .filter((segment): segment is ReportVisibleSegment => Boolean(segment))
+    .sort((left, right) => left.start.getTime() - right.start.getTime());
+}
+
+function buildReportInferredRestSegments(explicitActivities: TachoActivitySegment[]) {
+  const minimumRestGapMins = 15;
+  const inferred: Array<{
+    id: string;
+    activityType: TachoActivitySegment['activityType'];
+    start: Date;
+    end: Date;
+    inferred: true;
+    sourceLabel: string;
+  }> = [];
+
+  for (let index = 0; index < explicitActivities.length - 1; index += 1) {
+    const current = explicitActivities[index];
+    const next = explicitActivities[index + 1];
+    const currentEnd = new Date(current.endTime);
+    const nextStart = new Date(next.startTime);
+    const gapMins = differenceInMinutes(nextStart, currentEnd);
+    if (gapMins < minimumRestGapMins) continue;
+
+    inferred.push({
+      id: `inferred-rest-${current.id}-${next.id}`,
+      activityType: 'break_rest',
+      start: currentEnd,
+      end: nextStart,
+      inferred: true,
+      sourceLabel: 'Inferred off-card rest gap',
+    });
+  }
+
+  return inferred;
+}
+
+function ReportActivityEvidence({ days, snapshot }: { days: TachoDaySummary[]; snapshot: DriverCardReportSnapshot }) {
+  const explicitActivities = getSnapshotActivities(snapshot);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 print:break-inside-avoid">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-widest text-slate-600">Daily Activity Evidence</h4>
+          <p className="mt-1 text-sm font-medium text-slate-600">
+            Visual 24-hour activity strips. Grey hashed blocks are inferred off-card rest gaps between parsed card activities.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { label: 'Driving', bg: 'bg-emerald-500' },
+            { label: 'Other work', bg: 'bg-amber-400' },
+            { label: 'Availability', bg: 'bg-blue-400' },
+            { label: 'Rest / break', bg: 'bg-slate-300' },
+            { label: 'Inferred rest', bg: 'bg-slate-300/80', inferred: true },
+          ].map(({ label, bg, inferred }) => (
+            <span key={label} className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span className={`h-3 w-3 rounded-sm ${bg}`} style={inferred ? inferredRestPatternStyle : undefined} />
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-[8rem,1fr,7rem] items-center gap-2 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <span>Day</span>
+        <div className="relative h-4">
+          {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
+            <span
+              key={hour}
+              className={`absolute top-0 ${hour === 24 ? '-translate-x-full' : '-translate-x-1/2'}`}
+              style={{ left: `${(hour / 24) * 100}%` }}
+            >
+              {hour.toString().padStart(2, '0')}:00
+            </span>
+          ))}
+        </div>
+        <span className="text-right">Evidence</span>
+      </div>
+
+      <div className="mt-2 space-y-2">
+        {days.length === 0 ? (
+          <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-500">No activity blocks were available for this report period.</p>
+        ) : (
+          days.map((day) => (
+            <ReportActivityDayRow
+              key={day.date}
+              day={day}
+              segments={buildReportVisibleDaySegments(day.date, explicitActivities)}
+              findings={snapshot.findings}
+              reconciliation={snapshot.reconciliationIssues}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReportActivityDayRow({
+  day,
+  segments,
+  findings,
+  reconciliation,
+}: {
+  day: TachoDaySummary;
+  segments: ReportVisibleSegment[];
+  findings: TachoFinding[];
+  reconciliation: TachoReconciliationItem[];
+}) {
+  const dayFindings = findings.filter((finding) => finding.periodStart.slice(0, 10) <= day.date && finding.periodEnd.slice(0, 10) >= day.date);
+  const dayReconciliation = reconciliation.filter((item) => item.date === day.date);
+
+  return (
+    <div className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 lg:grid-cols-[8rem,1fr,7rem] lg:items-center print:break-inside-avoid">
+      <div>
+        <p className="text-sm font-black text-slate-900">{format(new Date(`${day.date}T12:00:00`), 'EEE d MMM')}</p>
+        <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+          {day.activities.length} parsed block{day.activities.length === 1 ? '' : 's'}
+        </p>
+      </div>
+      <div className="relative h-10 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+        {[0, 4, 8, 12, 16, 20].map((hour) => (
+          <div
+            key={`${day.date}-${hour}`}
+            className="absolute bottom-0 top-0 border-l border-slate-300/40"
+            style={{ left: `${(hour / 24) * 100}%` }}
+          />
+        ))}
+        {segments.map((segment) => (
+          <div
+            key={segment.id}
+            title={`${segment.inferred ? 'Inferred rest' : reportActivityLabel(segment.activityType)} ${format(segment.start, 'HH:mm')} - ${format(segment.end, 'HH:mm')} (${minsToHours(segment.durationMins)})`}
+            className={`absolute inset-y-0 ${reportActivityClass(segment.activityType, segment.inferred)}`}
+            style={{
+              left: `${segment.leftPercent}%`,
+              width: `${segment.widthPercent}%`,
+              ...(segment.inferred ? inferredRestPatternStyle : {}),
+            }}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1 lg:justify-end">
+        {dayFindings.length > 0 ? (
+          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-rose-700">
+            F: {dayFindings.length}
+          </span>
+        ) : null}
+        {dayReconciliation.length > 0 ? (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-700">
+            X: {dayReconciliation.length}
+          </span>
+        ) : null}
+        {dayFindings.length === 0 && dayReconciliation.length === 0 ? (
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-500">Clear</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+const inferredRestPatternStyle: CSSProperties = {
+  backgroundImage: 'repeating-linear-gradient(45deg, rgba(148,163,184,0.9) 0, rgba(148,163,184,0.9) 6px, rgba(203,213,225,0.9) 6px, rgba(203,213,225,0.9) 12px)',
+};
+
+function reportActivityLabel(type: TachoActivitySegment['activityType']) {
+  switch (type) {
+    case 'driving':
+      return 'Driving';
+    case 'work':
+      return 'Other work';
+    case 'poa':
+      return 'Availability';
+    case 'break_rest':
+      return 'Rest / break';
+    default:
+      return 'Unknown';
+  }
+}
+
+function reportActivityClass(type: TachoActivitySegment['activityType'], inferred: boolean) {
+  if (inferred) return 'bg-slate-300/80 report-inferred-rest';
+  switch (type) {
+    case 'driving':
+      return 'bg-emerald-500';
+    case 'work':
+      return 'bg-amber-400';
+    case 'poa':
+      return 'bg-blue-400';
+    case 'break_rest':
+      return 'bg-slate-300';
+    default:
+      return 'bg-slate-200';
+  }
+}
+
+function overlappingFindingCodes(findings: TachoFinding[], start: Date, end: Date) {
+  const startMs = start.getTime();
+  const endMs = end.getTime();
+  const codes = findings
+    .filter((finding) => {
+      const findingStartMs = new Date(finding.periodStart).getTime();
+      const findingEndMs = new Date(finding.periodEnd).getTime();
+      return findingStartMs < endMs && findingEndMs > startMs;
+    })
+    .map((finding) => finding.ruleCode);
+
+  return [...new Set(codes)].join('; ');
 }
 
 function ReportFact({ label, value }: { label: string; value: string }) {

@@ -87,6 +87,10 @@ export function summarizeNormalizedActivities(activities: SharedNormalizedActivi
   );
 }
 
+function isPositiveDutyActivity(activity: SharedNormalizedActivity) {
+  return activity.activityType === 'driving' || activity.activityType === 'work' || activity.activityType === 'poa';
+}
+
 export function buildSharedDutyWindows(activities: SharedNormalizedActivity[]): SharedDutyWindow[] {
   const byDate = new Map<string, SharedNormalizedActivity[]>();
 
@@ -103,6 +107,9 @@ export function buildSharedDutyWindows(activities: SharedNormalizedActivity[]): 
       const ordered = [...dayActivities].sort((a, b) => toMs(a.startTime) - toMs(b.startTime));
       const first = ordered[0];
       const last = ordered[ordered.length - 1];
+      const positiveDutyActivities = ordered.filter(isPositiveDutyActivity);
+      const dutyStartActivity = positiveDutyActivities[0] ?? first;
+      const dutyEndActivity = positiveDutyActivities[positiveDutyActivities.length - 1] ?? last;
       const totals = summarizeNormalizedActivities(ordered);
 
       return {
@@ -110,8 +117,8 @@ export function buildSharedDutyWindows(activities: SharedNormalizedActivity[]): 
         driverId: first?.driverId ?? null,
         vehicleId: first?.vehicleId ?? null,
         dutyDate: date,
-        dutyStart: first?.startTime ?? `${date}T00:00:00.000Z`,
-        dutyEnd: last?.endTime ?? `${date}T23:59:59.000Z`,
+        dutyStart: dutyStartActivity?.startTime ?? `${date}T00:00:00.000Z`,
+        dutyEnd: dutyEndActivity?.endTime ?? `${date}T23:59:59.000Z`,
         activities: ordered,
         drivingMins: totals.drivingMins,
         workMins: totals.workMins,
