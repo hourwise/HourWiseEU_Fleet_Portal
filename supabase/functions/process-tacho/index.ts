@@ -92,6 +92,8 @@ type HourWiseActivityParseResult = {
   rawActivities: RawActivityRow[];
   dayCount: number;
   changeCount: number;
+  firstActivityDate: string | null;
+  lastActivityDate: string | null;
   warning: string | null;
 };
 
@@ -1000,6 +1002,8 @@ async function handleHourWiseReadOnlyCapture(
     helper_capture_card_holder_preferred_language: cardIdentity?.cardHolderPreferredLanguage ?? null,
     helper_capture_activity_day_count: activityParse.dayCount,
     helper_capture_activity_change_count: activityParse.changeCount,
+    helper_capture_first_activity_date: activityParse.firstActivityDate,
+    helper_capture_last_activity_date: activityParse.lastActivityDate,
     helper_capture_activity_warning: activityParse.warning,
     helper_capture_raw_activity_insert_warning: rawActivityInsertWarning,
     helper_capture_superseded_import_count: supersededImportIds.length,
@@ -1007,7 +1011,7 @@ async function handleHourWiseReadOnlyCapture(
     driver_name: cardIdentity?.driverName ?? record.metadata?.driver_name ?? null,
     driver_card_number_hint: cardIdentity?.cardNumber ?? record.metadata?.driver_card_number_hint ?? null,
     summary: normalizedActivities.length > 0
-      ? `Read-only helper capture decoded ${normalizedActivities.length} provisional EF 0504 activity segment${normalizedActivities.length === 1 ? "" : "s"} across ${activityParse.dayCount} day${activityParse.dayCount === 1 ? "" : "s"}.`
+      ? `Read-only helper capture decoded ${normalizedActivities.length} provisional EF 0504 activity segment${normalizedActivities.length === 1 ? "" : "s"} across ${activityParse.dayCount} day${activityParse.dayCount === 1 ? "" : "s"}${activityParse.firstActivityDate && activityParse.lastActivityDate ? ` (${activityParse.firstActivityDate} to ${activityParse.lastActivityDate})` : ""}.`
       : `Read-only helper capture received: ${summary.selectedFileCount} EF files selected, ${summary.capturedBytes} bytes captured. Parser conversion is pending.`,
     normalized_segments: normalizedActivities.length,
     findings_count: findings.length,
@@ -1116,6 +1120,8 @@ function parseHourWiseDriverCardActivities(
       rawActivities: [],
       dayCount: 0,
       changeCount: 0,
+      firstActivityDate: null,
+      lastActivityDate: null,
       warning: "EF 0504 driver activity file was not captured successfully.",
     };
   }
@@ -1126,11 +1132,14 @@ function parseHourWiseDriverCardActivities(
       rawActivities: [],
       dayCount: 0,
       changeCount: 0,
+      firstActivityDate: null,
+      lastActivityDate: null,
       warning: "EF 0504 driver activity file was empty or too short to decode.",
     };
   }
 
   const parsedRecords = parseActivityDailyRecords(bytes);
+  const parsedDates = parsedRecords.map((record) => record.date).sort();
   const rawActivities = parsedRecords.flatMap((record) =>
     record.segments.map((segment, index) => ({
       file_id: context.importId,
@@ -1153,25 +1162,23 @@ function parseHourWiseDriverCardActivities(
     rawActivities,
     dayCount: parsedRecords.length,
     changeCount: parsedRecords.reduce((total, record) => total + record.changeCount, 0),
+    firstActivityDate: parsedDates[0] ?? null,
+    lastActivityDate: parsedDates[parsedDates.length - 1] ?? null,
     warning: warningParts.length > 0 ? warningParts.join(" ") : null,
   };
 }
 
 function parseActivityDailyRecords(bytes: Uint8Array) {
-  const sequential = parseActivityDailyRecordsFromOffset(bytes, 4);
-  if (sequential.length > 0) return sequential;
+  const candidateRecords = [...parseActivityDailyRecordsFromOffset(bytes, 4)];
 
-  const scanned: ReturnType<typeof parseActivityDailyRecordAt>[] = [];
-  const seenDates = new Set<string>();
   for (let offset = 0; offset + 12 <= bytes.length; offset += 1) {
-    const record = parseActivityDailyRecordAt(bytes, offset);
-    if (!record || seenDates.has(record.date)) continue;
-    seenDates.add(record.date);
-    scanned.push(record);
-    offset += Math.max(0, record.length - 1);
+    if (offset === 4) continue;
+    const run = parseActivityDailyRecordsFromOffset(bytes, offset);
+    if (run.length < 2) continue;
+    candidateRecords.push(...run);
   }
 
-  return scanned.filter((record): record is NonNullable<typeof record> => record !== null);
+  return dedupeActivityDailyRecords(candidateRecords);
 }
 
 function parseActivityDailyRecordsFromOffset(bytes: Uint8Array, startOffset: number) {
@@ -1188,6 +1195,28 @@ function parseActivityDailyRecordsFromOffset(bytes: Uint8Array, startOffset: num
   return records;
 }
 
+function dedupeActivityDailyRecords(records: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[]) {
+  const byDate = new Map<string, NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>>();
+
+  for (const record of records) {
+    const current = byDate.get(record.date);
+    if (!current || isBetterActivityDailyRecord(record, current)) {
+      byDate.set(record.date, record);
+    }
+  }
+
+  return Array.from(byDate.values()).sort((left, right) => left.date.localeCompare(right.date));
+}
+
+function isBetterActivityDailyRecord(
+  candidate: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>,
+  current: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>
+) {
+  if (candidate.changeCount !== current.changeCount) return candidate.changeCount > current.changeCount;
+  if (candidate.length !== current.length) return candidate.length > current.length;
+  return candidate.offset < current.offset;
+}
+
 function parseActivityDailyRecordAt(bytes: Uint8Array, offset: number) {
   if (offset < 0 || offset + 12 > bytes.length) return null;
 
@@ -1197,7 +1226,7 @@ function parseActivityDailyRecordAt(bytes: Uint8Array, offset: number) {
   }
 
   const recordDate = readTimeReal(bytes, offset + 4);
-  if (!isPlausibleTachoDate(recordDate)) return null;
+  if (!recordDate || !isPlausibleTachoDate(recordDate)) return null;
 
   const dayStart = new Date(recordDate.slice(0, 10) + "T00:00:00.000Z");
   const changes: Array<{ minute: number; activityType: RawActivityRow["activity_type"] }> = [];
