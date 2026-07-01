@@ -2,10 +2,10 @@
 
 ## Related Documents
 
-- `21_Data_Model_Specification.md` — defines the tables protected by RLS and the audit log schema.
-- `19_Atlas_Specification.md` — defines the permission boundaries and safety guardrails for the assistant.
-- `20_Reporting_Platform_Specification.md` — defines the permission requirements for report view, create, and export actions.
-- `23_Integration_Architecture.md` — defines the security requirements for external provider connections and webhooks.
+- [21 — Data Model Specification.md](./21%20—%20Data%20Model%20Specification.md) — defines the tables protected by RLS and the audit log schema.
+- [19 — Atlas Specification.md](./19%20—%20Atlas%20Specification.md) — defines the permission boundaries and safety guardrails for the assistant.
+- [20 — Reporting Platform Specificati.md](./20%20—%20Reporting%20Platform%20Specificati.md) — defines the permission requirements for report view, create, and export actions.
+- [23 — Integration Architecture.md](./23%20—%20Integration%20Architecture.md) — defines the security requirements for external provider connections and webhooks.
 
 ---
 
@@ -273,6 +273,20 @@ Authentication confirms who the user is.
 Authorisation determines what they can do.
 
 ### 7.1 Authorisation Layers
+
+```mermaid
+flowchart TD
+    A[Authenticated User] --> B{Fleet Membership<br/>Check}
+    B -- Denied --> X[Access Denied]
+    B -- Allowed --> C{Role Check}
+    
+    C --> D{Permission Check}
+    D --> E{Record Scope Check}
+    E --> F[Action Allowed]
+    
+    F --> G[(Audit Log)]
+    X --> G
+```
 
 HourWise should use multiple layers:
 

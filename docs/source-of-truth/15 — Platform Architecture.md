@@ -648,11 +648,11 @@ AI agents must:
 
 # Related Documents
 
-* 10_MVP.md
-* 11_Platform_Capability_Model.md
-* 12_Capability_Register_Detail.md
-* 13_User_Journey_Map.md
-* 14_Service_Blueprints.md
-* 16_Driver_App.md
-* 17_Fleet_Portal.md
-* 24_Architecture_Decisions.md
+- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20(MVP).md)
+- [11 — Platform Capability Model.md](./11%20—%20Platform%20Capability%20Model.md)
+- [12 — Capability Register Detail.md](./12%20—%20Capability%20Register%20Detail.md)
+- [13 — User Journey Map.md](./13%20—%20User%20Journey%20Map.md)
+- [14 — Service Blueprints.md](./14%20—%20Service%20Blueprints.md)
+- [16 — Driver App Specification.md](./16%20—%20Driver%20App%20Specification.md)
+- [17 — Fleet Portal Specification.md](./17%20—%20Fleet%20Portal%20Specification.md)
+- [24 — Architecture Decision Records.md](./24%20—%20Architecture%20Decision%20Records.md)

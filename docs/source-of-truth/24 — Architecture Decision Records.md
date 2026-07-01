@@ -4,13 +4,13 @@
 **Parent system:** HourWise Fleet Portal
 **Related documents:**
 
-* `18.3_Evidence_Import_Pipeline.md` — justifies ADR-0002 (Immutability) and ADR-0003 (Parser Versioning).
-* `18.7_Compliance_Engine.md` — justifies ADR-0004 (Calculated Outcomes).
-* `18.8_Evidence_Engine.md` — justifies ADR-0005 (Evidence Packs).
-* `20_Reporting_Platform_Specificati.md` — justifies ADR-0006 (Snapshots) and ADR-0013 (Cautious Language).
-* `19_Atlas_Specification.md` — justifies ADR-0007 (Evidence-led) and ADR-0008 (Permission Checks).
-* `22_Security_Model_Specification.md` — justifies ADR-0009 (RLS), ADR-0012 (Service Role), ADR-0014 (Secrets), and ADR-0015 (Feature Flags).
-* `23_Integration_Architecture.md` — justifies ADR-0010 (Adapters) and ADR-0011 (Supplementary Evidence).
+* [18.3 — Evidence Import Pipeline.md](./18.3%20—%20Evidence%20Import%20Pipeline.md) — justifies ADR-0002 (Immutability) and ADR-0003 (**Parser Versioning**).
+* [18.7 — Compliance Engine.md](./18.7%20—%20Compliance%20Engine.md) — justifies ADR-0004 (**Compliance Outcomes**).
+* [18.8 — Evidence Engine.md](./18.8%20—%20Evidence%20Engine.md) — justifies ADR-0005 (**Evidence Packs**).
+* [20 — Reporting Platform Specificati.md](./20%20—%20Reporting%20Platform%20Specificati.md) — justifies ADR-0006 (**Report Exports**) and ADR-0013 (Cautious Language).
+* [19 — Atlas Specification.md](./19%20—%20Atlas%20Specification.md) — justifies ADR-0007 (Evidence-led) and ADR-0008 (Permission Checks).
+* [22 — Security Model Specification.md](./22%20—%20Security%20Model%20Specification.md) — justifies ADR-0009 (RLS), ADR-0012 (Service Role), ADR-0014 (Secrets), and ADR-0015 (Feature Flags).
+* [23 — Integration Architecture.md](./23%20—%20Integration%20Architecture.md) — justifies ADR-0010 (**Provider Adapters**) and ADR-0011 (Supplementary Evidence).
 
 ---
 

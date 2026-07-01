@@ -2,11 +2,11 @@
 
 ## Related Documents
 
-- `22_Security_Model_Specification.md` — defines the authentication and credential security requirements for integrations.
-- `21_Data_Model_Specification.md` — defines the `integrations` and `integration_events` tables.
-- `19_Atlas_Specification.md` — defines how Atlas uses integration data as supplementary context.
-- `20_Reporting_Platform_Specification.md` — defines how integration data is snapshotted in exported reports.
-- `24_Architecture_Decision_Records.md` — contains decisions regarding provider adapters and supplementary evidence (ADR-0010, ADR-0011).
+- [22 — Security Model Specification.md](./22%20—%20Security%20Model%20Specification.md) — defines the authentication and credential security requirements for integrations.
+- [21 — Data Model Specification.md](./21%20—%20Data%20Model%20Specification.md) — defines the `integrations` and `integration_events` tables.
+- [19 — Atlas Specification.md](./19%20—%20Atlas%20Specification.md) — defines how Atlas uses integration data as supplementary context.
+- [20 — Reporting Platform Specificati.md](./20%20—%20Reporting%20Platform%20Specificati.md) — defines how integration data is snapshotted in **Report Exports**.
+- [24 — Architecture Decision Records.md](./24%20—%20Architecture%20Decision%20Records.md) — contains decisions regarding **Provider Adapters** and supplementary evidence (ADR-0010, ADR-0011).
 
 ---
 
@@ -103,19 +103,22 @@ The MVP should focus on the first two stages only where required.
 
 ## 6. High-Level Integration Architecture
 
-```mermaid id="w7ik9r"
+```mermaid
 flowchart TD
-    A[External System] --> B[Integration Boundary]
-    B --> C[Authentication / Signature Check]
-    C --> D[Provider Adapter]
-    D --> E[Payload Validator]
-    E --> F[Normalisation Layer]
-    F --> G[Permission / Fleet Resolver]
-    G --> H[Domain Service]
-    H --> I[HourWise Database]
-    H --> J[Audit Logger]
-    H --> K[Event Bus / Job Queue]
-    K --> L[Evidence / Reports / Atlas]
+    EP[External Provider] --> IB[Integration Boundary]
+    
+    subgraph "HourWise Processing"
+        IB --> ASC[Auth & Signature Check]
+        ASC --> PA[Provider Adapter]
+        PA --> PV[Payload Validator]
+        PV --> NL[Normalisation Layer]
+        NL --> FPR[Fleet & Permission Resolver]
+        FPR --> DS[Domain Service]
+    end
+    
+    DS --> DB[(Database)]
+    DS --> AL[(Audit Log)]
+    DS --> JQ[Event Bus / Job Queue]
 ```
 
 Every integration should pass through a controlled boundary before data becomes part of HourWise.

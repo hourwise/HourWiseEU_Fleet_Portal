@@ -2,10 +2,10 @@
 
 ## Related Documents
 
-- `18.8_Evidence_Engine.md` — provides the evidence packs for report inclusion.
-- `19_Atlas_Specification.md` — provides the intelligence layer for explaining report readiness.
-- `21_Data_Model_Specification.md` — defines the `reports` and `report_exports` (snapshot) tables.
-- `22_Security_Model_Specification.md` — defines the permission and RLS requirements for report access.
+- [18.8 — Evidence Engine.md](./18.8%20—%20Evidence%20Engine.md) — provides the **Evidence Packs** for report inclusion.
+- [19 — Atlas Specification.md](./19%20—%20Atlas%20Specification.md) — provides the intelligence layer for explaining **Readiness State**.
+- [21 — Data Model Specification.md](./21%20—%20Data%20Model%20Specification.md) — defines the `reports` and **Report Export** (snapshot) tables.
+- [22 — Security Model Specification.md](./22%20—%20Security%20Model%20Specification.md) — defines the permission and RLS requirements for report access.
 
 ---
 
@@ -19,11 +19,11 @@ Reports must be based on:
 
 * imported driver card data
 * imported vehicle unit data
-* parser outputs
-* normalised timeline events
-* compliance outcomes
-* evidence packs
-* review notes
+* **Parser Outputs**
+* normalised **Timeline Events**
+* **Compliance Outcomes**
+* **Evidence Packs**
+* **Review Notes**
 * fleet records
 * driver records
 * vehicle records
@@ -38,7 +38,7 @@ The Reporting Platform must help fleet operators, transport managers, and compli
 
 The core principle of HourWise reporting is:
 
-> Reports must snapshot evidence, not simply display live data.
+> Reports must snapshot evidence as a **Report Export**, not simply display live data.
 
 A report should represent what was known, reviewed, and exported at a specific point in time.
 
@@ -46,9 +46,9 @@ This is important because underlying data may later change due to:
 
 * new imports
 * corrected files
-* reprocessed parser output
-* recalculated compliance outcomes
-* added review notes
+* reprocessed **Parser Output**
+* recalculated **Compliance Outcomes**
+* added **Review Notes**
 * matched vehicle unit data
 * resolved evidence gaps
 
@@ -165,11 +165,11 @@ Cancelled
 Failed Export
 ```
 
-### 6.1 Draft
+### 6.1 Report Draft
 
-A draft report has been created but has not yet been fully reviewed.
+A **Report Draft** has been created but has not yet been fully reviewed.
 
-Draft reports may contain:
+**Report Drafts** may contain:
 
 * unresolved outcomes
 * incomplete evidence packs
@@ -198,9 +198,9 @@ Ready does not mean “no issues exist”.
 
 It means the report is sufficiently prepared for export.
 
-### 6.4 Exported
+### 6.4 Report Export
 
-An exported report has been generated into a final output format.
+A **Report Export** has been generated into a final output format.
 
 At export time, the system must snapshot:
 
@@ -1119,6 +1119,27 @@ Avoid:
 ---
 
 ## 24. Report Generation Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Backend
+    participant DB as Database / Snapshot
+    participant FS as File Storage
+
+    User->>Backend: Create Report (Configuration)
+    Backend->>Backend: Validate Permissions & Scope
+    Backend->>DB: Resolve Report Scope & Source Records
+    Backend->>DB: Link Evidence Packs
+    Backend->>Backend: Run Readiness Checks
+    Backend-->>User: Preview Draft & Readiness
+    User->>Backend: Confirm Export
+    Backend->>DB: Create Report Export (Snapshot)
+    Backend->>FS: Generate & Store File (PDF/CSV)
+    Backend->>DB: Update Export Record
+    Backend->>DB: Write Audit Log
+    Backend-->>User: Report Export Ready
+```
 
 Recommended backend flow:
 

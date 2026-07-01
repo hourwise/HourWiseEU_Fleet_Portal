@@ -4,11 +4,11 @@
 **Parent system:** HourWise Fleet Portal
 **Related documents:**
 
-* `18.7_Compliance_Engine.md` — defines the compliance outcomes Atlas explains.
-* `18.8_Evidence_Engine.md` — defines the evidence packs Atlas summarises.
-* `18.9_Evidence_Reporting_Engine.md` — Atlas provides prioritisation and summaries for reporting.
-* `22_Security_Model_Specification.md` — defines the permission boundaries Atlas must respect.
-* `21_Data_Model_Specification.md` — defines the Atlas conversation and audit tables.
+* [18.7 — Compliance Engine.md](./18.7%20—%20Compliance%20Engine.md) — defines the **Compliance Outcomes** Atlas explains.
+* [18.8 — Evidence Engine.md](./18.8%20—%20Evidence%20Engine.md) — defines the **Evidence Packs** Atlas summarises.
+* [18.9 — Evidence & Reporting Engine.md](./18.9%20—%20Evidence%20&%20Reporting%20Engine.md) — Atlas provides prioritisation and summaries for reporting.
+* [22 — Security Model Specification.md](./22%20—%20Security%20Model%20Specification.md) — defines the permission boundaries Atlas must respect.
+* [21 — Data Model Specification.md](./21%20—%20Data%20Model%20Specification.md) — defines the Atlas conversation and audit tables.
 
 ---
 
@@ -405,9 +405,8 @@ flowchart TD
     G --> H[Evidence Retriever]
     H --> I[Response Builder]
     I --> J[Safety Guardrails]
-    J --> K[Action Resolver]
-    K --> L[Audit Logger]
-    L --> M[Frontend Response]
+    J --> K[Audit Logger]
+    K --> L[Frontend Response]
 ```
 
 ### 9.2 Backend-First Rule

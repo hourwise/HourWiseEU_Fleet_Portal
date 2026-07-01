@@ -2,10 +2,10 @@
 
 # Related Documents
 
-- `22_Security_Model_Specification.md` — defines RLS policies and role-based permissions for these tables.
-- `20_Reporting_Platform_Specificati.md` — defines report templates, sections, and export snapshots.
-- `19_Atlas_Specification.md` — defines conversation, message, and action tables.
-- `23_Integration_Architecture.md` — defines integration, connection, and event tables.
+- [22 — Security Model Specification.md](./22%20—%20Security%20Model%20Specification.md) — defines RLS policies and role-based permissions for these tables.
+- [20 — Reporting Platform Specificati.md](./20%20—%20Reporting%20Platform%20Specificati.md) — defines report templates, sections, and **Report Export** snapshots.
+- [19 — Atlas Specification.md](./19%20—%20Atlas%20Specification.md) — defines conversation, message, and action tables.
+- [23 — Integration Architecture.md](./23%20—%20Integration%20Architecture.md) — defines integration, connection, and event tables.
 
 ---
 
@@ -22,15 +22,15 @@ The data model must support:
 * driver card imports
 * vehicle unit imports
 * parser output
-* normalised timeline events
-* compliance calculations
-* evidence packs
-* report generation
+* normalised **Timeline Events**
+* compliance calculations (**Compliance Outcomes**)
+* **Evidence Packs**
+* report generation (**Report Drafts** and **Report Exports**)
 * Atlas conversations
 * audit logging
 * future integrations
 * secure data access
-* evidence snapshotting
+* evidence snapshotting (**Report Exports**)
 
 The data model is one of the most important parts of HourWise because the platform depends on trusted, traceable records.
 
@@ -48,12 +48,12 @@ HourWise must always be able to answer:
 
 * What source file created this record?
 * Which parser version processed it?
-* Which timeline events were created?
-* Which compliance outcome was calculated?
-* Which evidence pack supports it?
+* Which **Timeline Events** were created?
+* Which **Compliance Outcome** was calculated?
+* Which **Evidence Pack** supports it?
 * Which report included it?
-* Who reviewed it?
-* What was known at export time?
+* Who added a **Review Note**?
+* What was known at **Report Export** time?
 * What changed later?
 * Who accessed or changed the record?
 
@@ -186,6 +186,8 @@ review_state
 export_status
 ```
 
+Refer to [99 — Glossary.md](file:///docs/source-of-truth/99%20—%20Glossary.md) for standard status value definitions.
+
 Avoid free-text status values.
 
 ---
@@ -232,41 +234,33 @@ If a value is queried regularly, permission-sensitive, or part of compliance log
 
 ## 8. High-Level Entity Map
 
-```mermaid id="x9d2vb"
+```mermaid
 erDiagram
+    profiles ||--o{ fleet_memberships : belongs_to
     fleets ||--o{ fleet_memberships : has
-    users ||--o{ fleet_memberships : belongs_to
-    fleets ||--o{ depots : has
     fleets ||--o{ drivers : has
     fleets ||--o{ vehicles : has
-
-    drivers ||--o{ driver_card_imports : has
-    vehicles ||--o{ vehicle_unit_imports : has
-
-    driver_card_imports ||--o{ parser_runs : processed_by
-    vehicle_unit_imports ||--o{ parser_runs : processed_by
-    parser_runs ||--o{ timeline_events : creates
-
-    drivers ||--o{ timeline_events : appears_in
-    vehicles ||--o{ timeline_events : appears_in
-
-    timeline_events ||--o{ compliance_outcome_events : supports
-    compliance_outcomes ||--o{ compliance_outcome_events : has
-
+    
+    drivers ||--o{ import_files : generates
+    vehicles ||--o{ import_files : generates
+    
+    import_files ||--o{ parser_runs : processed_by
+    parser_runs ||--o{ parser_outputs : produces
+    
+    parser_outputs ||--o{ normalised_activities : mapped_to
+    normalised_activities ||--o{ timeline_events : builds
+    
+    timeline_events ||--o{ compliance_outcomes : evaluates
     compliance_outcomes ||--o{ evidence_packs : supported_by
-    evidence_packs ||--o{ evidence_items : contains
-
-    reports ||--o{ report_sources : includes
-    reports ||--o{ report_exports : exports
-    evidence_packs ||--o{ report_evidence_packs : included_in
-
+    
+    evidence_packs ||--o{ reports : included_in
+    reports ||--o{ report_exports : creates
+    
     users ||--o{ atlas_conversations : starts
-    atlas_conversations ||--o{ atlas_messages : contains
-
-    users ||--o{ audit_logs : creates
+    users ||--o{ audit_logs : generates
 ```
 
-This diagram is intentionally high-level. Detailed ERDs should be expanded during the Phase 2 documentation review.
+This diagram is intentionally high-level.
 
 ---
 
@@ -653,7 +647,7 @@ id
 fleet_id
 uploaded_by
 batch_type
-source
+source_record_id
 status
 created_at
 updated_at

@@ -93,37 +93,24 @@ To avoid overwhelming the documentation suite, the updates should follow this or
 
 ---
 
-## 8. Pass 3 Completion Note (Cross-References)
+## 12. Pass 7 Completion Note (Final Consistency Review)
 
 **Date:** 2026-07-01  
 **Status:** ✅ Completed
 
-### Files Changed:
-- `18.3 — Evidence Import Pipeline.md`
-- `18.4 — Driver Card Engine.md`
-- `18.5 — Vehicle Unit Engine.md`
-- `18.6 — Timeline Engine.md`
-- `18.7 — Compliance Engine.md`
-- `18.8 — Evidence Engine.md`
-- `18.9 — Evidence & Reporting Engine.md`
-- `18.10 — Atlas Interface.md`
-- `19 — Atlas Specification.md`
-- `20 — Reporting Platform Specificati.md`
-- `21 — Data Model Specification.md`
-- `22 — Security Model Specification.md`
-- `23 — Integration Architecture.md`
-- `24 — Architecture Decision Records.md`
+### Files Reviewed:
+- All 35+ files in `docs/source-of-truth/`.
 
-### Cross-Reference Patterns Added:
-- **Engine Logic**: Linked engines in order of data flow (Import → Decoding → Timeline → Compliance → Evidence → Reporting).
-- **Security & Data**: Every functional specification now links to the Data Model (tables) and Security Model (permissions/RLS).
-- **Intelligence**: Atlas specifications now explicitly link to the underlying evidence and compliance engines it explains.
-- **Decision Traceability**: ADRs now reference the specific engine or architecture documents that justify each decision.
+### Consistency Issues Fixed:
+- **Cross-References**: Standardised 50+ document links to use actual filenames with URI encoding (e.g., `./18.4%20—%20Driver%20Card%20Engine.md`).
+- **Terminology**: Ensured **Source Record**, **Timeline Event**, **Compliance Outcome**, **Evidence Pack**, and **Report Export** are capitalized and used consistently according to the glossary.
+- **Capability IDs**: Fixed example IDs in the Roadmap (`18.11`) to match the Platform Capability Model format.
+- **Glossary**: Added missing terms like **Readiness State**, **Tenant**, **Depot**, **Integration Boundary**, and **Provider Adapter**.
 
-### Manual Review Required:
-- The file `20 — Reporting Platform Specificati.md` has a truncated name in the filesystem; this should be checked by a human developer.
-- Review links in `18.1` and `18.2` which were not updated in this pass but may contain older, broken relative links.
+### Remaining TODOs:
+- Manually review the truncated filename `20 — Reporting Platform Specificati.md` and rename it if possible in a future pass.
+- Verify that the relative links work correctly in the intended markdown viewer.
 
-### Broken/Uncertain Links:
-- Some references to `18.11 — Future Roadmap.md` were maintained but the file was not extensively cross-linked as it is a roadmap rather than a specification.
-- Link between `18.10` and `18.11` exists in the "Next document" header but not in a formal "Related Documents" section.
+### Manual Review Points:
+- The transition from "Processing Version" to "Parser Version" and "Ruleset Version" in engine docs should be checked for any lost technical nuance.
+- The high-level ERD in `21` was simplified for readability; check if any critical relationships were removed too aggressively.
