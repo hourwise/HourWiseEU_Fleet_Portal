@@ -58,6 +58,8 @@ Older markdown files should be considered historical references only.
 
 Useful information from them should be migrated into this specification before they are archived.
 
+Use [index.md](./index.md) as the canonical document index. It assigns stable document IDs that should be used in changelog entries, ADRs, implementation backlog items and AI coding-agent instructions.
+
 ---
 
 ## Update Rules
@@ -67,7 +69,7 @@ Whenever a significant change is made to HourWise:
 1. Update the relevant specification.
 2. Update any affected dependencies.
 3. Record major decisions in Architecture Decisions.
-4. Update the Changelog.
+4. Update [98 - Changelog.md](./98%20-%20Changelog.md).
 5. Only then implement the change.
 
 ---
