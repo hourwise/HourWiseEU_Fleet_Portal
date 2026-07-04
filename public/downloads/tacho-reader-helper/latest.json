@@ -1,0 +1,19 @@
+﻿{
+    "name":  "HourWise Tacho Reader Helper",
+    "helperVersion":  "dotnet-shell-0.5.9",
+    "runtime":  "win-x64",
+    "configuration":  "Release",
+    "selfContained":  true,
+    "signed":  false,
+    "signedWithThumbprint":  null,
+    "createdAtUtc":  "2026-07-04T19:17:18.4891641+00:00",
+    "packageFile":  "HourWise.TachoReaderHelper-win-x64-latest.zip",
+    "packageBytes":  44697095,
+    "sha256":  "85f822c676f407a3442b20e4b994c80d4dbbbeae5923463c00bea8259472cf65",
+    "downloadPath":  "/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip",
+    "versionedPackageFile":  "HourWise.TachoReaderHelper-dotnet-shell-0.5.9-win-x64.zip",
+    "versionedSha256":  "85f822c676f407a3442b20e4b994c80d4dbbbeae5923463c00bea8259472cf65",
+    "defaultEndpoint":  "http://127.0.0.1:47231",
+    "installCommand":  ".\\install.ps1 -Scope CurrentUser",
+    "manualStartCommand":  "\u0026 \"$env:LOCALAPPDATA\\Programs\\HourWise\\TachoReaderHelper\\Start-HourWiseTachoReaderHelper.ps1\""
+}

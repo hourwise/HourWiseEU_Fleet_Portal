@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   CreditCard,
+  Download,
   Laptop,
   Loader2,
   RefreshCw,
@@ -147,6 +148,10 @@ interface ReaderHelperDiagnostics {
 }
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_TACHO_HELPER_URL || 'http://127.0.0.1:47231';
+const DEFAULT_HELPER_DOWNLOAD_URL =
+  import.meta.env.VITE_TACHO_HELPER_DOWNLOAD_URL || '/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip';
+const DEFAULT_HELPER_DOWNLOAD_MANIFEST_URL =
+  import.meta.env.VITE_TACHO_HELPER_DOWNLOAD_MANIFEST_URL || '/downloads/tacho-reader-helper/latest.json';
 const AUTO_OPEN_REVIEW_STORAGE_KEY = 'hourwise:tacho-reader:auto-opened-review';
 
 const WORKFLOW_STEPS: { id: Exclude<ReaderHelperStage, 'helper_unavailable' | 'error'>; label: string }[] = [
@@ -821,6 +826,8 @@ export function TachoReaderHelperPanel({
 
         <ReaderGraphicConsole status={status} diagnostics={diagnostics} />
 
+        <HelperDownloadCard />
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <MetaCard label="Helper endpoint" value={status.helperUrl} />
           <MetaCard label="Helper version" value={status.helperVersion ?? 'Not reported'} />
@@ -1281,6 +1288,44 @@ function HelperDiagnosticsPanel({
       ) : null}
 
       {message ? <p className="mt-3 text-xs text-slate-600">{message}</p> : null}
+    </div>
+  );
+}
+
+function HelperDownloadCard() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Desktop helper download</p>
+          <h4 className="mt-1 text-lg font-black text-slate-900">Windows reader helper package</h4>
+          <p className="mt-2 max-w-3xl text-sm text-slate-600">
+            Download the signed package when available, extract it, then run the installer for the current Windows user. The installer registers
+            the helper at sign-in and writes a manual start script into the install folder.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={DEFAULT_HELPER_DOWNLOAD_URL}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-slate-800"
+          >
+            <Download className="h-4 w-4" />
+            Download helper
+          </a>
+          <a
+            href={DEFAULT_HELPER_DOWNLOAD_MANIFEST_URL}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white"
+          >
+            Manifest
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <MetaCard label="Download path" value={DEFAULT_HELPER_DOWNLOAD_URL} />
+        <MetaCard label="Install command" value=".\install.ps1 -Scope CurrentUser" />
+        <MetaCard label="Manual start" value='& "$env:LOCALAPPDATA\Programs\HourWise\TachoReaderHelper\Start-HourWiseTachoReaderHelper.ps1"' />
+      </div>
     </div>
   );
 }

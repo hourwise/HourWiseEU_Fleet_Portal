@@ -27,6 +27,7 @@ $helperName = 'HourWise.TachoReaderHelper'
 $startupName = 'HourWiseTachoReaderHelper'
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectPath = Join-Path $scriptRoot 'HourWise.TachoReaderHelper.csproj'
+$bundledAppPath = Join-Path $scriptRoot 'app'
 
 function Assert-AdminForMachineScope {
     if ($Scope -ne 'Machine') { return }
@@ -80,6 +81,10 @@ Assert-AdminForMachineScope
 
 if ([string]::IsNullOrWhiteSpace($InstallRoot)) { $InstallRoot = Get-DefaultInstallRoot }
 if ([string]::IsNullOrWhiteSpace($DataRoot)) { $DataRoot = Get-DefaultDataRoot }
+if (-not $NoPublish -and -not (Test-Path -LiteralPath $projectPath) -and (Test-Path -LiteralPath $bundledAppPath -PathType Container)) {
+    $NoPublish = $true
+    $PublishedAppPath = $bundledAppPath
+}
 
 $installRootFull = [IO.Path]::GetFullPath($InstallRoot)
 $dataRootFull = [IO.Path]::GetFullPath($DataRoot)

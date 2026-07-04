@@ -242,6 +242,7 @@ Minimum installer requirements:
 - Register startup behavior.
 - Allow uninstall without deleting logs by default.
 - Show installed version.
+- Provide a portal-hostable ZIP package with manifest and SHA-256 checksum.
 
 Current first-pass scaffold:
 
@@ -249,6 +250,7 @@ Current first-pass scaffold:
 - `tools/tacho-reader-helper/windows-helper/install.ps1` creates log/export folders and writes `install-info.json`, `VERSION.txt`, and a startup wrapper.
 - `tools/tacho-reader-helper/windows-helper/install.ps1` registers startup through the Windows `Run` key for `CurrentUser` or `Machine` scope.
 - `tools/tacho-reader-helper/windows-helper/uninstall.ps1` removes startup registration and installed files while preserving logs/exports unless `-RemoveData` is supplied.
+- `tools/tacho-reader-helper/windows-helper/package-portal-download.ps1` publishes a bundled Windows ZIP into `public/downloads/tacho-reader-helper/`.
 - `tools/tacho-reader-helper/windows-helper/README.md` documents install/uninstall commands and default paths.
 
 Recommended:
@@ -398,10 +400,31 @@ Current scaffold limitations:
 - Writes a JSONL diagnostic event log and exposes recent support events through `/diagnostics`.
 - Exposes helper configuration/capabilities through `/diagnostics`, including whether VU workflow support is enabled.
 - Includes first-pass install/uninstall scripts using Windows `Run` startup registration, not a Windows Service.
+- Includes a portal packaging script that publishes a bundled Windows ZIP, manifest, and SHA-256 checksum under `public/downloads/tacho-reader-helper/`.
 - Does not yet include a bundled tachograph card export library/tool.
 - Generates placeholder bytes only when `TACHO_HELPER_PLACEHOLDER_READER=true`.
 - Completes immediately after `/imports/register` only in placeholder mode.
 - Keeps VU workflow disabled unless `TACHO_HELPER_ENABLE_VU_WORKFLOW=true`.
+
+Build the current portal-hosted helper ZIP:
+
+```powershell
+npm run tacho:helper:package
+```
+
+Optional signing hook:
+
+```powershell
+.\tools\tacho-reader-helper\windows-helper\package-portal-download.ps1 `
+  -CertificateThumbprint '<thumbprint>' `
+  -TimestampUrl '<timestamp server URL>'
+```
+
+Portal-served outputs:
+
+- `public/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip`
+- `public/downloads/tacho-reader-helper/latest.json`
+- `public/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip.sha256`
 
 External export command configuration:
 

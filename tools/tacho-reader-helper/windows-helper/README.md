@@ -76,7 +76,7 @@ Invoke-RestMethod http://127.0.0.1:47231/status
 Invoke-RestMethod http://127.0.0.1:47231/diagnostics
 ```
 
-The helper also exposes `helperVersion` from `/status` and `/diagnostics`. After installing this build, `/status` should report `dotnet-shell-0.5.8`.
+The helper also exposes `helperVersion` from `/status` and `/diagnostics`. After installing this build, `/status` should report `dotnet-shell-0.5.9`.
 
 With a card inserted, validate the first APDU/exporter foundation:
 
@@ -94,7 +94,7 @@ Invoke-RestMethod http://127.0.0.1:47231/diagnostics/tachograph-file-map
 
 This selects the confirmed tachograph application and performs bounded `READ BINARY` traversal of known EFs. It returns byte counts, hashes, short previews, and truncation flags; it does not write to the card and does not create an export file.
 
-For a correctly refreshed `0.5.8` install, `apduResults` should include probes such as `select_mf_3f00_by_file_under_current_p1_02_p2_0c`, `read_selected_ef_dir_binary_probe_20`, `select_ef_dir_aid_ff544143484f_no_le_p2_0c`, `select_tachograph_identification_0520`, `read_selected_identification_probe_16`, and `get_data_probe`. If it only returns the older small probe set, stop the helper process and rerun `install.ps1`.
+For a correctly refreshed `0.5.9` install, `apduResults` should include probes such as `select_mf_3f00_by_file_under_current_p1_02_p2_0c`, `read_selected_ef_dir_binary_probe_20`, `select_ef_dir_aid_ff544143484f_no_le_p2_0c`, `select_tachograph_identification_0520`, `read_selected_identification_probe_16`, and `get_data_probe`. If it only returns the older small probe set, stop the helper process and rerun `install.ps1`.
 
 Card-safety boundary:
 
@@ -142,6 +142,35 @@ Machine uninstall requires an elevated PowerShell session:
 .\uninstall.ps1 -Scope Machine
 ```
 
+## Portal Download Package
+
+Create the portal-hosted ZIP and manifest:
+
+```powershell
+npm run tacho:helper:package
+```
+
+This writes:
+
+- `public/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip`
+- `public/downloads/tacho-reader-helper/latest.json`
+- `public/downloads/tacho-reader-helper/HourWise.TachoReaderHelper-win-x64-latest.zip.sha256`
+
+Optional Authenticode signing before the ZIP is created:
+
+```powershell
+.\package-portal-download.ps1 `
+  -CertificateThumbprint '<thumbprint from Cert:\CurrentUser\My or Cert:\LocalMachine\My>' `
+  -TimestampUrl '<timestamp server URL>'
+```
+
+The generated package installs from its bundled `app` folder. After extracting the ZIP, run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\install.ps1 -Scope CurrentUser
+```
+
 ## Notes
 
 - The helper binds only to `127.0.0.1` or `localhost`.
@@ -150,4 +179,4 @@ Machine uninstall requires an elevated PowerShell session:
 - Logs are JSONL files written by the helper runtime.
 - Exports are local temporary handoff files for browser-assisted upload.
 - `/diagnostics/card-probe` is a safe development probe, not a full `.C1B/.DDD` exporter.
-- Code-signing and update distribution are still future production tasks.
+- Production code-signing requires a real Authenticode certificate; the packaging script provides the signing hook and unsigned manifest/checksum output when no certificate is supplied.

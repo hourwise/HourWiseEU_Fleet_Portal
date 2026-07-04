@@ -14,7 +14,6 @@ import { evaluateDriverRules } from '../../../lib/tacho/rules/engine';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
-import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
 import { TimelineComparisonStatus } from './TimelineComparisonStatus';
 import type { DriverCardAnalysisData, RuleActivitySegment, TachoActivitySegment, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
@@ -128,6 +127,15 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     importPending: readerImportPending,
     sendCommand: sendReaderCommand,
   } = readerWorkflow;
+  const handleManualReaderRefresh = useCallback(async () => {
+    await readerWorkflow.refreshStatus({ clearCompletedResult: true });
+    if (!readerStatus.cardPresent && liveReaderTargetActive) {
+      setSelectedDriverId('');
+      setSelectedImportId('');
+      setReaderFocusedDate(null);
+      setLiveReaderTargetActive(false);
+    }
+  }, [liveReaderTargetActive, readerStatus.cardPresent, readerWorkflow]);
   const { data: drivers = [] } = useDrivers(profile?.company_id ?? undefined);
   const { data, loading, error, emptyState, isMock } = useDriverCardAnalysis(range, {
     driverId: selectedDriverId || undefined,
@@ -180,15 +188,6 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   ]);
 
   useEffect(() => {
-    if (!liveReaderTargetActive || readerStatus.cardPresent) return;
-    if (readerStatus.stage !== 'ready' && readerStatus.stage !== 'helper_unavailable') return;
-    setSelectedDriverId('');
-    setSelectedImportId('');
-    setReaderFocusedDate(null);
-    setLiveReaderTargetActive(false);
-  }, [liveReaderTargetActive, readerStatus.cardPresent, readerStatus.stage]);
-
-  useEffect(() => {
     if (readerStatus.stage !== 'complete' || !readerStatus.importId) return;
     if (readerStatus.sourceType && readerStatus.sourceType !== 'driver_card') return;
     const alreadyFocused = readerStatus.driverId
@@ -229,7 +228,8 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setSelectedDay((current) => current ? calendarSummaries.find((day) => day.date === current.date) ?? null : null);
   }, [activeFocusedDate, calendarSummaries, data]);
 
-  const isCandidateCard = Boolean(data?.isCandidateCard);
+  const hasLinkedDriverTarget = Boolean(selectedDriverId || data?.identity.driverId);
+  const isCandidateCard = Boolean(data?.isCandidateCard && !hasLinkedDriverTarget);
   const activeDriverId = isCandidateCard ? '' : selectedDriverId || data?.identity.driverId;
   const filteredDrivers = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -435,6 +435,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       });
       setSelectedDriverId(result.driverId);
       setSelectedImportId('');
+      setReaderFocusedDate(null);
       setLiveReaderTargetActive(false);
       setCandidatePairDriverId('');
       setCandidateActionMessage(
@@ -455,14 +456,15 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     setCandidateActionError(null);
     setCandidateActionMessage(null);
     try {
-      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review' as any, {
+      const reviewPayload = {
         p_company_id: profile.company_id,
         p_import_id: candidateImportId,
         p_decision: decision,
         p_note: decision === 'no_hire'
           ? 'Candidate card check reviewed without creating an invite or driver profile.'
           : 'Candidate card check reviewed.',
-      } as any);
+      };
+      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review' as never, reviewPayload as never);
       if (reviewError) throw reviewError;
       setCandidateActionMessage(decision === 'no_hire'
         ? 'Marked as checked / no hire. No profile or invite was created.'
@@ -474,8 +476,17 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     }
   };
 
-  const picker = <TachoWorkspacePicker title="Driver Workspace Target" searchLabel="Search drivers" selectLabel="Open driver" searchValue={searchValue} onSearchChange={setSearchValue} selectedValue={selectedDriverId} onSelectChange={handleSelectDriver} options={filteredDrivers} fallbackLabel={selectedImportId ? 'Candidate / unlinked card check' : 'Latest imported driver card'} />;
-  const readerPanel = <DriverCardReaderPanel workflow={readerWorkflow} onOpenImportCentre={onOpenImportCentre} />;
+  const picker = (
+    <CompactDriverWorkspaceTarget
+      searchValue={searchValue}
+      onSearchChange={setSearchValue}
+      selectedValue={selectedDriverId}
+      onSelectChange={handleSelectDriver}
+      options={filteredDrivers}
+      fallbackLabel={selectedImportId ? 'Candidate / unlinked card check' : 'Latest imported driver card'}
+    />
+  );
+  const readerPanel = <DriverCardReaderPanel workflow={readerWorkflow} onManualRefresh={handleManualReaderRefresh} onOpenImportCentre={onOpenImportCentre} />;
 
   if (loading) return <div className="space-y-6">{picker}{readerPanel}<StateCard title="Loading driver card analysis..." /></div>;
   if (error) return <div className="space-y-6">{picker}{readerPanel}<StateCard title={error} tone="error" /></div>;
@@ -508,21 +519,22 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const handleExportCsv = () => exportDriverCardCsv(reportSnapshot);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {picker}
       {readerPanel}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 py-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-50 rounded-xl"><CreditCard className="w-7 h-7 text-blue-600" /></div>
-            <div className="space-y-2">
+            <div className="rounded-xl bg-blue-50 p-2.5"><CreditCard className="h-5 w-5 text-blue-600" /></div>
+            <div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isCandidateCard ? 'Candidate Card Check' : 'Driver Card Analysis'}</p>
                 {isMock ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">Mock Fallback</span> : null}
                 {isCandidateCard ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Unlinked</span> : null}
+                <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${statusTone}`}>{data.identity.downloadStatus.replace('_', ' ')}</span>
               </div>
-              <h2 className="text-3xl font-black text-slate-900">{data.identity.driverName}</h2>
+              <h2 className="mt-1 text-xl font-black text-slate-900">{data.identity.driverName}</h2>
               <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-500">
                 <span>Card: {data.identity.cardNumber}</span>
                 <span>Expiry: {format(new Date(data.identity.cardExpiry), 'dd MMM yyyy')}</span>
@@ -530,30 +542,19 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-start xl:items-end gap-3">
-            <span className={`px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest ${statusTone}`}>{data.identity.downloadStatus.replace('_', ' ')}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          {!isCandidateCard ? (
-            <>
-              <ActionButton icon={<UserRound className="w-4 h-4" />} label="Open Personnel File" disabled={!activeDriverId || !onOpenPersonnelFile} onClick={() => activeDriverId && onOpenPersonnelFile?.(activeDriverId)} />
-              <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label="Open Compliance Actions" disabled={!activeDriverId || !onOpenComplianceActions} onClick={() => activeDriverId && onOpenComplianceActions?.(activeDriverId)} />
-              <ActionButton icon={<GraduationCap className="w-4 h-4" />} label="Open Training" disabled={!activeDriverId || !onOpenTraining} onClick={() => activeDriverId && onOpenTraining?.(activeDriverId)} />
-            </>
-          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {!isCandidateCard ? (
+              <>
+                <ActionButton icon={<UserRound className="w-4 h-4" />} label="Personnel" disabled={!activeDriverId || !onOpenPersonnelFile} onClick={() => activeDriverId && onOpenPersonnelFile?.(activeDriverId)} />
+                <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label="Actions" disabled={!activeDriverId || !onOpenComplianceActions} onClick={() => activeDriverId && onOpenComplianceActions?.(activeDriverId)} />
+                <ActionButton icon={<GraduationCap className="w-4 h-4" />} label="Training" disabled={!activeDriverId || !onOpenTraining} onClick={() => activeDriverId && onOpenTraining?.(activeDriverId)} />
+              </>
+            ) : null}
           <ActionButton icon={<Download className="w-4 h-4" />} label="Export CSV" onClick={handleExportCsv} />
           <ActionButton icon={<FileText className="w-4 h-4" />} label={reportOpen ? 'Hide Report' : 'Report View'} onClick={() => setReportOpen((current) => !current)} />
+          </div>
         </div>
       </div>
-
-      {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
-
-      <TimelineComparisonStatus
-        comparison={data.timelineComparison}
-        contextLabel={isCandidateCard ? 'Candidate card timeline comparison' : 'Driver timeline comparison'}
-      />
 
       {reportOpen ? (
         <DriverCardReportPanel
@@ -564,116 +565,75 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       ) : null}
 
       {restFindingRefresh.suppressedCount > 0 ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-950">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-950">
           Rest findings refreshed from the loaded activity evidence. {restFindingRefresh.suppressedCount} stale persisted rest finding{restFindingRefresh.suppressedCount === 1 ? '' : 's'} suppressed from this view and report; reprocess the import after deploying the parser to update stored database findings.
         </div>
       ) : null}
 
-      {isCandidateCard ? (
-        <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Pre-employment screening mode</p>
-          <h3 className="mt-1 text-xl font-black text-blue-950">This card is not linked to a profile or invite</h3>
-          <p className="mt-2 max-w-4xl text-sm font-medium text-blue-900">
-            Review the decoded card identity and activity here before creating an invite or personnel file. This view does not update a driver file, assign training, or write compliance actions until the card is deliberately paired.
-          </p>
-
-          {candidateActionError ? <div className="mt-4 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-700">{candidateActionError}</div> : null}
-          {candidateActionMessage ? <div className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-700">{candidateActionMessage}</div> : null}
-
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr,1fr]">
-            <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Create Driver Invite</p>
-              <h4 className="mt-1 text-base font-black text-slate-950">Invite this candidate using the decoded card identity</h4>
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                Opens the normal invite form with name, card number, expiry and issuing authority prefilled. The driver profile is only created when the app invite is accepted.
-              </p>
-              <button
-                type="button"
-                onClick={() => setInviteFromCandidateOpen(true)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-blue-700"
-              >
-                <UserPlus className="h-4 w-4" />
-                Create Invite From Card
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pair Existing Driver</p>
-              <h4 className="mt-1 text-base font-black text-slate-950">Use this if the employee already exists</h4>
-              <div className="mt-3 flex flex-col gap-3 md:flex-row">
-                <select
-                  value={candidatePairDriverId}
-                  onChange={(event) => setCandidatePairDriverId(event.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
-                >
-                  <option value="">Select existing driver profile</option>
-                  {filteredDrivers.map((driver) => (
-                    <option key={driver.id} value={driver.id}>{driver.label} - {driver.meta}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  disabled={!candidatePairDriverId || candidateActionPending === 'pair'}
-                  onClick={() => void handlePairCandidateToDriver()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {candidateActionPending === 'pair' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                  Pair Card
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            <ActionButton icon={<CheckCircle2 className="w-4 h-4" />} label={candidateActionPending === 'reviewed' ? 'Marking Reviewed' : 'Mark Reviewed Only'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('reviewed')} />
-            <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label={candidateActionPending === 'no_hire' ? 'Marking No Hire' : 'Checked / No Hire'} disabled={candidateActionPending !== null} onClick={() => void handleMarkCandidateReviewed('no_hire')} />
-            <ActionButton icon={<CreditCard className="w-4 h-4" />} label="Open Import Review" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
-            <ActionButton icon={<FileText className="w-4 h-4" />} label={reportOpen ? 'Hide Screening Report' : 'Screening Report'} onClick={() => setReportOpen((current) => !current)} />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Provisional Reader Result</p>
-            <h3 className="mt-1 text-xl font-black text-amber-950">HourWise read-only capture, not certified C1B/DDD output</h3>
-            <p className="mt-2 max-w-4xl text-sm font-medium text-amber-900">
-              These rows come from the current read-only driver-card capture and provisional EF parsing. Use them for operational review and validation, but do not treat them as a certified tachograph download until the final C1B/DDD writer/parser path is complete.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4 xl:min-w-[34rem]">
-            <SummaryTile label="Parsed Period" value={analysisSummary?.periodLabel ?? 'No dated rows'} />
-            <SummaryTile label="Activity Blocks" value={String(data.activitySegments.length)} />
-            <SummaryTile label="Issues" value={String(analysisSummary?.issueCount ?? 0)} />
-            <SummaryTile label="Last Read" value={format(new Date(data.identity.lastDownloadAt), 'dd MMM HH:mm')} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[2.25fr,1fr] gap-6">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr),18rem]">
+        <div className="min-w-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
+          {dayReason ? <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-950">{dayReason}</div> : null}
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{rangeLabel(range)} Calendar</p>
-              <h3 className="text-lg font-black text-slate-900">Driver Card Activity By Day</h3>
-              <p className="text-sm text-slate-500">Select a day to open the detailed evidence drawer. No day is opened automatically.</p>
+              <h3 className="text-xl font-black text-slate-900">Driver Card Activity By Day</h3>
+              <p className="text-xs font-medium text-slate-500">The timeline is the primary review surface. Select a day for detail.</p>
             </div>
             <TachoFilters value={range} onChange={setRange} />
           </div>
           <TachoActivityTimeline days={timelineDays} selectedDate={selectedDay ? new Date(selectedDay.date) : undefined} onSelectDate={(date) => setSelectedDay(calendarSummaries.find((day) => day.date === date.toISOString().slice(0, 10)) ?? null)} />
         </div>
 
-        <div className="space-y-6">
-          <InfoPanel title="Selected Day Overview" icon={<BadgeAlert className="w-5 h-5 text-blue-600" />}>
+        <div className="space-y-3 2xl:sticky 2xl:top-4 2xl:self-start">
+          <CompactInfoPanel title="Selected Day" icon={<BadgeAlert className="w-4 h-4 text-blue-600" />}>
             {selectedDay ? <StatList items={[`Driving: ${minsToHours(selectedDay.drivingMins)}`, `Work: ${minsToHours(selectedDay.workMins)}`, `POA: ${minsToHours(selectedDay.poaMins)}`, `Rest: ${minsToHours(selectedDay.restMins)}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
-          </InfoPanel>
+          </CompactInfoPanel>
 
-          <InfoPanel title="Selected Day Cross-check" icon={<BadgeAlert className="w-5 h-5 text-amber-600" />}>
+          <CompactInfoPanel title="Cross-check" icon={<BadgeAlert className="w-4 h-4 text-amber-600" />}>
             {selectedDay ? <StatList items={[`Legal findings: ${selectedDayFindings.length}`, `Linked VU events: ${selectedDayEvents.length}`, `Cross-check issues: ${selectedDayReconciliation.length}`]} /> : <p className="text-sm text-slate-500">Select a day in the timeline to inspect review context.</p>}
-          </InfoPanel>
+          </CompactInfoPanel>
+
+          <CompactProvisionalSummary
+            periodLabel={analysisSummary?.periodLabel ?? 'No dated rows'}
+            activityBlocks={data.activitySegments.length}
+            issueCount={analysisSummary?.issueCount ?? 0}
+            lastRead={format(new Date(data.identity.lastDownloadAt), 'dd MMM HH:mm')}
+          />
         </div>
       </div>
+
+      <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <summary className="cursor-pointer px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600">
+          Timeline comparison and provisional parser details
+        </summary>
+        <div className="space-y-4 border-t border-slate-100 p-4">
+          <TimelineComparisonStatus
+            comparison={data.timelineComparison}
+            contextLabel={isCandidateCard ? 'Candidate card timeline comparison' : 'Driver timeline comparison'}
+          />
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
+            HourWise read-only capture, not certified C1B/DDD output. These rows are for operational review and parser validation only.
+          </p>
+        </div>
+      </details>
+
+      {isCandidateCard ? (
+        <CandidateCardActions
+          candidateActionError={candidateActionError}
+          candidateActionMessage={candidateActionMessage}
+          candidateActionPending={candidateActionPending}
+          candidatePairDriverId={candidatePairDriverId}
+          filteredDrivers={filteredDrivers}
+          onCandidatePairDriverChange={setCandidatePairDriverId}
+          onCreateInvite={() => setInviteFromCandidateOpen(true)}
+          onPair={() => void handlePairCandidateToDriver()}
+          onMarkReviewed={() => void handleMarkCandidateReviewed('reviewed')}
+          onMarkNoHire={() => void handleMarkCandidateReviewed('no_hire')}
+          onOpenImportCentre={onOpenImportCentre}
+          reportOpen={reportOpen}
+          onToggleReport={() => setReportOpen((current) => !current)}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         {displayMetrics.map((metric) => <MetricTile key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />)}
@@ -924,7 +884,12 @@ function buildRuleActivitiesFromReportEvidence(
       vehicleId: activity.vehicleId ?? null,
       startTime: activity.startTime,
       endTime: activity.endTime,
-      activityType: activity.activityType === 'break_rest' ? 'rest' : activity.activityType,
+      activityType:
+        activity.activityType === 'break_rest'
+          ? 'rest'
+          : activity.activityType === 'unknown'
+          ? 'work'
+          : activity.activityType,
       distanceKm: activity.distanceKm ?? null,
       isManualEntry: activity.label === 'Manual entry',
       source: 'normalized_findings',
@@ -1565,7 +1530,173 @@ function buildTrainingRecommendations(findings: TachoFinding[], reconciliation: 
   return items;
 }
 
-function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: ReturnType<typeof useTachoReaderWorkflow>; onOpenImportCentre?: () => void }) {
+function CompactDriverWorkspaceTarget({
+  searchValue,
+  onSearchChange,
+  selectedValue,
+  onSelectChange,
+  options,
+  fallbackLabel,
+}: {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  selectedValue: string;
+  onSelectChange: (value: string) => void;
+  options: Array<{ id: string; label: string; meta?: string }>;
+  fallbackLabel: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(16rem,0.8fr),minmax(22rem,1.2fr),auto] xl:items-end">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Driver workspace target</p>
+          <input
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search drivers"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-300 focus:bg-white"
+          />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Open driver</p>
+          <select
+            value={selectedValue}
+            onChange={(event) => onSelectChange(event.target.value)}
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-300"
+          >
+            <option value="">{fallbackLabel}</option>
+            {options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}{option.meta ? ` - ${option.meta}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="text-xs font-bold text-slate-500 xl:pb-2">{options.length} matching options</p>
+      </div>
+    </div>
+  );
+}
+
+function CompactInfoPanel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-2 flex items-center gap-2">
+        {icon}
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CompactProvisionalSummary({
+  periodLabel,
+  activityBlocks,
+  issueCount,
+  lastRead,
+}: {
+  periodLabel: string;
+  activityBlocks: number;
+  issueCount: number;
+  lastRead: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-amber-950 shadow-sm">
+      <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Provisional Reader Result</p>
+      <p className="mt-1 text-xs font-bold">Read-only capture, not certified C1B/DDD.</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <MiniFact label="Period" value={periodLabel} />
+        <MiniFact label="Blocks" value={String(activityBlocks)} />
+        <MiniFact label="Issues" value={String(issueCount)} />
+        <MiniFact label="Last read" value={lastRead} />
+      </div>
+    </div>
+  );
+}
+
+function CandidateCardActions({
+  candidateActionError,
+  candidateActionMessage,
+  candidateActionPending,
+  candidatePairDriverId,
+  filteredDrivers,
+  onCandidatePairDriverChange,
+  onCreateInvite,
+  onPair,
+  onMarkReviewed,
+  onMarkNoHire,
+  onOpenImportCentre,
+  reportOpen,
+  onToggleReport,
+}: {
+  candidateActionError: string | null;
+  candidateActionMessage: string | null;
+  candidateActionPending: string | null;
+  candidatePairDriverId: string;
+  filteredDrivers: Array<{ id: string; label: string; meta?: string }>;
+  onCandidatePairDriverChange: (value: string) => void;
+  onCreateInvite: () => void;
+  onPair: () => void;
+  onMarkReviewed: () => void;
+  onMarkNoHire: () => void;
+  onOpenImportCentre?: () => void;
+  reportOpen: boolean;
+  onToggleReport: () => void;
+}) {
+  return (
+    <details className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
+      <summary className="cursor-pointer px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-800">
+        Candidate / pre-employment actions
+      </summary>
+      <div className="space-y-3 border-t border-blue-100 p-4">
+        <p className="text-sm font-semibold text-blue-950">
+          This card is not linked to a profile or invite. Pair it to an existing driver or create an invite only after review.
+        </p>
+        {candidateActionError ? <div className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700">{candidateActionError}</div> : null}
+        {candidateActionMessage ? <div className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-700">{candidateActionMessage}</div> : null}
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr),auto]">
+          <select
+            value={candidatePairDriverId}
+            onChange={(event) => onCandidatePairDriverChange(event.target.value)}
+            className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+          >
+            <option value="">Select existing driver profile</option>
+            {filteredDrivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>{driver.label} - {driver.meta}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!candidatePairDriverId || candidateActionPending === 'pair'}
+            onClick={onPair}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {candidateActionPending === 'pair' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+            Pair Card
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <ActionButton icon={<UserPlus className="w-4 h-4" />} label="Create Invite" onClick={onCreateInvite} />
+          <ActionButton icon={<CheckCircle2 className="w-4 h-4" />} label={candidateActionPending === 'reviewed' ? 'Marking Reviewed' : 'Mark Reviewed'} disabled={candidateActionPending !== null} onClick={onMarkReviewed} />
+          <ActionButton icon={<ShieldAlert className="w-4 h-4" />} label={candidateActionPending === 'no_hire' ? 'Marking No Hire' : 'Checked / No Hire'} disabled={candidateActionPending !== null} onClick={onMarkNoHire} />
+          <ActionButton icon={<CreditCard className="w-4 h-4" />} label="Import Review" disabled={!onOpenImportCentre} onClick={() => onOpenImportCentre?.()} />
+          <ActionButton icon={<FileText className="w-4 h-4" />} label={reportOpen ? 'Hide Report' : 'Screening Report'} onClick={onToggleReport} />
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function DriverCardReaderPanel({
+  workflow,
+  onManualRefresh,
+  onOpenImportCentre,
+}: {
+  workflow: ReturnType<typeof useTachoReaderWorkflow>;
+  onManualRefresh: () => void;
+  onOpenImportCentre?: () => void;
+}) {
   const { status } = workflow;
   const tone =
     status.stage === 'complete'
@@ -1580,30 +1711,52 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
   const canManualStart = (status.canStartRead || canReadAgainFromComplete) && !workflow.commandPending && !workflow.importPending;
 
   return (
-    <div className={`rounded-3xl border p-5 shadow-sm ${tone}`}>
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
-            <Laptop className="h-6 w-6 text-blue-700" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live Driver Card Reader</p>
-            <h3 className="mt-1 text-xl font-black text-slate-950">{status.headline}</h3>
-            <p className="mt-2 max-w-4xl text-sm font-medium text-slate-700">{status.detail}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-widest text-slate-600">
-              <span className="rounded-full bg-white/80 px-3 py-1">Reader: {status.readerConnected ? status.readerDeviceName ?? 'Connected' : 'Not detected'}</span>
-              <span className="rounded-full bg-white/80 px-3 py-1">Card: {status.cardPresent ? 'Inserted' : 'Not inserted'}</span>
-              <span className="rounded-full bg-white/80 px-3 py-1">Import: {status.importId ? 'Ready' : 'Waiting'}</span>
-              {status.lastHeartbeatAt ? <span className="rounded-full bg-white/80 px-3 py-1">Seen {new Date(status.lastHeartbeatAt).toLocaleTimeString('en-GB')}</span> : null}
+    <div className={`rounded-2xl border px-4 py-3 shadow-sm ${tone}`}>
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr),auto] xl:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-xl bg-white/80 p-2 shadow-sm">
+              <Laptop className="h-4 w-4 text-blue-700" />
             </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live driver card reader</p>
+            <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-700">
+              {status.stage.replace(/_/g, ' ')}
+            </span>
+            <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-700">
+              {status.progressPercent}%
+            </span>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr),22rem] xl:items-center">
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-black text-slate-950">{status.headline}</h3>
+              <p className="truncate text-xs font-medium text-slate-700">{status.detail}</p>
+            </div>
+            <div>
+              <div className="mb-1 flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
+                <span>Read / import progress</span>
+                <span>{status.progressPercent}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/80">
+                <div
+                  className={`h-2 rounded-full transition-all ${status.stage === 'error' ? 'bg-rose-500' : status.stage === 'complete' ? 'bg-emerald-500' : 'bg-blue-700'}`}
+                  style={{ width: `${status.progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="rounded-full bg-white/80 px-2.5 py-1">Reader: {status.readerConnected ? status.readerDeviceName ?? 'Connected' : 'Not detected'}</span>
+            <span className="rounded-full bg-white/80 px-2.5 py-1">Card: {status.cardPresent ? 'Inserted' : 'Not inserted'}</span>
+            <span className="rounded-full bg-white/80 px-2.5 py-1">Import: {status.importId ? 'Ready' : 'Waiting'}</span>
+            {status.lastHeartbeatAt ? <span className="rounded-full bg-white/80 px-2.5 py-1">Seen {new Date(status.lastHeartbeatAt).toLocaleTimeString('en-GB')}</span> : null}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 xl:justify-end">
           <button
             type="button"
-            onClick={() => void workflow.refreshStatus()}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
+            onClick={onManualRefresh}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
           >
             <RefreshCw className={`h-4 w-4 ${workflow.refreshing ? 'animate-spin' : ''}`} />
             Refresh
@@ -1612,7 +1765,7 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
             type="button"
             onClick={() => void workflow.sendCommand('start-read')}
             disabled={!canManualStart}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {workflow.commandPending === 'start-read' || workflow.importPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
             {status.stage === 'card_inserted' ? 'Auto Reading' : status.stage === 'complete' ? 'Read Again' : 'Read Card'}
@@ -1621,7 +1774,7 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
             type="button"
             onClick={() => void workflow.sendCommand('cancel')}
             disabled={!canCancel}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
@@ -1629,34 +1782,21 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
             type="button"
             onClick={onOpenImportCentre}
             disabled={!onOpenImportCentre}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Manual Import
           </button>
         </div>
       </div>
 
-      <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
-          <span>Read / Import Progress</span>
-          <span>{status.progressPercent}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white/80">
-          <div
-            className={`h-2 rounded-full transition-all ${status.stage === 'error' ? 'bg-rose-500' : status.stage === 'complete' ? 'bg-emerald-500' : 'bg-blue-700'}`}
-            style={{ width: `${status.progressPercent}%` }}
-          />
-        </div>
-      </div>
-
       {status.exportParserReady === false ? (
-        <div className="mt-4 rounded-2xl border border-amber-300 bg-white/70 p-3 text-xs font-medium text-amber-950">
+        <div className="mt-3 rounded-xl border border-amber-300 bg-white/70 px-3 py-2 text-xs font-medium text-amber-950">
           This is a provisional HourWise read-only capture. It can be displayed for review, but it is not certified C1B/DDD output yet.
         </div>
       ) : null}
 
       {workflow.lastError || workflow.commandMessage || workflow.importMessage ? (
-        <div className="mt-4 rounded-2xl border border-white/80 bg-white/70 p-3 text-xs font-medium text-slate-700">
+        <div className="mt-3 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-xs font-medium text-slate-700">
           {workflow.lastError ? <p className="text-amber-800">{workflow.lastError}</p> : null}
           {workflow.commandMessage ? <p>{workflow.commandMessage}</p> : null}
           {workflow.importMessage ? <p>{workflow.importMessage}</p> : null}
@@ -1669,7 +1809,7 @@ function DriverCardReaderPanel({ workflow, onOpenImportCentre }: { workflow: Ret
 function ActionButton({ icon, label, onClick, disabled }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean }) { return <button onClick={onClick} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">{icon}{label}</button>; }
 function StateCard({ title, text, tone = 'loading' }: { title: string; text?: string; tone?: 'loading' | 'error' | 'warning' }) { const isError = tone === 'error'; const isWarning = tone === 'warning'; return <div className={`rounded-2xl border p-8 text-center ${isError ? 'bg-rose-50 border-rose-100' : isWarning ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'}`}>{isError || isWarning ? <AlertTriangle className={`w-10 h-10 mx-auto mb-3 ${isError ? 'text-rose-500' : 'text-amber-500'}`} /> : <div className="w-10 h-10 border-b-2 border-blue-600 rounded-full animate-spin mx-auto mb-3" />}<p className={`font-bold ${isError ? 'text-rose-700' : isWarning ? 'text-amber-900' : 'text-slate-700'}`}>{title}</p>{text ? <p className="mt-2 text-sm text-slate-500">{text}</p> : null}</div>; }
 function MetricTile({ label, value, tone }: { label: string; value: string; tone: 'neutral' | 'good' | 'warning' | 'danger' }) { const styles = { neutral: 'border-slate-200 bg-white text-slate-700', good: 'border-emerald-100 bg-emerald-50 text-emerald-700', warning: 'border-amber-100 bg-amber-50 text-amber-700', danger: 'border-rose-100 bg-rose-50 text-rose-700' }[tone]; return <div className={`rounded-2xl border p-5 shadow-sm ${styles}`}><p className="text-[10px] font-black uppercase tracking-widest opacity-80">{label}</p><p className="text-3xl font-black mt-2">{value}</p></div>; }
-function SummaryTile({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-amber-200 bg-white/70 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{label}</p><p className="mt-1 text-sm font-black text-amber-950">{value}</p></div>; }
+function MiniFact({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-amber-200 bg-white/70 px-2 py-2"><p className="text-[9px] font-black uppercase tracking-widest text-amber-700">{label}</p><p className="mt-0.5 text-xs font-black text-amber-950">{value}</p></div>; }
 function InfoPanel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) { return <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"><div className="flex items-center gap-2 mb-4">{icon}<h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{title}</h3></div>{children}</div>; }
 function StatList({ items }: { items: string[] }) { return <div className="space-y-2">{items.map((item) => <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">{item}</div>)}</div>; }
-function BlankDriverCardWorkspace({ range, onRangeChange, timelineDays, title, guidance }: { range: TachoAnalysisRange; onRangeChange: (range: TachoAnalysisRange) => void; timelineDays: TimelineDay[]; title: string; guidance: string }) { return <div className="space-y-6"><StateCard title={title} text={guidance} tone="warning" /><div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{rangeLabel(range)} Calendar</p><h3 className="text-lg font-black text-slate-900">Blank Driver Card Workspace</h3><p className="text-sm text-slate-500">The calendar remains ready for the next inserted card. Parsed days will replace this blank state after a successful read/import.</p></div><TachoFilters value={range} onChange={onRangeChange} /></div><TachoActivityTimeline days={timelineDays} /></div></div>; }
+function BlankDriverCardWorkspace({ range, onRangeChange, timelineDays, title, guidance }: { range: TachoAnalysisRange; onRangeChange: (range: TachoAnalysisRange) => void; timelineDays: TimelineDay[]; title: string; guidance: string }) { return <div className="space-y-4"><div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{rangeLabel(range)} Calendar</p><h3 className="text-xl font-black text-slate-900">Blank Driver Card Workspace</h3><p className="text-xs font-medium text-slate-500">The calendar remains ready for the next inserted card. Parsed days will replace this blank state after a successful read/import.</p></div><TachoFilters value={range} onChange={onRangeChange} /></div><TachoActivityTimeline days={timelineDays} /></div><div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"><p className="font-black">{title}</p><p className="mt-1 font-medium">{guidance}</p></div></div>; }

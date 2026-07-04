@@ -163,7 +163,7 @@ function MultiDayTimeline({
         <span className="text-right">Review</span>
       </div>
 
-      <div className="max-h-[40rem] space-y-2 overflow-y-auto pr-1">
+      <div className="max-h-[44rem] space-y-1.5 overflow-y-auto pr-1">
         {days.map((day) => {
           const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
           const dayStartTime = day.activities.length > 0 ? format(new Date(day.activities[0].startTime), 'HH:mm') : '--:--';
@@ -175,7 +175,7 @@ function MultiDayTimeline({
             <button
               key={day.date.toISOString()}
               onClick={() => onSelectDate?.(day.date)}
-              className={`w-full text-left rounded-2xl border p-3 transition ${
+              className={`w-full text-left rounded-2xl border p-2.5 transition ${
                 isSelected ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
@@ -187,7 +187,7 @@ function MultiDayTimeline({
                   </p>
                 </div>
 
-                <div className="relative h-12 rounded-lg border border-slate-200 bg-slate-100 overflow-visible">
+                <div className="relative h-10 rounded-lg border border-slate-200 bg-slate-100 overflow-visible">
                   {[0, 4, 8, 12, 16, 20].map((hour) => (
                     <div
                       key={`${day.date.toISOString()}-${hour}`}
@@ -245,14 +245,22 @@ interface VisibleDaySegment {
   end: Date;
   leftPercent: number;
   widthPercent: number;
-  inferred?: boolean;
+  inferred: boolean;
+}
+
+interface SourceDaySegment {
+  id: string;
+  activityType: TachoActivitySegment['activityType'];
+  start: Date;
+  end: Date;
+  inferred: boolean;
 }
 
 function buildVisibleDaySegments(dayDate: Date, explicitActivities: TachoActivitySegment[]): VisibleDaySegment[] {
   const dayStart = startOfDay(dayDate);
   const dayEnd = addDays(dayStart, 1);
   const totalMinutesInDay = 24 * 60;
-  const sourceSegments = [
+  const sourceSegments: SourceDaySegment[] = [
     ...explicitActivities.map((activity) => ({
       id: activity.id,
       activityType: activity.activityType,
@@ -264,13 +272,13 @@ function buildVisibleDaySegments(dayDate: Date, explicitActivities: TachoActivit
   ];
 
   return sourceSegments
-    .map((segment) => {
+    .reduce<VisibleDaySegment[]>((segments, segment) => {
       const start = new Date(Math.max(segment.start.getTime(), dayStart.getTime()));
       const end = new Date(Math.min(segment.end.getTime(), dayEnd.getTime()));
       const durationMins = differenceInMinutes(end, start);
-      if (durationMins <= 0) return null;
+      if (durationMins <= 0) return segments;
 
-      return {
+      segments.push({
         id: `${segment.id}-${format(dayStart, 'yyyy-MM-dd')}-${start.getTime()}`,
         activityType: segment.activityType,
         start,
@@ -278,9 +286,9 @@ function buildVisibleDaySegments(dayDate: Date, explicitActivities: TachoActivit
         leftPercent: (differenceInMinutes(start, dayStart) / totalMinutesInDay) * 100,
         widthPercent: (durationMins / totalMinutesInDay) * 100,
         inferred: segment.inferred,
-      };
-    })
-    .filter((segment): segment is VisibleDaySegment => Boolean(segment))
+      });
+      return segments;
+    }, [])
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 

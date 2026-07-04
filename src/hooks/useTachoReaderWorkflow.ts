@@ -332,7 +332,15 @@ export function useTachoReaderWorkflow({
     [helperStatus, trackedFocusedDate, trackedImport]
   );
 
-  const refreshStatus = useCallback(async () => {
+  const clearCompletedReaderResult = useCallback(() => {
+    setRegisteredImport(null);
+    setTrackedImport(null);
+    setTrackedFocusedDate(null);
+    importSessionRef.current = null;
+    openedReviewKeyRef.current = null;
+  }, []);
+
+  const refreshStatus = useCallback(async (options?: { clearCompletedResult?: boolean }) => {
     setRefreshing(true);
     try {
       const controller = new AbortController();
@@ -347,15 +355,22 @@ export function useTachoReaderWorkflow({
         throw new Error(`Helper returned ${response.status}`);
       }
 
-      setHelperStatus(buildStatus(helperUrl, (await response.json()) as ReaderHelperResponse));
+      const nextStatus = buildStatus(helperUrl, (await response.json()) as ReaderHelperResponse);
+      setHelperStatus(nextStatus);
+      if (options?.clearCompletedResult && !nextStatus.readSessionId && !nextStatus.importId) {
+        clearCompletedReaderResult();
+      }
       setLastError(null);
     } catch (error) {
       setHelperStatus(defaultStatus(helperUrl));
+      if (options?.clearCompletedResult) {
+        clearCompletedReaderResult();
+      }
       setLastError(error instanceof Error ? error.message : 'Unable to reach helper');
     } finally {
       setRefreshing(false);
     }
-  }, [helperUrl]);
+  }, [clearCompletedReaderResult, helperUrl]);
 
   const sendCommand = useCallback(
     async (command: 'start-read' | 'cancel') => {
@@ -405,15 +420,6 @@ export function useTachoReaderWorkflow({
       window.clearInterval(intervalId);
     };
   }, [refreshStatus]);
-
-  useEffect(() => {
-    if (helperStatus.readSessionId || !registeredImport) return;
-    setRegisteredImport(null);
-    setTrackedImport(null);
-    setTrackedFocusedDate(null);
-    importSessionRef.current = null;
-    openedReviewKeyRef.current = null;
-  }, [helperStatus.readSessionId, registeredImport]);
 
   useEffect(() => {
     if (status.stage !== 'complete') {
@@ -608,6 +614,7 @@ export function useTachoReaderWorkflow({
     registeredImport,
     trackedImport,
     refreshStatus,
+    clearCompletedReaderResult,
     sendCommand,
   };
 }

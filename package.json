@@ -12,6 +12,7 @@
     "tacho:helper:probe": "node tools/tacho-reader-helper/contract-probe.mjs",
     "tacho:helper:test": "node tools/tacho-reader-helper/run-scenarios.mjs",
     "tacho:helper:windows": "dotnet run --project tools/tacho-reader-helper/windows-helper/HourWise.TachoReaderHelper.csproj",
+    "tacho:helper:package": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/tacho-reader-helper/windows-helper/package-portal-download.ps1",
     "tacho:runtime": "node tools/tacho-processing/configure-runtime.mjs",
     "tacho:inspect-time-007": "node tools/tacho-processing/inspect-time-007-state.mjs",
     "tacho:backfill-time-007": "node tools/tacho-processing/backfill-time-007-timeline.mjs",
