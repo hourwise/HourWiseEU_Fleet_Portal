@@ -13,6 +13,7 @@ import { TachoReaderStatusOverlay } from './TachoReaderStatusOverlay';
 import { VehicleHistoryLedger } from './VehicleHistoryLedger';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
+import { TimelineComparisonStatus } from './TimelineComparisonStatus';
 import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
 import type {
   TachoAnalysisRange,
@@ -218,6 +219,8 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
       </div>
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
+
+      <TimelineComparisonStatus comparison={data.timelineComparison} contextLabel="Vehicle timeline comparison" />
 
       <div className="grid grid-cols-1 xl:grid-cols-[2.25fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">

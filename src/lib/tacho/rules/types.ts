@@ -77,6 +77,7 @@ export interface TachoImportRecord {
   storageDeletedAt?: string;
   discrepancyPreview?: VehicleMotionDiscrepancy[];
   reconciliationPreview?: TachoReconciliationItem[];
+  timelineComparison?: TachoTimelineComparison;
 }
 
 export interface TachoEvidenceRef {
@@ -356,6 +357,7 @@ export interface DriverCardAnalysisData {
   range: TachoAnalysisRange;
   importId?: string;
   isCandidateCard?: boolean;
+  timelineComparison?: TachoTimelineComparison;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
   activitySegments: TachoActivitySegment[];
@@ -367,6 +369,7 @@ export interface DriverCardAnalysisData {
 export interface VehicleUnitAnalysisData {
   identity: VehicleUnitIdentity;
   range: TachoAnalysisRange;
+  timelineComparison?: TachoTimelineComparison;
   metrics: TachoSummaryMetric[];
   dailySummaries: TachoDaySummary[];
   activitySegments: TachoActivitySegment[];

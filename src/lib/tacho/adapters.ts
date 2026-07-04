@@ -400,6 +400,7 @@ export function adaptDriverBundleToAnalysis(
     range,
     importId: importRecord.id,
     isCandidateCard,
+    timelineComparison: bundle.timelineComparison,
     metrics: [
       metric('Driving Breaches', String(drivingBreaches), drivingBreaches > 0 ? 'warning' : 'good'),
       metric('WTD Alerts', String(wtdAlerts), wtdAlerts > 0 ? 'warning' : 'good'),
@@ -462,6 +463,7 @@ export function adaptVehicleBundleToAnalysis(
       periodEnd: download?.periodEnd,
     },
     range,
+    timelineComparison: bundle.timelineComparison,
     metrics: [
       metric('Overspeed Events', String(overspeedCount), overspeedCount > 0 ? 'danger' : 'good'),
       metric('Card / Driver Events', String(cardEventCount), cardEventCount > 0 ? 'warning' : 'good'),

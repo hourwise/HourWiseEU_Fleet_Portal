@@ -22,6 +22,7 @@ import type { TachoImportRecord, TachoReconciliationItem, VehicleMotionDiscrepan
 import { InviteDriverModal } from '../InviteDriverModal';
 import { TachoReaderHelperPanel } from './TachoReaderHelperPanel';
 import { TachoUploadZone } from './TachoUploadZone';
+import { TimelineComparisonStatus } from './TimelineComparisonStatus';
 
 interface TachoInvitePrefill {
   fullName: string;
@@ -69,6 +70,10 @@ export function TachoImportCentre({
     [selectedImport]
   );
   const monitoringSummary = useMemo(() => summarizeTachoImportObservability(filteredImports), [filteredImports]);
+  const alignedTimelineCount = useMemo(
+    () => filteredImports.filter((item) => item.timelineComparison?.available && item.timelineComparison.eventCountMatches && item.timelineComparison.gapCountMatches && item.timelineComparison.daySummaryCountMatches).length,
+    [filteredImports]
+  );
 
   const handleRetryProcessing = async () => {
     if (!profile?.company_id || !selectedImport || !canRetryTachoImportProcessing(selectedImport)) return;
@@ -137,12 +142,13 @@ export function TachoImportCentre({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
         <StatCard label="Processing Now" value={loading ? '...' : String(monitoringSummary.processingNow)} tone="warning" />
         <StatCard label="Completed Today" value={loading ? '...' : String(monitoringSummary.completedToday)} tone="good" />
         <StatCard label="Failed Imports" value={loading ? '...' : String(monitoringSummary.failedImports)} tone="danger" />
         <StatCard label="Open Motion Issues" value={loading ? '...' : String(filteredImports.reduce((total, item) => total + (item.discrepancyCount ?? 0), 0))} tone="danger" />
         <StatCard label="Cross-check Issues" value={loading ? '...' : String(filteredImports.reduce((total, item) => total + (item.reconciliationIssueCount ?? 0), 0))} tone="warning" />
+        <StatCard label="Timeline Aligned" value={loading ? '...' : String(alignedTimelineCount)} tone={alignedTimelineCount > 0 ? 'good' : 'warning'} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -264,6 +270,7 @@ export function TachoImportCentre({
           ) : (
             <div className="space-y-4">
               <ImportObservabilityNotice item={selectedImport} />
+              <TimelineComparisonStatus comparison={selectedImport.timelineComparison} contextLabel="Import timeline comparison" />
               <CandidateCardCheckAction item={selectedImport} onOpenCandidateCardAnalysis={onOpenCandidateCardAnalysis} />
               <CandidateArchiveControls
                 item={selectedImport}
@@ -1002,6 +1009,7 @@ function ImportRow({ item }: { item: TachoImportRecord }) {
                 {label.text}
               </span>
             ))}
+            <TimelineComparisonStatus comparison={item.timelineComparison} variant="badge" />
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {identityLabel} - {format(new Date(item.importedAt), 'dd MMM yyyy HH:mm')}
@@ -1119,6 +1127,10 @@ function ImportDiagnostics({ item }: { item: TachoImportRecord }) {
     ['Processing kickoff error', item.processingKickoffError ?? 'None'],
     ['Trigger dispatch error', item.triggerDispatchError ?? 'None'],
     ['Processing error', item.processingError ?? 'None'],
+    ['Timeline generation', item.timelineComparison?.timelineGenerationId ?? 'None'],
+    ['Timeline events', item.timelineComparison ? `${item.timelineComparison.tachographActivityCount} tachograph / ${item.timelineComparison.timelineEventCount} timeline` : 'Not checked'],
+    ['Timeline gaps', item.timelineComparison ? `${item.timelineComparison.tachographGapCount} tachograph / ${item.timelineComparison.timelineGapCount} timeline` : 'Not checked'],
+    ['Timeline day summaries', item.timelineComparison ? `${item.timelineComparison.tachographDaySummaryCount} tachograph / ${item.timelineComparison.timelineDailySummaryCount} timeline` : 'Not checked'],
     ['Superseded by import', item.supersededByImportId ?? 'No'],
     ['Archived at', item.archivedAt ?? 'No'],
   ];

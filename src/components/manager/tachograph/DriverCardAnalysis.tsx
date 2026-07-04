@@ -16,6 +16,7 @@ import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
 import { TachoFilters } from './TachoFilters';
 import { TachoWorkspacePicker } from './TachoWorkspacePicker';
 import { TachoFindingReviewPanel } from './TachoFindingReviewPanel';
+import { TimelineComparisonStatus } from './TimelineComparisonStatus';
 import type { DriverCardAnalysisData, RuleActivitySegment, TachoActivitySegment, TachoAnalysisRange, TachoCorrectiveActionType, TachoDaySummary, TachoFinding, TachoFindingReview, TachoFindingReviewStatus, TachoReconciliationItem } from '../../../lib/tacho/rules/types';
 
 interface DriverCardAnalysisProps {
@@ -548,6 +549,11 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       </div>
 
       {dayReason ? <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-950">{dayReason}</div> : null}
+
+      <TimelineComparisonStatus
+        comparison={data.timelineComparison}
+        contextLabel={isCandidateCard ? 'Candidate card timeline comparison' : 'Driver timeline comparison'}
+      />
 
       {reportOpen ? (
         <DriverCardReportPanel

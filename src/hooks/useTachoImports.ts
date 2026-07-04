@@ -172,6 +172,7 @@ export function useTachoImports(options?: UseTachoImportsOptions) {
                   discrepancyCount: discrepancies.length,
                   reconciliationIssueCount: reconciliation.filter((entry) => entry.status !== 'matched').length,
                   highSeverityCount,
+                  timelineComparison: bundle?.timelineComparison,
                   discrepancyPreview: buildImportDiscrepancyPreview(discrepancies),
                   reconciliationPreview: buildImportReconciliationPreview(reconciliation),
                 };
