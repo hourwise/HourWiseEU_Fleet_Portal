@@ -265,6 +265,9 @@ ADR-0012 — Service Role Access Must Be Wrapped By Permission Checks
 ADR-0013 — Reports Use Cautious Compliance Language
 ADR-0014 — External Provider Secrets Are Server-Side Only
 ADR-0015 — Feature Flags Do Not Replace Permissions
+ADR-0016 — Parser Output Uses Relational Records With JSONB Payloads
+ADR-0017 — Timeline Events Are Versioned Derived Records
+ADR-0018 — Raw Tachograph File Retention Is Policy-Driven And Audited
 ```
 
 The sections below provide starter ADR content that can later be split into individual files.
@@ -1653,26 +1656,513 @@ Review if:
 
 ---
 
+# ADR-0016 — Parser Output Uses Relational Records With JSONB Payloads
+
+**Status:** Accepted
+**Date:** 2026-07-02
+**Related documents:**
+
+* `SOT-18-03` — Evidence Import Pipeline
+* `SOT-18-04` — Driver Card Engine
+* `SOT-18-05` — Vehicle Unit Engine
+* `SOT-18-06` — Timeline Engine
+* `SOT-21` — Data Model Specification
+* `SOT-22` — Security Model Specification
+* `SOT-23` — Integration Architecture
+
+---
+
+## Context
+
+The Compliance Intelligence Platform needs parser output to serve several different purposes:
+
+* operational screens must query activities, summaries, findings, and technical events efficiently
+* compliance logic must run deterministically against stable, typed records
+* reports and evidence packs must trace derived findings back to parser runs and raw files
+* parser implementations may change over time
+* tachograph parser libraries may expose vendor-specific or version-specific details
+* unsupported or partially decoded fields still need to be retained for diagnostics
+
+The current implementation already follows a hybrid pattern:
+
+* `tachograph_processing_runs` stores parser version, source, warnings, and errors
+* `tachograph_activity_segments`, `tachograph_day_summaries`, `tachograph_findings`, `tachograph_technical_events`, reconciliation rows, and signal tables store query-critical derived records relationally
+* `metadata`, `evidence_refs`, `warnings`, `errors`, and signal details use JSONB for flexible parser and diagnostic data
+
+`SOT-21` previously left open how much parser output should be relational versus JSONB. This ADR resolves that boundary.
+
+---
+
+## Decision
+
+HourWise will store parser output using a hybrid model.
+
+Query-critical, compliance-critical, and security-critical derived data must be stored in relational tables.
+
+Parser payloads, parser diagnostics, warnings, errors, unsupported fields, vendor-specific details, and forward-compatible parser details may be stored as JSONB.
+
+Raw tachograph files remain the primary immutable source evidence. Parser output is versioned derived data, not the legal source of truth.
+
+The MVP data model should keep `parser_runs` and `parser_outputs`, but `parser_outputs` must not become the only place where operationally important parser data lives.
+
+The required relational boundary is:
+
+* import identity and raw file reference
+* parser run identity, parser name, parser version, status, timing, warnings, and errors
+* driver card and vehicle unit download summary records
+* normalised activity records
+* timeline events derived from normalised activities
+* compliance checks and compliance outcomes
+* technical events and faults used by compliance or reporting
+* evidence links required to explain findings
+* report readiness and export snapshot references
+* tenant, driver, vehicle, time-range, status, severity, rule, and confidence fields used for filtering, RLS, reporting, or audit
+
+The JSONB boundary is:
+
+* raw decoded parser payload snapshots
+* parser-specific field groups not yet promoted to platform entities
+* diagnostic details, warnings, and parser errors
+* unsupported tachograph blocks
+* vendor-specific or parser-version-specific fields
+* evidence reference arrays where a flexible list is required
+* metadata used for traceability, debug, or future parser migration
+* temporary compatibility payloads during parser upgrade windows
+
+JSONB fields must not be used to bypass RLS, hide required audit fields, or store data needed for normal user filtering where a relational column is practical.
+
+---
+
+## Alternatives Considered
+
+### Store all parser output as JSONB only
+
+Rejected because compliance checks, timeline generation, reporting, tenant filtering, and Atlas retrieval need stable, indexable records.
+
+JSON-only storage would make implementation faster initially but would push complexity into application code and make audit/report queries fragile.
+
+### Store all parser output relationally
+
+Rejected because tachograph parser payloads are large, evolving, and may contain parser-specific or vendor-specific fields that do not justify schema churn.
+
+Fully relational storage would slow parser upgrades and create unnecessary migrations for fields not used by compliance, reporting, or user workflows.
+
+### Store only normalised records and discard parser payloads
+
+Rejected because diagnostics, parser regression analysis, upgrade comparison, and partial decode handling need retained parser context.
+
+The immutable raw file remains available, but retaining parser-level payload and diagnostic data improves supportability.
+
+---
+
+## Consequences
+
+Positive consequences:
+
+* operational and compliance queries remain fast and understandable
+* RLS and permission checks can operate on explicit relational fields
+* reports and evidence packs can trace from derived records to parser runs and raw files
+* parser implementations can evolve without constant schema changes
+* diagnostics and parser upgrade comparisons remain possible
+* implementation aligns with the existing tachograph processing tables
+
+Negative consequences:
+
+* developers must decide when a JSONB field should be promoted to a relational column
+* some parser data will exist in both structured relational form and diagnostic JSON form
+* migrations must preserve traceability between parser payloads and derived records
+* tests must cover both relational output and JSONB diagnostic retention
+
+---
+
+## Implementation Notes
+
+Parser processing should follow this order:
+
+1. Preserve the raw file as immutable source evidence.
+2. Create a parser run record with parser name, version, status, timing, warnings, and errors.
+3. Store raw or semi-raw parser payloads in `parser_outputs.output_json` or equivalent JSONB diagnostic fields.
+4. Promote query-critical values into relational tables.
+5. Link relational derived records back to import file and parser run where practical.
+6. Build timeline events from relational normalised activity records, not directly from raw JSONB payloads.
+7. Build compliance outcomes from timeline events and rule versions, not from parser-specific JSON shape.
+
+Fields should be promoted from JSONB to relational columns when they are:
+
+* required for RLS or tenant scoping
+* required for common filtering or sorting
+* required by compliance rules
+* required by evidence packs or report exports
+* required by Atlas retrieval constraints
+* required by audit or support workflows
+* used in indexes or joins
+
+Existing tachograph tables should be treated as the current implementation baseline during migration reconciliation. Future migrations may rename them to the `SOT-21` terminology, but they should preserve the hybrid boundary defined here.
+
+---
+
+## Review Triggers
+
+Review this ADR if:
+
+* parser output becomes too large or expensive to retain in JSONB
+* compliance rules require many fields currently stored only in JSONB
+* report generation depends on parser-specific JSON shapes
+* Atlas retrieval starts querying unbounded JSONB payloads
+* a second parser implementation is introduced
+* parser comparison mode becomes part of the production workflow
+* database performance shows JSONB-heavy query bottlenecks
+
+---
+
+# ADR-0017 — Timeline Events Are Versioned Derived Records
+
+**Status:** Accepted
+**Date:** 2026-07-02
+**Related documents:**
+
+* `SOT-18-06` — Timeline Engine
+* `SOT-18-07` — Compliance Engine
+* `SOT-18-08` — Evidence Engine
+* `SOT-20` — Reporting Platform Specification
+* `SOT-21` — Data Model Specification
+* `SOT-24` — Architecture Decision Records
+
+---
+
+## Context
+
+The Timeline Engine converts normalised parser output and other source evidence into a unified operational history of **Timeline Events**.
+
+Timeline Events are not raw legal evidence. They are derived records created from source records, parser versions, normalisation logic, and timeline generation rules.
+
+The platform needs to support:
+
+* deterministic rebuilding when parser or normalisation logic changes
+* auditability of the timeline used by a compliance check
+* evidence packs that explain which timeline state supported a finding
+* report exports that snapshot the evidence state at export time
+* safe correction when missing files are later imported
+* preservation of prior outputs where users already reviewed, exported, or acted on them
+
+`SOT-21` previously left open whether Timeline Events should be versioned directly or regenerated with snapshot preservation. This ADR resolves that boundary.
+
+---
+
+## Decision
+
+HourWise will treat Timeline Events as versioned derived records.
+
+Timeline Events may be regenerated when source evidence, parser output, normalisation logic, or timeline generation logic changes.
+
+Published Timeline Events must not be silently overwritten.
+
+Each Timeline Event generation must be associated with a generation identity, processing version, source record references, parser run references where applicable, and generation timestamp.
+
+When recalculation is required:
+
+* create a new timeline generation/version
+* mark replaced Timeline Events or generations as superseded where they are no longer current
+* retain previous Timeline Events where they have been used by compliance outcomes, evidence packs, review notes, Atlas responses, or report exports
+* preserve enough metadata to explain why the timeline changed
+* ensure reports and evidence packs point to the timeline version they used
+
+The current operational view may show only the latest active timeline version, but audit, reporting, evidence, and compliance records must be able to resolve the exact timeline version used at the time of calculation or export.
+
+---
+
+## Alternatives Considered
+
+### Overwrite Timeline Events In Place
+
+Rejected because silent overwrite breaks auditability.
+
+Compliance outcomes, evidence packs, and report exports need to explain what information was used at the time they were created. If timeline rows are overwritten, historical findings can change without a traceable reason.
+
+### Make Timeline Events Fully Immutable Forever
+
+Rejected because Timeline Events are derived records.
+
+Parser improvements, missing files, corrected driver or vehicle pairing, and updated normalisation logic can legitimately produce a better timeline. Forcing every correction into permanent parallel timelines without an active/superseded model would make operational views difficult to use.
+
+### Store Only Report Snapshots And Regenerate Operational Timelines Freely
+
+Rejected because compliance outcomes and evidence packs also need traceability before report export.
+
+Report snapshots are necessary but not sufficient. The same timeline version must be traceable across compliance checks, evidence packs, Atlas explanations, and reports.
+
+---
+
+## Consequences
+
+Positive consequences:
+
+* compliance outcomes can be traced to the exact timeline version used
+* evidence packs can explain source and generation context
+* reports can snapshot stable evidence without relying on mutable live timeline rows
+* missing files and parser improvements can update the current operational view safely
+* users can understand why findings changed after recalculation
+
+Negative consequences:
+
+* timeline storage and indexing are more complex
+* generation/version metadata is required from the MVP onward
+* recalculation workflows need explicit superseded/current state handling
+* tests must verify that prior evidence and report snapshots remain stable after regeneration
+
+---
+
+## Implementation Notes
+
+The MVP data model should include either a dedicated timeline generation table or equivalent fields on timeline records.
+
+Required generation metadata:
+
+* generation ID or processing version
+* import/source record references
+* parser run references where applicable
+* generation status
+* generated at timestamp
+* generated by process or user
+* superseded by generation ID where applicable
+* superseded at timestamp where applicable
+* reason for regeneration where available
+
+Timeline Events should include enough relational fields for filtering and audit:
+
+* tenant/fleet ID
+* driver ID where applicable
+* vehicle ID where applicable
+* event type
+* event start and end time
+* confidence state
+* source references
+* generation/version reference
+* active/superseded state
+
+Compliance checks should record:
+
+* timeline generation/version used
+* rule version used
+* calculation version used
+* source event IDs included in the check
+
+Report exports should snapshot or reference:
+
+* included Timeline Event IDs
+* timeline generation/version
+* compliance outcome IDs
+* evidence pack IDs
+* report template version
+
+Atlas responses that cite Timeline Events should store source links to the specific event/version referenced.
+
+---
+
+## Review Triggers
+
+Review this ADR if:
+
+* timeline storage grows faster than expected
+* timeline regeneration becomes too slow for operational workflows
+* reports need full embedded timeline snapshots instead of versioned references
+* external evidence sources become primary rather than supplementary
+* rule recalculation requires comparing many timeline versions
+* customers require legal retention guarantees for historical generated timelines
+
+---
+
+# ADR-0018 — Raw Tachograph File Retention Is Policy-Driven And Audited
+
+**Status:** Accepted
+**Date:** 2026-07-02
+**Related documents:**
+
+* `SOT-18-03` — Evidence Import Pipeline
+* `SOT-18-08` — Evidence Engine
+* `SOT-20` — Reporting Platform Specification
+* `SOT-21` — Data Model Specification
+* `SOT-22` — Security Model Specification
+* `ADR-0002` — Raw Tachograph Files Are Immutable
+
+---
+
+## Context
+
+`ADR-0002` establishes that raw tachograph files are immutable after upload.
+
+Immutability does not answer how long raw files should be retained, when they may be archived or deleted, or what evidence must remain after deletion.
+
+HourWise needs a retention model that balances:
+
+* compliance evidence integrity
+* report and audit traceability
+* privacy and data minimisation
+* fleet/customer retention policy
+* jurisdiction-specific requirements
+* storage cost
+* offboarding and deletion workflows
+
+The platform must not silently destroy evidence used to create compliance outcomes, evidence packs, Atlas answers, review notes, or report exports.
+
+---
+
+## Decision
+
+Raw tachograph file retention will be policy-driven and audited.
+
+Raw tachograph files remain immutable while retained.
+
+Retention duration must be configurable by policy, with a platform minimum and support for fleet, jurisdiction, and legal-hold overrides.
+
+Raw tachograph files used by compliance outcomes, evidence packs, review notes, Atlas source links, or report exports must not be silently deleted.
+
+When a retained raw file expires under policy, the system may archive or delete the binary object only through an explicit retention workflow.
+
+Deletion or archival must:
+
+* record an audit event
+* preserve metadata needed to explain the historic import
+* preserve file hash
+* preserve original filename or safe display name where permitted
+* preserve upload timestamp
+* preserve uploader or source system reference where permitted
+* preserve parser run references
+* preserve derived records required for already-created outcomes, evidence packs, and reports
+* record deletion/archival actor, timestamp, reason, and policy
+
+If a file is under legal hold, used by an active report/evidence workflow, or required by configured compliance retention, deletion must be blocked.
+
+If a file is deleted after retention expiry, historic reports should remain explainable from report snapshots, evidence pack records, parser run metadata, hashes, and derived records, even though the raw binary is no longer available.
+
+---
+
+## Alternatives Considered
+
+### Keep Raw Tachograph Files Forever
+
+Rejected as the default because indefinite retention may conflict with data minimisation expectations and increases storage cost.
+
+This may still be available as a fleet policy or legal-hold outcome where appropriate.
+
+### Delete Raw Files Immediately After Parsing
+
+Rejected because parser output may need verification, reprocessing, regression comparison, audit support, and report evidence traceability.
+
+Immediate deletion would weaken the evidence chain and contradict the platform principle that raw files are source evidence.
+
+### Use One Global Fixed Retention Period
+
+Rejected because retention expectations may vary by jurisdiction, customer policy, legal hold, contract, and report/evidence use.
+
+A global default is acceptable as a platform minimum, but the architecture must support policy overrides.
+
+### Let Users Manually Delete Evidence Without Policy Checks
+
+Rejected because user-driven deletion without policy checks could destroy evidence needed for compliance, reporting, investigation, or audit history.
+
+---
+
+## Consequences
+
+Positive consequences:
+
+* raw evidence remains trustworthy while retained
+* deletion workflows are explainable and auditable
+* historic reports can remain intelligible after binary deletion
+* fleet and jurisdiction policy can be supported without redesigning storage
+* legal hold and offboarding workflows have a clear architecture boundary
+
+Negative consequences:
+
+* storage and deletion workflows are more complex
+* retention policy configuration must be implemented before automated deletion
+* support/admin tooling must distinguish active, archived, deleted, and legal-hold states
+* report and evidence snapshots must not depend solely on live raw file availability
+* legal review may still be required before setting production defaults
+
+---
+
+## Implementation Notes
+
+Retention should be represented as policy data, not hardcoded deletion logic.
+
+Raw file records should support:
+
+* retention policy ID
+* retention state
+* retain until timestamp
+* legal hold flag or reference
+* archived at timestamp
+* deleted at timestamp
+* deleted by actor
+* deletion reason
+* deletion policy reference
+* file hash
+* storage bucket and path
+* source import reference
+
+Suggested retention states:
+
+```text
+active
+archived
+deleted_binary_retained_metadata
+legal_hold
+blocked_by_evidence
+blocked_by_report_export
+```
+
+Automated deletion must check:
+
+* policy expiry
+* legal hold
+* active parser/reprocessing jobs
+* referenced compliance outcomes
+* referenced evidence packs
+* referenced report exports
+* active support or investigation workflow
+
+Deletion should remove or archive the binary object according to policy, but should not hard-delete database metadata required for audit and traceability.
+
+The production default retention duration must be confirmed separately with legal/compliance review before enabling automated deletion.
+
+---
+
+## Review Triggers
+
+Review this ADR if:
+
+* legal retention requirements are confirmed or changed
+* the platform enters a new jurisdiction
+* customer offboarding requirements change
+* storage costs become material
+* immutable archive storage is introduced
+* data deletion requests conflict with compliance retention
+* report exports require bundled raw evidence
+* external tachograph download providers impose retention constraints
+
+---
+
 ## 10. Future ADR Candidates
 
 The following decisions should likely become ADRs later.
 
 ```text id="g0m74u"
-ADR-0016 — Use Supabase/Postgres As Initial Backend
-ADR-0017 — Use Vite React For Fleet Portal Frontend
-ADR-0018 — Use Private Storage Buckets For Evidence Files
-ADR-0019 — Use JSONB For Parser Output With Normalised Relational Records
-ADR-0020 — Use Rule Versioning For Compliance Logic
-ADR-0021 — Use Soft Deletion For Operational Records
-ADR-0022 — Use Append-Only Audit Logs
-ADR-0023 — Use Domain Services Rather Than Direct Cross-Module Mutation
-ADR-0024 — Use Background Jobs For Import And Report Processing
-ADR-0025 — Use Deterministic Logic Before LLM For Atlas Where Possible
-ADR-0026 — Store Atlas Source Links For Responses
-ADR-0027 — Separate Payroll Truth From Compliance Truth
-ADR-0028 — Driver App Data Is Supplementary To Tachograph Evidence
-ADR-0029 — Passenger Transport Support Reuses Core Compliance Architecture
-ADR-0030 — External Partner APIs Are Versioned
+ADR-0019 — Use Supabase/Postgres As Initial Backend
+ADR-0020 — Use Vite React For Fleet Portal Frontend
+ADR-0021 — Use Private Storage Buckets For Evidence Files
+ADR-0022 — Use Rule Versioning For Compliance Logic
+ADR-0023 — Use Soft Deletion For Operational Records
+ADR-0024 — Use Append-Only Audit Logs
+ADR-0025 — Use Domain Services Rather Than Direct Cross-Module Mutation
+ADR-0026 — Use Background Jobs For Import And Report Processing
+ADR-0027 — Use Deterministic Logic Before LLM For Atlas Where Possible
+ADR-0028 — Store Atlas Source Links For Responses
+ADR-0029 — Separate Payroll Truth From Compliance Truth
+ADR-0030 — Driver App Data Is Supplementary To Tachograph Evidence
+ADR-0031 — Passenger Transport Support Reuses Core Compliance Architecture
+ADR-0032 — External Partner APIs Are Versioned
 ```
 
 ---
@@ -1760,6 +2250,9 @@ The most important early decisions are:
 * reports use cautious compliance language
 * secrets stay server-side
 * feature flags do not replace permissions
+* parser output uses relational records with JSONB payloads
+* timeline events are versioned derived records
+* raw tachograph file retention is policy-driven and audited
 
 The guiding rule is:
 

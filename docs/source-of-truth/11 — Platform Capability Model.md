@@ -401,7 +401,7 @@ This creates traceability between strategy, product design and implementation.
 
 - [05 — Product Ecosystem.md](./05%20—%20Product%20Ecosystem.md)
 - [09 — Product Pillars.md](./09%20—%20Product%20Pillars.md)
-- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20(MVP).md)
+- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20%28MVP%29.md)
 - [16 — Driver App Specification.md](./16%20—%20Driver%20App%20Specification.md)
 - [17 — Fleet Portal Specification.md](./17%20—%20Fleet%20Portal%20Specification.md)
 - [18 — Compliance Intelligence Platform.md](./18%20—%20Compliance%20Intelligence%20Platform.md)

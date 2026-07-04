@@ -13,6 +13,8 @@ import type {
   TachoParserBundle,
   TachoReconciliationItem,
   TachoSummaryMetric,
+  TachoTimelineBundle,
+  TachoTimelineComparison,
   VehicleMotionDiscrepancy,
   VehicleUnitAnalysisData,
 } from './rules/types';
@@ -171,8 +173,8 @@ export function adaptImportRecord(raw: Record<string, unknown> | null | undefine
     supersededByImportId: asOptionalString(metadata.helper_capture_superseded_by_import_id),
     supersededAt: asOptionalString(metadata.helper_capture_superseded_at),
     activeAnalysisRows: asOptionalBoolean(metadata.helper_capture_active_analysis_rows),
-    archivedAt: asOptionalString(metadata.candidate_import_archived_at),
-    archiveReason: asOptionalString(metadata.candidate_import_archive_reason),
+    archivedAt: asOptionalString(metadata.candidate_import_archived_at ?? metadata.driver_card_purge_archived_at),
+    archiveReason: asOptionalString(metadata.candidate_import_archive_reason ?? metadata.driver_card_purge_archive_reason),
     archiveStorageAction: asArchiveStorageAction(metadata.candidate_import_archive_storage_action),
     storageDeleteRequestedAt: asOptionalString(metadata.candidate_import_storage_delete_requested_at),
     storageDeletedAt: asOptionalString(metadata.candidate_import_storage_deleted_at),
@@ -239,6 +241,56 @@ function dedupeActivitySegments(segments: TachoActivitySegment[]) {
   });
 
   return Array.from(bySignature.values()).sort((left, right) => left.startTime.localeCompare(right.startTime));
+}
+
+function generationIdFromTimelineBundle(timelineBundle: TachoTimelineBundle | null | undefined) {
+  return timelineBundle?.timelineGeneration?.id ?? timelineBundle?.timelineGenerations?.[0]?.id ?? null;
+}
+
+function timelineWarnings(timelineBundle: TachoTimelineBundle | null | undefined, fallbackWarnings: string[] = []) {
+  const warnings = timelineBundle?.warnings ?? fallbackWarnings;
+  return Array.isArray(warnings) ? warnings.filter((warning): warning is string => typeof warning === 'string') : [];
+}
+
+export function compareTachoBundleToTimeline(
+  bundle: TachoParserBundle,
+  timelineBundle: TachoTimelineBundle | null | undefined,
+  fallbackWarnings: string[] = []
+): TachoTimelineComparison {
+  const timelineEvents = timelineBundle?.events ?? [];
+  const timelineGaps = timelineBundle?.gaps ?? [];
+  const timelineDailySummaries = timelineBundle?.dailySummaries ?? [];
+  const tachographGapCount = (bundle.vehicleMotionDiscrepancies?.length ?? 0) +
+    (bundle.reconciliation?.filter((item) => item.status !== 'matched').length ?? 0);
+
+  return {
+    available: Boolean(timelineBundle && generationIdFromTimelineBundle(timelineBundle)),
+    checkedAt: new Date().toISOString(),
+    warnings: timelineWarnings(timelineBundle, fallbackWarnings),
+    tachographActivityCount: fallbackActivitySegments(bundle).length,
+    timelineEventCount: timelineEvents.length,
+    tachographGapCount,
+    timelineGapCount: timelineGaps.length,
+    tachographDaySummaryCount: bundle.daySummaries?.length ?? 0,
+    timelineDailySummaryCount: timelineDailySummaries.length,
+    eventCountMatches: timelineEvents.length === fallbackActivitySegments(bundle).length ||
+      timelineEvents.length >= fallbackActivitySegments(bundle).length,
+    gapCountMatches: timelineGaps.length === tachographGapCount,
+    daySummaryCountMatches: timelineDailySummaries.length === (bundle.daySummaries?.length ?? 0),
+    timelineGenerationId: generationIdFromTimelineBundle(timelineBundle),
+  };
+}
+
+export function attachTimelineComparison(
+  bundle: TachoParserBundle,
+  timelineBundle: TachoTimelineBundle | null | undefined,
+  fallbackWarnings: string[] = []
+): TachoParserBundle {
+  return {
+    ...bundle,
+    timelineBundle: timelineBundle ?? null,
+    timelineComparison: compareTachoBundleToTimeline(bundle, timelineBundle, fallbackWarnings),
+  };
 }
 
 function buildDaySummariesFromSegments(segments: TachoActivitySegment[]): TachoDaySummary[] {

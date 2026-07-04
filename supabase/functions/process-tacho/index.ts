@@ -20,6 +20,7 @@ const HOURWISE_READ_ONLY_CAPTURE_SCHEMA = "hourwise.tachograph.driver-card.read-
 const HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT = "hourwise_read_only_capture_v1";
 const HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION = "hourwise-read-only-capture@1";
 const HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE = "hourwise_read_only_capture";
+const TIMELINE_GENERATION_VERSION = "timeline-mvp@1";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
 const corsHeaders = {
@@ -252,6 +253,24 @@ type AuthorizedImportActor =
       role: "driver" | "manager" | null;
     };
 
+type ParserRunLifecycleContext = {
+  id: string;
+  startedAt: string;
+  parserName: string;
+  parserVersion: string;
+  source: string;
+  actorKind: AuthorizedImportActor["kind"];
+  actorUserId: string | null;
+  supersedesParserRunId: string | null;
+};
+
+type ParserRunLifecycleStatus =
+  | "running"
+  | "completed"
+  | "completed_with_warnings"
+  | "failed"
+  | "unsupported";
+
 function unauthorizedResponse(message: string, status = 401) {
   return new Response(JSON.stringify({ error: message }), {
     status,
@@ -321,6 +340,667 @@ async function authorizeImportRequest(
   };
 }
 
+async function createParserRun(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  record: ImportRecord,
+  actor: AuthorizedImportActor
+): Promise<ParserRunLifecycleContext> {
+  const startedAt = new Date().toISOString();
+  const isHourWiseCapture = isHourWiseReadOnlyCaptureMetadata(record.metadata);
+  const parserName = isHourWiseCapture ? "hourwise_read_only_capture" : "readesm";
+  const parserVersion = isHourWiseCapture ? HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION : PARSER_VERSION;
+  const source = isHourWiseCapture ? "hourwise_read_only_capture" : "normalized_findings";
+  const { data: currentRuns, error: currentRunError } = await supabaseAdmin
+    .from("tachograph_processing_runs")
+    .select("id")
+    .eq("import_id", record.id)
+    .eq("is_current", true)
+    .order("processed_at", { ascending: false })
+    .limit(1);
+
+  if (currentRunError) throw currentRunError;
+
+  const supersedesParserRunId = currentRuns?.[0]?.id ?? null;
+  const { data: insertedRun, error: insertError } = await supabaseAdmin
+    .from("tachograph_processing_runs")
+    .insert({
+      import_id: record.id,
+      company_id: record.company_id ?? null,
+      parser_name: parserName,
+      parser_version: parserVersion,
+      parser_config_json: {
+        source_type: record.source_type ?? null,
+        file_type: record.file_type ?? null,
+      },
+      source,
+      status: "running",
+      started_at: startedAt,
+      warnings: [],
+      errors: [],
+      processed_at: startedAt,
+      triggered_by: actor.kind === "user" ? "manager" : "trigger",
+      supersedes_parser_run_id: supersedesParserRunId,
+      is_current: true,
+      metadata: {
+        actor_kind: actor.kind,
+        actor_user_id: actor.kind === "user" ? actor.userId : null,
+        supersedes_parser_run_id: supersedesParserRunId,
+        parse_002_lifecycle: true,
+      },
+    })
+    .select("id, started_at, parser_name, parser_version, source")
+    .single();
+
+  if (insertError) throw insertError;
+
+  const { error: supersedeError } = await supabaseAdmin
+    .from("tachograph_processing_runs")
+    .update({ is_current: false })
+    .eq("import_id", record.id)
+    .eq("is_current", true)
+    .neq("id", insertedRun.id);
+
+  if (supersedeError) throw supersedeError;
+
+  return {
+    id: insertedRun.id,
+    startedAt: insertedRun.started_at ?? startedAt,
+    parserName: insertedRun.parser_name ?? parserName,
+    parserVersion: insertedRun.parser_version ?? parserVersion,
+    source: insertedRun.source ?? source,
+    actorKind: actor.kind,
+    actorUserId: actor.kind === "user" ? actor.userId : null,
+    supersedesParserRunId,
+  };
+}
+
+async function completeParserRun(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  parserRun: ParserRunLifecycleContext,
+  input: {
+    record: ImportRecord;
+    status: ParserRunLifecycleStatus;
+    warnings?: string[];
+    errors?: string[];
+    errorSummary?: string | null;
+    completedAt?: string;
+    processedAt?: string;
+    parserName?: string;
+    parserVersion?: string;
+    source?: string;
+    outputType?: string;
+    outputPayload?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  const completedAt = input.completedAt ?? new Date().toISOString();
+  const processedAt = input.processedAt ?? completedAt;
+  const durationMs = Math.max(0, new Date(completedAt).getTime() - new Date(parserRun.startedAt).getTime());
+  const warnings = input.warnings ?? [];
+  const errors = input.errors ?? [];
+  const { error: updateError } = await supabaseAdmin
+    .from("tachograph_processing_runs")
+    .update({
+      parser_name: input.parserName ?? parserRun.parserName,
+      parser_version: input.parserVersion ?? parserRun.parserVersion,
+      source: input.source ?? parserRun.source,
+      status: input.status,
+      completed_at: completedAt,
+      duration_ms: durationMs,
+      warnings,
+      errors,
+      error_summary: input.errorSummary ?? errors[0] ?? null,
+      processed_at: processedAt,
+      metadata: {
+        actor_kind: parserRun.actorKind,
+        actor_user_id: parserRun.actorUserId,
+        supersedes_parser_run_id: parserRun.supersedesParserRunId,
+        parse_002_lifecycle: true,
+        ...(input.metadata ?? {}),
+        parse_002_completed: input.status !== "running",
+      },
+    })
+    .eq("id", parserRun.id);
+
+  if (updateError) throw updateError;
+
+  if (input.outputType) {
+    const { error: outputError } = await supabaseAdmin.from("tachograph_parser_outputs").insert({
+      parser_run_id: parserRun.id,
+      import_id: input.record.id,
+      company_id: input.record.company_id ?? null,
+      output_type: input.outputType,
+      payload: input.outputPayload ?? {},
+    });
+    if (outputError) throw outputError;
+  }
+
+  if (errors.length > 0) {
+    const { error: parserErrorInsertError } = await supabaseAdmin.from("tachograph_parser_errors").insert(
+      errors.map((message) => ({
+        parser_run_id: parserRun.id,
+        import_id: input.record.id,
+        company_id: input.record.company_id ?? null,
+        severity: input.status === "failed" ? "error" : "warning",
+        error_code: input.status === "failed" ? "parser_failed" : "parser_warning",
+        message,
+        details_json: input.metadata ?? {},
+      }))
+    );
+    if (parserErrorInsertError) throw parserErrorInsertError;
+  }
+}
+
+function withParserRunId<T extends object>(rows: T[], parserRunId: string): Array<T & { parser_run_id: string }> {
+  return rows.map((row) => ({ ...row, parser_run_id: parserRunId }));
+}
+
+type TimelineGenerationResult = {
+  generationId: string | null;
+  eventCount: number;
+  gapCount: number;
+  dailySummaryCount: number;
+  skippedReason: string | null;
+};
+
+async function generateImportTimeline(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  record: ImportRecord,
+  parserRun: ParserRunLifecycleContext,
+  input: {
+    driverId: string | null;
+    vehicleId: string | null;
+    rangeStart: string | null;
+    rangeEnd: string | null;
+  }
+): Promise<TimelineGenerationResult> {
+  if (!record.company_id) {
+    return {
+      generationId: null,
+      eventCount: 0,
+      gapCount: 0,
+      dailySummaryCount: 0,
+      skippedReason: "missing_company_id",
+    };
+  }
+
+  const [
+    { data: activities, error: activitiesError },
+    { data: technicalEvents, error: technicalEventsError },
+    { data: discrepancies, error: discrepanciesError },
+    { data: reconciliationRows, error: reconciliationError },
+    { data: daySummaries, error: daySummariesError },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("tachograph_activity_segments")
+      .select("id, import_id, company_id, driver_id, vehicle_id, source, activity_type, start_time, end_time, duration_mins, confidence, label, parser_run_id")
+      .eq("import_id", record.id)
+      .eq("parser_run_id", parserRun.id)
+      .order("start_time", { ascending: true }),
+    supabaseAdmin
+      .from("tachograph_technical_events")
+      .select("id, import_id, company_id, driver_id, vehicle_id, source, rule_code, title, summary, occurred_at, period_start, period_end, severity, parser_run_id")
+      .eq("import_id", record.id)
+      .eq("parser_run_id", parserRun.id)
+      .order("occurred_at", { ascending: true }),
+    supabaseAdmin
+      .from("tachograph_vehicle_motion_discrepancies")
+      .select("id, import_id, company_id, driver_id, vehicle_id, discrepancy_date, start_time, end_time, duration_mins, severity, status, summary, parser_run_id")
+      .eq("import_id", record.id)
+      .eq("parser_run_id", parserRun.id)
+      .order("start_time", { ascending: true }),
+    supabaseAdmin
+      .from("tachograph_reconciliation_items")
+      .select("id, import_id, company_id, driver_id, vehicle_id, recon_date, status, app_label, tacho_label, summary, app_driving_mins, tacho_driving_mins, parser_run_id")
+      .eq("import_id", record.id)
+      .eq("parser_run_id", parserRun.id)
+      .neq("status", "matched")
+      .order("recon_date", { ascending: true }),
+    supabaseAdmin
+      .from("tachograph_day_summaries")
+      .select("id, import_id, company_id, driver_id, vehicle_id, summary_date, driving_mins, work_mins, poa_mins, rest_mins, findings_count, parser_run_id")
+      .eq("import_id", record.id)
+      .eq("parser_run_id", parserRun.id)
+      .order("summary_date", { ascending: true }),
+  ]);
+
+  if (activitiesError) throw activitiesError;
+  if (technicalEventsError) throw technicalEventsError;
+  if (discrepanciesError) throw discrepanciesError;
+  if (reconciliationError) throw reconciliationError;
+  if (daySummariesError) throw daySummariesError;
+
+  const range = resolveTimelineRange({
+    explicitStart: input.rangeStart,
+    explicitEnd: input.rangeEnd,
+    activities: activities ?? [],
+    technicalEvents: technicalEvents ?? [],
+    discrepancies: discrepancies ?? [],
+  });
+
+  if (!range) {
+    return {
+      generationId: null,
+      eventCount: 0,
+      gapCount: 0,
+      dailySummaryCount: 0,
+      skippedReason: "no_timeline_range",
+    };
+  }
+
+  const { data: currentGenerations, error: currentGenerationError } = await supabaseAdmin
+    .from("timeline_generations")
+    .select("id")
+    .eq("company_id", record.company_id)
+    .eq("source_import_id", record.id)
+    .eq("is_current", true)
+    .order("started_at", { ascending: false })
+    .limit(1);
+  if (currentGenerationError) throw currentGenerationError;
+
+  const supersedesGenerationId = currentGenerations?.[0]?.id ?? null;
+  const startedAt = new Date().toISOString();
+  const { data: generation, error: generationInsertError } = await supabaseAdmin
+    .from("timeline_generations")
+    .insert({
+      company_id: record.company_id,
+      driver_id: input.driverId,
+      vehicle_id: input.vehicleId,
+      scope_type: "import",
+      scope_id: record.id,
+      range_start: range.start,
+      range_end: range.end,
+      generation_version: TIMELINE_GENERATION_VERSION,
+      status: "running",
+      is_current: false,
+      generated_by: parserRun.actorUserId,
+      generated_by_kind: parserRun.actorKind === "user" ? "manager" : "trigger",
+      generated_reason: supersedesGenerationId ? "reprocess" : "initial_import",
+      source_import_id: record.id,
+      parser_run_id: parserRun.id,
+      supersedes_generation_id: supersedesGenerationId,
+      started_at: startedAt,
+      metadata: {
+        parser_run_id: parserRun.id,
+        source_type: record.source_type ?? null,
+        activity_source_count: activities?.length ?? 0,
+        technical_event_source_count: technicalEvents?.length ?? 0,
+        discrepancy_source_count: discrepancies?.length ?? 0,
+        reconciliation_gap_source_count: reconciliationRows?.length ?? 0,
+      },
+    })
+    .select("id")
+    .single();
+  if (generationInsertError) throw generationInsertError;
+
+  try {
+    const eventRows = buildTimelineEventRows({
+      generationId: generation.id,
+      companyId: record.company_id,
+      parserRunId: parserRun.id,
+      importId: record.id,
+      activities: activities ?? [],
+      technicalEvents: technicalEvents ?? [],
+    });
+    let insertedEvents: Array<{ id: string; source_table: string | null; source_id: string | null; parser_run_id: string | null; import_file_id: string | null }> = [];
+    if (eventRows.length > 0) {
+      const { data, error } = await supabaseAdmin
+        .from("timeline_events")
+        .insert(eventRows)
+        .select("id, source_table, source_id, parser_run_id, import_file_id");
+      if (error) throw error;
+      insertedEvents = data ?? [];
+    }
+
+    const eventSourceRows = insertedEvents
+      .filter((event) => event.source_table && event.source_id)
+      .map((event) => ({
+        company_id: record.company_id,
+        timeline_event_id: event.id,
+        timeline_generation_id: generation.id,
+        source_type: timelineSourceTypeForTable(event.source_table),
+        source_id: event.source_id,
+        parser_run_id: event.parser_run_id ?? parserRun.id,
+        import_file_id: event.import_file_id ?? record.id,
+        source_reference_json: {
+          source_table: event.source_table,
+          source_id: event.source_id,
+        },
+      }));
+    if (eventSourceRows.length > 0) {
+      const { error } = await supabaseAdmin.from("timeline_event_sources").insert(eventSourceRows);
+      if (error) throw error;
+    }
+
+    const gapRows = buildTimelineGapRows({
+      generationId: generation.id,
+      companyId: record.company_id,
+      discrepancies: discrepancies ?? [],
+      reconciliationRows: reconciliationRows ?? [],
+    });
+    if (gapRows.length > 0) {
+      const { error } = await supabaseAdmin.from("timeline_gaps").insert(gapRows);
+      if (error) throw error;
+    }
+
+    const dailySummaryRows = buildDailyTimelineSummaryRows({
+      generationId: generation.id,
+      companyId: record.company_id,
+      daySummaries: daySummaries ?? [],
+      gapRows,
+    });
+    if (dailySummaryRows.length > 0) {
+      const { error } = await supabaseAdmin.from("daily_timeline_summaries").insert(dailySummaryRows);
+      if (error) throw error;
+    }
+
+    const completedAt = new Date().toISOString();
+    if (supersedesGenerationId) {
+      const { error } = await supabaseAdmin
+        .from("timeline_generations")
+        .update({
+          status: "superseded",
+          is_current: false,
+          superseded_by_generation_id: generation.id,
+          superseded_at: completedAt,
+        })
+        .eq("id", supersedesGenerationId);
+      if (error) throw error;
+    }
+
+    const { error: completeGenerationError } = await supabaseAdmin
+      .from("timeline_generations")
+      .update({
+        status: gapRows.length > 0 ? "completed_with_warnings" : "completed",
+        is_current: true,
+        completed_at: completedAt,
+        metadata: {
+          parser_run_id: parserRun.id,
+          event_count: insertedEvents.length,
+          gap_count: gapRows.length,
+          daily_summary_count: dailySummaryRows.length,
+          source_import_id: record.id,
+        },
+      })
+      .eq("id", generation.id);
+    if (completeGenerationError) throw completeGenerationError;
+
+    return {
+      generationId: generation.id,
+      eventCount: insertedEvents.length,
+      gapCount: gapRows.length,
+      dailySummaryCount: dailySummaryRows.length,
+      skippedReason: null,
+    };
+  } catch (error) {
+    await supabaseAdmin
+      .from("timeline_generations")
+      .update({
+        status: "failed",
+        completed_at: new Date().toISOString(),
+        metadata: {
+          parser_run_id: parserRun.id,
+          error: errorToMessage(error),
+        },
+      })
+      .eq("id", generation.id);
+    throw error;
+  }
+}
+
+function buildTimelineEventRows(input: {
+  generationId: string;
+  companyId: string;
+  parserRunId: string;
+  importId: string;
+  activities: any[];
+  technicalEvents: any[];
+}) {
+  const activityEvents = input.activities.map((activity) => ({
+    company_id: input.companyId,
+    timeline_generation_id: input.generationId,
+    driver_id: activity.driver_id ?? null,
+    vehicle_id: activity.vehicle_id ?? null,
+    event_type: timelineEventTypeForActivity(activity.activity_type),
+    started_at: activity.start_time,
+    ended_at: activity.end_time,
+    duration_seconds: Math.max(0, Number(activity.duration_mins ?? 0) * 60),
+    timezone: "UTC",
+    confidence_state: confidenceStateForTachoConfidence(activity.confidence),
+    source_summary: activity.label ?? `Tachograph ${activity.activity_type} activity`,
+    status: "current",
+    is_current: true,
+    parser_run_id: input.parserRunId,
+    import_file_id: input.importId,
+    source_table: "tachograph_activity_segments",
+    source_id: activity.id,
+    metadata: {
+      tachograph_source: activity.source ?? null,
+      activity_type: activity.activity_type ?? null,
+    },
+  }));
+
+  const technicalEventRows = input.technicalEvents.map((event) => ({
+    company_id: input.companyId,
+    timeline_generation_id: input.generationId,
+    driver_id: event.driver_id ?? null,
+    vehicle_id: event.vehicle_id ?? null,
+    event_type: timelineEventTypeForTechnicalEvent(event.rule_code),
+    started_at: event.period_start ?? event.occurred_at,
+    ended_at: event.period_end ?? event.occurred_at,
+    duration_seconds: secondsBetween(event.period_start ?? event.occurred_at, event.period_end ?? event.occurred_at),
+    timezone: "UTC",
+    confidence_state: "confirmed",
+    source_summary: event.summary ?? event.title ?? "Tachograph technical event",
+    status: "current",
+    is_current: true,
+    parser_run_id: input.parserRunId,
+    import_file_id: input.importId,
+    source_table: "tachograph_technical_events",
+    source_id: event.id,
+    metadata: {
+      rule_code: event.rule_code ?? null,
+      severity: event.severity ?? null,
+      title: event.title ?? null,
+    },
+  }));
+
+  return [...activityEvents, ...technicalEventRows];
+}
+
+function buildTimelineGapRows(input: {
+  generationId: string;
+  companyId: string;
+  discrepancies: any[];
+  reconciliationRows: any[];
+}) {
+  const discrepancyGaps = input.discrepancies.map((row) => ({
+    company_id: input.companyId,
+    timeline_generation_id: input.generationId,
+    driver_id: row.driver_id ?? null,
+    vehicle_id: row.vehicle_id ?? null,
+    started_at: row.start_time,
+    ended_at: row.end_time,
+    duration_seconds: Math.max(0, Number(row.duration_mins ?? 0) * 60),
+    gap_type: gapTypeForDiscrepancy(row.status),
+    severity: row.severity ?? "medium",
+    reason: row.summary ?? "Vehicle motion discrepancy requires review.",
+    status: "open",
+    metadata: {
+      source_table: "tachograph_vehicle_motion_discrepancies",
+      source_id: row.id,
+      import_id: row.import_id,
+      parser_run_id: row.parser_run_id,
+      discrepancy_status: row.status,
+    },
+  }));
+
+  const reconciliationGaps = input.reconciliationRows.map((row) => {
+    const start = `${row.recon_date}T00:00:00.000Z`;
+    const end = addDaysIso(start, 1);
+    return {
+      company_id: input.companyId,
+      timeline_generation_id: input.generationId,
+      driver_id: row.driver_id ?? null,
+      vehicle_id: row.vehicle_id ?? null,
+      started_at: start,
+      ended_at: end,
+      duration_seconds: 24 * 60 * 60,
+      gap_type: "app_tacho_mismatch",
+      severity: row.status === "uncertain" ? "low" : "medium",
+      reason: row.summary ?? "App and tachograph activity do not match.",
+      status: "open",
+      metadata: {
+        source_table: "tachograph_reconciliation_items",
+        source_id: row.id,
+        import_id: row.import_id,
+        parser_run_id: row.parser_run_id,
+        reconciliation_status: row.status,
+        app_label: row.app_label,
+        tacho_label: row.tacho_label,
+      },
+    };
+  });
+
+  return [...discrepancyGaps, ...reconciliationGaps];
+}
+
+function buildDailyTimelineSummaryRows(input: {
+  generationId: string;
+  companyId: string;
+  daySummaries: any[];
+  gapRows: Array<{ started_at: string }>;
+}) {
+  return input.daySummaries.map((summary) => {
+    const gapCount = input.gapRows.filter((gap) => gap.started_at.slice(0, 10) === summary.summary_date).length;
+    return {
+      company_id: input.companyId,
+      timeline_generation_id: input.generationId,
+      driver_id: summary.driver_id ?? null,
+      vehicle_id: summary.vehicle_id ?? null,
+      summary_date: summary.summary_date,
+      driving_seconds: Math.max(0, Number(summary.driving_mins ?? 0) * 60),
+      work_seconds: Math.max(0, Number(summary.work_mins ?? 0) * 60),
+      availability_seconds: Math.max(0, Number(summary.poa_mins ?? 0) * 60),
+      rest_seconds: Math.max(0, Number(summary.rest_mins ?? 0) * 60),
+      break_seconds: 0,
+      unknown_seconds: 0,
+      duty_start: null,
+      duty_end: null,
+      gap_count: gapCount,
+      finding_count: Math.max(0, Number(summary.findings_count ?? 0)),
+      confidence_state: "confirmed",
+      metadata: {
+        source_table: "tachograph_day_summaries",
+        source_id: summary.id,
+        import_id: summary.import_id,
+        parser_run_id: summary.parser_run_id,
+      },
+    };
+  });
+}
+
+function resolveTimelineRange(input: {
+  explicitStart: string | null;
+  explicitEnd: string | null;
+  activities: any[];
+  technicalEvents: any[];
+  discrepancies: any[];
+}) {
+  const starts = [
+    input.explicitStart,
+    ...input.activities.map((row) => row.start_time),
+    ...input.technicalEvents.map((row) => row.period_start ?? row.occurred_at),
+    ...input.discrepancies.map((row) => row.start_time),
+  ].filter((value): value is string => Boolean(value));
+  const ends = [
+    input.explicitEnd,
+    ...input.activities.map((row) => row.end_time),
+    ...input.technicalEvents.map((row) => row.period_end ?? row.occurred_at),
+    ...input.discrepancies.map((row) => row.end_time),
+  ].filter((value): value is string => Boolean(value));
+  if (starts.length === 0 || ends.length === 0) return null;
+
+  const start = starts.reduce((earliest, value) => new Date(value).getTime() < new Date(earliest).getTime() ? value : earliest);
+  const end = ends.reduce((latest, value) => new Date(value).getTime() > new Date(latest).getTime() ? value : latest);
+  if (new Date(end).getTime() <= new Date(start).getTime()) return null;
+  return { start, end };
+}
+
+function timelineEventTypeForActivity(activityType: string | null | undefined) {
+  switch (activityType) {
+    case "driving":
+      return "driving";
+    case "work":
+      return "other_work";
+    case "poa":
+      return "availability";
+    case "break_rest":
+      return "rest";
+    default:
+      return "unknown";
+  }
+}
+
+function timelineEventTypeForTechnicalEvent(ruleCode: string | null | undefined) {
+  switch (ruleCode) {
+    case "VU_DRIVING_WITHOUT_CARD":
+      return "movement_without_card";
+    case "VU_OVERSPEED":
+      return "overspeed";
+    default:
+      return "technical_event";
+  }
+}
+
+function timelineSourceTypeForTable(sourceTable: string | null) {
+  switch (sourceTable) {
+    case "tachograph_activity_segments":
+      return "tachograph_activity_segment";
+    case "tachograph_technical_events":
+      return "tachograph_technical_event";
+    default:
+      return "manual_entry";
+  }
+}
+
+function confidenceStateForTachoConfidence(confidence: string | null | undefined) {
+  switch (confidence) {
+    case "high":
+      return "confirmed";
+    case "medium":
+      return "likely";
+    case "low":
+      return "possible";
+    default:
+      return "uncertain";
+  }
+}
+
+function gapTypeForDiscrepancy(status: string | null | undefined) {
+  switch (status) {
+    case "unassigned_motion":
+      return "unknown_driver";
+    case "card_gap":
+      return "missing_driver_card_data";
+    case "driver_mismatch":
+      return "app_tacho_mismatch";
+    default:
+      return "manual_review_required";
+  }
+}
+
+function secondsBetween(start: string | null | undefined, end: string | null | undefined) {
+  if (!start || !end) return 0;
+  return Math.max(0, Math.floor((new Date(end).getTime() - new Date(start).getTime()) / 1000));
+}
+
+function addDaysIso(value: string, days: number) {
+  const date = new Date(value);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -332,6 +1012,7 @@ serve(async (req) => {
   );
 
   let record: ImportRecord | null = null;
+  let parserRun: ParserRunLifecycleContext | null = null;
 
   try {
     const body = await req.json();
@@ -345,6 +1026,8 @@ serve(async (req) => {
     if (authorizedActor instanceof Response) {
       return authorizedActor;
     }
+
+    parserRun = await createParserRun(supabaseAdmin, record, authorizedActor);
 
     await supabaseAdmin
       .from("tachograph_files")
@@ -363,7 +1046,13 @@ serve(async (req) => {
       (isHourWiseReadOnlyCaptureMetadata(record.metadata) ? buildMetadataOnlyHourWiseCapture(record) : null);
     if (hourWiseCapture) {
       const captureSummary = summarizeHourWiseCapture(hourWiseCapture);
-      const captureResult = await handleHourWiseReadOnlyCapture(supabaseAdmin, record, hourWiseCapture, captureSummary);
+      const captureResult = await handleHourWiseReadOnlyCapture(
+        supabaseAdmin,
+        record,
+        hourWiseCapture,
+        captureSummary,
+        parserRun
+      );
       return jsonResponse({
         success: true,
         source_type: "driver_card",
@@ -548,32 +1237,34 @@ serve(async (req) => {
     }
 
     if (normalizedActivities.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_activity_segments").insert(normalizedActivities);
+      const { error } = await supabaseAdmin.from("tachograph_activity_segments").insert(withParserRunId(normalizedActivities, parserRun.id));
       if (error) throw error;
     }
 
     if (daySummaries.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_day_summaries").insert(daySummaries);
+      const { error } = await supabaseAdmin.from("tachograph_day_summaries").insert(withParserRunId(daySummaries, parserRun.id));
       if (error) throw error;
     }
 
     if (findings.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_findings").insert(findings);
+      const { error } = await supabaseAdmin.from("tachograph_findings").insert(withParserRunId(findings, parserRun.id));
       if (error) throw error;
     }
 
     if (technicalEvents.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_technical_events").insert(technicalEvents);
+      const { error } = await supabaseAdmin.from("tachograph_technical_events").insert(withParserRunId(technicalEvents, parserRun.id));
       if (error) throw error;
     }
 
     if (vehicleMotionDiscrepancies.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").insert(vehicleMotionDiscrepancies);
+      const { error } = await supabaseAdmin
+        .from("tachograph_vehicle_motion_discrepancies")
+        .insert(withParserRunId(vehicleMotionDiscrepancies, parserRun.id));
       if (error) throw error;
     }
 
     if (reconciliationRows.length > 0) {
-      const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(reconciliationRows);
+      const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(withParserRunId(reconciliationRows, parserRun.id));
       if (error) throw error;
     }
 
@@ -590,6 +1281,7 @@ serve(async (req) => {
         period_start: summaryWindow.startTime,
         period_end: summaryWindow.endTime,
         download_status: "ok",
+        parser_run_id: parserRun.id,
       });
       if (error) throw error;
     }
@@ -606,6 +1298,7 @@ serve(async (req) => {
         period_start: summaryWindow.startTime,
         period_end: summaryWindow.endTime,
         download_status: "ok",
+        parser_run_id: parserRun.id,
       });
       if (error) throw error;
     }
@@ -637,17 +1330,10 @@ serve(async (req) => {
       }
     }
 
-    await supabaseAdmin.from("tachograph_processing_runs").insert({
-      import_id: record.id,
-      company_id: record.company_id ?? null,
-      parser_version: PARSER_VERSION,
-      source: "normalized_findings",
-      warnings: [],
-      errors: [],
-      processed_at: downloadedAt,
-    });
-
     const finalStatus = normalizedActivities.length > 0 ? "processed" : "partial";
+    const parserWarnings = normalizedActivities.length > 0
+      ? []
+      : ["No normalized tachograph activity segments were extracted from the uploaded file."];
     const mergedMetadata = mergeMetadata(record.metadata, {
       parser_version: PARSER_VERSION,
       driver_name: driverName,
@@ -673,6 +1359,39 @@ serve(async (req) => {
       })
       .eq("id", record.id);
 
+    const timelineGeneration = await generateImportTimeline(supabaseAdmin, record, parserRun, {
+      driverId,
+      vehicleId,
+      rangeStart: summaryWindow.startTime,
+      rangeEnd: summaryWindow.endTime,
+    });
+
+    await completeParserRun(supabaseAdmin, parserRun, {
+      record,
+      status: parserWarnings.length > 0 ? "completed_with_warnings" : "completed",
+      warnings: parserWarnings,
+      processedAt: downloadedAt,
+      outputType: "standard_parse_summary",
+      outputPayload: {
+        source_type: sourceType,
+        activities_count: rawActivities.length,
+        normalized_segments: normalizedActivities.length,
+        findings_count: findings.length,
+        technical_event_count: technicalEvents.length,
+        discrepancy_count: vehicleMotionDiscrepancies.length,
+        reconciliation_issue_count: reconciliationRows.filter((row) => row.status !== "matched").length,
+        timeline_generation_id: timelineGeneration.generationId,
+        timeline_event_count: timelineGeneration.eventCount,
+        timeline_gap_count: timelineGeneration.gapCount,
+        timeline_daily_summary_count: timelineGeneration.dailySummaryCount,
+        timeline_skipped_reason: timelineGeneration.skippedReason,
+      },
+      metadata: {
+        final_import_status: finalStatus,
+        timeline_generation_id: timelineGeneration.generationId,
+      },
+    });
+
     return jsonResponse({
       success: true,
       source_type: sourceType,
@@ -688,16 +1407,21 @@ serve(async (req) => {
 
     if (record?.id) {
       const message = errorToMessage(error);
-      const isHourWiseReadOnlyCapture = isHourWiseReadOnlyCaptureMetadata(record.metadata);
-      await supabaseAdmin.from("tachograph_processing_runs").insert({
-        import_id: record.id,
-        company_id: record.company_id ?? null,
-        parser_version: isHourWiseReadOnlyCapture ? HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION : PARSER_VERSION,
-        source: isHourWiseReadOnlyCapture ? "hourwise_read_only_capture" : "normalized_findings",
-        warnings: [],
-        errors: [message],
-        processed_at: new Date().toISOString(),
-      });
+      if (parserRun) {
+        try {
+          await completeParserRun(supabaseAdmin, parserRun, {
+            record,
+            status: "failed",
+            errors: [message],
+            errorSummary: message,
+            metadata: {
+              failed_stage: "process_tacho",
+            },
+          });
+        } catch (parserRunError) {
+          console.error("Unable to mark parser run as failed:", parserRunError);
+        }
+      }
 
       await supabaseAdmin
         .from("tachograph_files")
@@ -795,7 +1519,8 @@ async function handleHourWiseReadOnlyCapture(
   supabaseAdmin: ReturnType<typeof createClient>,
   record: ImportRecord,
   capture: HourWiseReadOnlyCapture,
-  summary: ReturnType<typeof summarizeHourWiseCapture>
+  summary: ReturnType<typeof summarizeHourWiseCapture>,
+  parserRun: ParserRunLifecycleContext
 ): Promise<HourWiseReadOnlyCaptureProcessingResult> {
   const processedAt = new Date().toISOString();
   await clearImportData(supabaseAdmin, record.id);
@@ -915,22 +1640,22 @@ async function handleHourWiseReadOnlyCapture(
   }
 
   if (normalizedActivities.length > 0) {
-    const { error } = await supabaseAdmin.from("tachograph_activity_segments").insert(normalizedActivities);
+    const { error } = await supabaseAdmin.from("tachograph_activity_segments").insert(withParserRunId(normalizedActivities, parserRun.id));
     if (error) throw error;
   }
 
   if (daySummaries.length > 0) {
-    const { error } = await supabaseAdmin.from("tachograph_day_summaries").insert(daySummaries);
+    const { error } = await supabaseAdmin.from("tachograph_day_summaries").insert(withParserRunId(daySummaries, parserRun.id));
     if (error) throw error;
   }
 
   if (findings.length > 0) {
-    const { error } = await supabaseAdmin.from("tachograph_findings").insert(findings);
+    const { error } = await supabaseAdmin.from("tachograph_findings").insert(withParserRunId(findings, parserRun.id));
     if (error) throw error;
   }
 
   if (reconciliationRows.length > 0) {
-    const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(reconciliationRows);
+    const { error } = await supabaseAdmin.from("tachograph_reconciliation_items").insert(withParserRunId(reconciliationRows, parserRun.id));
     if (error) throw error;
   }
 
@@ -963,16 +1688,6 @@ async function handleHourWiseReadOnlyCapture(
       if (error) throw error;
     }
   }
-
-  await supabaseAdmin.from("tachograph_processing_runs").insert({
-    import_id: record.id,
-    company_id: record.company_id ?? null,
-    parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
-    source: "hourwise_read_only_capture",
-    warnings: processingWarnings,
-    errors: [],
-    processed_at: summaryWindow.endTime ?? processedAt,
-  });
 
   const metadata = mergeMetadata(record.metadata, {
     parser_version: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
@@ -1033,6 +1748,7 @@ async function handleHourWiseReadOnlyCapture(
       period_start: summaryWindow.startTime ?? downloadedAt,
       period_end: summaryWindow.endTime ?? downloadedAt,
       download_status: normalizedActivities.length > 0 ? "ok" : "partial_identity",
+      parser_run_id: parserRun.id,
     });
     if (downloadError) throw downloadError;
   }
@@ -1048,6 +1764,44 @@ async function handleHourWiseReadOnlyCapture(
       metadata,
     })
     .eq("id", record.id);
+
+  const timelineGeneration = await generateImportTimeline(supabaseAdmin, record, parserRun, {
+    driverId,
+    vehicleId: null,
+    rangeStart: summaryWindow.startTime,
+    rangeEnd: summaryWindow.endTime,
+  });
+
+  await completeParserRun(supabaseAdmin, parserRun, {
+    record,
+    status: processingWarnings.length > 0 ? "completed_with_warnings" : "completed",
+    warnings: processingWarnings,
+    processedAt: summaryWindow.endTime ?? processedAt,
+    parserName: "hourwise_read_only_capture",
+    parserVersion: HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION,
+    source: "hourwise_read_only_capture",
+    outputType: "hourwise_helper_capture_summary",
+    outputPayload: {
+      selected_file_count: summary.selectedFileCount,
+      captured_bytes: summary.capturedBytes,
+      normalized_segments: normalizedActivities.length,
+      findings_count: findings.length,
+      reconciliation_issue_count: reconciliationRows.filter((row) => row.status !== "matched").length,
+      activity_day_count: activityParse.dayCount,
+      activity_change_count: activityParse.changeCount,
+      superseded_import_ids: supersededImportIds,
+      timeline_generation_id: timelineGeneration.generationId,
+      timeline_event_count: timelineGeneration.eventCount,
+      timeline_gap_count: timelineGeneration.gapCount,
+      timeline_daily_summary_count: timelineGeneration.dailySummaryCount,
+      timeline_skipped_reason: timelineGeneration.skippedReason,
+    },
+    metadata: {
+      final_import_status: finalStatus,
+      capture_schema: HOURWISE_READ_ONLY_CAPTURE_SCHEMA,
+      timeline_generation_id: timelineGeneration.generationId,
+    },
+  });
 
   return {
     status: finalStatus,
@@ -1359,7 +2113,6 @@ async function clearImportData(supabaseAdmin: ReturnType<typeof createClient>, i
   await supabaseAdmin.from("tachograph_technical_events").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_vehicle_motion_discrepancies").delete().eq("import_id", importId);
   await supabaseAdmin.from("tachograph_reconciliation_items").delete().eq("import_id", importId);
-  await supabaseAdmin.from("tachograph_processing_runs").delete().eq("import_id", importId);
 }
 
 async function clearDerivedImportData(supabaseAdmin: ReturnType<typeof createClient>, importIds: string[]) {

@@ -205,7 +205,7 @@ export function TachoImportCentre({
         </div>
       </div>
 
-      <DriverCardResetPanel companyId={profile?.company_id ?? null} onPurged={reload} />
+      <DriverCardResetPanel companyId={profile?.company_id ?? null} onArchived={reload} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.7fr,1fr] gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -441,14 +441,13 @@ function getImportLifecycleLabels(item: TachoImportRecord) {
 
 function DriverCardResetPanel({
   companyId,
-  onPurged,
+  onArchived,
 }: {
   companyId: string | null;
-  onPurged: () => void;
+  onArchived: () => void;
 }) {
   const [preview, setPreview] = useState<PurgeDriverCardReadsResponse | null>(null);
-  const [deleteStorageFiles, setDeleteStorageFiles] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'preview' | 'purge' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'preview' | 'archive' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -464,28 +463,28 @@ function DriverCardResetPanel({
         includeLinked: true,
       });
       setPreview(result);
-      setMessage(`Preview found ${result.importCount ?? 0} driver-card read${result.importCount === 1 ? '' : 's'} to delete.`);
+      setMessage(`Preview found ${result.importCount ?? 0} driver-card read${result.importCount === 1 ? '' : 's'} to archive.`);
     } catch (previewError) {
-      setError(previewError instanceof Error ? previewError.message : 'Failed to preview driver-card read purge.');
+      setError(previewError instanceof Error ? previewError.message : 'Failed to preview driver-card read archive.');
     } finally {
       setPendingAction(null);
     }
   };
 
-  const handlePurge = async () => {
+  const handleArchive = async () => {
     if (!companyId || pendingAction) return;
     const importCount = preview?.importCount ?? 0;
     if (importCount === 0) {
-      setMessage('No driver-card reads are queued for deletion.');
+      setMessage('No driver-card reads are queued for archiving.');
       return;
     }
 
     const confirmation = window.prompt(
-      `This will delete ${importCount} driver-card read${importCount === 1 ? '' : 's'} and their derived tacho analysis rows for this company. Type DELETE CARD READS to confirm.`
+      `This will archive ${importCount} driver-card read${importCount === 1 ? '' : 's'} for this company. Raw storage, import metadata, derived rows, parser runs, and driver signal history will be retained. Type ARCHIVE CARD READS to confirm.`
     );
-    if (confirmation !== 'DELETE CARD READS') return;
+    if (confirmation !== 'ARCHIVE CARD READS') return;
 
-    setPendingAction('purge');
+    setPendingAction('archive');
     setMessage(null);
     setError(null);
 
@@ -493,21 +492,18 @@ function DriverCardResetPanel({
       const result = await purgeCompanyDriverCardReads(companyId, {
         dryRun: false,
         includeLinked: true,
-        deleteStorageFiles,
-        reason: 'Manager reset test driver-card reads from Import Centre.',
+        reason: 'Manager archived test driver-card reads from Import Centre.',
       });
       setPreview(null);
       setMessage(
-        `Deleted ${result.importCount ?? 0} driver-card read${result.importCount === 1 ? '' : 's'} from the database${
-          deleteStorageFiles ? ` and removed ${result.storageDeletedCount ?? 0} storage object${result.storageDeletedCount === 1 ? '' : 's'}` : ''
-        }.`
+        `Archived ${result.archivedCount ?? result.importCount ?? 0} driver-card read${(result.archivedCount ?? result.importCount) === 1 ? '' : 's'}. Raw storage, import rows, derived rows, parser runs, and driver signals were retained for audit.`
       );
       if (result.storageDeleteErrors && result.storageDeleteErrors.length > 0) {
         setError(`Storage cleanup warning: ${result.storageDeleteErrors.join('; ')}`);
       }
-      onPurged();
-    } catch (purgeError) {
-      setError(purgeError instanceof Error ? purgeError.message : 'Failed to delete driver-card reads.');
+      onArchived();
+    } catch (archiveError) {
+      setError(archiveError instanceof Error ? archiveError.message : 'Failed to archive driver-card reads.');
     } finally {
       setPendingAction(null);
     }
@@ -516,28 +512,19 @@ function DriverCardResetPanel({
   return (
     <details className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
       <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-rose-700">
-        Test Data Reset: Driver Card Reads
+        Test Data Archive: Driver Card Reads
       </summary>
       <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-bold text-rose-950">Delete all driver-card reads for this company.</p>
+          <p className="text-sm font-bold text-rose-950">Archive all active driver-card reads for this company.</p>
           <p className="mt-1 text-sm text-rose-800">
-            Use this for test resets only. It deletes card import rows, derived activity/findings/download rows, and linked driver tacho signals. Driver personnel files remain.
+            Use this for test resets only. It hides active card imports from the supervisor queue while retaining raw storage, import rows, derived activity/findings/download rows, parser runs, and linked driver tacho signals.
           </p>
           {preview ? (
             <p className="mt-2 text-xs font-bold text-rose-900">
-              Preview: {preview.importCount ?? 0} imports, {preview.linkedDriverCount ?? 0} linked driver signal set{preview.linkedDriverCount === 1 ? '' : 's'}, {(preview.storagePaths ?? []).length} storage object{(preview.storagePaths ?? []).length === 1 ? '' : 's'}.
+              Preview: {preview.importCount ?? 0} imports, {preview.linkedDriverCount ?? 0} linked driver signal set{preview.linkedDriverCount === 1 ? '' : 's'}, {(preview.storagePaths ?? []).length} storage object{(preview.storagePaths ?? []).length === 1 ? '' : 's'} retained.
             </p>
           ) : null}
-          <label className="mt-3 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-800">
-            <input
-              type="checkbox"
-              checked={deleteStorageFiles}
-              onChange={(event) => setDeleteStorageFiles(event.target.checked)}
-              className="h-4 w-4 rounded border-rose-300 text-rose-700"
-            />
-            Also delete storage files
-          </label>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
@@ -546,15 +533,15 @@ function DriverCardResetPanel({
             disabled={!companyId || pendingAction !== null}
             className="rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {pendingAction === 'preview' ? 'Checking...' : 'Preview Delete'}
+            {pendingAction === 'preview' ? 'Checking...' : 'Preview Archive'}
           </button>
           <button
             type="button"
-            onClick={() => void handlePurge()}
+            onClick={() => void handleArchive()}
             disabled={!companyId || pendingAction !== null || !preview}
             className="rounded-xl bg-rose-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {pendingAction === 'purge' ? 'Deleting...' : 'Delete Card Reads'}
+            {pendingAction === 'archive' ? 'Archiving...' : 'Archive Card Reads'}
           </button>
         </div>
       </div>
@@ -574,19 +561,17 @@ function CandidateArchiveControls({
   onArchived: () => void;
 }) {
   const canArchive = isCandidateCardCheck(item);
-  const [pendingAction, setPendingAction] = useState<'keep' | 'delete' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'keep' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!canArchive) return null;
 
-  const handleArchive = async (deleteStorageFile: boolean) => {
+  const handleArchive = async () => {
     if (!companyId || pendingAction) return;
-    const action = deleteStorageFile ? 'delete' : 'keep';
+    const action = 'keep';
     const shouldArchive = window.confirm(
-      deleteStorageFile
-        ? 'Archive this candidate read and delete its stored tachograph upload? The import audit row will remain, but retry processing will no longer be useful.'
-        : 'Archive this candidate read and keep its stored tachograph upload for audit?'
+      'Archive this candidate read and keep its stored tachograph upload for audit?'
     );
     if (!shouldArchive) return;
 
@@ -595,15 +580,11 @@ function CandidateArchiveControls({
     setError(null);
 
     try {
-      const result = await archiveTachoCandidateImport(companyId, item.id, {
-        deleteStorageFile,
-        reason: deleteStorageFile
-          ? 'Archived candidate/no-hire card read and removed stored upload.'
-          : 'Archived candidate/no-hire card read and retained stored upload.',
+      await archiveTachoCandidateImport(companyId, item.id, {
+        deleteStorageFile: false,
+        reason: 'Archived candidate/no-hire card read and retained stored upload.',
       });
-      setMessage(deleteStorageFile && result.storagePath
-        ? 'Archived and deleted the stored tachograph upload. The audit row is retained.'
-        : 'Archived. The stored tachograph upload is retained.');
+      setMessage('Archived. The stored tachograph upload is retained.');
       onArchived();
     } catch (archiveError) {
       setError(archiveError instanceof Error ? archiveError.message : 'Failed to archive this candidate import.');
@@ -617,7 +598,7 @@ function CandidateArchiveControls({
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Candidate Archive</p>
         <p className="mt-1">
-          Archived {format(new Date(item.archivedAt), 'dd MMM yyyy HH:mm')}. Storage action: {item.archiveStorageAction === 'delete_file' ? 'delete file' : 'keep file'}.
+          Archived {format(new Date(item.archivedAt), 'dd MMM yyyy HH:mm')}. Storage action: keep file.
         </p>
         {item.storageDeletedAt ? <p className="mt-1 text-xs">Stored upload deleted {format(new Date(item.storageDeletedAt), 'dd MMM yyyy HH:mm')}.</p> : null}
       </div>
@@ -636,19 +617,11 @@ function CandidateArchiveControls({
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={() => void handleArchive(false)}
+            onClick={() => void handleArchive()}
             disabled={pendingAction !== null}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pendingAction === 'keep' ? 'Archiving...' : 'Archive, Keep File'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleArchive(true)}
-            disabled={pendingAction !== null}
-            className="rounded-xl bg-rose-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {pendingAction === 'delete' ? 'Deleting...' : 'Archive + Delete File'}
           </button>
         </div>
       </div>

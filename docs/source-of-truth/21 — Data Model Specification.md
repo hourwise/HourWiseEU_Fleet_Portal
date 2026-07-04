@@ -2418,16 +2418,19 @@ The following decisions may need confirmation during implementation:
 
 * Should driver card history be stored in a separate `driver_cards` table from the start?
 * Should vehicle unit history be stored in a separate `vehicle_units` table from the start?
-* How much parser output should be relational versus JSONB?
-* Should timeline events be versioned directly or regenerated with snapshot preservation?
 * What retention policy should apply to Atlas conversations?
-* What retention policy should apply to raw tachograph files?
 * Which report exports require long-term immutable storage?
 * Should support access use a separate support session table?
 * Should subscription and billing be in the core schema or isolated?
 * Should rule definitions be stored as data or code references?
 
 These should be resolved in future ADRs where they affect architecture.
+
+Resolved decisions:
+
+* Parser output relational versus JSONB boundary is resolved by `ADR-0016` in `SOT-24`.
+* Timeline events are versioned derived records with regeneration and snapshot preservation rules resolved by `ADR-0017` in `SOT-24`.
+* Raw tachograph file retention is policy-driven and audited as resolved by `ADR-0018` in `SOT-24`.
 
 ---
 

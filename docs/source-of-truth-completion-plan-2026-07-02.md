@@ -377,18 +377,18 @@ Create a concrete backlog with these initial items:
 
 1. `DOC-001`: Add source-of-truth changelog and change template. Status: complete 2026-07-02.
 2. `DOC-002`: Add source-of-truth index with stable document IDs. Status: complete 2026-07-02.
-3. `DOC-003`: Fix MVP Markdown link escaping or document link convention.
-4. `ADR-0016`: Decide parser output relational vs JSONB boundary.
-5. `ADR-0017`: Decide timeline versioning/regeneration strategy.
-6. `ADR-0018`: Decide raw tachograph retention policy.
-7. `SEC-001`: Map existing RLS policies to the security spec.
-8. `DATA-001`: Map existing migrations to the MVP data model.
-9. `IMP-001`: Define import batch/import file schema delta.
-10. `IMP-002`: Define raw tachograph storage immutability checks.
-11. `PARSE-001`: Map existing `process-tacho` function to parser run contract.
-12. `TIME-001`: Define timeline event MVP schema and UI read model.
-13. `TEST-001`: Add cross-tenant upload/read regression tests.
-14. `TEST-002`: Add parser fixture regression tests.
+3. `DOC-003`: Fix MVP Markdown link escaping or document link convention. Status: complete 2026-07-02.
+4. `ADR-0016`: Decide parser output relational vs JSONB boundary. Status: complete 2026-07-02.
+5. `ADR-0017`: Decide timeline versioning/regeneration strategy. Status: complete 2026-07-02.
+6. `ADR-0018`: Decide raw tachograph retention policy. Status: complete 2026-07-02.
+7. `SEC-001`: Map existing RLS policies to the security spec. Status: complete 2026-07-02.
+8. `DATA-001`: Map existing migrations to the MVP data model. Status: complete 2026-07-02.
+9. `IMP-001`: Define import batch/import file schema delta. Status: complete 2026-07-02.
+10. `IMP-002`: Define raw tachograph storage immutability checks. Status: complete 2026-07-02.
+11. `PARSE-001`: Map existing `process-tacho` function to parser run contract. Status: complete 2026-07-02.
+12. `TIME-001`: Define timeline event MVP schema and UI read model. Status: complete 2026-07-02.
+13. `TEST-001`: Add cross-tenant upload/read regression tests. Status: complete 2026-07-02.
+14. `TEST-002`: Add parser fixture regression tests. Status: complete 2026-07-02.
 
 ## Definition Of Complete
 
@@ -401,7 +401,7 @@ The source-of-truth collection can be marked complete for implementation governa
 - Existing code/schema is reconciled against the new documents.
 - Markdown links and filenames are safe for automation.
 - Security model is represented by tests, not only narrative.
-- First milestone has explicit acceptance criteria and rollback strategy.
+- First milestone has explicit acceptance criteria and rollback strategy. Status: complete 2026-07-02; see `docs/secure-upload-to-timeline-acceptance-rollback-2026-07-02.md`.
 
 ## Recommended Next Action
 
@@ -411,4 +411,15 @@ Start with Phase 0 and Phase 1 before touching implementation. The fastest safe 
 2. Split or index ADRs.
 3. Produce a docs-to-current-schema reconciliation table.
 4. Resolve the three MVP-blocking ADRs: parser output shape, timeline versioning, raw file retention.
-5. Build the `Secure Upload to Timeline` milestone only after those are complete.
+5. Build the `Secure Upload to Timeline` milestone using `docs/secure-upload-to-timeline-acceptance-rollback-2026-07-02.md` as the milestone contract.
+
+Current implementation gate:
+
+- `DATA-002`: Live schema and policy verification is complete with implementation blockers found as of 2026-07-02. Manual Supabase Dashboard export confirmed the live `tachograph-files` bucket and tachograph schema, but also found an unsafe raw storage delete policy and an overly broad `tachograph_files` `ALL` policy. See `docs/live-schema-policy-verification-data-002-2026-07-02.md`.
+- `SEC-002`: Storage/RLS hardening migration for `tachograph-files` and related raw import metadata is complete as of 2026-07-03. See `docs/storage-rls-hardening-sec-002-2026-07-03.md`.
+- `DATA-003`: Driver-card purge/reset flows now use retention-state/archive-only behaviour as of 2026-07-03. See `docs/driver-card-retention-archive-data-003-2026-07-03.md`.
+- `PARSE-002`: Parser run lifecycle schema and `process-tacho` lifecycle writes are complete as of 2026-07-03. Reprocessing now creates distinct versioned parser runs, marks current/superseded state, and preserves parser-run history. See `docs/parser-run-lifecycle-parse-002-2026-07-03.md`.
+- `TIME-002`: Timeline generation/event/source/gap schema is complete as of 2026-07-03. See `docs/timeline-generation-schema-time-002-2026-07-03.md`.
+- `TIME-003`: Import-scoped timeline generation from parser-derived tachograph rows and read-only timeline bundle RPCs are complete as of 2026-07-03. See `docs/timeline-generation-runtime-time-003-2026-07-03.md`.
+- `TIME-004`: Timeline bundle reads are wired into the app/API adapter layer behind existing tachograph views as of 2026-07-03. See `docs/timeline-bundle-api-adapter-time-004-2026-07-03.md`.
+- `TIME-005`: Next task is to surface timeline comparison status in the Import Centre or analysis panels so managers can see whether timeline generation is present and count-aligned before replacing any view with timeline-native rendering.

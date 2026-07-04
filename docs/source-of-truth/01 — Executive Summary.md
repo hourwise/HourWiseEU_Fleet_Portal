@@ -325,4 +325,4 @@ Users trust HourWise as a reliable assistant rather than simply another software
 - [00 - README.md](./00%20-%20README.md)
 - [02 — Product Philosophy.md](./02%20—%20Product%20Philosophy.md)
 - [03 — Problems We Solve.md](./03%20—%20Problems%20We%20Solve.md)
-- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20(MVP).md)
+- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20%28MVP%29.md)

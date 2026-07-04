@@ -648,7 +648,7 @@ AI agents must:
 
 # Related Documents
 
-- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20(MVP).md)
+- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20%28MVP%29.md)
 - [11 — Platform Capability Model.md](./11%20—%20Platform%20Capability%20Model.md)
 - [12 — Capability Register Detail.md](./12%20—%20Capability%20Register%20Detail.md)
 - [13 — User Journey Map.md](./13%20—%20User%20Journey%20Map.md)

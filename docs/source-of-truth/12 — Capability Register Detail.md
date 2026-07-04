@@ -631,7 +631,7 @@ This ensures the architecture remains intentional and traceable.
 
 # Related Documents
 
-- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20(MVP).md)
+- [10 — Minimum Viable Product (MVP).md](./10%20—%20Minimum%20Viable%20Product%20%28MVP%29.md)
 - [11 — Platform Capability Model.md](./11%20—%20Platform%20Capability%20Model.md)
 - [16 — Driver App Specification.md](./16%20—%20Driver%20App%20Specification.md)
 - [17 — Fleet Portal Specification.md](./17%20—%20Fleet%20Portal%20Specification.md)

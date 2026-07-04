@@ -9,15 +9,19 @@ import type {
   TachoFindingReview,
   TachoFindingReviewStatus,
   TachoReconciliationItem,
+  TachoTimelineBundle,
   VehicleMotionDiscrepancy,
 } from './rules/types';
-import { adaptImportRecord } from './adapters';
+import { adaptImportRecord, attachTimelineComparison } from './adapters';
 
 const TACHO_RPC = {
   companySignals: 'get_company_tacho_signals',
   driverAnalysisBundle: 'get_driver_tacho_analysis_bundle',
   vehicleAnalysisBundle: 'get_vehicle_unit_analysis_bundle',
   importBundle: 'get_tacho_import_bundle',
+  driverTimelineBundle: 'get_driver_timeline_bundle',
+  vehicleTimelineBundle: 'get_vehicle_timeline_bundle',
+  importTimelineBundle: 'get_import_timeline_bundle',
   archiveCandidateImport: 'archive_tacho_candidate_import',
   confirmCandidateStorageDeleted: 'confirm_tacho_candidate_import_storage_deleted',
   prepareImportReprocess: 'prepare_tacho_import_reprocess',
@@ -200,6 +204,64 @@ async function fetchImportReconciliationByImport(
   }));
 }
 
+async function fetchOptionalTimelineBundle(
+  fetcher: () => Promise<TachoTimelineBundle | null>
+): Promise<{ bundle: TachoTimelineBundle | null; warnings: string[] }> {
+  try {
+    return { bundle: await fetcher(), warnings: [] };
+  } catch (error) {
+    return {
+      bundle: null,
+      warnings: [
+        `Timeline bundle unavailable; existing tachograph bundle used for display. ${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+}
+
+export async function fetchImportTimelineBundle(
+  companyId: string,
+  importId: string
+): Promise<TachoTimelineBundle | null> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.importTimelineBundle as any, {
+    p_company_id: companyId,
+    p_import_id: importId,
+  } as any);
+
+  if (error) throw error;
+  return (data as TachoTimelineBundle | null) ?? null;
+}
+
+export async function fetchDriverTimelineBundle(
+  companyId: string,
+  driverId: string,
+  range: TachoAnalysisRange = '7d'
+): Promise<TachoTimelineBundle | null> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.driverTimelineBundle as any, {
+    p_company_id: companyId,
+    p_driver_id: driverId,
+    p_range: range,
+  } as any);
+
+  if (error) throw error;
+  return (data as TachoTimelineBundle | null) ?? null;
+}
+
+export async function fetchVehicleTimelineBundle(
+  companyId: string,
+  vehicleId: string,
+  range: TachoAnalysisRange = '7d'
+): Promise<TachoTimelineBundle | null> {
+  const { data, error } = await supabase.rpc(TACHO_RPC.vehicleTimelineBundle as any, {
+    p_company_id: companyId,
+    p_vehicle_id: vehicleId,
+    p_range: range,
+  } as any);
+
+  if (error) throw error;
+  return (data as TachoTimelineBundle | null) ?? null;
+}
+
 export interface CompanyTachoSignalsResponse {
   complianceSignals: ParserDriverTachoComplianceSignal[];
   riskSignals: ParserDriverTachoRiskSignal[];
@@ -243,7 +305,13 @@ export async function fetchDriverTachoAnalysisBundle(
 
   if (error) throw error;
 
-  return (data as TachoParserBundle | null) ?? null;
+  const bundle = (data as TachoParserBundle | null) ?? null;
+  if (!bundle) return null;
+
+  const timeline = await fetchOptionalTimelineBundle(
+    () => fetchDriverTimelineBundle(companyId, driverId, range)
+  );
+  return attachTimelineComparison(bundle, timeline.bundle, timeline.warnings);
 }
 
 export async function fetchVehicleUnitAnalysisBundle(
@@ -265,7 +333,11 @@ export async function fetchVehicleUnitAnalysisBundle(
   if (!Array.isArray(bundle.vehicleMotionDiscrepancies)) {
     bundle.vehicleMotionDiscrepancies = await fetchVehicleMotionDiscrepanciesByVehicle(companyId, vehicleId, range);
   }
-  return bundle;
+
+  const timeline = await fetchOptionalTimelineBundle(
+    () => fetchVehicleTimelineBundle(companyId, vehicleId, range)
+  );
+  return attachTimelineComparison(bundle, timeline.bundle, timeline.warnings);
 }
 
 export async function fetchTachoImportBundle(
@@ -289,7 +361,11 @@ export async function fetchTachoImportBundle(
   if (!Array.isArray(bundle.vehicleMotionDiscrepancies)) {
     bundle.vehicleMotionDiscrepancies = await fetchVehicleMotionDiscrepanciesByImport(importId);
   }
-  return bundle;
+
+  const timeline = await fetchOptionalTimelineBundle(
+    () => fetchImportTimelineBundle(companyId, importId)
+  );
+  return attachTimelineComparison(bundle, timeline.bundle, timeline.warnings);
 }
 
 function adaptFindingReview(row: TachoFindingReviewRow): TachoFindingReview {
@@ -441,37 +517,16 @@ export async function archiveTachoCandidateImport(
   const { data, error } = await supabase.rpc(TACHO_RPC.archiveCandidateImport as any, {
     p_company_id: companyId,
     p_import_id: importId,
-    p_delete_storage_file: options.deleteStorageFile,
+    p_delete_storage_file: false,
     p_reason: options.reason ?? null,
   } as any);
 
   if (error) throw error;
 
-  const archiveResult = (data ?? {}) as ArchiveCandidateImportResponse;
-  const storagePath = archiveResult.storagePath ?? null;
-
-  if (options.deleteStorageFile && storagePath) {
-    const { error: storageError } = await supabase.storage
-      .from('tachograph-files')
-      .remove([storagePath]);
-
-    if (storageError) throw storageError;
-
-    const { error: confirmError } = await supabase.rpc(TACHO_RPC.confirmCandidateStorageDeleted as any, {
-      p_company_id: companyId,
-      p_import_id: importId,
-      p_storage_path: storagePath,
-    } as any);
-
-    if (confirmError) throw confirmError;
-
-    return {
-      ...archiveResult,
-      storageDeletedAt: new Date().toISOString(),
-    } as ArchiveCandidateImportResponse & { storageDeletedAt: string };
-  }
-
-  return archiveResult;
+  return {
+    ...((data ?? {}) as ArchiveCandidateImportResponse),
+    storageDeleteRequested: options.deleteStorageFile ? false : undefined,
+  };
 }
 
 interface PrepareTachoImportReprocessResponse {
@@ -479,6 +534,8 @@ interface PrepareTachoImportReprocessResponse {
   driverId?: string;
   prepared?: boolean;
   preparedAt?: string;
+  existingRowsRetained?: boolean;
+  strategy?: string;
 }
 
 export async function prepareTachoImportReprocess(
@@ -499,11 +556,18 @@ export async function prepareTachoImportReprocess(
 export interface PurgeDriverCardReadsResponse {
   dryRun?: boolean;
   deleted?: boolean;
+  archived?: boolean;
+  archivedCount?: number;
   importCount?: number;
   linkedDriverCount?: number;
   storagePaths?: string[];
   storageDeletedCount?: number;
   storageDeleteErrors?: string[];
+  storageObjectsRetained?: boolean;
+  derivedRowsRetained?: boolean;
+  parserRunsRetained?: boolean;
+  driverSignalsRetained?: boolean;
+  archivedAt?: string;
 }
 
 export async function purgeCompanyDriverCardReads(
@@ -511,7 +575,6 @@ export async function purgeCompanyDriverCardReads(
   options: {
     dryRun?: boolean;
     includeLinked?: boolean;
-    deleteStorageFiles?: boolean;
     reason?: string | null;
   } = {}
 ): Promise<PurgeDriverCardReadsResponse> {
@@ -525,22 +588,7 @@ export async function purgeCompanyDriverCardReads(
 
   if (error) throw error;
 
-  const result = (data ?? {}) as PurgeDriverCardReadsResponse;
-  const storagePaths = result.storagePaths ?? [];
-
-  if (!dryRun && options.deleteStorageFiles && storagePaths.length > 0) {
-    const { data: storageResult, error: storageError } = await supabase.storage
-      .from('tachograph-files')
-      .remove(storagePaths);
-
-    return {
-      ...result,
-      storageDeletedCount: storageError ? 0 : storageResult?.length ?? 0,
-      storageDeleteErrors: storageError ? [storageError.message] : [],
-    };
-  }
-
-  return result;
+  return data as PurgeDriverCardReadsResponse;
 }
 
 export async function fetchLatestDriverCardTarget(companyId: string): Promise<string | null> {

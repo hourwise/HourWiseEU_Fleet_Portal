@@ -193,6 +193,125 @@ export interface TachoDaySummary {
   activities: TachoActivitySegment[];
 }
 
+export interface TimelineGenerationSummary {
+  id: string;
+  companyId?: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  scopeType?: string;
+  scopeId?: string | null;
+  rangeStart?: string;
+  rangeEnd?: string;
+  version?: string;
+  status?: string;
+  isCurrent?: boolean;
+  generatedReason?: string;
+  sourceImportId?: string | null;
+  parserRunId?: string | null;
+  supersedesGenerationId?: string | null;
+  supersededByGenerationId?: string | null;
+  supersededAt?: string | null;
+  startedAt?: string;
+  completedAt?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TimelineEventSummary {
+  id: string;
+  timelineGenerationId?: string;
+  eventType: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  startTime: string;
+  endTime?: string | null;
+  durationSeconds?: number | null;
+  timezone?: string;
+  confidenceState?: string;
+  status?: string;
+  isCurrent?: boolean;
+  sourceSummary?: string;
+  parserRunId?: string | null;
+  importFileId?: string | null;
+  sourceTable?: string | null;
+  sourceId?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TimelineGapSummary {
+  id: string;
+  timelineGenerationId?: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  startTime: string;
+  endTime: string;
+  durationSeconds: number;
+  gapType: string;
+  severity: TachoFindingSeverity;
+  reason: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DailyTimelineSummary {
+  id: string;
+  timelineGenerationId?: string;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  date: string;
+  drivingSeconds: number;
+  workSeconds: number;
+  availabilitySeconds: number;
+  restSeconds: number;
+  breakSeconds: number;
+  unknownSeconds: number;
+  dutyStart?: string | null;
+  dutyEnd?: string | null;
+  gapCount: number;
+  findingCount: number;
+  confidenceState: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TimelineEventSourceSummary {
+  id: string;
+  timelineEventId: string;
+  timelineGenerationId: string;
+  sourceType: string;
+  sourceId?: string | null;
+  sourceExternalId?: string | null;
+  parserRunId?: string | null;
+  parserOutputId?: string | null;
+  importFileId?: string | null;
+  sourceReference?: Record<string, unknown>;
+}
+
+export interface TachoTimelineBundle {
+  contractVersion: 'timeline-mvp-1';
+  timelineGeneration?: TimelineGenerationSummary | null;
+  timelineGenerations?: TimelineGenerationSummary[];
+  events: TimelineEventSummary[];
+  gaps: TimelineGapSummary[];
+  dailySummaries: DailyTimelineSummary[];
+  sources?: TimelineEventSourceSummary[];
+  warnings: string[];
+}
+
+export interface TachoTimelineComparison {
+  available: boolean;
+  checkedAt: string;
+  warnings: string[];
+  tachographActivityCount: number;
+  timelineEventCount: number;
+  tachographGapCount: number;
+  timelineGapCount: number;
+  tachographDaySummaryCount: number;
+  timelineDailySummaryCount: number;
+  eventCountMatches: boolean;
+  gapCountMatches: boolean;
+  daySummaryCountMatches: boolean;
+  timelineGenerationId?: string | null;
+}
+
 export interface DriverCardIdentity {
   driverId: string;
   driverName: string;
@@ -332,6 +451,8 @@ export interface TachoParserBundle {
   daySummaries: TachoDaySummary[];
   driverComplianceSignals: ParserDriverTachoComplianceSignal[];
   driverRiskSignals: ParserDriverTachoRiskSignal[];
+  timelineBundle?: TachoTimelineBundle | null;
+  timelineComparison?: TachoTimelineComparison;
 }
 
 export type TachoRuleCode =

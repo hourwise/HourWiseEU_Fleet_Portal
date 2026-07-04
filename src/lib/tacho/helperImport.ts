@@ -236,38 +236,10 @@ async function insertPendingTachoImport(args: {
 }
 
 async function patchImportMetadata(importId: string, patch: HelperImportMetadata) {
-  const { data, error: fetchError } = await supabase
-    .from('tachograph_files' as never)
-    .select('metadata')
-    .eq('id', importId)
-    .maybeSingle();
-
-  if (fetchError) {
-    reportTachoImportTelemetry({
-      level: 'error',
-      message: 'Failed to reload tachograph import metadata before patching.',
-      error: fetchError,
-      context: {
-        stage: 'metadata_reload',
-        importId,
-      },
-    });
-    throw fetchError;
-  }
-
-  const currentMetadata =
-    data && typeof (data as { metadata?: unknown }).metadata === 'object' && (data as { metadata?: unknown }).metadata !== null
-      ? ((data as { metadata: HelperImportMetadata }).metadata)
-      : {};
-  const metadata = {
-    ...currentMetadata,
-    ...patch,
-  };
-
-  const { error } = await supabase
-    .from('tachograph_files' as never)
-    .update({ metadata } as never)
-    .eq('id', importId);
+  const { error } = await supabase.rpc('patch_tachograph_import_metadata' as any, {
+    p_import_id: importId,
+    p_metadata_patch: patch,
+  });
 
   if (error) {
     reportTachoImportTelemetry({
