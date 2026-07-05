@@ -20,6 +20,10 @@ const HOURWISE_READ_ONLY_CAPTURE_SCHEMA = "hourwise.tachograph.driver-card.read-
 const HOURWISE_READ_ONLY_CAPTURE_EXPORT_FORMAT = "hourwise_read_only_capture_v1";
 const HOURWISE_READ_ONLY_CAPTURE_PARSER_VERSION = "hourwise-read-only-capture@1";
 const HOURWISE_READ_ONLY_CAPTURE_SIGNAL_SOURCE = "hourwise_read_only_capture";
+const HOURWISE_ACTIVITY_PRIMARY_OFFSET = 4;
+const HOURWISE_ACTIVITY_FALLBACK_SCAN_BYTES = 4096;
+const HOURWISE_ACTIVITY_GOOD_RUN_DAYS = 30;
+const HOURWISE_ACTIVITY_MAX_RECORDS_PER_RUN = 370;
 const TIMELINE_GENERATION_VERSION = "timeline-mvp@1";
 const SIGNAL_PERIODS = [7, 14, 28, 30, 90, 180];
 
@@ -1923,23 +1927,45 @@ function parseHourWiseDriverCardActivities(
 }
 
 function parseActivityDailyRecords(bytes: Uint8Array) {
-  const candidateRecords = [...parseActivityDailyRecordsFromOffset(bytes, 4)];
-
-  for (let offset = 0; offset + 12 <= bytes.length; offset += 1) {
-    if (offset === 4) continue;
-    const run = parseActivityDailyRecordsFromOffset(bytes, offset);
-    if (run.length < 2) continue;
-    candidateRecords.push(...run);
+  const primaryRun = parseActivityDailyRecordsFromOffset(bytes, HOURWISE_ACTIVITY_PRIMARY_OFFSET);
+  if (primaryRun.length >= HOURWISE_ACTIVITY_GOOD_RUN_DAYS) {
+    return dedupeActivityDailyRecords(primaryRun);
   }
 
-  return dedupeActivityDailyRecords(candidateRecords);
+  let bestRun = primaryRun;
+  const scanLimit = Math.min(bytes.length - 12, HOURWISE_ACTIVITY_FALLBACK_SCAN_BYTES);
+  for (let offset = 0; offset <= scanLimit; offset += 1) {
+    if (offset === HOURWISE_ACTIVITY_PRIMARY_OFFSET) continue;
+    if (!looksLikeActivityDailyRecordHeader(bytes, offset)) continue;
+    const run = parseActivityDailyRecordsFromOffset(bytes, offset);
+    if (run.length < 2) continue;
+    if (isBetterActivityRecordRun(run, bestRun)) {
+      bestRun = run;
+      if (bestRun.length >= HOURWISE_ACTIVITY_GOOD_RUN_DAYS) break;
+    }
+  }
+
+  return dedupeActivityDailyRecords(bestRun);
 }
 
-function parseActivityDailyRecordsFromOffset(bytes: Uint8Array, startOffset: number) {
+function looksLikeActivityDailyRecordHeader(bytes: Uint8Array, offset: number) {
+  if (offset < 0 || offset + 12 > bytes.length) return false;
+  const recordLength = readUint16(bytes, offset + 2);
+  if (!Number.isFinite(recordLength) || recordLength < 14 || recordLength % 2 !== 0 || offset + recordLength > bytes.length) {
+    return false;
+  }
+  return isPlausibleTachoDate(readTimeReal(bytes, offset + 4));
+}
+
+function parseActivityDailyRecordsFromOffset(
+  bytes: Uint8Array,
+  startOffset: number,
+  maxRecords = HOURWISE_ACTIVITY_MAX_RECORDS_PER_RUN
+) {
   const records: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[] = [];
   let offset = startOffset;
 
-  while (offset + 12 <= bytes.length) {
+  while (offset + 12 <= bytes.length && records.length < maxRecords) {
     const record = parseActivityDailyRecordAt(bytes, offset);
     if (!record) break;
     records.push(record);
@@ -1947,6 +1973,17 @@ function parseActivityDailyRecordsFromOffset(bytes: Uint8Array, startOffset: num
   }
 
   return records;
+}
+
+function isBetterActivityRecordRun(
+  candidate: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[],
+  current: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[]
+) {
+  if (candidate.length !== current.length) return candidate.length > current.length;
+  const candidateChanges = candidate.reduce((total, record) => total + record.changeCount, 0);
+  const currentChanges = current.reduce((total, record) => total + record.changeCount, 0);
+  if (candidateChanges !== currentChanges) return candidateChanges > currentChanges;
+  return (candidate[0]?.offset ?? Number.MAX_SAFE_INTEGER) < (current[0]?.offset ?? Number.MAX_SAFE_INTEGER);
 }
 
 function dedupeActivityDailyRecords(records: NonNullable<ReturnType<typeof parseActivityDailyRecordAt>>[]) {

@@ -116,6 +116,15 @@ interface UseTachoReaderWorkflowOptions {
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_TACHO_HELPER_URL || 'http://127.0.0.1:47231';
 const AUTO_OPEN_REVIEW_STORAGE_KEY = 'hourwise:tacho-reader:auto-opened-review';
+const HELPER_UPLOAD_LOCK_STORAGE_KEY = 'hourwise:tacho-reader:upload-lock';
+const HELPER_UPLOAD_LOCK_TTL_MS = 15 * 60 * 1000;
+
+interface HelperUploadLock {
+  helperUrl: string;
+  readSessionId: string;
+  startedAt: number;
+  importId?: string | null;
+}
 
 function normalizeStage(value: string | undefined): TachoReaderStage {
   switch (value) {
@@ -157,6 +166,59 @@ function setAutoOpenedReviewKey(key: string) {
     window.sessionStorage.setItem(AUTO_OPEN_REVIEW_STORAGE_KEY, key);
   } catch {
     // Non-critical: in-memory guards still prevent duplicate auto-opens during this mount.
+  }
+}
+
+function getHelperUploadLock(helperUrl: string, readSessionId: string): HelperUploadLock | null {
+  try {
+    const rawValue = window.sessionStorage.getItem(HELPER_UPLOAD_LOCK_STORAGE_KEY);
+    if (!rawValue) return null;
+    const parsed = JSON.parse(rawValue) as Partial<HelperUploadLock>;
+    if (
+      parsed.helperUrl !== helperUrl ||
+      parsed.readSessionId !== readSessionId ||
+      typeof parsed.startedAt !== 'number'
+    ) {
+      return null;
+    }
+    if (Date.now() - parsed.startedAt > HELPER_UPLOAD_LOCK_TTL_MS) {
+      window.sessionStorage.removeItem(HELPER_UPLOAD_LOCK_STORAGE_KEY);
+      return null;
+    }
+    return {
+      helperUrl,
+      readSessionId,
+      startedAt: parsed.startedAt,
+      importId: parsed.importId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function setHelperUploadLock(lock: HelperUploadLock) {
+  try {
+    window.sessionStorage.setItem(HELPER_UPLOAD_LOCK_STORAGE_KEY, JSON.stringify(lock));
+  } catch {
+    // In-memory importSessionRef still guards duplicate uploads during this mount.
+  }
+}
+
+function clearHelperUploadLock(helperUrl?: string, readSessionId?: string | null) {
+  try {
+    if (!helperUrl || !readSessionId) {
+      window.sessionStorage.removeItem(HELPER_UPLOAD_LOCK_STORAGE_KEY);
+      return;
+    }
+
+    const rawValue = window.sessionStorage.getItem(HELPER_UPLOAD_LOCK_STORAGE_KEY);
+    if (!rawValue) return;
+    const parsed = JSON.parse(rawValue) as Partial<HelperUploadLock>;
+    if (parsed.helperUrl === helperUrl && parsed.readSessionId === readSessionId) {
+      window.sessionStorage.removeItem(HELPER_UPLOAD_LOCK_STORAGE_KEY);
+    }
+  } catch {
+    // Non-critical cleanup.
   }
 }
 
@@ -343,12 +405,13 @@ export function useTachoReaderWorkflow({
     if (importId) {
       ignoredImportIdsRef.current.add(importId);
     }
+    clearHelperUploadLock(helperUrl, helperStatus.readSessionId);
     setRegisteredImport(null);
     setTrackedImport(null);
     setTrackedFocusedDate(null);
     importSessionRef.current = null;
     openedReviewKeyRef.current = null;
-  }, [helperStatus.importId, registeredImport?.importId, trackedImport?.importId]);
+  }, [helperStatus.importId, helperStatus.readSessionId, helperUrl, registeredImport?.importId, trackedImport?.importId]);
 
   const refreshStatus = useCallback(async (options?: { clearCompletedResult?: boolean }) => {
     setRefreshing(true);
@@ -398,8 +461,10 @@ export function useTachoReaderWorkflow({
 
         const requestedTargetDriverId = command === 'start-read' ? targetDriverId ?? null : null;
         if (command === 'start-read') {
+          clearHelperUploadLock();
           activeReadDriverIdRef.current = requestedTargetDriverId;
         } else {
+          clearHelperUploadLock(helperUrl, helperStatus.readSessionId);
           activeReadDriverIdRef.current = undefined;
         }
 
@@ -429,7 +494,7 @@ export function useTachoReaderWorkflow({
         setCommandPending(null);
       }
     },
-    [helperUrl, profile?.company_id, refreshStatus, sourceType, targetDriverId, user?.id]
+    [helperStatus.readSessionId, helperUrl, profile?.company_id, refreshStatus, sourceType, targetDriverId, user?.id]
   );
 
   useEffect(() => {
@@ -476,9 +541,23 @@ export function useTachoReaderWorkflow({
       activeReadDriverIdRef.current !== undefined ? activeReadDriverIdRef.current : targetDriverId ?? null;
     if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
     if (importSessionRef.current === helperStatus.readSessionId) return;
+    const existingUploadLock = getHelperUploadLock(helperUrl, readSessionId);
+    if (existingUploadLock) {
+      setImportMessage(
+        existingUploadLock.importId
+          ? `Read session ${readSessionId} has already uploaded import ${existingUploadLock.importId}. Cancel the helper read before retrying.`
+          : `Read session ${readSessionId} is already being uploaded by this browser. Wait for it to finish, or cancel the helper read before retrying.`
+      );
+      return;
+    }
 
     let cancelled = false;
     importSessionRef.current = readSessionId;
+    setHelperUploadLock({
+      helperUrl,
+      readSessionId,
+      startedAt: Date.now(),
+    });
     setImportPending(true);
     setImportMessage(
       helperStatus.exportParserReady === false
@@ -510,6 +589,12 @@ export function useTachoReaderWorkflow({
             vehicleRegHint: helperStatus.vehicleRegHint,
           },
         });
+        setHelperUploadLock({
+          helperUrl,
+          readSessionId,
+          startedAt: Date.now(),
+          importId: registration.importId,
+        });
 
         const kickoff = await kickoffTachoImportProcessing(registration.record);
         if (!kickoff.started) {
@@ -523,6 +608,7 @@ export function useTachoReaderWorkflow({
           if (cancelled) return;
 
           importSessionRef.current = null;
+          clearHelperUploadLock(helperUrl, readSessionId);
           setRegisteredImport(null);
           setTrackedImport(null);
           setTrackedFocusedDate(null);
@@ -546,6 +632,7 @@ export function useTachoReaderWorkflow({
 
         if (cancelled) return;
 
+        clearHelperUploadLock(helperUrl, readSessionId);
         setRegisteredImport({
           readSessionId,
           importId: registration.importId,
@@ -560,7 +647,11 @@ export function useTachoReaderWorkflow({
       } catch (error) {
         if (!cancelled) {
           importSessionRef.current = null;
-          setImportMessage(error instanceof Error ? error.message : 'Failed to register helper import');
+          setImportMessage(
+            error instanceof Error
+              ? `${error.message}. Cancel the helper read before retrying this export.`
+              : 'Failed to register helper import. Cancel the helper read before retrying this export.'
+          );
         }
       } finally {
         if (!cancelled) {
@@ -665,6 +756,7 @@ export function useTachoReaderWorkflow({
         });
         if (cancelled) return;
         ignoredImportIdsRef.current.add(importId);
+        clearHelperUploadLock(helperUrl, helperStatus.readSessionId ?? registeredImport?.readSessionId ?? null);
         setRegisteredImport((current) => (current?.importId === importId ? null : current));
         setTrackedImport((current) => (current?.importId === importId ? null : current));
         setTrackedFocusedDate(null);
@@ -698,12 +790,13 @@ export function useTachoReaderWorkflow({
   useEffect(() => {
     if (helperStatus.stage !== 'reading' || !helperStatus.readSessionId) return;
     if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
+    clearHelperUploadLock(helperUrl, helperStatus.readSessionId);
     setRegisteredImport(null);
     setTrackedImport(null);
     setTrackedFocusedDate(null);
     setImportMessage(null);
     importSessionRef.current = null;
-  }, [helperStatus.readSessionId, helperStatus.stage, registeredImport?.readSessionId]);
+  }, [helperStatus.readSessionId, helperStatus.stage, helperUrl, registeredImport?.readSessionId]);
 
   return {
     status,
