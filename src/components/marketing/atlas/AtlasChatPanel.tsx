@@ -109,6 +109,8 @@ export function AtlasChatPanel({ onClose }: AtlasChatPanelProps) {
     setMode('collectingFeedback');
   };
 
+  const activeIntentId = [...messages].reverse().find(m => m.role === 'atlas' && m.intentId)?.intentId;
+
   return (
     <div className="flex flex-col h-full bg-hw-navy-900 shadow-2xl overflow-hidden">
       {/* Header */}
@@ -172,6 +174,7 @@ export function AtlasChatPanel({ onClose }: AtlasChatPanelProps) {
         ) : (
           <AtlasFeedbackForm
             initialMessage={feedbackInput}
+            matchedIntentId={activeIntentId}
             onClose={() => setMode('chat')}
             onSuccess={() => {}}
           />
