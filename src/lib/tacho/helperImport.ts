@@ -512,7 +512,7 @@ export async function acknowledgeReaderHelperImport(args: {
 
 export async function resetReaderHelperImport(args: {
   helperUrl: string;
-  importId: string;
+  importId?: string | null;
   readSessionId?: string | null;
   reason?: string | null;
 }) {
@@ -524,7 +524,7 @@ export async function resetReaderHelperImport(args: {
     body: JSON.stringify({
       requestedAt: new Date().toISOString(),
       readSessionId: args.readSessionId ?? null,
-      importId: args.importId,
+      importId: args.importId ?? null,
       reason: args.reason ?? 'Portal cleared terminal helper import state.',
     }),
   });
@@ -535,7 +535,7 @@ export async function resetReaderHelperImport(args: {
       message: `Helper import reset returned ${response.status}.`,
       context: {
         stage: 'helper_import_reset',
-        importId: args.importId,
+        importId: args.importId ?? undefined,
         readSessionId: args.readSessionId ?? undefined,
         ingestSource: 'reader_helper',
       },

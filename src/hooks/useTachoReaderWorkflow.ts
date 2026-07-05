@@ -512,6 +512,27 @@ export function useTachoReaderWorkflow({
         });
 
         const kickoff = await kickoffTachoImportProcessing(registration.record);
+        if (!kickoff.started) {
+          ignoredImportIdsRef.current.add(registration.importId);
+          await resetReaderHelperImport({
+            helperUrl,
+            readSessionId,
+            reason: `Processing kickoff did not confirm: ${kickoff.error ?? 'Unknown error'}.`,
+          });
+
+          if (cancelled) return;
+
+          importSessionRef.current = null;
+          setRegisteredImport(null);
+          setTrackedImport(null);
+          setTrackedFocusedDate(null);
+          setImportMessage(
+            `Import ${registration.importId} was uploaded, but processing kickoff did not confirm: ${kickoff.error ?? 'Unknown error'}. The helper has been cleared for another read.`
+          );
+          onImportRegistered?.();
+          await refreshStatus({ clearCompletedResult: true });
+          return;
+        }
 
         await acknowledgeReaderHelperImport({
           helperUrl,
@@ -530,11 +551,9 @@ export function useTachoReaderWorkflow({
           importId: registration.importId,
         });
         setImportMessage(
-          kickoff.started
-            ? helperStatus.exportParserReady === false
-              ? `Import ${registration.importId} registered as a read-only diagnostic capture. Processing was requested and should complete as a partial import.`
-              : `Import ${registration.importId} registered from the helper export and processing was requested.`
-            : `Import ${registration.importId} registered from the helper export, but processing kickoff did not confirm: ${kickoff.error ?? 'Unknown error'}.`
+          helperStatus.exportParserReady === false
+            ? `Import ${registration.importId} registered as a read-only diagnostic capture. Processing was requested and should complete as a partial import.`
+            : `Import ${registration.importId} registered from the helper export and processing was requested.`
         );
         onImportRegistered?.();
         await refreshStatus();
