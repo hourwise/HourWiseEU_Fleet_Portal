@@ -8,6 +8,7 @@ import { EarlyAccessSection } from '../marketing/EarlyAccessSection';
 import { FounderStorySection } from '../marketing/FounderStorySection';
 import { FaqSection } from '../marketing/FaqSection';
 import { PricingSection } from '../marketing/PricingSection';
+import { AtlasChatWidget } from '../marketing/atlas/AtlasChatWidget';
 
 export function HomePage() {
   useEffect(() => {
@@ -54,6 +55,9 @@ export function HomePage() {
 
       {/* FAQ Accordion */}
       <FaqSection />
+
+      {/* Floating Atlas Preview Chatbot */}
+      <AtlasChatWidget />
     </div>
   );
 }

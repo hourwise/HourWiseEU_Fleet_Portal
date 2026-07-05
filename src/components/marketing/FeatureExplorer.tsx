@@ -143,15 +143,27 @@ export function FeatureExplorer() {
                       {current.disclaimer}
                     </div>
                   )}
-                  <HWButton
-                    variant="outline"
-                    size="sm"
-                    className="group"
-                    onClick={() => document.getElementById('early-access')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    Learn more
-                    <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </HWButton>
+                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    <HWButton
+                      variant="outline"
+                      size="sm"
+                      className="group"
+                      onClick={() => document.getElementById('early-access')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      Learn more
+                      <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </HWButton>
+                    {current.id === 'atlas' && (
+                      <HWButton
+                        variant="ghost"
+                        size="sm"
+                        className="text-hw-cyan-500 hover:text-hw-cyan-400 p-0 h-auto"
+                        onClick={() => window.location.href = 'mailto:Atlas@hourwiseeu.co.uk?subject=Feedback for Atlas Assistant'}
+                      >
+                        Feedback for Atlas? Email the team
+                      </HWButton>
+                    )}
+                  </div>
                 </div>
 
                 <div className="hidden md:block relative group">

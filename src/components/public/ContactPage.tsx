@@ -1,7 +1,7 @@
 // src/components/public/ContactPage.tsx
 
 import React from 'react';
-import { Mail, HelpCircle } from 'lucide-react';
+import { Mail, HelpCircle, Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const ContactCard = ({ title, email, description, icon, cta }: { title: string; email: string; description: string; icon: React.ReactNode; cta: string }) => {
@@ -26,10 +26,11 @@ export function ContactPage() {
   const { t } = useTranslation();
   const supportEmail = 'support@hourwiseeu.co.uk';
   const infoEmail = 'info@hourwiseeu.co.uk';
+  const atlasEmail = 'Atlas@hourwiseeu.co.uk';
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 text-white">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">{t('contact.title')}</h1>
           <p className="mt-4 text-xl text-gray-300">
@@ -37,7 +38,7 @@ export function ContactPage() {
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
           <ContactCard
             title={t('contact.general.title')}
             email={infoEmail}
@@ -51,6 +52,13 @@ export function ContactPage() {
             description={t('contact.technical.description')}
             icon={<HelpCircle className="w-8 h-8 text-green-400" />}
             cta={t('contact.cta')}
+          />
+          <ContactCard
+            title="Atlas Assistant"
+            email={atlasEmail}
+            description="Got feedback or questions about our AI-powered fleet insights? Contact the Atlas team."
+            icon={<Bot className="w-8 h-8 text-hw-cyan-500" />}
+            cta="Email Atlas"
           />
         </div>
       </div>
