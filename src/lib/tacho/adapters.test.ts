@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { attachTimelineComparison, adaptImportRecord, deriveVehicleMotionDiscrepancies } from './adapters';
+import { attachTimelineComparison, adaptDriverBundleToAnalysis, adaptImportRecord, deriveVehicleMotionDiscrepancies } from './adapters';
 import type { TachoFinding, TachoParserBundle, TachoTimelineBundle } from './rules/types';
 
 function buildFinding(overrides: Partial<TachoFinding>): TachoFinding {
@@ -225,6 +225,116 @@ describe('attachTimelineComparison', () => {
       gapCountMatches: true,
       daySummaryCountMatches: true,
       timelineGenerationId: 'generation-1',
+    });
+  });
+});
+
+describe('adaptDriverBundleToAnalysis', () => {
+  it('uses timeline events as provisional activity display when normalized rows are empty', () => {
+    const bundle: TachoParserBundle = attachTimelineComparison(
+      {
+        contractVersion: '1.0',
+        importRecord: adaptImportRecord({
+          id: 'import-timeline-fallback',
+          source_type: 'driver_card',
+          driver_id: 'driver-1',
+          driver_name: 'PHILIP CHRISTOPHER GERAN',
+          external_card_number: 'DB18220162003911',
+          uploaded_at: '2026-07-05T10:37:00.000Z',
+          status: 'processed',
+        }),
+        driverCardDownload: {
+          importId: 'import-timeline-fallback',
+          driverId: 'driver-1',
+          driverName: 'PHILIP CHRISTOPHER GERAN',
+          cardNumber: 'DB18220162003911',
+          downloadedAt: '2026-07-05T10:37:00.000Z',
+          periodStart: '2026-07-03T08:00:00.000Z',
+          periodEnd: '2026-07-03T10:30:00.000Z',
+          downloadStatus: 'ok',
+        },
+        processingRun: {
+          importId: 'import-timeline-fallback',
+          parserVersion: 'hourwise-read-only-capture@1',
+          source: 'normalized_findings',
+          processedAt: '2026-07-05T10:40:00.000Z',
+          warnings: [],
+          errors: [],
+        },
+        activitySegments: [],
+        findings: [],
+        technicalEvents: [],
+        reconciliation: [],
+        vehicleMotionDiscrepancies: [],
+        daySummaries: [],
+        driverComplianceSignals: [],
+        driverRiskSignals: [],
+      },
+      {
+        contractVersion: 'timeline-mvp-1',
+        timelineGeneration: {
+          id: 'generation-fallback',
+          version: 'timeline-mvp@1',
+          status: 'completed',
+          isCurrent: true,
+        },
+        events: [
+          {
+            id: 'timeline-event-1',
+            eventType: 'driving',
+            driverId: 'driver-1',
+            startTime: '2026-07-03T08:00:00.000Z',
+            endTime: '2026-07-03T09:00:00.000Z',
+            durationSeconds: 3600,
+            confidenceState: 'likely',
+            sourceSummary: 'Tachograph driving activity',
+            metadata: { activity_type: 'driving', tachograph_source: 'driver_card' },
+          },
+          {
+            id: 'timeline-event-2',
+            eventType: 'technical_event',
+            driverId: 'driver-1',
+            startTime: '2026-07-03T09:00:00.000Z',
+            endTime: '2026-07-03T09:05:00.000Z',
+            durationSeconds: 300,
+            confidenceState: 'confirmed',
+          },
+        ],
+        gaps: [],
+        dailySummaries: [
+          {
+            id: 'daily-fallback-1',
+            date: '2026-07-03',
+            driverId: 'driver-1',
+            drivingSeconds: 3600,
+            workSeconds: 0,
+            availabilitySeconds: 0,
+            restSeconds: 0,
+            breakSeconds: 0,
+            unknownSeconds: 0,
+            gapCount: 0,
+            findingCount: 0,
+            confidenceState: 'likely',
+          },
+        ],
+        warnings: [],
+      }
+    );
+
+    const analysis = adaptDriverBundleToAnalysis(bundle, '7d');
+
+    expect(analysis.activitySegments).toHaveLength(1);
+    expect(analysis.activitySegments[0]).toMatchObject({
+      id: 'timeline-event-1',
+      activityType: 'driving',
+      durationMins: 60,
+      source: 'driver_card',
+    });
+    expect(analysis.dailySummaries).toHaveLength(1);
+    expect(analysis.dailySummaries[0]).toMatchObject({
+      date: '2026-07-03',
+      drivingMins: 60,
+      activities: [expect.objectContaining({ id: 'timeline-event-1' })],
     });
   });
 });

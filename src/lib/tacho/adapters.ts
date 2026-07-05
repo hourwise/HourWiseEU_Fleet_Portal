@@ -200,10 +200,89 @@ function fallbackDaySummaries(daySummaries: TachoDaySummary[] | undefined) {
   return [];
 }
 
+function normalizeTimelineActivityType(
+  eventType: string | null | undefined,
+  metadata?: Record<string, unknown>
+): TachoActivitySegment['activityType'] | null {
+  const metadataActivityType = metadata?.activity_type;
+  const rawType = typeof metadataActivityType === 'string' ? metadataActivityType : eventType;
+
+  switch (rawType) {
+    case 'driving':
+      return 'driving';
+    case 'work':
+    case 'other_work':
+      return 'work';
+    case 'poa':
+    case 'availability':
+      return 'poa';
+    case 'rest':
+    case 'break':
+    case 'break_rest':
+      return 'break_rest';
+    case 'unknown':
+      return 'unknown';
+    default:
+      return null;
+  }
+}
+
+function timelineConfidenceToTachoConfidence(value: string | null | undefined): TachoActivitySegment['confidence'] {
+  switch (value) {
+    case 'confirmed':
+      return 'high';
+    case 'likely':
+    case 'possible':
+      return 'medium';
+    default:
+      return 'low';
+  }
+}
+
+function secondsToMinutes(value: number | null | undefined) {
+  return Math.max(0, Math.round((value ?? 0) / 60));
+}
+
+function timelineActivitySegments(bundle: TachoParserBundle): TachoActivitySegment[] {
+  const timelineEvents = bundle.timelineBundle?.events ?? [];
+
+  return timelineEvents
+    .map((event): TachoActivitySegment | null => {
+      const activityType = normalizeTimelineActivityType(event.eventType, event.metadata);
+      if (!activityType || !event.endTime) return null;
+
+      const durationMins = secondsToMinutes(
+        typeof event.durationSeconds === 'number'
+          ? event.durationSeconds
+          : Math.max(0, new Date(event.endTime).getTime() - new Date(event.startTime).getTime()) / 1000
+      );
+
+      if (durationMins <= 0) return null;
+
+      return {
+        id: event.sourceId ?? event.id,
+        source: event.metadata?.tachograph_source === 'vehicle_unit' ? 'vehicle_unit' : 'driver_card',
+        activityType,
+        driverId: event.driverId ?? null,
+        vehicleId: event.vehicleId ?? null,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        durationMins,
+        confidence: timelineConfidenceToTachoConfidence(event.confidenceState),
+        label: event.sourceSummary ?? 'Timeline activity',
+      };
+    })
+    .filter((segment): segment is TachoActivitySegment => Boolean(segment))
+    .sort((left, right) => left.startTime.localeCompare(right.startTime));
+}
+
 function fallbackActivitySegments(bundle: TachoParserBundle) {
   if (Array.isArray(bundle.activitySegments) && bundle.activitySegments.length > 0) {
     return bundle.activitySegments;
   }
+
+  const timelineSegments = timelineActivitySegments(bundle);
+  if (timelineSegments.length > 0) return timelineSegments;
 
   return fallbackDaySummaries(bundle.daySummaries).flatMap((day) => day.activities);
 }
@@ -323,6 +402,32 @@ function buildDaySummariesFromSegments(segments: TachoActivitySegment[]): TachoD
   return Array.from(byDate.values()).sort((left, right) => right.date.localeCompare(left.date));
 }
 
+function buildDaySummariesFromTimeline(bundle: TachoParserBundle, segments: TachoActivitySegment[]): TachoDaySummary[] {
+  const timelineSummaries = bundle.timelineBundle?.dailySummaries ?? [];
+  if (timelineSummaries.length === 0) return [];
+
+  const activitiesByDate = new Map<string, TachoActivitySegment[]>();
+  segments.forEach((segment) => {
+    const date = segment.startTime.slice(0, 10);
+    activitiesByDate.set(date, [...(activitiesByDate.get(date) ?? []), segment]);
+  });
+
+  return timelineSummaries
+    .map((summary) => ({
+      date: summary.date,
+      drivingMins: secondsToMinutes(summary.drivingSeconds),
+      workMins: secondsToMinutes(summary.workSeconds),
+      poaMins: secondsToMinutes(summary.availabilitySeconds),
+      restMins: secondsToMinutes((summary.restSeconds ?? 0) + (summary.breakSeconds ?? 0)),
+      findingsCount: summary.findingCount ?? 0,
+      vuEventCount: summary.gapCount ?? 0,
+      activities: (activitiesByDate.get(summary.date) ?? []).sort((left, right) =>
+        left.startTime.localeCompare(right.startTime)
+      ),
+    }))
+    .sort((left, right) => right.date.localeCompare(left.date));
+}
+
 export function deriveVehicleMotionDiscrepancies(
   technicalEvents: TachoFinding[],
   findings: TachoFinding[]
@@ -377,7 +482,8 @@ export function adaptDriverBundleToAnalysis(
   const resolvedDriverId = download?.driverId ?? importRecord.driverId ?? '';
   const isCandidateCard = !resolvedDriverId;
   const activitySegments = dedupeActivitySegments(fallbackActivitySegments(bundle));
-  const daySummaries = buildDaySummariesFromSegments(activitySegments);
+  const daySummaries = buildDaySummariesFromTimeline(bundle, activitySegments);
+  const resolvedDaySummaries = daySummaries.length > 0 ? daySummaries : buildDaySummariesFromSegments(activitySegments);
   const findings = bundle.findings ?? [];
   const technicalEvents = bundle.technicalEvents ?? [];
   const drivingBreaches = findings.filter((finding) => finding.ruleCode.startsWith('DRV_')).length;
@@ -417,7 +523,7 @@ export function adaptDriverBundleToAnalysis(
       ),
     ],
     activitySegments,
-    dailySummaries: daySummaries,
+    dailySummaries: resolvedDaySummaries,
     findings,
     technicalEvents,
     reconciliation,
