@@ -217,15 +217,16 @@ This section is based on the latest tachograph roadmap. Verify in repo before re
 - `[x]` Real driver-card EF read-only capture has been tested with actual hardware.
 - `[x]` `process-tacho` recognises HourWise read-only capture containers.
 - `[x]` EF `0520` card identity decode works.
-- `[~]` EF `0504` daily activity decode exists provisionally and has processed at least one retry successfully.
+- `[x]` EF `0504` daily activity decode exists provisionally and has passed live read-only helper validation.
+  - 2026-07-05: Live import `b9c8c986-445b-4411-82fc-c96b8ecf6178` decoded 1839 provisional activity segments across 69 days; visible review day `2026-06-29` aligned tachograph `58` / timeline `58`.
 - `[~]` Driver-card import pairing/invite-from-card workflows exist and have had live testing.
   - 2026-06-21: Local code now backfills accepted candidate imports, returns linked import IDs from `accept_driver_invite`, and `accept-driver-invite` attempts post-accept signal rebuild via `process-tacho` when trigger-token config exists. Needs deployment/live retest.
-- `[~]` Driver Card Analysis now owns first-pass live card read/import workflow through `useTachoReaderWorkflow`.
-  - 2026-06-21: Auto-read trigger relaxed to `cardPresent && canStartRead`; reader helper polling reduced to 2s. Needs real helper/card retest after frontend deploy.
+- `[x]` Driver Card Analysis now owns first-pass live card read/import workflow through `useTachoReaderWorkflow`.
+  - 2026-07-05: Real helper/card/browser/Supabase path reached `complete`, opened linked driver analysis, decoded card identity, and showed aligned timeline comparison.
 - `[~]` Candidate/unmatched card analysis by `import_id` exists.
   - 2026-06-21: Candidate mode hides driver-only personnel/compliance/training actions while preserving Export CSV and Report View. Needs frontend deploy/live retest.
 - `[x]` Local validation has passed for the latest Driver Card Analysis live-reader frontend work: focused ESLint, `npm run build`, and `git diff --check`.
-- `[ ]` Latest Driver Card Analysis live-reader frontend work still needs push/deployment and real helper/card retest before marking production-stable.
+- `[x]` Latest Driver Card Analysis live-reader frontend work has had real helper/card retest for Phase 1 read-only capture.
 
 ## Atlas Assistant
 
@@ -583,11 +584,13 @@ Decision:
 
 Phase 1 current helper flow:
 
-- `[ ]` Keep helper read/export -> browser authenticated upload -> `process-tacho` -> analysis open as the default production path.
+- `[x]` Keep helper read/export -> browser authenticated upload -> `process-tacho` -> analysis open as the default production path.
 - `[x]` Prove the real .NET helper read/export/register contract in automated simulated-card mode.
   - 2026-07-04: `npm run tacho:helper:phase1` starts the real helper on port `47236`, uses the external-export command seam, runs the read-mode contract probe, and reaches `complete`. See `docs/helper-003-phase1-validation-2026-07-04.md`.
-- `[ ]` Prove real reader/export/browser upload path with live helper and card.
-- `[ ]` Confirm failed uploads can be retried while the existing export is still retained by the normal helper session.
+- `[x]` Prove real reader/export/browser upload path with live helper and card.
+  - 2026-07-05: Baseline import `b9c8c986-445b-4411-82fc-c96b8ecf6178` completed through browser upload, `process-tacho`, and linked Driver Card Analysis.
+- `[~]` Confirm failed uploads can be retried while the existing export is still retained by the normal helper session.
+  - 2026-07-05: Portal duplicate-upload lock and helper `/imports/reset` prevent stale failed processing attempts from requiring helper restart. Full encrypted retry outbox remains `ADR-0019` Phase 2.
 - `[x]` Confirm no helper code path requires service-role credentials.
   - 2026-07-04: Focused search across the helper .NET/PowerShell/Node paths found no Supabase service-role, bearer token, API key, or auth-header dependency in the helper.
 
@@ -884,12 +887,12 @@ Checklist:
 
 - `[ ]` `npm run tacho:helper:probe -- --base-url http://127.0.0.1:47231` passes.
 - `[ ]` `npm run tacho:helper:probe -- --mode read --company-id <company-id> --user-id <manager-user-id>` passes with real reader/card.
-- `[ ]` Driver Card Analysis shows helper state changes correctly for normal driver-card reads.
+- `[x]` Driver Card Analysis shows helper state changes correctly for normal driver-card reads.
 - `[ ]` Import Centre still shows enough helper/import state for support diagnostics and manual fallback.
-- `[ ]` Browser-assisted upload creates `tachograph_files` row.
-- `[ ]` `process-tacho` runs on uploaded file.
-- `[ ]` Import queue shows success, partial, or failure with clear metadata.
-- `[ ]` Successful driver-card import opens focused analysis where driver correlation exists.
+- `[x]` Browser-assisted upload creates `tachograph_files` row.
+- `[x]` `process-tacho` runs on uploaded file.
+- `[x]` Import queue shows success, partial, or failure with clear metadata.
+- `[x]` Successful driver-card import opens focused analysis where driver correlation exists.
 - `[ ]` Manual upload fallback works when helper is stopped.
 - `[ ]` Logs diagnose failures without exposing secrets.
 - `[ ]` Uninstall/reinstall does not corrupt portal state or imports.

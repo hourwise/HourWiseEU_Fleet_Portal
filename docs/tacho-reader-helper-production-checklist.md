@@ -61,6 +61,7 @@ Contract endpoints:
 - `POST /commands/start-read`
 - `POST /commands/cancel`
 - `POST /imports/register`
+- `POST /imports/reset`
 - `GET /exports/:readSessionId/file`
 
 Acceptance gate:
@@ -140,6 +141,8 @@ Current exporter milestone:
 - `POST /commands/start-read` now defaults to a built-in read-only driver-card capture when placeholder mode and external exporters are disabled.
 - The built-in capture emits a deterministic HourWise JSON container with real EF bytes, per-file hashes, and truncation flags under a `.C1B` handoff filename for the current browser upload contract.
 - `process-tacho` now detects `hourwise.tachograph.driver-card.read-only-capture.v1` before ReadESM parsing, stores sanitized EF summaries as partial metadata, and marks the import `partial` instead of failing as a parser error.
+- `process-tacho` now uses a bounded best-run EF `0504` scan for read-only helper captures, avoiding the CPU-time failure seen during first live card attempts.
+- Live Phase 1 validation passed on 2026-07-05 with physical reader/card, browser-assisted Supabase upload, `process-tacho`, driver analysis routing, card identity decode, and aligned timeline comparison. Baseline import: `b9c8c986-445b-4411-82fc-c96b8ecf6178`.
 - Final standards-certified `.C1B/.DDD` binary encoding is still to be implemented on top of the confirmed read-only EF traversal.
 
 Acceptance gate:
@@ -165,6 +168,7 @@ Required:
 - Wait in `uploading` after export bytes are ready.
 - Keep `exportDownloadPath` stable until registration succeeds, fails, or is cancelled.
 - Accept `POST /imports/register` only for the current `readSessionId`.
+- Accept `POST /imports/reset` only for a matching current `importId` and/or `readSessionId`, so the portal can clear terminal stale backend attempts without restarting the helper.
 - Require:
   - `readSessionId`
   - `importId`
@@ -183,6 +187,7 @@ Failure mappings:
 - Missing `importId`: HTTP `400`, no state transition.
 - Missing storage path: HTTP `400`, no state transition.
 - Registration timeout from browser side: keep `uploading` and allow cancel/retry.
+- Terminal backend failure after registration: portal marks/observes failed import, calls `/imports/reset`, and helper returns to `ready`.
 
 ### 5. Processing And Completion
 
@@ -195,6 +200,8 @@ Current browser behavior:
 - Browser inserts `tachograph_files`.
 - Browser invokes `process-tacho`.
 - Browser polls Supabase and auto-opens analysis when a driver target is known.
+- Browser uses a short-lived session lock per helper `readSessionId` so a refresh/remount cannot upload the same helper export repeatedly.
+- Browser calls `/imports/reset` when a tracked helper import reaches terminal backend failure, preserving the previous good analysis state where applicable.
 
 Helper behavior:
 
@@ -362,7 +369,7 @@ Current automated status:
 
 - `[x]` `npm run tacho:helper:test` passes using isolated mock port `47237`.
 - `[x]` `npm run tacho:helper:phase1` passes against the real .NET helper command seam on port `47236`.
-- `[ ]` Real reader/card live validation remains pending.
+- `[x]` Real reader/card live validation passed on 2026-07-05 for read-only driver-card capture through browser upload, `process-tacho`, Driver Card Analysis, and aligned timeline comparison. See `docs/helper-003-phase1-validation-2026-07-04.md`.
 
 ## Open Technical Decisions
 

@@ -83,6 +83,46 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-05 - Complete HELPER-003 Live Reader Validation
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-002 |
+| Status | Implemented |
+| Owner | Engineering |
+| Summary | Completed live Phase 1 validation for the Windows helper read-only driver-card flow through browser upload, `process-tacho`, and Driver Card Analysis. |
+| Reason | `HELPER-003` required physical reader/card plus Supabase validation before any helper sync queue or Tachomaster-style bulk sync work could be considered. |
+| Affected Source Documents | `98 - Changelog.md`, `docs/helper-003-phase1-validation-2026-07-04.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `docs/hourwise-portal-master-build-plan.md`, `docs/tacho-reader-helper-production-checklist.md` |
+| Affected ADRs | `ADR-0019` referenced |
+| Capability IDs | Tachograph import/helper workflow, Driver Card Analysis, timeline generation |
+| Implementation Impact | Medium |
+| Database Impact | None |
+| Security Impact | None |
+| Testing Impact | Test Update Required |
+| Rollback Notes | Revert HELPER-003 status to partial if a subsequent live read cannot reproduce browser upload, `process-tacho`, analysis routing, and timeline alignment. |
+
+### Details
+
+Live validation passed on 2026-07-05 with a physical smart-card reader and driver card. Baseline import `b9c8c986-445b-4411-82fc-c96b8ecf6178` linked to `PHILIP CHRISTOPHER GERAN`, decoded card `DB18220162003911`, reached `complete`, and opened Driver Card Analysis.
+
+The read-only helper capture decoded 1839 provisional EF `0504` activity segments across 69 days. The visible review day `2026-06-29` showed aligned comparison counts: tachograph `58` / timeline `58`, gaps `0` / `0`, and day summaries `1` / `1`.
+
+Initial live attempts exposed two defects that were corrected before the successful validation: stale terminal helper imports now clear through `/imports/reset`, and the read-only EF `0504` parser now uses a bounded best-run scan to avoid Supabase CPU-time termination.
+
+The flow remains provisional read-only capture and is not certified legal `.C1B/.DDD` output. `ADR-0019` still gates any encrypted retry outbox or bulk sync implementation.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
 ## 2026-07-05 - Add Rota Planning And Unified Event Sync ADRs
 
 | Field | Value |

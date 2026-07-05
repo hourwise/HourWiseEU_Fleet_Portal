@@ -402,7 +402,7 @@ Create a concrete backlog with these initial items:
 17. `HELPER-002`: Preserve the completed reader result after card removal until another card is read or manual refresh clears stale reader state. Status: complete 2026-07-04.
 18. `ADR-0019`: Decide whether the Windows helper should keep a local encrypted cache/outbox and define its sync, retention, duplicate detection, and reset behaviour. Status: accepted 2026-07-04; see `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`.
 19. `TIME-008`: Create or upload a representative vehicle-unit tachograph import and validate timeline generation/count alignment. Status: pending.
-20. `HELPER-003`: Finish and live-validate the Phase 1 helper flow: helper read/export bytes, browser authenticated upload, `process-tacho`, and analysis routing. Status: partially complete 2026-07-04; automated real-helper command-seam validation passes, live reader/card/Supabase validation remains pending. See `docs/helper-003-phase1-validation-2026-07-04.md`.
+20. `HELPER-003`: Finish and live-validate the Phase 1 helper flow: helper read/export bytes, browser authenticated upload, `process-tacho`, and analysis routing. Status: complete 2026-07-05 for the current read-only driver-card helper path; live reader/card/Supabase validation passed with aligned Driver Card Analysis timeline. See `docs/helper-003-phase1-validation-2026-07-04.md`.
 21. `ADR-0020`: Rota, job planning, route estimates, and compliance-aware updates. Status: proposed 2026-07-05; do not build until shared Portal/App schema, route-estimate boundary, and advisory-navigation acceptance criteria are defined.
 22. `ADR-0021`: Unified event synchronisation, messaging, and Atlas integration. Status: proposed 2026-07-05; do not build until central event-log schema, RLS visibility, push/realtime delivery rules, acknowledgement semantics, and Atlas access boundaries are defined.
 
@@ -423,7 +423,7 @@ The source-of-truth collection can be marked complete for implementation governa
 
 Phase 0 and Phase 1 are substantially complete for the current MVP thread. The plan already covered the tachograph import/parser/timeline work at architecture level through `18.3` to `18.6`, `23`, and `TIME-001` to `TIME-008`. The recent helper packaging, portal download, reader workspace layout, and post-card-removal persistence work were not explicitly tracked in this plan, so they are now recorded below.
 
-The recommended next task is `HELPER-003`: finish and live-validate the Phase 1 helper flow before building the encrypted retry outbox.
+The recommended next task is `TIME-008`: create or upload a representative vehicle-unit tachograph import and validate timeline generation/count alignment. If reader reliability becomes more urgent than vehicle-unit source coverage, run `HELPER-004` planning next, but keep it constrained to the `ADR-0019` encrypted retry-cache acceptance criteria.
 
 Rationale:
 
@@ -434,11 +434,11 @@ Rationale:
 
 Recommended sequence:
 
-1. `HELPER-003`: Prove the current simple helper path with real hardware: helper read/export bytes, browser authenticated upload, `process-tacho`, and analysis routing.
-2. `HELPER-004`: Implement the `ADR-0019` Phase 2 encrypted retry cache only after Phase 1 is stable and the ADR acceptance criteria are met.
-3. `TIME-008`: Create or upload a representative vehicle-unit tachograph import, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
+1. `TIME-008`: Create or upload a representative vehicle-unit tachograph import, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
+2. `HELPER-004`: Implement the `ADR-0019` Phase 2 encrypted retry cache only after Phase 1 remains stable and the ADR acceptance criteria are met.
+3. Certified helper export planning: select the standards-certified `.C1B/.DDD` encoding strategy separately from the read-only capture path.
 
-If compliance source coverage is more urgent than reader UX, swap steps 1 and 3: run `TIME-008` first, then return to Phase 1 helper validation.
+If reader reliability becomes more urgent than vehicle-unit source coverage, swap steps 1 and 2, but do not build Tachomaster-style bulk sync before the constrained retry cache is proven.
 
 New operational-planning ADR impact:
 
@@ -465,6 +465,6 @@ Current implementation gate:
 - `HELPER-002`: Reader result persistence after card removal is complete as of 2026-07-04. Completed read data remains visible after the card is removed and is replaced by the next successful read; manual Refresh now explicitly clears stale reader state when appropriate.
 - `TIME-008`: Next task is to create or upload a representative vehicle-unit tachograph import with raw storage, process it through the deployed runtime, then rerun `npm run tacho:inspect-time-007` and `npm run tacho:validate-timeline` until both source types have current timeline generations and count-aligned comparison status.
 - `ADR-0019`: Windows Helper Local Outbox And Sync Semantics is accepted as of 2026-07-04. It permits a constrained encrypted local outbox only as a short-lived delivery/retry queue, keeps Supabase/backend imports as the source of truth, forbids helper service-role keys and local compliance database behaviour, and blocks Tachomaster-style bulk sync until Phase 1 and Phase 2 acceptance criteria are met. See `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`.
-- `HELPER-003`: Automated Phase 1 command-seam validation is complete as of 2026-07-04. `npm run tacho:helper:phase1` builds the real .NET helper into a temporary folder, starts it on port `47236`, uses simulated card presence and the external-export seam, runs the read-mode contract probe, downloads export bytes, acknowledges registration, and reaches `complete`. Live reader/card/Supabase validation remains the next helper gate before any sync queue work. See `docs/helper-003-phase1-validation-2026-07-04.md`.
+- `HELPER-003`: Phase 1 helper validation is complete for the current read-only driver-card helper path as of 2026-07-05. Automated command-seam validation passes, and live reader/card/Supabase validation produced baseline import `b9c8c986-445b-4411-82fc-c96b8ecf6178`, linked it to `PHILIP CHRISTOPHER GERAN`, decoded card `DB18220162003911`, completed `process-tacho`, opened Driver Card Analysis, and aligned the visible review day at tachograph `58` / timeline `58`. Certified `.C1B/.DDD` output and any encrypted retry outbox remain outside HELPER-003. See `docs/helper-003-phase1-validation-2026-07-04.md`.
 - `ADR-0020`: New proposed source-of-truth ADR added as of 2026-07-05. It defines rota/job planning, route estimates, route/job delay handling, and compliance-aware route warnings as a shared backend feature consumed by both Portal and Driver App. Build is deferred until schema, provider boundary, advisory-navigation copy, and compliance-warning criteria are specified.
 - `ADR-0021`: New proposed source-of-truth ADR added as of 2026-07-05. It defines a unified operational event system for messaging, rota/job/route updates, acknowledgements, push/realtime delivery, and Atlas recommendations. Build is deferred until event-log schema, RLS visibility, notification rules, deduplication/order semantics, and Atlas event-access boundaries are specified.
