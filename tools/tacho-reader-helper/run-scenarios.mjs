@@ -200,6 +200,26 @@ async function registerPortalImport(status) {
   return { importId, uploadedStoragePath, exportBytes: exportBuffer.byteLength };
 }
 
+async function resetPortalImport(result) {
+  const reset = await request('/imports/reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestedAt: new Date().toISOString(),
+      importId: result.importId,
+      reason: 'Scenario runner cleared terminal helper import state.',
+    }),
+  });
+  ensure(reset.accepted === true, 'Expected imports/reset response to be accepted');
+  ensure(reset.cleared === true, 'Expected imports/reset to clear the active helper import');
+  ensure(reset.stage === 'ready', `Expected imports/reset to return ready, got ${reset.stage}`);
+
+  const status = await request('/status');
+  ensure(status.stage === 'ready', `Expected helper stage ready after reset, got ${status.stage}`);
+  ensure(!status.importId, `Expected helper import id to be cleared, got ${status.importId}`);
+  ensure(!status.readSessionId, `Expected helper read session id to be cleared, got ${status.readSessionId}`);
+}
+
 async function trackUntilFinal(expectedFinalStage, timeoutMs = 15000, initialTimeline = []) {
   const timeline = [...initialTimeline];
   const start = Date.now();
@@ -283,7 +303,11 @@ async function main() {
     const results = [];
 
     for (const scenario of scenarios) {
-      results.push(await runScenario(scenario));
+      const result = await runScenario(scenario);
+      results.push(result);
+      if (scenario.name === 'backend_failure') {
+        await resetPortalImport(result);
+      }
     }
 
     process.stdout.write(`\nMock helper scenario regression passed.\n`);

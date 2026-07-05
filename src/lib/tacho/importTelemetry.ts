@@ -9,6 +9,7 @@ export type TachoImportTelemetryStage =
   | 'metadata_reload'
   | 'metadata_persist'
   | 'helper_acknowledge'
+  | 'helper_import_reset'
   | 'processing_kickoff'
   | 'import_status'
   | 'processing_retry'

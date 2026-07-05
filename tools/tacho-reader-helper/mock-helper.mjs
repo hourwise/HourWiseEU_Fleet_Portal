@@ -569,6 +569,52 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/imports/reset') {
+    const payload = await readJsonBody(request).catch((error) => {
+      sendJson(response, 400, { accepted: false, error: error.message });
+    });
+    if (response.writableEnded) return;
+
+    const requestedImportId = typeof payload?.importId === 'string' ? payload.importId.trim() : '';
+    const requestedReadSessionId = typeof payload?.readSessionId === 'string' ? payload.readSessionId.trim() : '';
+    if (!requestedImportId && !requestedReadSessionId) {
+      sendJson(response, 400, {
+        accepted: false,
+        error: 'Import id or read session id is required.',
+      });
+      return;
+    }
+
+    if (requestedImportId && requestedImportId !== state.importId) {
+      sendJson(response, 409, {
+        accepted: false,
+        cleared: false,
+        stage: state.stage,
+        error: `Import mismatch. Current import is ${state.importId ?? 'none'}.`,
+      });
+      return;
+    }
+
+    if (requestedReadSessionId && requestedReadSessionId !== state.readSessionId) {
+      sendJson(response, 409, {
+        accepted: false,
+        cleared: false,
+        stage: state.stage,
+        error: `Read session mismatch. Current read session is ${state.readSessionId ?? 'none'}.`,
+      });
+      return;
+    }
+
+    const hadActiveImport = Boolean(state.importId || state.readSessionId);
+    resetToReady(payload?.reason || 'Portal cleared terminal mock import state.');
+    sendJson(response, 202, {
+      accepted: true,
+      cleared: hadActiveImport,
+      stage: state.stage,
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/debug/reset') {
     resetToReady();
     sendJson(response, 202, { accepted: true, stage: state.stage });

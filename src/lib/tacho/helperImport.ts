@@ -237,10 +237,10 @@ async function insertPendingTachoImport(args: {
 }
 
 async function patchImportMetadata(importId: string, patch: HelperImportMetadata) {
-  const { error } = await supabase.rpc('patch_tachograph_import_metadata' as any, {
+  const { error } = await supabase.rpc('patch_tachograph_import_metadata' as never, {
     p_import_id: importId,
     p_metadata_patch: patch,
-  });
+  } as never);
 
   if (error) {
     reportTachoImportTelemetry({
@@ -505,6 +505,42 @@ export async function acknowledgeReaderHelperImport(args: {
       },
     });
     throw new Error(`Helper import registration failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function resetReaderHelperImport(args: {
+  helperUrl: string;
+  importId: string;
+  readSessionId?: string | null;
+  reason?: string | null;
+}) {
+  const response = await fetch(`${args.helperUrl.replace(/\/$/, '')}/imports/reset`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      requestedAt: new Date().toISOString(),
+      readSessionId: args.readSessionId ?? null,
+      importId: args.importId,
+      reason: args.reason ?? 'Portal cleared terminal helper import state.',
+    }),
+  });
+
+  if (!response.ok) {
+    reportTachoImportTelemetry({
+      level: 'warning',
+      message: `Helper import reset returned ${response.status}.`,
+      context: {
+        stage: 'helper_import_reset',
+        importId: args.importId,
+        readSessionId: args.readSessionId ?? undefined,
+        ingestSource: 'reader_helper',
+      },
+    });
+    throw new Error(`Helper import reset failed: ${response.status}`);
   }
 
   return response.json();

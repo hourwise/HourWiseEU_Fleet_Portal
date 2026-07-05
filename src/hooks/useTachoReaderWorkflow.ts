@@ -6,6 +6,7 @@ import {
   fetchReaderHelperImportStatus,
   kickoffTachoImportProcessing,
   registerReaderHelperImport,
+  resetReaderHelperImport,
   type ReaderHelperImportStatus,
 } from '../lib/tacho/helperImport';
 
@@ -330,6 +331,7 @@ export function useTachoReaderWorkflow({
   const importSessionRef = useRef<string | null>(null);
   const activeReadDriverIdRef = useRef<string | null | undefined>(undefined);
   const ignoredImportIdsRef = useRef<Set<string>>(new Set());
+  const resetTerminalImportIdsRef = useRef<Set<string>>(new Set());
 
   const status = useMemo(
     () => buildImportedStatus(helperStatus, trackedImport, trackedFocusedDate),
@@ -621,6 +623,58 @@ export function useTachoReaderWorkflow({
       window.clearInterval(intervalId);
     };
   }, [helperStatus.importId, profile?.company_id, registeredImport?.importId]);
+
+  useEffect(() => {
+    const importId = trackedImport?.importId;
+    const importStatus = trackedImport?.status;
+    if (!importId || (importStatus !== 'error' && importStatus !== 'failed')) return;
+    if (ignoredImportIdsRef.current.has(importId) || resetTerminalImportIdsRef.current.has(importId)) return;
+
+    const helperReferencesImport = helperStatus.importId === importId || registeredImport?.importId === importId;
+    if (!helperReferencesImport) return;
+
+    let cancelled = false;
+    resetTerminalImportIdsRef.current.add(importId);
+
+    const resetTerminalImport = async () => {
+      try {
+        await resetReaderHelperImport({
+          helperUrl,
+          importId,
+          readSessionId: helperStatus.readSessionId ?? registeredImport?.readSessionId ?? null,
+          reason: trackedImport?.summary ?? 'Portal observed terminal Supabase import status.',
+        });
+        if (cancelled) return;
+        ignoredImportIdsRef.current.add(importId);
+        setRegisteredImport((current) => (current?.importId === importId ? null : current));
+        setTrackedImport((current) => (current?.importId === importId ? null : current));
+        setTrackedFocusedDate(null);
+        importSessionRef.current = null;
+        openedReviewKeyRef.current = null;
+        await refreshStatus({ clearCompletedResult: true });
+      } catch (error) {
+        if (!cancelled) {
+          setImportMessage(error instanceof Error ? error.message : 'Failed to reset terminal helper import state');
+        }
+      }
+    };
+
+    resetTerminalImport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    helperStatus.importId,
+    helperStatus.readSessionId,
+    helperUrl,
+    refreshStatus,
+    registeredImport?.importId,
+    registeredImport?.readSessionId,
+    trackedImport?.importId,
+    trackedImport?.status,
+    trackedImport?.summary,
+  ]);
 
   useEffect(() => {
     if (helperStatus.stage !== 'reading' || !helperStatus.readSessionId) return;

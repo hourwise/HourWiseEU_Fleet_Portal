@@ -247,6 +247,30 @@ app.MapPost("/imports/register", (RegisterImportRequest? request) =>
     }, statusCode: StatusCodes.Status202Accepted);
 });
 
+app.MapPost("/imports/reset", (ResetImportRequest? request) =>
+{
+    if (request is null)
+    {
+        HelperDiagnostics.Record("import_reset_rejected", new { reason = "missing_payload" });
+        return Results.BadRequest(new CommandResponse(false, "Reset payload is required."));
+    }
+
+    var result = state.ResetRegisteredImport(request.ImportId, request.ReadSessionId, request.Reason);
+    if (!result.Accepted)
+    {
+        HelperDiagnostics.Record("import_reset_rejected", new
+        {
+            reason = "state_mismatch",
+            request.ImportId,
+            request.ReadSessionId,
+            result.Error
+        });
+        return Results.Json(result, statusCode: StatusCodes.Status409Conflict);
+    }
+
+    return Results.Json(result, statusCode: StatusCodes.Status202Accepted);
+});
+
 app.MapGet("/exports/{readSessionId}/file", (string readSessionId) =>
 {
     if (readSessionId != state.ReadSessionId || state.ExportBytes is null || string.IsNullOrWhiteSpace(state.ExportFileName))
@@ -764,37 +788,59 @@ sealed class HelperState
     public void Reset(string detail)
     {
         string? previousReadSessionId;
+        string? previousImportId;
         lock (syncRoot)
         {
-            previousReadSessionId = ReadSessionId;
-            Stage = "ready";
-            ProgressPercent = 10;
-            Message = "HourWise reader helper shell online.";
-            Detail = detail;
-            ReaderConnected = HelperConstants.PlaceholderReaderEnabled;
-            CardPresent = HelperConstants.PlaceholderReaderEnabled;
-            CanStartRead = HelperConstants.PlaceholderReaderEnabled;
-            CanCancel = false;
-            CompanyId = null;
-            RequestedByUserId = null;
-            SourceType = null;
-            ReadSessionId = null;
-            ImportId = null;
-            BackendJobId = null;
-            UploadedStoragePath = null;
-            ExportFileName = null;
-            ExportDownloadPath = null;
-            ExportFileSizeBytes = null;
-            ExportSha256 = null;
-            ExportFormat = null;
-            ExportParserReady = true;
-            ExportNote = null;
-            ExportBytes = null;
-            ErrorCode = null;
-            LastHeartbeatAt = DateTimeOffset.UtcNow.ToString("O");
+            (previousReadSessionId, previousImportId) = ResetLocked(detail);
         }
 
-        HelperDiagnostics.Record("workflow_reset", new { previousReadSessionId, detail });
+        HelperDiagnostics.Record("workflow_reset", new { previousReadSessionId, previousImportId, detail });
+    }
+
+    public ResetImportResponse ResetRegisteredImport(string? importId, string? readSessionId, string? reason)
+    {
+        var requestedImportId = NormalizeOptional(importId);
+        var requestedReadSessionId = NormalizeOptional(readSessionId);
+        if (requestedImportId is null && requestedReadSessionId is null)
+        {
+            return new ResetImportResponse(false, false, Stage, "Import id or read session id is required.");
+        }
+
+        string? previousReadSessionId;
+        string? previousImportId;
+        string stage;
+        lock (syncRoot)
+        {
+            if (requestedImportId is not null && !string.Equals(ImportId, requestedImportId, StringComparison.Ordinal))
+            {
+                return new ResetImportResponse(false, false, Stage, $"Import mismatch. Current import is {ImportId ?? "none"}.");
+            }
+
+            if (requestedReadSessionId is not null && !string.Equals(ReadSessionId, requestedReadSessionId, StringComparison.Ordinal))
+            {
+                return new ResetImportResponse(false, false, Stage, $"Read session mismatch. Current read session is {ReadSessionId ?? "none"}.");
+            }
+
+            if (ImportId is null && ReadSessionId is null)
+            {
+                return new ResetImportResponse(true, false, Stage, null);
+            }
+
+            var detail = string.IsNullOrWhiteSpace(reason)
+                ? "Portal cleared terminal helper import state."
+                : reason.Trim();
+            (previousReadSessionId, previousImportId) = ResetLocked(detail);
+            stage = Stage;
+        }
+
+        HelperDiagnostics.Record("import_reset_by_portal", new
+        {
+            previousReadSessionId,
+            previousImportId,
+            requestedImportId,
+            requestedReadSessionId
+        });
+        return new ResetImportResponse(true, true, stage, null);
     }
 
     private void ClearWorkflowFieldsAfterReaderChange()
@@ -815,6 +861,41 @@ sealed class HelperState
         ExportNote = null;
         ExportBytes = null;
     }
+
+    private (string? PreviousReadSessionId, string? PreviousImportId) ResetLocked(string detail)
+    {
+        var previousReadSessionId = ReadSessionId;
+        var previousImportId = ImportId;
+        Stage = "ready";
+        ProgressPercent = 10;
+        Message = "HourWise reader helper shell online.";
+        Detail = detail;
+        ReaderConnected = HelperConstants.PlaceholderReaderEnabled;
+        CardPresent = HelperConstants.PlaceholderReaderEnabled;
+        CanStartRead = HelperConstants.PlaceholderReaderEnabled;
+        CanCancel = false;
+        CompanyId = null;
+        RequestedByUserId = null;
+        SourceType = null;
+        ReadSessionId = null;
+        ImportId = null;
+        BackendJobId = null;
+        UploadedStoragePath = null;
+        ExportFileName = null;
+        ExportDownloadPath = null;
+        ExportFileSizeBytes = null;
+        ExportSha256 = null;
+        ExportFormat = null;
+        ExportParserReady = true;
+        ExportNote = null;
+        ExportBytes = null;
+        ErrorCode = null;
+        LastHeartbeatAt = DateTimeOffset.UtcNow.ToString("O");
+        return (previousReadSessionId, previousImportId);
+    }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private bool CanApplyReaderSnapshot() =>
         Stage is "ready" or "card_inserted" or "error" or "processing" or "complete";
@@ -2279,6 +2360,18 @@ sealed record RegisterImportRequest(
     string? FileName,
     string? FileType,
     string? SourceType);
+
+sealed record ResetImportRequest(
+    string? RequestedAt,
+    string? ReadSessionId,
+    string? ImportId,
+    string? Reason);
+
+sealed record ResetImportResponse(
+    bool Accepted,
+    bool Cleared,
+    string Stage,
+    string? Error);
 
 sealed record CommandResponse(bool Accepted, string Error);
 
