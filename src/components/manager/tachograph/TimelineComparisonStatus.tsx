@@ -14,6 +14,14 @@ function countAligned(comparison: TachoTimelineComparison) {
   return comparison.eventCountMatches && comparison.gapCountMatches && comparison.daySummaryCountMatches;
 }
 
+function hasTimelineFallback(comparison: TachoTimelineComparison) {
+  return (
+    comparison.available &&
+    comparison.tachographActivityCount === 0 &&
+    comparison.timelineEventCount > 0
+  );
+}
+
 function getTone(comparison?: TachoTimelineComparison): TimelineComparisonTone {
   if (!comparison) return 'neutral';
   if (comparison.available && countAligned(comparison)) return 'good';
@@ -23,6 +31,7 @@ function getTone(comparison?: TachoTimelineComparison): TimelineComparisonTone {
 export function getTimelineComparisonLabel(comparison?: TachoTimelineComparison) {
   if (!comparison) return 'Timeline unchecked';
   if (!comparison.available) return 'Timeline missing';
+  if (hasTimelineFallback(comparison)) return 'Timeline fallback active';
   if (countAligned(comparison)) return 'Timeline aligned';
   return 'Timeline mismatch';
 }
@@ -102,6 +111,7 @@ export function TimelineComparisonStatus({
             left={comparison.tachographActivityCount}
             right={comparison.timelineEventCount}
             aligned={comparison.eventCountMatches}
+            fallback={hasTimelineFallback(comparison)}
           />
           <ComparisonCount
             label="Gaps"
@@ -134,11 +144,13 @@ function ComparisonCount({
   left,
   right,
   aligned,
+  fallback = false,
 }: {
   label: string;
   left: number;
   right: number;
   aligned: boolean;
+  fallback?: boolean;
 }) {
   return (
     <div className="rounded-lg border border-white/60 bg-white/70 px-3 py-2">
@@ -146,7 +158,7 @@ function ComparisonCount({
       <p className="mt-1">
         Tachograph {left} / timeline {right}
         <span className={`ml-2 font-black ${aligned ? 'text-emerald-700' : 'text-amber-800'}`}>
-          {aligned ? 'aligned' : 'check'}
+          {fallback ? 'fallback' : aligned ? 'aligned' : 'check'}
         </span>
       </p>
     </div>

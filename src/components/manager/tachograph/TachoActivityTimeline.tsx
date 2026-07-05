@@ -166,9 +166,7 @@ function MultiDayTimeline({
       <div className="max-h-[44rem] space-y-1.5 overflow-y-auto pr-1">
         {days.map((day) => {
           const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
-          const dayStartTime = day.activities.length > 0 ? format(new Date(day.activities[0].startTime), 'HH:mm') : '--:--';
-          const dayEndTime =
-            day.activities.length > 0 ? format(new Date(day.activities[day.activities.length - 1].endTime), 'HH:mm') : '--:--';
+          const dayRangeLabel = formatDayActivityRange(day.date, day.activities);
           const visibleSegments = buildVisibleDaySegments(day.date, explicitActivities);
 
           return (
@@ -183,7 +181,7 @@ function MultiDayTimeline({
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-900">{format(day.date, 'EEE d MMM')}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
-                    {dayStartTime} - {dayEndTime} | {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
+                    {dayRangeLabel} | {day.activities.length} block{day.activities.length === 1 ? '' : 's'}
                   </p>
                 </div>
 
@@ -236,6 +234,18 @@ function MultiDayTimeline({
       </div>
     </div>
   );
+}
+
+function formatDayActivityRange(dayDate: Date, activities: TachoActivitySegment[]) {
+  if (activities.length === 0) return '--:-- - --:--';
+
+  const starts = activities.map((activity) => new Date(activity.startTime));
+  const ends = activities.map((activity) => new Date(activity.endTime));
+  const start = starts.reduce((earliest, value) => value.getTime() < earliest.getTime() ? value : earliest);
+  const end = ends.reduce((latest, value) => value.getTime() > latest.getTime() ? value : latest);
+  const endLabel = isSameDay(end, dayDate) ? format(end, 'HH:mm') : format(end, 'EEE HH:mm');
+
+  return `${format(start, 'HH:mm')} - ${endLabel}`;
 }
 
 interface VisibleDaySegment {
