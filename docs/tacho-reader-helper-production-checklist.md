@@ -8,10 +8,14 @@ It complements:
 
 - `docs/tacho-reader-helper-contract.md`
 - `docs/tacho-reader-helper-backend-handoff.md`
+- `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`
+- `docs/helper-003-phase1-validation-2026-07-04.md`
 - `tools/tacho-reader-helper/contract-probe.mjs`
 - `tools/tacho-reader-helper/mock-helper.mjs`
 
 The helper must remain a local bridge only. It should read/export tachograph data from local hardware and expose the export to the authenticated browser session. It should not contain long-lived Supabase credentials.
+
+`ADR-0019` controls any local queue/sync behaviour. The helper may keep an encrypted local outbox only as a short-lived delivery/retry queue for failed or interrupted uploads. Supabase remains the source of truth; the helper must not become a local compliance database.
 
 ## Target Runtime Shape
 
@@ -26,6 +30,7 @@ Recommended first production shape:
   - `%ProgramData%\HourWise\TachoReaderHelper\exports`
 - Exposes the existing localhost HTTP contract.
 - Keeps exported files long enough for browser upload and troubleshooting, then applies retention cleanup.
+- May later keep an encrypted retry outbox for failed/interrupted uploads only, gated by `ADR-0019`.
 
 Avoid for v1:
 
@@ -33,6 +38,8 @@ Avoid for v1:
 - Storing Supabase service keys or user session tokens.
 - Uploading directly to Supabase from the helper.
 - Adding a second backend import model separate from `tachograph_files`.
+- Building full offline bulk sync before the basic read/export/browser-upload path is proven.
+- Retaining raw card or vehicle-unit data indefinitely.
 
 ## Implementation Slices
 
@@ -143,6 +150,14 @@ npm run tacho:helper:probe -- --mode read --company-id <company-id> --user-id <m
 
 This validates the read/export/register state machine without performing a real Supabase upload.
 
+Automated Phase 1 validation without hardware:
+
+```bash
+npm run tacho:helper:phase1
+```
+
+This starts the real .NET helper in simulated-card external-export mode, drives the read/export/register contract, and avoids the local outbox/sync queue path. See `docs/helper-003-phase1-validation-2026-07-04.md`.
+
 ### 4. Browser Registration Handoff
 
 Required:
@@ -193,6 +208,36 @@ Recommended v1 completion rule:
 - If browser eventually adds a completion callback, helper may move to `complete`.
 - Without a completion callback, helper may remain `processing` while the portal shows backend progress from Supabase.
 
+### 5A. Encrypted Retry Outbox
+
+Implementation status: ADR-gated Phase 2 reliability feature. Do not implement a sync queue until `ADR-0019` acceptance criteria are met.
+
+Allowed scope:
+
+- Queue only complete exported tachograph files when browser upload or backend registration fails/interrupted.
+- Encrypt queued raw bytes at rest, preferably using Windows DPAPI or an equivalent OS-protected key.
+- Use the browser-authenticated session for retry upload.
+- Delete queued raw bytes after successful backend registration.
+- Apply short automatic expiry, initially no longer than 24 hours unless reviewed.
+- Expose manual "clear local queued reads" behaviour.
+- Calculate SHA-256 for duplicate detection/idempotency.
+- Show clear portal labels such as `1 read waiting to sync`, `Retry upload`, and `Local queued read expired`.
+
+Forbidden scope:
+
+- No Supabase service-role key in the helper.
+- No long-lived browser auth token storage.
+- No local compliance database.
+- No authoritative local timeline, rule, report, or driver-history records.
+- No full offline bulk sync until Phase 1 and Phase 2 are proven.
+
+Acceptance gate before enabling:
+
+- `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md` acceptance criteria are satisfied.
+- Duplicate-safe backend import behaviour is verified using SHA-256/idempotency.
+- Diagnostics redact raw data and auth material.
+- Uninstall/reinstall behaviour for queued files is defined.
+
 ### 6. Cancellation
 
 Required:
@@ -232,6 +277,7 @@ Recommended:
 - JSON lines log format for easy support parsing.
 - Daily log rotation.
 - Export retention cleanup after a configurable period.
+- If `ADR-0019` Phase 2 is enabled, log only queue state transitions and hashes; do not log raw queued bytes or excessive card personal data.
 
 ### 8. Installer And Updates
 
@@ -271,6 +317,7 @@ Required:
 - Treat `companyId` as browser-supplied context, not local trust.
 - Keep `readSessionId` unpredictable.
 - Only serve export bytes for the active or retained read session id.
+- Treat any encrypted outbox as a short-lived retry queue only, as defined by `ADR-0019`.
 
 Recommended:
 
@@ -309,6 +356,13 @@ Before a helper build is considered usable with real supervisors:
 8. Manual upload fallback still works when helper is stopped.
 9. Logs contain enough detail to diagnose a failed read without exposing secrets.
 10. Uninstall/reinstall does not corrupt portal state or stored imports.
+11. Any sync queue implementation has passed `ADR-0019` Phase 2 acceptance criteria before being enabled.
+
+Current automated status:
+
+- `[x]` `npm run tacho:helper:test` passes using isolated mock port `47237`.
+- `[x]` `npm run tacho:helper:phase1` passes against the real .NET helper command seam on port `47236`.
+- `[ ]` Real reader/card live validation remains pending.
 
 ## Open Technical Decisions
 
@@ -320,6 +374,7 @@ These should be resolved before implementation starts:
 - Whether VU download support shares this helper or uses a separate workflow.
 - Whether production CORS should be strict-origin or localhost-permissive for support simplicity.
 - Export/log retention period.
+- Exact `ADR-0019` Phase 2 expiry default, storage path, clear-queue UX, and uninstall behaviour before enabling the encrypted retry outbox.
 - Code-signing and update distribution route.
 
 ## Suggested Build Order
@@ -330,8 +385,9 @@ These should be resolved before implementation starts:
 4. Add fake export bytes behind real helper shell, then make read probe pass.
 5. Replace fake export with real card export.
 6. Validate real export bytes with portal upload and `process-tacho`.
-7. Replace the first-pass PowerShell installer with the final signed installer/update route when distribution is selected.
-8. Run UAT with a real supervisor workflow.
+7. Implement only the `ADR-0019` Phase 2 encrypted retry cache if the simple helper flow is stable and acceptance criteria are met.
+8. Replace the first-pass PowerShell installer with the final signed installer/update route when distribution is selected.
+9. Run UAT with a real supervisor workflow.
 
 ## Current Repo Scaffold
 

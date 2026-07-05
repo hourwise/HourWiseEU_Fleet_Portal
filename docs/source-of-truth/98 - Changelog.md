@@ -83,6 +83,120 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-05 - Add Rota Planning And Unified Event Sync ADRs
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-001 |
+| Status | Proposed |
+| Owner | Product Architecture / Platform Architecture / Security |
+| Summary | Added `ADR-0020` and `ADR-0021` to define future rota/job/route planning and unified operational event synchronisation. |
+| Reason | HourWise needs a shared Portal/App planning model and a single backend event layer for rota changes, job updates, route changes, messaging, acknowledgements, push/realtime delivery, and Atlas recommendations. |
+| Affected Source Documents | `ADR-0020 - Rota, Job Planning, Route Estimates and Compliance-Aware Updates`, `ADR-0021 - Unified Event Synchronisation, Messaging and Atlas Integration`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021` |
+| Capability IDs | Rota/job planning, messaging, Atlas, operational events |
+| Implementation Impact | High |
+| Database Impact | Migration Required |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Keep the ADRs as proposed and remove them from active backlog sequencing if operational planning is deferred beyond P1. |
+
+### Details
+
+`ADR-0020` proposes a shared backend model for rota, job planning, route estimates, planned/actual job durations, delay handling, compliance-aware route warnings, manager messages, and Driver App consumption. It explicitly states that HourWise is not live HGV navigation and route estimates are advisory.
+
+`ADR-0021` proposes a unified operational event system for messaging, rota updates, job updates, route changes, driver acknowledgements, push/realtime delivery, and Atlas recommendation events. It keeps the backend database as the source of truth and requires strict RLS/role visibility.
+
+The completion plan now treats both ADRs as proposed P1 architecture. They do not displace the current tachograph/helper completion gate and must not be implemented until schema, RLS, event delivery, notification, acknowledgement, deduplication, and Atlas access boundaries are specified.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-04 - Add HELPER-003 Phase 1 Validation Harness
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-04-002 |
+| Status | Implemented |
+| Owner | Engineering |
+| Summary | Added an automated Phase 1 validation harness for the Windows tachograph helper read/export/register contract. |
+| Reason | `HELPER-003` needs repeatable validation of the current no-cache helper flow before any `ADR-0019` sync queue work starts. |
+| Affected Source Documents | `98 - Changelog.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `docs/hourwise-portal-master-build-plan.md`, `docs/tacho-reader-helper-production-checklist.md`, `docs/helper-003-phase1-validation-2026-07-04.md` |
+| Affected ADRs | `ADR-0019` referenced |
+| Capability IDs | Tachograph import/helper workflow |
+| Implementation Impact | Medium |
+| Database Impact | None |
+| Security Impact | None |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Remove `tacho:helper:phase1`, `phase1-validation.mjs`, `write-test-export.mjs`, and the related checklist/build-plan references. |
+
+### Details
+
+Added `npm run tacho:helper:phase1`, which builds the real .NET helper into a temporary folder, starts it on a non-default local port, enables simulated card presence and the external-export command seam, runs the read-mode helper contract probe, downloads export bytes, registers the import with the helper, and expects the helper to reach `complete`.
+
+The existing mock scenario regression now defaults to isolated port `47237` so it does not accidentally talk to a normally running helper on `47231`.
+
+`HELPER-003` is partially complete: automated command-seam validation now passes, while physical reader/card plus browser/Supabase validation remains pending.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-04 - Accept Windows Helper Local Outbox ADR
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-04-001 |
+| Status | Accepted |
+| Owner | Product Architecture / Security / Engineering |
+| Summary | Added `ADR-0019` to define the Windows helper local outbox and sync semantics. |
+| Reason | The helper needs a safe reliability path for failed/interrupted uploads without becoming a local compliance database or storing privileged Supabase credentials. |
+| Affected Source Documents | `98 - Changelog.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `docs/hourwise-portal-master-build-plan.md`, `docs/tacho-reader-helper-production-checklist.md` |
+| Affected ADRs | `ADR-0019` |
+| Capability IDs | Tachograph import/helper workflow |
+| Implementation Impact | Medium |
+| Database Impact | None |
+| Security Impact | Security Gate Required |
+| Testing Impact | Test Update Required |
+| Rollback Notes | Supersede `ADR-0019` with a stricter no-local-cache ADR and remove Phase 2 outbox tasks from the helper checklist/master plan. |
+
+### Details
+
+HourWise accepts a constrained encrypted local outbox in the Windows helper only as a short-lived delivery/retry queue for complete tachograph exports when browser upload or backend registration fails/interrupted.
+
+Supabase and backend imports remain the source of truth. The helper must not contain service-role keys, store long-lived browser tokens, become a local compliance database, or retain raw card/vehicle-unit data indefinitely.
+
+The implementation sequence remains Phase 1 first: helper read/export bytes, browser authenticated upload, `process-tacho`, and analysis routing. Phase 2 encrypted retry cache and Phase 3 Tachomaster-style bulk sync are explicitly gated by `ADR-0019`.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
 ## 2026-07-03 - Complete TIME-004 Timeline Bundle API Adapter
 
 | Field | Value |

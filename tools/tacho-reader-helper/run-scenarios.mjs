@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const BASE_URL = `http://${process.env.TACHO_HELPER_HOST || '127.0.0.1'}:${process.env.TACHO_HELPER_PORT || '47231'}`;
+const HOST = process.env.TACHO_HELPER_HOST || '127.0.0.1';
+const PORT = process.env.TACHO_HELPER_SCENARIO_PORT || process.env.TACHO_HELPER_PORT || '47237';
+const BASE_URL = `http://${HOST}:${PORT}`;
 const HELPER_ENTRY = fileURLToPath(new URL('./mock-helper.mjs', import.meta.url));
 
 const scenarios = [
@@ -261,7 +263,11 @@ async function runScenario(definition) {
 async function main() {
   const child = spawn(process.execPath, [HELPER_ENTRY], {
     stdio: 'pipe',
-    env: process.env,
+    env: {
+      ...process.env,
+      TACHO_HELPER_HOST: HOST,
+      TACHO_HELPER_PORT: PORT,
+    },
   });
 
   child.stdout.on('data', (chunk) => {

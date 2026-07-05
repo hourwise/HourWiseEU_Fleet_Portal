@@ -472,9 +472,10 @@ Checklist:
   - `processing`
   - `complete`
   - `ready`
-- `[ ]` Confirm Driver Card Analysis resets to blank calendar after card removal when appropriate.
+- `[ ]` Confirm Driver Card Analysis keeps the completed read visible after card removal until another card is read or Refresh clears stale reader state.
 - `[~]` Confirm the compact live reader panel in Driver Card Analysis, not Import Centre, is the normal path for driver-card reads.
   - 2026-06-21: Code path has been moved/polished locally, but live helper/card retest is still required after deployment.
+  - 2026-07-04: Driver Card Analysis now keeps completed read details visible after card removal and uses Refresh as the explicit stale-state reset.
 
 ## 7.2 Reprocess / Re-read Known Driver Card Imports
 
@@ -566,6 +567,45 @@ Checklist:
   - Manual upload
   - Partial identity-only capture
 
+## 7.6 Windows Helper Local Outbox And Sync Semantics
+
+Decision record:
+
+- `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`
+
+Decision:
+
+- `[x]` Supabase/backend imports remain the source of truth.
+- `[x]` The helper must not contain Supabase service-role keys.
+- `[x]` The helper must not become a local compliance database.
+- `[x]` The helper must not retain raw card or vehicle-unit data indefinitely.
+- `[x]` Any local outbox is limited to a short-lived encrypted delivery/retry queue.
+
+Phase 1 current helper flow:
+
+- `[ ]` Keep helper read/export -> browser authenticated upload -> `process-tacho` -> analysis open as the default production path.
+- `[x]` Prove the real .NET helper read/export/register contract in automated simulated-card mode.
+  - 2026-07-04: `npm run tacho:helper:phase1` starts the real helper on port `47236`, uses the external-export command seam, runs the read-mode contract probe, and reaches `complete`. See `docs/helper-003-phase1-validation-2026-07-04.md`.
+- `[ ]` Prove real reader/export/browser upload path with live helper and card.
+- `[ ]` Confirm failed uploads can be retried while the existing export is still retained by the normal helper session.
+- `[x]` Confirm no helper code path requires service-role credentials.
+  - 2026-07-04: Focused search across the helper .NET/PowerShell/Node paths found no Supabase service-role, bearer token, API key, or auth-header dependency in the helper.
+
+Phase 2 encrypted retry cache:
+
+- `[ ]` Do not implement until Phase 1 is stable.
+- `[ ]` Queue only complete exports when browser upload or backend registration fails/interrupted.
+- `[ ]` Encrypt queued raw bytes at rest.
+- `[ ]` Delete queued raw bytes after successful backend registration.
+- `[ ]` Apply short expiry, initially no longer than 24 hours unless reviewed.
+- `[ ]` Show portal labels such as `1 read waiting to sync`, `Retry upload`, and `Local queued read expired`.
+- `[ ]` Use SHA-256/idempotency to avoid duplicate backend imports.
+
+Phase 3 Tachomaster-style sync:
+
+- `[ ]` Do not start until the Phase 2 retry cache has passed UAT.
+- `[ ]` Define offline reads, multiple queued files, Sync all, background retry, sync history, admin retention settings, support diagnostics, and duplicate-safe backend imports before implementation.
+
 ---
 
 # 8. Driver Card Analysis Workspace Plan
@@ -578,7 +618,7 @@ Target behaviour:
 - Reader status appears as overlay/status panel, not a separate page.
 - Manual file import remains available.
 - Results open matched driver analysis or candidate card mode.
-- Card removal clears live auto-opened result back to blank calendar, without deleting stored imports.
+- Card removal does not immediately clear the completed read; the result remains visible until another card is read or Refresh clears stale reader state.
 
 Checklist:
 
@@ -589,7 +629,8 @@ Checklist:
 - `[ ]` Confirm unmatched reads open candidate card mode by `import_id`.
 - `[~]` Confirm personnel/training/compliance actions are disabled in candidate mode.
   - 2026-06-21: Code now hides these actions for candidate cards; frontend deploy/live retest pending.
-- `[ ]` Confirm card removal only clears the auto-opened live result and does not delete or hide stored historical imports.
+- `[~]` Confirm card removal keeps the completed live result visible and does not delete or hide stored historical imports.
+  - 2026-07-04: Local workflow now preserves completed reader result after card removal; live retest still required after deployment.
 
 ## 8.2 Page Header / Action Bar
 

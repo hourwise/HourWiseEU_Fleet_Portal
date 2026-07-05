@@ -24,6 +24,7 @@ export interface ReaderHelperExportDescriptor {
   exportFormat?: string;
   exportParserReady?: boolean;
   exportNote?: string;
+  driverId?: string | null;
   driverName?: string;
   driverCardNumberHint?: string;
   vehicleRegHint?: string;
@@ -437,6 +438,7 @@ export async function registerReaderHelperImport(args: {
     export_format: descriptor.exportFormat ?? null,
     export_parser_ready: descriptor.exportParserReady ?? null,
     export_note: descriptor.exportNote ?? null,
+    selected_driver_id: descriptor.driverId ?? null,
     driver_name: descriptor.driverName ?? null,
     driver_card_number_hint: descriptor.driverCardNumberHint ?? null,
     vehicle_reg: descriptor.vehicleRegHint ?? null,
@@ -449,6 +451,7 @@ export async function registerReaderHelperImport(args: {
     fileType,
     sourceType: descriptor.sourceType ?? null,
     metadata,
+    driverId: descriptor.driverId ?? null,
   });
 
   return {

@@ -285,6 +285,7 @@ describe('timeline generation schema regressions', () => {
 describe('timeline generation implementation regressions', () => {
   const processTachoFunction = readRepoFile('supabase/functions/process-tacho/index.ts');
   const timelineReadModelMigration = readRepoFile('supabase/migrations/20260703133000_add_timeline_generation_read_models.sql');
+  const pairingTimelineMigration = readRepoFile('supabase/migrations/20260705103000_update_tacho_pairing_timeline_rows.sql');
   const api = readRepoFile('src/lib/tacho/api.ts');
 
   it('generates import-scoped timeline rows from parser-derived tachograph rows', () => {
@@ -317,6 +318,16 @@ describe('timeline generation implementation regressions', () => {
     expect(processTachoFunction).toContain('timeline_event_count: timelineGeneration.eventCount');
     expect(processTachoFunction).toContain('timeline_gap_count: timelineGeneration.gapCount');
     expect(processTachoFunction).toContain('timeline_daily_summary_count: timelineGeneration.dailySummaryCount');
+  });
+
+  it('keeps manual card pairing aligned with timeline read models', () => {
+    expect(pairingTimelineMigration).toContain('create or replace function public.pair_tacho_card_import_to_driver');
+    expect(pairingTimelineMigration).toContain('public.timeline_generations');
+    expect(pairingTimelineMigration).toContain('public.timeline_events');
+    expect(pairingTimelineMigration).toContain('public.timeline_gaps');
+    expect(pairingTimelineMigration).toContain('public.daily_timeline_summaries');
+    expect(pairingTimelineMigration).toContain('source_import_id = p_import_id');
+    expect(pairingTimelineMigration).toContain('import_file_id = p_import_id');
   });
 
   it('adds read-only timeline bundle RPCs scoped by manager company', () => {

@@ -108,6 +108,7 @@ export interface TachoReaderAnalysisTarget {
 
 interface UseTachoReaderWorkflowOptions {
   sourceType: string;
+  targetDriverId?: string | null;
   onImportRegistered?: () => void;
   onAnalysisReady?: (target: TachoReaderAnalysisTarget) => void;
 }
@@ -308,6 +309,7 @@ function buildImportedStatus(
 
 export function useTachoReaderWorkflow({
   sourceType,
+  targetDriverId,
   onImportRegistered,
   onAnalysisReady,
 }: UseTachoReaderWorkflowOptions) {
@@ -326,6 +328,7 @@ export function useTachoReaderWorkflow({
   const openedReviewKeyRef = useRef<string | null>(null);
   const canAutoOpenReviewRef = useRef(false);
   const importSessionRef = useRef<string | null>(null);
+  const activeReadDriverIdRef = useRef<string | null | undefined>(undefined);
 
   const status = useMemo(
     () => buildImportedStatus(helperStatus, trackedImport, trackedFocusedDate),
@@ -382,6 +385,13 @@ export function useTachoReaderWorkflow({
           throw new Error('Cannot start a card read without a signed-in company context.');
         }
 
+        const requestedTargetDriverId = command === 'start-read' ? targetDriverId ?? null : null;
+        if (command === 'start-read') {
+          activeReadDriverIdRef.current = requestedTargetDriverId;
+        } else {
+          activeReadDriverIdRef.current = undefined;
+        }
+
         const response = await fetch(`${helperUrl}/commands/${command}`, {
           method: 'POST',
           headers: {
@@ -392,6 +402,7 @@ export function useTachoReaderWorkflow({
             companyId: profile?.company_id ?? null,
             requestedByUserId: user?.id ?? null,
             sourceType,
+            targetDriverId: requestedTargetDriverId,
           }),
         });
 
@@ -407,7 +418,7 @@ export function useTachoReaderWorkflow({
         setCommandPending(null);
       }
     },
-    [helperUrl, profile?.company_id, refreshStatus, sourceType, user?.id]
+    [helperUrl, profile?.company_id, refreshStatus, sourceType, targetDriverId, user?.id]
   );
 
   useEffect(() => {
@@ -450,6 +461,8 @@ export function useTachoReaderWorkflow({
     if (!companyId) return;
     const readSessionId = helperStatus.readSessionId;
     const exportDownloadPath = helperStatus.exportDownloadPath;
+    const driverId =
+      activeReadDriverIdRef.current !== undefined ? activeReadDriverIdRef.current : targetDriverId ?? null;
     if (registeredImport?.readSessionId === helperStatus.readSessionId) return;
     if (importSessionRef.current === helperStatus.readSessionId) return;
 
@@ -480,6 +493,7 @@ export function useTachoReaderWorkflow({
             exportFormat: helperStatus.exportFormat,
             exportParserReady: helperStatus.exportParserReady,
             exportNote: helperStatus.exportNote,
+            driverId,
             driverName: helperStatus.driverName,
             driverCardNumberHint: helperStatus.driverCardNumberHint,
             vehicleRegHint: helperStatus.vehicleRegHint,
@@ -553,6 +567,7 @@ export function useTachoReaderWorkflow({
     refreshStatus,
     registeredImport?.readSessionId,
     sourceType,
+    targetDriverId,
     user?.id,
   ]);
 

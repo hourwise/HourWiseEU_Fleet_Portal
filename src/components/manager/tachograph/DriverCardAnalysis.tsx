@@ -71,6 +71,41 @@ interface DriverCardReportSnapshot {
 
 const EMPTY_FINDINGS: TachoFinding[] = [];
 const EMPTY_RECONCILIATION: TachoReconciliationItem[] = [];
+const READER_ANALYSIS_TARGET_STORAGE_KEY = 'hourwise:tacho-reader:last-analysis-target';
+
+function readPersistedReaderAnalysisTarget(): TachoReaderAnalysisTarget | null {
+  try {
+    const rawValue = window.sessionStorage.getItem(READER_ANALYSIS_TARGET_STORAGE_KEY);
+    if (!rawValue) return null;
+    const parsed = JSON.parse(rawValue) as Partial<TachoReaderAnalysisTarget>;
+    if (!parsed.importId || typeof parsed.importId !== 'string') return null;
+    return {
+      importId: parsed.importId,
+      driverId: typeof parsed.driverId === 'string' ? parsed.driverId : null,
+      focusedDate: typeof parsed.focusedDate === 'string' ? parsed.focusedDate : null,
+      sourceType: typeof parsed.sourceType === 'string' ? parsed.sourceType : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistReaderAnalysisTarget(target: TachoReaderAnalysisTarget) {
+  try {
+    window.sessionStorage.setItem(
+      READER_ANALYSIS_TARGET_STORAGE_KEY,
+      JSON.stringify({
+        importId: target.importId,
+        driverId: target.driverId ?? null,
+        focusedDate: target.focusedDate ?? null,
+        sourceType: target.sourceType ?? null,
+        storedAt: new Date().toISOString(),
+      })
+    );
+  } catch {
+    // Non-critical: Supabase remains the source of truth for the actual import.
+  }
+}
 
 type TimelineDay = {
   date: Date;
@@ -105,8 +140,10 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   const [reviewPendingId, setReviewPendingId] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const autoReadStartedRef = useRef(false);
+  const persistedReaderTargetLoadedRef = useRef(false);
   const handleReaderAnalysisReady = useCallback((target: TachoReaderAnalysisTarget) => {
     if (target.sourceType && target.sourceType !== 'driver_card') return;
+    persistReaderAnalysisTarget(target);
     if (target.driverId) {
       setSelectedDriverId(target.driverId);
       setSelectedImportId('');
@@ -119,6 +156,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   }, []);
   const readerWorkflow = useTachoReaderWorkflow({
     sourceType: 'driver_card',
+    targetDriverId: selectedDriverId || null,
     onAnalysisReady: handleReaderAnalysisReady,
   });
   const {
@@ -162,6 +200,15 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
       setLiveReaderTargetActive(false);
     }
   }, [importId]);
+
+  useEffect(() => {
+    if (persistedReaderTargetLoadedRef.current) return;
+    persistedReaderTargetLoadedRef.current = true;
+    if (driverId || importId) return;
+    const persistedTarget = readPersistedReaderAnalysisTarget();
+    if (!persistedTarget) return;
+    handleReaderAnalysisReady(persistedTarget);
+  }, [driverId, handleReaderAnalysisReady, importId]);
 
   useEffect(() => {
     if (!readerStatus.cardPresent || readerStatus.stage === 'helper_unavailable') {

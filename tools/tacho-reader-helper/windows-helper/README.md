@@ -78,6 +78,14 @@ Invoke-RestMethod http://127.0.0.1:47231/diagnostics
 
 The helper also exposes `helperVersion` from `/status` and `/diagnostics`. After installing this build, `/status` should report `dotnet-shell-0.5.9`.
 
+Validate the HELPER-003 Phase 1 read/export/register contract without hardware:
+
+```bash
+npm run tacho:helper:phase1
+```
+
+This builds the helper into a temporary folder, starts it on an isolated local port, uses simulated card presence plus the external-export command seam, and runs the read-mode contract probe. It does not validate real smart-card APDU reads or certified `.C1B/.DDD` output.
+
 With a card inserted, validate the first APDU/exporter foundation:
 
 ```powershell

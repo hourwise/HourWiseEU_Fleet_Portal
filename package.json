@@ -11,6 +11,7 @@
     "tacho:helper:mock": "node tools/tacho-reader-helper/mock-helper.mjs",
     "tacho:helper:probe": "node tools/tacho-reader-helper/contract-probe.mjs",
     "tacho:helper:test": "node tools/tacho-reader-helper/run-scenarios.mjs",
+    "tacho:helper:phase1": "node tools/tacho-reader-helper/phase1-validation.mjs",
     "tacho:helper:windows": "dotnet run --project tools/tacho-reader-helper/windows-helper/HourWise.TachoReaderHelper.csproj",
     "tacho:helper:package": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/tacho-reader-helper/windows-helper/package-portal-download.ps1",
     "tacho:runtime": "node tools/tacho-processing/configure-runtime.mjs",
