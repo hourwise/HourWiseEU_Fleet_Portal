@@ -265,9 +265,9 @@ function buildImportedStatus(
   if (!trackedImport) return helperStatus;
 
   const stage =
-    trackedImport.status === 'error'
+    trackedImport.status === 'error' || trackedImport.status === 'failed'
       ? 'error'
-      : trackedImport.status === 'processed' || trackedImport.status === 'partial'
+      : trackedImport.status === 'processed' || trackedImport.status === 'partial' || trackedImport.status === 'complete'
       ? 'complete'
       : 'processing';
 
@@ -278,7 +278,7 @@ function buildImportedStatus(
       ? `Import ${trackedImport.importId} is processing in Supabase.`
       : trackedImport.status === 'partial'
       ? trackedImport.summary ?? `Import ${trackedImport.importId} completed with partial parser output.`
-      : trackedImport.status === 'processed'
+      : trackedImport.status === 'processed' || trackedImport.status === 'complete'
       ? trackedImport.summary ?? `Import ${trackedImport.importId} completed successfully.`
       : trackedImport.summary ?? `Import ${trackedImport.importId} failed during processing.`;
 
@@ -329,6 +329,7 @@ export function useTachoReaderWorkflow({
   const canAutoOpenReviewRef = useRef(false);
   const importSessionRef = useRef<string | null>(null);
   const activeReadDriverIdRef = useRef<string | null | undefined>(undefined);
+  const ignoredImportIdsRef = useRef<Set<string>>(new Set());
 
   const status = useMemo(
     () => buildImportedStatus(helperStatus, trackedImport, trackedFocusedDate),
@@ -336,12 +337,16 @@ export function useTachoReaderWorkflow({
   );
 
   const clearCompletedReaderResult = useCallback(() => {
+    const importId = registeredImport?.importId ?? trackedImport?.importId ?? helperStatus.importId;
+    if (importId) {
+      ignoredImportIdsRef.current.add(importId);
+    }
     setRegisteredImport(null);
     setTrackedImport(null);
     setTrackedFocusedDate(null);
     importSessionRef.current = null;
     openedReviewKeyRef.current = null;
-  }, []);
+  }, [helperStatus.importId, registeredImport?.importId, trackedImport?.importId]);
 
   const refreshStatus = useCallback(async (options?: { clearCompletedResult?: boolean }) => {
     setRefreshing(true);
@@ -358,12 +363,16 @@ export function useTachoReaderWorkflow({
         throw new Error(`Helper returned ${response.status}`);
       }
 
-      const nextStatus = buildStatus(helperUrl, (await response.json()) as ReaderHelperResponse);
-      setHelperStatus(nextStatus);
-      if (options?.clearCompletedResult && !nextStatus.readSessionId && !nextStatus.importId) {
-        clearCompletedReaderResult();
-      }
-      setLastError(null);
+        const nextStatus = buildStatus(helperUrl, (await response.json()) as ReaderHelperResponse);
+        setHelperStatus(nextStatus);
+        if (
+          options?.clearCompletedResult &&
+          (!nextStatus.readSessionId || nextStatus.stage === 'ready' || nextStatus.stage === 'helper_unavailable') &&
+          (!nextStatus.importId || ignoredImportIdsRef.current.has(nextStatus.importId))
+        ) {
+          clearCompletedReaderResult();
+        }
+        setLastError(null);
     } catch (error) {
       setHelperStatus(defaultStatus(helperUrl));
       if (options?.clearCompletedResult) {
@@ -575,6 +584,11 @@ export function useTachoReaderWorkflow({
     const companyId = profile?.company_id;
     const importId = registeredImport?.importId ?? helperStatus.importId;
     if (!companyId || !importId) return;
+    if (ignoredImportIdsRef.current.has(importId)) {
+      setTrackedImport(null);
+      setTrackedFocusedDate(null);
+      return;
+    }
 
     let cancelled = false;
 

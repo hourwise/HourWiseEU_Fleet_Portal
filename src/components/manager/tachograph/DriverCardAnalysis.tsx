@@ -166,14 +166,20 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     sendCommand: sendReaderCommand,
   } = readerWorkflow;
   const handleManualReaderRefresh = useCallback(async () => {
+    const shouldClearReaderResult =
+      !readerStatus.cardPresent && (readerStatus.stage === 'complete' || readerStatus.stage === 'error');
     await readerWorkflow.refreshStatus({ clearCompletedResult: true });
-    if (!readerStatus.cardPresent && liveReaderTargetActive) {
-      setSelectedDriverId('');
-      setSelectedImportId('');
+    if (shouldClearReaderResult) {
+      readerWorkflow.clearCompletedReaderResult();
+      if (liveReaderTargetActive) {
+        setReaderFocusedDate(null);
+        setLiveReaderTargetActive(false);
+      }
+    } else if (!readerStatus.cardPresent && liveReaderTargetActive) {
       setReaderFocusedDate(null);
       setLiveReaderTargetActive(false);
     }
-  }, [liveReaderTargetActive, readerStatus.cardPresent, readerWorkflow]);
+  }, [liveReaderTargetActive, readerStatus.cardPresent, readerStatus.stage, readerWorkflow]);
   const { data: drivers = [] } = useDrivers(profile?.company_id ?? undefined);
   const { data, loading, error, emptyState, isMock } = useDriverCardAnalysis(range, {
     driverId: selectedDriverId || undefined,
