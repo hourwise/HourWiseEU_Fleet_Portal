@@ -1,31 +1,58 @@
 import React, { useEffect } from 'react';
 import { HeroSection } from '../marketing/HeroSection';
-import { ProblemSection } from '../marketing/ProblemSection';
-import { SolutionSection } from '../marketing/SolutionSection';
-import { DriverAppSection } from '../marketing/DriverAppSection';
-import { FleetPortalSection } from '../marketing/FleetPortalSection';
+import { RoleTabs } from '../marketing/RoleTabs';
 import { ConnectedWorkflowSection } from '../marketing/ConnectedWorkflowSection';
+import { FeatureExplorer } from '../marketing/FeatureExplorer';
 import { TachographSection } from '../marketing/TachographSection';
-import { PricingSection } from '../marketing/PricingSection';
 import { EarlyAccessSection } from '../marketing/EarlyAccessSection';
+import { FounderStorySection } from '../marketing/FounderStorySection';
 import { FaqSection } from '../marketing/FaqSection';
+import { PricingSection } from '../marketing/PricingSection';
 
 export function HomePage() {
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Handle anchor links if the page is loaded with one
+    if (window.location.hash) {
+      const id = window.location.hash.substring(1);
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, []);
 
   return (
     <div className="bg-hw-navy-950 min-h-screen">
       <HeroSection />
-      <ProblemSection />
-      <SolutionSection />
-      <DriverAppSection />
-      <FleetPortalSection />
+
+      {/* Role Selector Section */}
+      <RoleTabs />
+
+      {/* Connected Workflow Strip */}
       <ConnectedWorkflowSection />
+
+      {/* Feature Explorer with Tabs */}
+      <FeatureExplorer />
+
+      {/* Tachograph + Compliance Section */}
       <TachographSection />
-      <PricingSection />
+
+      {/* Pricing Section (Placeholder/Beta messaging) */}
+      <div id="pricing">
+        <PricingSection />
+      </div>
+
+      {/* Early Access Signup Panel */}
       <EarlyAccessSection />
+
+      {/* Founder / Credibility Note */}
+      <FounderStorySection />
+
+      {/* FAQ Accordion */}
       <FaqSection />
     </div>
   );

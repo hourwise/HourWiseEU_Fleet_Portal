@@ -18,6 +18,26 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const navLinks = [
+    { label: 'Product', href: '#product' },
+    { label: 'Driver App', href: '#driver-app' },
+    { label: 'Fleet Portal', href: '#fleet-portal' },
+    { label: 'Tachograph', href: '#tachograph' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'FAQ', href: '#faq' },
+  ];
+
+  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        setMobileMenuOpen(false);
+      }
+    }
+  };
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled ? 'bg-hw-navy-950/80 backdrop-blur-lg border-b border-white/5 py-3' : 'bg-transparent py-5'
@@ -31,18 +51,24 @@ export function Header() {
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-xl text-hw-white leading-none">HourWise</span>
-                <span className="text-[10px] font-bold text-hw-blue-600 tracking-[0.2em] uppercase mt-1">EU Portal</span>
+                <span className="text-[10px] font-bold text-hw-blue-600 tracking-[0.2em] uppercase mt-1">EU</span>
               </div>
             </Link>
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-8">
             <nav className="flex items-center space-x-6 text-sm font-medium text-hw-slate-300">
-              <Link href="/" className="hover:text-hw-blue-600 transition-colors uppercase tracking-wider">{t('navigation.home')}</Link>
-              <Link href="/how-to" className="hover:text-hw-blue-600 transition-colors uppercase tracking-wider">{t('navigation.howTo')}</Link>
-              <Link href="/privacy" className="hover:text-hw-blue-600 transition-colors uppercase tracking-wider">{t('navigation.privacy')}</Link>
-              <Link href="/contact" className="hover:text-hw-blue-600 transition-colors uppercase tracking-wider">{t('navigation.contact')}</Link>
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href)}
+                  className="hover:text-hw-blue-600 transition-colors uppercase tracking-wider whitespace-nowrap"
+                >
+                  {link.label}
+                </a>
+              ))}
             </nav>
 
             <div className="flex items-center space-x-4 border-l border-white/10 pl-6">
@@ -53,17 +79,20 @@ export function Header() {
               <HWButton
                 variant="primary"
                 size="sm"
-                className="group"
-                onClick={() => window.location.href = '/contact'}
+                className="group whitespace-nowrap"
+                onClick={() => {
+                  const el = document.querySelector('#early-access');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
-                Request Early Access
+                Join early access
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </HWButton>
             </div>
           </div>
 
           {/* Mobile Toggle */}
-          <div className="md:hidden flex items-center gap-4">
+          <div className="lg:hidden flex items-center gap-4">
             <LanguageSelector />
             <button
               className="p-2 rounded-lg bg-white/5 border border-white/10"
@@ -80,19 +109,33 @@ export function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 bg-hw-navy-900 border border-white/10 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="lg:hidden mt-4 bg-hw-navy-900 border border-white/10 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex flex-col space-y-6">
-              <Link href="/" className="text-lg font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-              <Link href="/how-to" className="text-lg font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
-              <Link href="/privacy" className="text-lg font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>Privacy</Link>
-              <Link href="/contact" className="text-lg font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href)}
+                  className="text-lg font-bold text-hw-white"
+                >
+                  {link.label}
+                </a>
+              ))}
 
               <div className="pt-6 border-t border-white/10 flex flex-col space-y-4">
                 <Link href="/login" className="text-center font-bold text-hw-white" onClick={() => setMobileMenuOpen(false)}>
-                  Manager Sign In
+                  Login
                 </Link>
-                <HWButton variant="primary" className="w-full" onClick={() => window.location.href = '/contact'}>
-                  Request Early Access
+                <HWButton
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => {
+                    const el = document.querySelector('#early-access');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Join early access
                 </HWButton>
               </div>
             </div>

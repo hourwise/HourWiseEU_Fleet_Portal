@@ -1,0 +1,24 @@
+# HourWise EU
+
+HourWise EU is a connected driver app and fleet portal for UK/EU commercial transport teams.
+
+## Product Summary
+
+The driver app helps drivers track work, driving, breaks and POA. The fleet portal helps operators manage shifts, checks, defects, incidents, expenses, tachograph files, reports, messages and compliance actions.
+
+## Key Areas
+
+- **Driver App**: Real-time tracking of HGV/commercial driving hours and compliance checks.
+- **Fleet Portal**: Centralized dashboard for transport managers to review compliance, maintenance, and expenses.
+- **Tachograph Analysis**: Support for driver card and vehicle unit file import and timeline visualization.
+- **Compliance Workflow**: A connected cab-to-office audit trail.
+
+## Important Note
+
+HourWise EU is designed as a compliance support and workflow tool. It does not replace legally required tachograph equipment, official records or operator legal responsibilities.
+
+## Links
+
+- Homepage: https://www.hourwiseeu.co.uk/
+- Early Access: https://www.hourwiseeu.co.uk/#early-access
+- Support: info@hourwiseeu.co.uk
