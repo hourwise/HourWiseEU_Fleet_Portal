@@ -83,6 +83,418 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-08 - Add SEC-010 Shadow Permission Comparison
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-08-001 |
+| Status | Implemented Locally |
+| Owner | Security / Platform Architecture / Engineering |
+| Summary | Added a shadow permission comparison to `patch_tachograph_import_metadata` without changing legacy runtime enforcement. |
+| Reason | SEC-009 selected this RPC as the first low-risk shadow candidate before central permission enforcement swaps begin. |
+| Affected Source Documents | `docs/sec-010-shadow-permission-patch-tachograph-import-metadata-2026-07-08.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0024` |
+| Capability IDs | Security, RBAC, tachograph import |
+| Implementation Impact | Medium |
+| Database Impact | Migration Required |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Reapply the previous `patch_tachograph_import_metadata` body from `20260703090000_harden_tachograph_storage_rls.sql`; do not remove the SEC-007 foundation. |
+
+### Details
+
+Added migration `20260708120000_shadow_permission_patch_tachograph_import_metadata.sql`.
+
+The function still enforces the legacy `manager` role and company boundary. It now calculates `actor_has_permission('tachograph.import.update', target_company_id, null)` in shadow mode and writes `shadow_permission_mismatch` audit events only when the decisions differ.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-05 - Prepare SEC-009 Permission Foundation Deployment Verification
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-011 |
+| Status | Complete |
+| Owner | Security / Platform Architecture / Engineering |
+| Summary | Completed SEC-009 deployment verification for the SEC-007 additive permission foundation and selected the first shadow enforcement candidate. |
+| Reason | SEC-007 is implemented locally but must be deployed or dry-run against a database and verified before any shadow enforcement work starts. |
+| Affected Source Documents | `docs/sec-009-additive-permission-foundation-deploy-verify-2026-07-05.md`, `docs/sec-009-post-deploy-verification.sql`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024` |
+| Capability IDs | Security, organisation hierarchy, RBAC |
+| Implementation Impact | High |
+| Database Impact | Migration Deployed / Verified |
+| Security Impact | Security Gate Required |
+| Testing Impact | Post-Deploy Verification Required |
+| Rollback Notes | SEC-009 is documentation/verification SQL only. If the SEC-007 migration is deployed and must be rolled back before enforcement swaps, drop the additive security functions/tables in reverse dependency order and leave existing `profiles`, `company_id`, legacy policies, tachograph, timeline, and storage objects untouched. |
+
+### Details
+
+SEC-009 completed the controlled deployment verification path for `supabase/migrations/20260705170000_add_security_permission_foundation.sql`.
+
+The deployment document covers Supabase Dashboard SQL Editor and privileged `psql` options, expected object/seed/backfill counts, denied-default permission checks, site fail-closed verification, completion criteria, rollback position, and recommends `patch_tachograph_import_metadata` as the first shadow enforcement candidate.
+
+The standalone verification SQL is `docs/sec-009-post-deploy-verification.sql`.
+
+Dashboard verification confirmed:
+
+- `security_roles = 10`
+- `security_permissions = 32`
+- role grants: `driver = 6`, `fleet_administrator = 22`
+- no unexpected `fleet_administrator` grants for raw-file export, report export, role admin, support session admin, or Atlas fleet summary
+- active assignments: `driver = 17`, `fleet_administrator = 1`
+- no active legacy `manager`/`driver` profiles missing assignments
+- no orphaned active legacy backfill assignments
+- assignment scope is organisation-only with null `site_id`
+- compatibility view count matches 17 active drivers and 1 active manager
+
+The first shadow enforcement candidate is `patch_tachograph_import_metadata`.
+
+CLI deployment remains unsuitable until migration history drift is reconciled, but SEC-009 itself is complete from Dashboard SQL verification.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Complete SEC-007 Additive Permission Foundation Implementation
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-010 |
+| Status | Implemented / Deployed / Verified |
+| Owner | Security / Platform Architecture / Engineering |
+| Summary | Added the SEC-007 additive permission foundation migration and static regression tests. |
+| Reason | SEC-005 and SEC-006 defined the permission foundation required before replacing legacy `profiles.role` checks with zero-trust role/permission enforcement. SEC-008 supplied fresh schema/policy evidence and backfill sizing. |
+| Affected Source Documents | `docs/sec-007-additive-permission-foundation-implementation-2026-07-05.md`, `docs/sec-008-supabase-dump-gate-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027`, `ADR-0028` |
+| Capability IDs | Security, organisation hierarchy, RBAC, reporting, Atlas, exports, support access |
+| Implementation Impact | High |
+| Database Impact | Migration Required |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Added |
+| Rollback Notes | The migration is additive. If deployment fails before enforcement swaps, drop or ignore the new security functions/tables in reverse dependency order while keeping `profiles.role`, `company_id`, and existing RLS policies untouched. |
+
+### Details
+
+SEC-007 adds migration `supabase/migrations/20260705170000_add_security_permission_foundation.sql`.
+
+The migration creates additive role, permission, role-permission, role-assignment, audit-event, and compatibility-view objects. It seeds the role and permission catalogues, grants current manager-compatible permissions to `fleet_administrator`, grants own-record permissions to `driver`, denies export/role-admin/support/Atlas fleet-summary permissions by default, and backfills active legacy `manager`/`driver` profiles with `company_id`.
+
+The implementation intentionally does not add `organisation_id`, site enforcement, Atlas retrieval, report export snapshots, support sessions, ADR-0028 maintenance-rule tables, or broad existing RLS/RPC replacement.
+
+Static test `src/lib/security/sec007PermissionFoundation.test.ts` is included in `npm run test:rules`. Verification passed with 8 test files and 106 tests.
+
+SEC-009 subsequently verified deployment/backfill behaviour through Supabase Dashboard SQL.
+
+`npm run typecheck` still fails on existing unrelated app/type-generation issues; this was not introduced by SEC-007.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Record SEC-008 Supabase Dump Blocker
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-009 |
+| Status | Partially Implemented |
+| Owner | Security / Platform Architecture |
+| Summary | Recorded the SEC-008 linked Supabase dump attempts, successful PostgreSQL 17 native schema/policy capture, Supabase Dashboard storage bucket evidence, and expected role backfill counts. |
+| Reason | SEC-008 requires fresh live schema/policy evidence before downstream permission-foundation rollout can rely on current catalog state. |
+| Affected Source Documents | `docs/sec-008-supabase-dump-gate-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024` |
+| Capability IDs | Security, organisation hierarchy, RBAC |
+| Implementation Impact | High |
+| Database Impact | None Yet / Evidence Required Before Migration Reliance |
+| Security Impact | Security Gate Required |
+| Testing Impact | Test Update Required After Evidence Capture |
+| Rollback Notes | Supersede this entry when remaining profile distribution counts are recorded, if required, and the local SEC-007 artefact mismatch is reconciled. |
+
+### Details
+
+The linked Supabase dump was retried after Docker installation:
+
+```powershell
+.\supabase.exe db dump --linked --schema public,storage --file supabase\.temp\sec-008-live-schema-policy-dump-2026-07-05.sql
+```
+
+The command reached remote dump initialisation but failed because Docker Desktop cannot start its Linux engine. `docker ps` returns `Docker Desktop is unable to start`, `com.docker.service` is stopped, and WSL reports no installed Linux distributions.
+
+PostgreSQL 15 native client tooling was then installed and can reach the linked database, but `pg_dump` aborts because the linked server is PostgreSQL 17.6 and `pg_dump` is version 15.18. The next local non-Docker route is PostgreSQL 17 client tooling.
+
+PostgreSQL 17 native client tooling then captured a fresh non-empty public/storage schema and policy dump at `supabase/.temp/sec-008-live-schema-policy-dump-2026-07-05.sql`.
+
+Catalog evidence shows 63/63 captured live public/storage tables with RLS enabled, `public.profiles` forced RLS, 133 policies, and no `security_*` permission foundation tables present.
+
+Supabase Dashboard SQL captured the storage bucket result set in `docs/sql results.txt`.
+
+Expected role backfill counts were provided separately: 17 `driver` assignments and 1 `fleet_administrator` assignment. The dataset is test-seeded: the fleet administrator is the project owner/operator, one driver row is also the owner/operator, and the remaining driver rows are fake SQL-injected profiles.
+
+`SEC-008` remains partial, not complete, because company-role distribution, profiles-without-company count, and inactive-profile count have not been captured. Those details are useful before migration execution, but the expected role backfill sizing is now known for the current live test dataset.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Complete SEC-006 Permission Foundation Candidate Plan
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-008 |
+| Status | Implemented |
+| Owner | Security / Platform Architecture |
+| Summary | Added the SEC-006 catalog refresh and candidate migration/test plan for the additive permission foundation. |
+| Reason | SEC-005 required live/local catalog verification and a candidate migration/test plan before writing additive permission foundation SQL. |
+| Affected Source Documents | `docs/sec-006-permission-foundation-catalog-refresh-candidate-plan-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027`, `ADR-0028` |
+| Capability IDs | Security, organisation hierarchy, RBAC, reporting, Atlas, exports, support access, maintenance |
+| Implementation Impact | High |
+| Database Impact | Migration Required Later |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede SEC-006 if a fresh live catalog export changes the candidate migration shape, seed data, backfill assumptions, or rollback plan. |
+
+### Details
+
+SEC-006 records that a fresh linked Supabase dump was attempted but failed because Docker Desktop/daemon is unavailable locally. The plan therefore uses the existing 2026-07-02 dashboard-export artefacts plus current source-controlled migrations as planning evidence, with a hard requirement for a fresh dashboard/SQL export before SEC-007 writes final SQL.
+
+The candidate migration is named `20260705170000_add_security_permission_foundation.sql` and is limited to additive permission foundation objects, seed rows, backfill, helpers, audit events, RLS, grants, and tests.
+
+The completion plan now marks `SEC-006` complete and recommends `SEC-007`: implement the additive permission foundation migration and static tests only after fresh live evidence is captured.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Complete SEC-005 Additive Permission Foundation Design
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-007 |
+| Status | Implemented |
+| Owner | Security / Platform Architecture |
+| Summary | Added the SEC-005 additive permission foundation design covering role catalogue, permission keys, role assignments, compatibility wrappers, audit events, backfill strategy, rollout phases, and tests. |
+| Reason | SEC-004 found the current baseline is only `company_id` plus legacy `manager`/`driver` checks, so a compatibility-safe permission foundation is required before any enforcement migration. |
+| Affected Source Documents | `docs/sec-005-additive-permission-foundation-design-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027`, `ADR-0028` |
+| Capability IDs | Security, organisation hierarchy, RBAC, reporting, Atlas, exports, support access, maintenance |
+| Implementation Impact | High |
+| Database Impact | Migration Required Later |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede SEC-005 if live catalog verification or role/backfill decisions change before the additive permission foundation migration is written. |
+
+### Details
+
+SEC-005 defines an additive, compatibility-first permission foundation. It keeps `company_id`, `profiles.company_id`, and legacy `profiles.role` intact while introducing a future migration design for `security_roles`, `security_permissions`, `security_role_permissions`, `security_role_assignments`, and `security_permission_audit_events`.
+
+The design maps current `manager` users to `fleet_administrator` and current `driver` users to `driver`, with export, support, role administration, and tenant-aware Atlas permissions denied by default.
+
+The completion plan now marks `SEC-005` complete as a design gate and recommends `SEC-006`: refresh live/local catalog evidence and produce the candidate migration/test plan before writing SQL.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Record ADR-0028 Preventive Maintenance Rule Engine
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-006 |
+| Status | Proposed |
+| Owner | Product Architecture / Platform Architecture |
+| Summary | Added ADR-0028 as the proposed Preventive Maintenance and Asset Compliance Rule Engine and recorded its implementation dependencies in the completion plan. |
+| Reason | The new ADR materially expands future fleet compliance scope beyond tachograph evidence into asset rules, readings, due states, evidence, notifications, reporting, Atlas summaries, and multi-site visibility. |
+| Affected Source Documents | `docs/adr/ADR-0028_Preventive_Maintenance_Asset_Compliance_Rule_Engine.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0028` |
+| Capability IDs | Fleet Portal, maintenance, asset compliance, reporting, Atlas, notifications, security |
+| Implementation Impact | High |
+| Database Impact | Migration Required Later |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede ADR-0028 if the maintenance/compliance rule engine scope changes before schema design. Keep implementation deferred until SEC-005 and a dedicated asset-rule schema plan exist. |
+
+### Details
+
+ADR-0028 is recorded as proposed, not accepted implementation scope.
+
+The completion plan now tracks ADR-0028 as a future asset compliance rule engine covering date, mileage, engine-hour, whichever-comes-first, stale-reading, evidence, notification, Atlas, reporting, and multi-site behaviours.
+
+Implementation is deferred until the asset/rule/reading/due-state/evidence schema, stale-reading logic, site permissions, notification model, Atlas retrieval boundaries, and reporting/export audit model are specified.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Complete SEC-004 Zero Trust Compatibility Audit
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-005 |
+| Status | Implemented |
+| Owner | Security / Platform Architecture |
+| Summary | Added the SEC-004 no-migration compatibility audit for the current schema, RLS/RPC, Edge Function, export/report, cache, Atlas, and support-access posture against the SEC-003 Zero Trust matrix. |
+| Reason | SEC-003 required a compatibility audit before any organisation/site/RBAC migration is designed or written. |
+| Affected Source Documents | `docs/sec-004-zero-trust-no-migration-compatibility-audit-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027` |
+| Capability IDs | Security, organisation hierarchy, RBAC, reporting, Atlas, exports, support access |
+| Implementation Impact | High |
+| Database Impact | Migration Required Later |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede the SEC-004 audit if live catalog verification or implementation changes materially alter the current compatibility baseline before SEC-005. |
+
+### Details
+
+SEC-004 confirms the current enforceable baseline is `company_id` as organisation scope plus legacy `profiles.role` values of `manager` and `driver`.
+
+The audit found no authoritative site model, no role/permission catalogue, no central permission resolver, no export-specific permission/audit flow, no tenant-aware Atlas retrieval, and no support access session model.
+
+The completion plan now marks `SEC-004` complete and recommends `SEC-005`: design the additive permission foundation migration, including role/permission tables, compatibility wrappers, audit events, and cross-tenant/role-boundary tests, with live/local catalog verification before final SQL.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Complete SEC-003 Zero Trust RBAC Matrix
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-004 |
+| Status | Implemented |
+| Owner | Security / Platform Architecture |
+| Summary | Added the SEC-003 implementation-control matrix for Zero Trust organisation, site, role, ownership, operation, export, report, cache, and Atlas authorisation. |
+| Reason | ADR-0022 through ADR-0027 are accepted constraints, but they needed an implementation matrix before schema/RLS work could proceed safely. |
+| Affected Source Documents | `docs/zero-trust-organisation-rbac-matrix-sec-003-2026-07-05.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027` |
+| Capability IDs | Security, organisation hierarchy, RBAC, reporting, Atlas, resource assignment |
+| Implementation Impact | High |
+| Database Impact | Migration Required Later |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede the SEC-003 matrix if the organisation/site/RBAC model changes before SEC-004 or migration work. |
+
+### Details
+
+SEC-003 documents the compatibility rule that current `companies` / `company_id` remains the enforceable organisation scope until a controlled organisation/site migration exists.
+
+It defines the target scope model, core security tables, permission key pattern, baseline role matrix, operation matrix, RLS/function rules, Edge Function/RPC checks, export/report/download rules, cache-key rules, Atlas rules, mandatory tests, and phased implementation route.
+
+The completion plan now marks SEC-003 complete as a planning gate and recommends `SEC-004`: a no-migration compatibility audit before any schema/RLS migration is written.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
+## 2026-07-05 - Record Organisation Security ADR Impact
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-05-003 |
+| Status | Accepted |
+| Owner | Product Architecture / Platform Architecture / Security |
+| Summary | Recorded ADR-0022 through ADR-0027 as accepted organisation, security, Atlas, reporting, and resource-transfer constraints, and deferred TIME-008 until a real vehicle-unit import is available. |
+| Reason | New accepted ADRs materially affect tenant modelling, site scoping, RBAC, Atlas permissions, reporting aggregation, assignment history, and implementation sequencing. |
+| Affected Source Documents | `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026`, `ADR-0027` |
+| Capability IDs | Security, organisation hierarchy, reporting, Atlas, resource assignment, Fleet Portal |
+| Implementation Impact | High |
+| Database Impact | Migration Required |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Supersede this entry if the organisation/site/RBAC model changes before implementation. Keep TIME-008 blocked until a real VU import is available. |
+
+### Details
+
+`ADR-0022` through `ADR-0027` are now recorded in the completion plan as accepted governing constraints. They are not implementation-ready by themselves; they require a concrete permission matrix, schema plan, RLS/RPC/Edge Function guards, export/report rules, cache-key rules, Atlas access rules, and automated tests.
+
+`TIME-008` is now marked blocked/deferred because no real vehicle-unit tachograph import is available. The plan explicitly avoids using synthetic VU data to satisfy the vehicle-unit timeline acceptance gate.
+
+The recommended next task is now `SEC-003`: create the Zero Trust organisation/site/RBAC implementation matrix from `ADR-0022`, `ADR-0023`, and `ADR-0024`.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+---
+
 ## 2026-07-05 - Complete HELPER-003 Live Reader Validation
 
 | Field | Value |

@@ -21,7 +21,7 @@ Recommendation: treat the collection as `architecture-approved / implementation-
 
 ## Inventory Reviewed
 
-Source set contains 41 Markdown files:
+Source set contains 39 Markdown files:
 
 - `00 - README.md`
 - `01` to `09`: strategy, philosophy, problems, personas, ecosystem, principles, competitive position, non-goals, pillars
@@ -29,9 +29,22 @@ Source set contains 41 Markdown files:
 - `15` to `17`: architecture, Driver App, Fleet Portal
 - `18` to `18.11`: Compliance Intelligence platform and engine suite
 - `19` to `24`: Atlas, reporting, data model, security, integration architecture, ADRs
+- `98`: changelog
+- `99`: glossary
+- `index`: stable source-of-truth document index
+
+Managed ADR records in `docs/adr` now contain 10 Markdown files:
+
+- `ADR-0019`: Windows helper local outbox and sync semantics
 - `ADR-0020`: rota, job planning, route estimates, and compliance-aware updates
 - `ADR-0021`: unified event synchronisation, messaging, and Atlas integration
-- `99`: glossary
+- `ADR-0022`: zero trust multi-tenant authorisation
+- `ADR-0023`: multi-site organisation hierarchy
+- `ADR-0024`: role-based access control
+- `ADR-0025`: tenant-aware Atlas AI
+- `ADR-0026`: reporting and organisational aggregation
+- `ADR-0027`: resource assignment and transfer lifecycle
+- `ADR-0028`: preventive maintenance and asset compliance rule engine
 
 Existing supporting documents also found:
 
@@ -180,6 +193,13 @@ These decisions are called out or implied by the source set and should be resolv
 | Rule definitions as data vs code references | `18.7`, `21`, `24` | `[DECISION-ADR]` | Affects compliance engine design and test strategy |
 | Rota/job/route planning data model | `ADR-0020`, `16`, `17`, `21`, `23` | `[DECISION-ADR]`, `[DEFER-P1]` | Affects shared Portal/App schema, route estimate storage, legal-availability calculations, and advisory navigation wording |
 | Unified operational event log and sync model | `ADR-0021`, `18.10`, `19`, `21`, `22`, `23` | `[DECISION-ADR]`, `[SECURITY-GATE]` | Affects messaging, realtime/push delivery, driver acknowledgement, Atlas access, event deduplication, and RLS visibility |
+| Zero trust tenant/site/role enforcement | `ADR-0022`, `22`, `21`, `23` | `[SECURITY-GATE]`, `[IMPLEMENT-MVP]` | Every request must be authorised by organisation, site, role, ownership, and operation; affects RLS, RPCs, Edge Functions, exports, reports, cache keys, and Atlas |
+| Multi-site organisation hierarchy | `ADR-0023`, `21`, `22`, `17`, `20` | `[DECISION-ADR]`, `[SECURITY-GATE]` | Introduces organisation/site scoping across drivers, vehicles, reporting, transfers, and Atlas comparisons |
+| Role-based access control model | `ADR-0024`, `22`, `21` | `[SECURITY-GATE]`, `[IMPLEMENT-MVP]` | Requires role tables, permission categories, inheritance/default-deny semantics, audit logs, and permission regression tests |
+| Tenant-aware Atlas execution | `ADR-0025`, `19`, `18.10`, `22` | `[SECURITY-GATE]`, `[DEFER-P1]` | Atlas must inherit caller permissions, never bypass RLS, audit requests/responses, and include tenant context in retrieval/query paths |
+| Reporting aggregation permission model | `ADR-0026`, `20`, `21`, `22` | `[SECURITY-GATE]`, `[DEFER-P1]` | Driver, vehicle, site, region, and organisation reports need upward aggregation without leaking unauthorised site data |
+| Resource assignment and transfer lifecycle | `ADR-0027`, `21`, `ADR-0021`, `ADR-0023` | `[DECISION-ADR]`, `[DEFER-P1]` | Driver/vehicle site transfers must preserve payroll, compliance, maintenance, messages, shifts, and audit history through events |
+| Preventive maintenance and asset compliance rule engine | `ADR-0028`, `17`, `20`, `21`, `22`, `23`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Asset rules, readings, due states, evidence, notifications, Atlas summaries, site visibility, and reporting exports need schema, permission, stale-reading, and audit design before implementation |
 
 ## Implementation Completion Sequence
 
@@ -354,8 +374,15 @@ Exit criteria:
 | `22 - Security Model Specification.md` | `[SECURITY-GATE]` | Convert checklist to permission/RLS tests |
 | `23 - Integration Architecture.md` | `[VERIFY]`, `[DEFER-P1]` | Keep parser/helper integration for MVP; defer providers |
 | `24 - Architecture Decision Records.md` | `[DOC-FIX]`, `[DECISION-ADR]` | Split ADRs into individual records |
-| `ADR-0020 - Rota, Job Planning, Route Estimates and Compliance-Aware Updates` | `[DECISION-ADR]`, `[DEFER-P1]` | Keep proposed until rota/job/route schema, advisory navigation limits, route-estimate provider boundary, and compliance-warning acceptance criteria are defined |
-| `ADR-0021 - Unified Event Synchronisation, Messaging and Atlas Integration` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Keep proposed until event log schema, RLS/role visibility, push/realtime delivery rules, acknowledgement semantics, and Atlas event access boundaries are specified |
+| `docs/adr/ADR-0020 - Rota, Job Planning, Route Estimates and Compliance-Aware Updates` | `[DECISION-ADR]`, `[DEFER-P1]` | Keep proposed until rota/job/route schema, advisory navigation limits, route-estimate provider boundary, and compliance-warning acceptance criteria are defined |
+| `docs/adr/ADR-0021 - Unified Event Synchronisation, Messaging and Atlas Integration` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Keep proposed until event log schema, RLS/role visibility, push/realtime delivery rules, acknowledgement semantics, and Atlas event access boundaries are specified |
+| `docs/adr/ADR-0022 - Zero Trust Multi-Tenant Authorisation` | `[SECURITY-GATE]`, `[IMPLEMENT-MVP]` | Accepted governing constraint; create a concrete organisation/site/role/operation permission matrix and RLS/RPC/Edge Function test plan before expanding protected features |
+| `docs/adr/ADR-0023 - Multi-Site Organisation Hierarchy` | `[DECISION-ADR]`, `[SECURITY-GATE]` | Accepted direction, but needs schema plan for organisation/site/region membership, assignment history, reporting scope, and cross-site transfer behaviour |
+| `docs/adr/ADR-0024 - Role-Based Access Control` | `[SECURITY-GATE]`, `[IMPLEMENT-MVP]` | Accepted direction, but needs permission catalogue, role inheritance/default-deny rules, admin UI boundaries, and audit requirements before schema implementation |
+| `docs/adr/ADR-0025 - Tenant-Aware Atlas AI` | `[SECURITY-GATE]`, `[DEFER-P1]` | Accepted Atlas constraint; do not enable Atlas retrieval/query tooling until tenant/site/role context, RLS checks, and prompt/response audit are implemented |
+| `docs/adr/ADR-0026 - Reporting And Organisational Aggregation` | `[SECURITY-GATE]`, `[DEFER-P1]` | Accepted reporting direction; defer broad aggregation until site hierarchy and RBAC are implemented and permission tests prove no cross-site leakage |
+| `docs/adr/ADR-0027 - Resource Assignment And Transfer Lifecycle` | `[DECISION-ADR]`, `[DEFER-P1]` | Accepted direction; implement only after assignment event model and transfer history preserve compliance, payroll, maintenance, messaging, and historical shifts |
+| `docs/adr/ADR-0028 - Preventive Maintenance And Asset Compliance Rule Engine` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Proposed direction; do not build until asset/rule/reading/due-state/evidence schema, stale-reading logic, site permissions, notification rules, Atlas boundaries, and reporting/export audit are specified |
 | `99 - Glossary.md` | `[SOT-OK]` | Keep authoritative; update during implementation naming decisions |
 
 ## Checklist Roll-Up
@@ -401,10 +428,24 @@ Create a concrete backlog with these initial items:
 16. `CARD-UI-001`: Refactor Driver Card Analysis so the activity calendar is the primary workspace, with compact reader/target strips and bounded review panels. Status: complete 2026-07-04.
 17. `HELPER-002`: Preserve the completed reader result after card removal until another card is read or manual refresh clears stale reader state. Status: complete 2026-07-04.
 18. `ADR-0019`: Decide whether the Windows helper should keep a local encrypted cache/outbox and define its sync, retention, duplicate detection, and reset behaviour. Status: accepted 2026-07-04; see `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`.
-19. `TIME-008`: Create or upload a representative vehicle-unit tachograph import and validate timeline generation/count alignment. Status: pending.
+19. `TIME-008`: Create or upload a representative vehicle-unit tachograph import and validate timeline generation/count alignment. Status: blocked/deferred 2026-07-05; waiting on a real vehicle-unit import from tachograph unit manufacturers. Do not substitute synthetic VU data for the acceptance gate.
 20. `HELPER-003`: Finish and live-validate the Phase 1 helper flow: helper read/export bytes, browser authenticated upload, `process-tacho`, and analysis routing. Status: complete 2026-07-05 for the current read-only driver-card helper path; live reader/card/Supabase validation passed with aligned Driver Card Analysis timeline. See `docs/helper-003-phase1-validation-2026-07-04.md`.
-21. `ADR-0020`: Rota, job planning, route estimates, and compliance-aware updates. Status: proposed 2026-07-05; do not build until shared Portal/App schema, route-estimate boundary, and advisory-navigation acceptance criteria are defined.
-22. `ADR-0021`: Unified event synchronisation, messaging, and Atlas integration. Status: proposed 2026-07-05; do not build until central event-log schema, RLS visibility, push/realtime delivery rules, acknowledgement semantics, and Atlas access boundaries are defined.
+21. `ADR-0020`: Rota, job planning, route estimates, and compliance-aware updates. Status: proposed 2026-07-05 in `docs/adr`; do not build until shared Portal/App schema, route-estimate boundary, and advisory-navigation acceptance criteria are defined.
+22. `ADR-0021`: Unified event synchronisation, messaging, and Atlas integration. Status: proposed 2026-07-05 in `docs/adr`; do not build until central event-log schema, RLS visibility, push/realtime delivery rules, acknowledgement semantics, and Atlas access boundaries are defined.
+23. `ADR-0022`: Zero Trust Multi-Tenant Authorisation. Status: accepted 2026-07-05; implementation requires a concrete permission matrix and tests for organisation, site, role, ownership, operation, exports, documents, background jobs, cache keys, and Atlas.
+24. `ADR-0023`: Multi-Site Organisation Hierarchy. Status: accepted 2026-07-05; implementation requires organisation/site/region schema, membership/assignment history, reporting scope rules, and transfer behaviour before migrations.
+25. `ADR-0024`: Role-Based Access Control. Status: accepted 2026-07-05; implementation requires role/permission schema, role inheritance/default deny, auditable permission changes, and permission regression tests.
+26. `ADR-0025`: Tenant-Aware Atlas AI. Status: accepted 2026-07-05; implementation is deferred until Atlas can inherit caller security context, respect RLS, and audit requests/responses.
+27. `ADR-0026`: Reporting and Organisational Aggregation. Status: accepted 2026-07-05; implementation is deferred until organisation/site hierarchy and RBAC are implemented and tested for aggregation leakage.
+28. `ADR-0027`: Resource Assignment and Transfer Lifecycle. Status: accepted 2026-07-05; implementation requires assignment/transfer event history that preserves payroll, compliance, maintenance, messages, and historical shifts.
+29. `SEC-003`: Create the Zero Trust organisation/site/RBAC implementation matrix from `ADR-0022`, `ADR-0023`, and `ADR-0024`. Status: complete 2026-07-05 as an implementation-control document; schema/RLS implementation remains pending. See `docs/zero-trust-organisation-rbac-matrix-sec-003-2026-07-05.md`.
+30. `SEC-004`: Run the Zero Trust no-migration compatibility audit from the `SEC-003` Phase A checklist. Status: complete 2026-07-05 as an audit document; no schema/RLS changes made. See `docs/sec-004-zero-trust-no-migration-compatibility-audit-2026-07-05.md`.
+31. `ADR-0028`: Preventive Maintenance and Asset Compliance Rule Engine. Status: proposed 2026-07-05 in `docs/adr`; do not build until the asset/rule/reading/due-state/evidence schema, stale-reading rules, site permissions, notification model, Atlas boundaries, and reporting/export audit plan are defined.
+32. `SEC-005`: Design the additive permission foundation migration. Status: complete 2026-07-05 as a design gate; schema/RLS implementation remains pending. See `docs/sec-005-additive-permission-foundation-design-2026-07-05.md`.
+33. `SEC-006`: Refresh catalog evidence and produce the additive permission foundation candidate migration/test plan. Status: complete 2026-07-05 as a planning gate; fresh linked dump blocked by missing Docker, so SEC-007 requires fresh dashboard/SQL export before writing final SQL. See `docs/sec-006-permission-foundation-catalog-refresh-candidate-plan-2026-07-05.md`.
+34. `SEC-007`: Implement the additive permission foundation migration and static tests. Status: complete/deployed/verified 2026-07-05; migration/test files are present, `npm run test:rules` passes, and SEC-009 Dashboard verification passed. See `docs/sec-007-additive-permission-foundation-implementation-2026-07-05.md`.
+35. `SEC-008`: Capture the fresh linked Supabase dump/evidence after Docker installation. Status: partial 2026-07-05; PostgreSQL 17 native `pg_dump` captured fresh public/storage schema and policy evidence without Docker, Supabase Dashboard SQL captured storage buckets, and expected role backfill counts are 17 `driver` assignments plus 1 `fleet_administrator` assignment. Company-role/null/inactive profile distribution remains uncaptured. See `docs/sec-008-supabase-dump-gate-2026-07-05.md`.
+36. `SEC-009`: Deploy and verify additive permission foundation. Status: complete 2026-07-05; Dashboard verification confirmed expected seed counts, grant counts, backfill counts, denied defaults, no unmatched legacy profiles, organisation-only assignment scope, and compatibility view counts. First shadow enforcement candidate selected: `patch_tachograph_import_metadata`. See `docs/sec-009-additive-permission-foundation-deploy-verify-2026-07-05.md`.
 
 ## Definition Of Complete
 
@@ -423,10 +464,16 @@ The source-of-truth collection can be marked complete for implementation governa
 
 Phase 0 and Phase 1 are substantially complete for the current MVP thread. The plan already covered the tachograph import/parser/timeline work at architecture level through `18.3` to `18.6`, `23`, and `TIME-001` to `TIME-008`. The recent helper packaging, portal download, reader workspace layout, and post-card-removal persistence work were not explicitly tracked in this plan, so they are now recorded below.
 
-The recommended next task is `TIME-008`: create or upload a representative vehicle-unit tachograph import and validate timeline generation/count alignment. If reader reliability becomes more urgent than vehicle-unit source coverage, run `HELPER-004` planning next, but keep it constrained to the `ADR-0019` encrypted retry-cache acceptance criteria.
+`TIME-008` is now blocked/deferred because no real vehicle-unit import is available. Keep the gate open while waiting for tachograph unit manufacturer responses; do not use synthetic VU data to claim the vehicle-unit timeline acceptance gate.
+
+`SEC-010` is implemented locally and awaits deployment. The recommended next task is to apply the SEC-010 migration, run one normal manager metadata patch, and inspect shadow mismatch audit rows before any enforcement swap.
 
 Rationale:
 
+- ADR-0022 to ADR-0028 widen the platform model from simple company membership to organisation, site, role, ownership, operation, Atlas, report, transfer, and asset-compliance scopes.
+- These accepted ADRs affect almost every future migration, RPC, Edge Function, report, export, cache key, and Atlas retrieval path.
+- A schema or UI build before the permission matrix risks baking in tenant or site leakage.
+- `TIME-008` cannot progress honestly without a real VU file.
 - A local outbox may improve perceived speed and resilience because completed reads can remain available locally while upload/sync happens separately.
 - It will not materially reduce the physical card APDU read time; that is still dominated by card detection, smart-card I/O, EF reads, decoding, upload, and parser/runtime work.
 - It introduces local storage of tachograph personal data, so it needs a security and retention decision before implementation.
@@ -434,19 +481,28 @@ Rationale:
 
 Recommended sequence:
 
-1. `TIME-008`: Create or upload a representative vehicle-unit tachograph import, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
+1. Deploy `SEC-010`: Apply `supabase/migrations/20260708120000_shadow_permission_patch_tachograph_import_metadata.sql`, run a normal manager metadata patch, and verify no unexpected `shadow_permission_mismatch` rows.
 2. `HELPER-004`: Implement the `ADR-0019` Phase 2 encrypted retry cache only after Phase 1 remains stable and the ADR acceptance criteria are met.
-3. Certified helper export planning: select the standards-certified `.C1B/.DDD` encoding strategy separately from the read-only capture path.
+3. `TIME-008`: Resume only when a real vehicle-unit tachograph import is available, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
+4. Certified helper export planning: select the standards-certified `.C1B/.DDD` encoding strategy separately from the read-only capture path.
 
-If reader reliability becomes more urgent than vehicle-unit source coverage, swap steps 1 and 2, but do not build Tachomaster-style bulk sync before the constrained retry cache is proven.
+If reader reliability becomes more urgent than platform security modelling, swap steps 1 and 2, but do not build Tachomaster-style bulk sync before the constrained retry cache is proven.
 
-New operational-planning ADR impact:
+New ADR impact:
 
 - `ADR-0020` and `ADR-0021` add a future shared Portal/App operating model for rota, job planning, route estimates, messaging, event synchronisation, and event-aware Atlas recommendations.
 - They should not displace the current tachograph/helper completion gate.
 - They should be treated as proposed P1 architecture until the current compliance evidence foundation is stable.
 - Before implementation, create a dedicated schema/security plan for `fleet_events`, `message_threads`, `messages`, `rota_assignments`, `job_assignments`, `route_plans`, `route_plan_legs`, `atlas_recommendations`, `driver_acknowledgements`, and `push_notification_log`.
 - Route estimates must remain advisory; HourWise must not present itself as live HGV navigation unless a dedicated approved navigation partner is integrated later.
+- `ADR-0022` is accepted and becomes a governing security constraint now: authentication alone is never enough, and every request needs organisation, site, role, ownership, and operation checks.
+- `ADR-0023` is accepted and changes the target tenant model to platform -> organisation -> site, with drivers and vehicles owned by the organisation and assigned to sites.
+- `ADR-0024` is accepted and requires role-based permissions, least privilege, default deny, role inheritance, and auditable permission changes.
+- `ADR-0025` is accepted and blocks tenant-unsafe Atlas work: Atlas must run in the caller security context and must not bypass RLS.
+- `ADR-0026` is accepted and requires report aggregation to respect the same permission model as interactive reports.
+- `ADR-0027` is accepted and requires driver/vehicle assignment transfers to preserve operational and compliance history through auditable events.
+- `ADR-0028` is proposed and adds a future preventive maintenance and asset compliance rule engine covering date, mileage, engine-hour, whichever-comes-first, stale-reading, evidence, notification, Atlas, and multi-site behaviours.
+- `ADR-0028` should not displace `SEC-005`; it depends on the same organisation/site/RBAC foundation, plus a dedicated asset/rule/reading/evidence schema plan.
 
 Current implementation gate:
 
@@ -463,8 +519,23 @@ Current implementation gate:
 - `HELPER-001`: Windows tachograph helper packaging is complete as of 2026-07-04. The repo now has a packaging script, portal-hosted ZIP/checksum/manifest output, installer support for bundled helper app payloads, README/checklist updates, and a portal helper download card. The current generated package is unsigned unless a production certificate thumbprint is supplied during packaging.
 - `CARD-UI-001`: Driver Card Analysis has been refactored around a calendar-first workspace as of 2026-07-04. The driver target and reader controls are compact strips, the activity-by-day calendar keeps prime screen space, selected-day/cross-check details are bounded in the review rail, and provisional/candidate/comparison panels are moved below the main review area.
 - `HELPER-002`: Reader result persistence after card removal is complete as of 2026-07-04. Completed read data remains visible after the card is removed and is replaced by the next successful read; manual Refresh now explicitly clears stale reader state when appropriate.
-- `TIME-008`: Next task is to create or upload a representative vehicle-unit tachograph import with raw storage, process it through the deployed runtime, then rerun `npm run tacho:inspect-time-007` and `npm run tacho:validate-timeline` until both source types have current timeline generations and count-aligned comparison status.
+- `TIME-008`: Blocked/deferred as of 2026-07-05 because no real representative vehicle-unit tachograph import is available yet. Await manufacturer responses; resume only with a real VU file that can be uploaded to raw storage, processed through the deployed runtime, and validated with `npm run tacho:inspect-time-007` and `npm run tacho:validate-timeline`.
 - `ADR-0019`: Windows Helper Local Outbox And Sync Semantics is accepted as of 2026-07-04. It permits a constrained encrypted local outbox only as a short-lived delivery/retry queue, keeps Supabase/backend imports as the source of truth, forbids helper service-role keys and local compliance database behaviour, and blocks Tachomaster-style bulk sync until Phase 1 and Phase 2 acceptance criteria are met. See `docs/adr/ADR-0019-windows-helper-local-outbox-and-sync-semantics.md`.
 - `HELPER-003`: Phase 1 helper validation is complete for the current read-only driver-card helper path as of 2026-07-05. Automated command-seam validation passes, and live reader/card/Supabase validation produced baseline import `b9c8c986-445b-4411-82fc-c96b8ecf6178`, linked it to `PHILIP CHRISTOPHER GERAN`, decoded card `DB18220162003911`, completed `process-tacho`, opened Driver Card Analysis, and aligned the visible review day at tachograph `58` / timeline `58`. Certified `.C1B/.DDD` output and any encrypted retry outbox remain outside HELPER-003. See `docs/helper-003-phase1-validation-2026-07-04.md`.
 - `ADR-0020`: New proposed source-of-truth ADR added as of 2026-07-05. It defines rota/job planning, route estimates, route/job delay handling, and compliance-aware route warnings as a shared backend feature consumed by both Portal and Driver App. Build is deferred until schema, provider boundary, advisory-navigation copy, and compliance-warning criteria are specified.
 - `ADR-0021`: New proposed source-of-truth ADR added as of 2026-07-05. It defines a unified operational event system for messaging, rota/job/route updates, acknowledgements, push/realtime delivery, and Atlas recommendations. Build is deferred until event-log schema, RLS visibility, notification rules, deduplication/order semantics, and Atlas event-access boundaries are specified.
+- `ADR-0022`: Zero Trust Multi-Tenant Authorisation is accepted as of 2026-07-05. It requires organisation, site, role, ownership, and operation-level authorisation for requests, exports, reports, documents, background jobs, cache keys, and Atlas. Next gate: `SEC-003` permission matrix and test plan before new protected feature work.
+- `ADR-0023`: Multi-Site Organisation Hierarchy is accepted as of 2026-07-05. It sets platform -> organisation -> site as the target tenant hierarchy and requires drivers/vehicles to remain organisation-owned with site assignments.
+- `ADR-0024`: Role-Based Access Control is accepted as of 2026-07-05. It requires role-based permissions, least privilege, default deny, role inheritance, and auditable permission changes.
+- `ADR-0025`: Tenant-Aware Atlas AI is accepted as of 2026-07-05. Atlas must inherit the caller's security context, respect organisation/site/role filters, never bypass RLS, and audit requests/responses.
+- `ADR-0026`: Reporting and Organisational Aggregation is accepted as of 2026-07-05. Report and export aggregation must work at driver, vehicle, site, region, and organisation levels without exceeding caller permissions.
+- `ADR-0027`: Resource Assignment and Transfer Lifecycle is accepted as of 2026-07-05. Driver and vehicle transfers must preserve payroll, compliance, maintenance, messages, historical shifts, and audit history through events.
+- `ADR-0028`: Preventive Maintenance and Asset Compliance Rule Engine is proposed as of 2026-07-05. It defines future rule-driven maintenance/compliance obligations for vehicles, trailers, plant, equipment, documents, licences, tachograph calibration, MOT, insurance, driver licence/CPC/medical renewals, service inspections, PMIs, and defect follow-up. Build is deferred until the rule engine schema, reading freshness model, evidence requirements, site permissions, notification behaviour, Atlas boundaries, and export/report audit model are specified.
+- `SEC-003`: Complete as of 2026-07-05. The Zero Trust organisation/site/RBAC implementation matrix defines the compatibility position for `companies`/`company_id`, target role/permission model, operation matrix, RLS/RPC/Edge Function rules, export/report/cache/Atlas rules, mandatory tests, and implementation phases. See `docs/zero-trust-organisation-rbac-matrix-sec-003-2026-07-05.md`.
+- `SEC-004`: Complete as of 2026-07-05. The no-migration compatibility audit confirms the current enforceable baseline is `company_id` plus legacy `manager`/`driver` role checks, with no site model, no permission catalogue, no central permission resolver, no export audit operation, no tenant-aware Atlas retrieval, and no support access session model. See `docs/sec-004-zero-trust-no-migration-compatibility-audit-2026-07-05.md`.
+- `SEC-005`: Complete as of 2026-07-05 as a design gate. It defines the additive permission foundation tables, compatibility rules, seed permission set, legacy `manager`/`driver` backfill plan, helper function contracts, security audit event model, RLS strategy, RPC/feature mapping, rollout phases, and tests. See `docs/sec-005-additive-permission-foundation-design-2026-07-05.md`.
+- `SEC-006`: Complete as of 2026-07-05 as a planning gate. A fresh linked Supabase dump was attempted and failed because Docker Desktop/daemon is unavailable. The plan uses existing 2026-07-02 dashboard-export artefacts plus current migrations to define candidate migration `20260705170000_add_security_permission_foundation.sql`, required live catalog queries, seed/backfill expectations, static tests, database tests, rollout, and rollback. See `docs/sec-006-permission-foundation-catalog-refresh-candidate-plan-2026-07-05.md`.
+- `SEC-007`: Complete, deployed, and verified as of 2026-07-05. The repo contains additive migration `supabase/migrations/20260705170000_add_security_permission_foundation.sql`, static test `src/lib/security/sec007PermissionFoundation.test.ts`, and `npm run test:rules` coverage. The migration adds the security role/permission/assignment/audit foundation, seeds roles and permissions, backfills active legacy `manager`/`driver` profiles, and keeps site enforcement/export defaults/Atlas/support/RLS replacement out of scope. SEC-009 Dashboard verification passed. See `docs/sec-007-additive-permission-foundation-implementation-2026-07-05.md`.
+- `SEC-008`: Partial as of 2026-07-05. Docker Desktop still cannot start its Linux engine, but PostgreSQL 17 native client tooling captured a fresh non-empty public/storage schema and policy dump at `supabase/.temp/sec-008-live-schema-policy-dump-2026-07-05.sql`. Catalog evidence shows 63/63 captured live public/storage tables with RLS enabled, `public.profiles` forced RLS, 133 policies, and no `security_*` permission foundation tables present. Supabase Dashboard SQL captured storage buckets in `docs/sql results.txt`. Expected role backfill counts are 17 `driver` assignments plus 1 `fleet_administrator` assignment; the dataset is test-seeded, with one real fleet administrator, one driver row also representing the project owner/operator, and remaining drivers fake SQL-injected profiles. Company-role/null/inactive profile distribution remains uncaptured. See `docs/sec-008-supabase-dump-gate-2026-07-05.md`.
+- `SEC-009`: Complete as of 2026-07-05. Dashboard verification confirmed `security_roles = 10`, `security_permissions = 32`, role grants `driver = 6` and `fleet_administrator = 22`, no unexpected fleet-administrator grants for export/role-admin/support/Atlas, active assignments `driver = 17` and `fleet_administrator = 1`, no unmatched active legacy profiles, no orphaned legacy backfill assignments, organisation-only assignment scope with 18 active assignments, and compatibility view counts matching 17 active drivers plus 1 active manager. First shadow enforcement candidate selected: `patch_tachograph_import_metadata`. See `docs/sec-009-additive-permission-foundation-deploy-verify-2026-07-05.md`.
+- `SEC-010`: Implemented locally as of 2026-07-08. Migration `supabase/migrations/20260708120000_shadow_permission_patch_tachograph_import_metadata.sql` adds shadow comparison for `patch_tachograph_import_metadata` between the legacy manager/company decision and `actor_has_permission('tachograph.import.update', target_company_id, null)`, audits mismatches, catches audit failures as warnings, and does not change runtime enforcement. Deployment and live mismatch observation remain pending. See `docs/sec-010-shadow-permission-patch-tachograph-import-metadata-2026-07-08.md`.
