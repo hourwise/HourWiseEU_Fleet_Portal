@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban } from 'lucide-react';
@@ -43,8 +43,8 @@ export function ShiftPlanner() {
   const [showModal, setShowModal] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Partial<Shift> | null>(null);
 
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
-  const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
+  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+  const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
 
   const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
@@ -278,7 +278,7 @@ export function ShiftPlanner() {
                       const dayShifts = shifts.filter(s => s.driver_id === driver.id && s.date === format(day, 'yyyy-MM-dd'));
                       return (
                         <td key={day.toString()} className="p-2 relative min-h-[100px] align-top">
-                          <div className="space-y-2">
+                          <div className="min-h-[74px] space-y-2">
                             {dayShifts.map((shift) => (
                               <div
                                 key={shift.id}
@@ -328,7 +328,7 @@ export function ShiftPlanner() {
                             ))}
                             <button
                               onClick={() => handleAddShift(driver.id, day)}
-                              className="w-full py-2 border border-dashed border-brand-border rounded-lg text-slate-500 hover:text-brand-accent hover:border-brand-accent hover:bg-brand-accent/5 transition flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100"
+                              className="w-full rounded-lg border border-dashed border-brand-border/80 py-2 text-slate-500 transition flex items-center justify-center gap-1 hover:text-brand-accent hover:border-brand-accent hover:bg-brand-accent/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
                             >
                               <Plus size={14} /> <span className="text-[10px] font-black uppercase tracking-widest">Add Shift</span>
                             </button>
