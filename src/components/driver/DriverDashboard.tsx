@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CheckCircle2, ClipboardCheck, Loader2, LogOut, RefreshCw } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Loader2, LogOut, RefreshCw, Truck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   acknowledgeTachoFindingReview,
@@ -7,6 +7,7 @@ import {
   type TachoFindingReviewEvent,
   fetchTachoFindingReviewEvents,
 } from '../../lib/tacho/api';
+import { fetchDriverUpcomingShifts, type DriverUpcomingShift } from '../../lib/rota';
 import type { TachoFindingReview } from '../../lib/tacho/rules/types';
 
 type PendingNoteByReviewId = Record<string, string>;
@@ -15,11 +16,14 @@ export function DriverDashboard() {
   const { profile, signOut } = useAuth();
   const [reviews, setReviews] = useState<TachoFindingReview[]>([]);
   const [events, setEvents] = useState<Record<string, TachoFindingReviewEvent[]>>({});
+  const [upcomingShifts, setUpcomingShifts] = useState<DriverUpcomingShift[]>([]);
   const [notes, setNotes] = useState<PendingNoteByReviewId>({});
   const [loading, setLoading] = useState(true);
+  const [rotaLoading, setRotaLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rotaError, setRotaError] = useState<string | null>(null);
 
   const loadReviews = async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'initial') setLoading(true);
@@ -45,8 +49,34 @@ export function DriverDashboard() {
     }
   };
 
+  const loadRota = async () => {
+    if (!profile?.id) {
+      setUpcomingShifts([]);
+      setRotaLoading(false);
+      return;
+    }
+
+    setRotaLoading(true);
+    setRotaError(null);
+
+    try {
+      setUpcomingShifts(await fetchDriverUpcomingShifts(profile.id));
+    } catch (loadError) {
+      setRotaError(loadError instanceof Error ? loadError.message : 'Unable to load upcoming shifts.');
+    } finally {
+      setRotaLoading(false);
+    }
+  };
+
+  const refreshDashboard = async () => {
+    setRefreshing(true);
+    await Promise.all([loadReviews('refresh'), loadRota()]);
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     void loadReviews();
+    void loadRota();
     // Driver dashboard is profile-scoped; reload when the signed-in driver changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
@@ -62,6 +92,10 @@ export function DriverDashboard() {
   const acknowledgedReviews = useMemo(
     () => reviews.filter((review) => Boolean(review.driverAcknowledgedAt)),
     [reviews]
+  );
+  const todayShifts = useMemo(
+    () => upcomingShifts.filter((shift) => shift.date === formatDateOnly(new Date())),
+    [upcomingShifts]
   );
 
   const handleAcknowledge = async (review: TachoFindingReview) => {
@@ -88,15 +122,15 @@ export function DriverDashboard() {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">HourWise Driver Portal</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">Tachograph Review Actions</h1>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">Driver Operational Home</h1>
             <p className="mt-1 text-sm font-medium text-slate-600">
-              {profile?.full_name ?? profile?.email ?? 'Driver'} can acknowledge manager-reviewed tachograph actions here.
+              {profile?.full_name ?? profile?.email ?? 'Driver'} can see upcoming shifts and acknowledge manager-reviewed tachograph actions here.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => void loadReviews('refresh')}
+              onClick={() => void refreshDashboard()}
               disabled={refreshing}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
             >
@@ -116,11 +150,14 @@ export function DriverDashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <MetricCard label="Today's Shifts" value={String(todayShifts.length)} tone={todayShifts.length > 0 ? 'neutral' : 'good'} />
           <MetricCard label="Awaiting Acknowledgement" value={String(outstandingReviews.length)} tone={outstandingReviews.length > 0 ? 'warning' : 'good'} />
           <MetricCard label="Open With Manager" value={String(openReviews.length)} tone={openReviews.length > 0 ? 'neutral' : 'good'} />
           <MetricCard label="Acknowledged" value={String(acknowledgedReviews.length)} tone="good" />
         </div>
+
+        <DriverRotaPanel shifts={upcomingShifts} loading={rotaLoading} error={rotaError} />
 
         {error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">
@@ -171,6 +208,96 @@ export function DriverDashboard() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+function DriverRotaPanel({
+  shifts,
+  loading,
+  error,
+}: {
+  shifts: DriverUpcomingShift[];
+  loading: boolean;
+  error: string | null;
+}) {
+  const today = formatDateOnly(new Date());
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-sky-200 bg-white/90 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-sky-100 bg-sky-50/80 p-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-700">Upcoming Rota</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Today and the next 7 days</h2>
+          <p className="mt-1 text-sm font-medium text-slate-600">
+            Read-only view of shifts assigned by your fleet manager.
+          </p>
+        </div>
+        <CalendarDays className="h-9 w-9 text-sky-600" />
+      </div>
+
+      {error ? (
+        <div className="p-5">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">
+            {error}
+          </div>
+        </div>
+      ) : loading ? (
+        <div className="p-5">
+          <StateCard title="Loading upcoming shifts..." />
+        </div>
+      ) : shifts.length === 0 ? (
+        <div className="p-5">
+          <StateCard
+            icon={<CalendarDays className="mx-auto h-10 w-10 text-sky-600" />}
+            title="No shifts assigned for the next 7 days"
+            text="Published rota entries from your manager will appear here."
+            tone="success"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-2">
+          {shifts.map((shift) => (
+            <article
+              key={shift.id}
+              className={`rounded-2xl border p-4 ${
+                shift.date === today ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-white'
+              }`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {shift.date === today ? <Badge tone="neutral">today</Badge> : null}
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      {formatShiftDate(shift.date)}
+                    </p>
+                  </div>
+                  <p className="mt-2 flex items-center gap-2 text-lg font-black text-slate-950">
+                    <Clock3 className="h-4 w-4 text-sky-600" />
+                    {formatShiftTime(shift.startTime)} - {formatShiftTime(shift.endTime)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-950 px-3 py-2 text-white">
+                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                    <Truck className="h-3.5 w-3.5 text-sky-300" />
+                    {shift.vehicleRegistration ?? 'Vehicle TBC'}
+                  </p>
+                  {shift.vehicleDescription ? (
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                      {shift.vehicleDescription}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              {shift.notes ? (
+                <p className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-600">
+                  {shift.notes}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -333,4 +460,23 @@ function groupEventsByReviewId(events: TachoFindingReviewEvent[]) {
 function formatDateTime(value?: string | null) {
   if (!value) return 'Not recorded';
   return new Date(value).toLocaleString();
+}
+
+function formatDateOnly(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatShiftDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function formatShiftTime(value: string) {
+  return value.slice(0, 5);
 }

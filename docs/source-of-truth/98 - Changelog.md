@@ -83,12 +83,228 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-09 - Implement ROTA-002 Publishable Rota Status
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-09-004 |
+| Status | Implemented Locally / Migration Pending Deployment |
+| Owner | Product Architecture / Engineering |
+| Summary | Added publish/status/audit semantics to manager shifts and tightened driver rota visibility to published/updated shifts. |
+| Reason | ROTA-001 made rota visible to drivers; ROTA-002 adds the minimum lifecycle control needed before event-backed rota notifications. |
+| Affected Source Documents | `docs/rota-002-publish-status-audit-2026-07-09.md`, `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0022`, `ADR-0024` |
+| Capability IDs | Rota, Driver App, Security Audit |
+| Implementation Impact | High |
+| Database Impact | Additive migration `20260709100000_add_shift_publish_status_audit.sql` pending deployment. |
+| Security Impact | Tightens driver shift visibility and adds trigger-backed shift audit events; central RBAC enforcement remains unchanged. |
+| Testing Impact | Added static migration test and updated rota helper tests. |
+| Rollback Notes | Revert the migration and UI/helper changes only before deployment; after deployment, use a controlled migration rollback/superseding migration. |
+
+### Details
+
+Existing shifts are backfilled as `published`. New manager-created shifts are drafts until published. Published/updated shifts are visible to drivers; draft/cancelled shifts are hidden by query filter and RLS policy. Manager edits to published shifts mark them as `updated`, and managers can republish or cancel from the weekly roster grid.
+
+Shift lifecycle changes are captured in `shift_audit_events` through a trigger on `shifts`.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-09 - Implement ROTA-001 Driver Read-Only Rota
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-09-003 |
+| Status | Implemented Locally |
+| Owner | Product Architecture / Engineering |
+| Summary | Added a driver-facing read-only upcoming rota panel using the existing `shifts` table. |
+| Reason | The concrete implementation plan identified driver rota visibility as the smallest useful first runtime slice for the new operational spine. |
+| Affected Source Documents | `docs/rota-001-driver-read-only-rota-2026-07-09.md`, `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021` |
+| Capability IDs | Rota, Driver App |
+| Implementation Impact | Medium |
+| Database Impact | None; existing `shifts` table and RLS policy are used. |
+| Security Impact | Uses existing driver-owned `shifts` SELECT policy; no enforcement change. |
+| Testing Impact | Added rota helper test and included it in `test:rules`. |
+| Rollback Notes | Remove the driver rota panel/helper/test and revert the `test:rules` script addition if this slice is superseded. |
+
+### Details
+
+The Driver Dashboard now shows today's shift count and a read-only "Upcoming Rota" panel for today through the next 7 days. The panel shows shift date, start/end time, assigned vehicle registration, vehicle description when available, notes, and loading/empty/error states.
+
+Manager `ShiftPlanner` behaviour is unchanged. ROTA-002 should add publish/status/audit semantics before event-backed rota notifications are implemented.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-09 - Add Concrete Implementation Plan
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-09-002 |
+| Status | Implemented |
+| Owner | Product Architecture |
+| Summary | Added a concrete phased implementation plan that maps the current React/Supabase build to the new rota, event, route, asset compliance, and Atlas feature plans. |
+| Reason | New feature planning needed to be converted into an implementation sequence that fits the existing dashboard, shift planner, messaging, vehicle, driver, and security/RBAC work. |
+| Affected Source Documents | `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0028`, `ADR-0029` |
+| Capability IDs | Rota, Messaging, Events, Driver App, Fleet Operations, Asset Compliance, Atlas |
+| Implementation Impact | High |
+| Database Impact | Planned additive migrations for later phases; no runtime schema change in this documentation update. |
+| Security Impact | High; each feature phase is gated by RLS, RBAC, audit, and health-check requirements. |
+| Testing Impact | Future feature slices require tests or static query-contract checks; no test change in this documentation update. |
+| Rollback Notes | Remove the plan only if replaced by a newer implementation sequencing document and changelog entry. |
+
+### Details
+
+Created a phased implementation plan that starts with the current `shifts` and driver dashboard surfaces, then moves through publishable rota changes, event-backed messaging, driver operational home, route/job planning, asset compliance rules, deterministic Atlas operations briefing, and later driver Atlas/voice support.
+
+The recommended first runtime task is `ROTA-001`: add a driver read-only upcoming rota from the existing `shifts` table.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-09 - Add Atlas And Fleet Platform Planning Documents
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-09-001 |
+| Status | Proposed / Documented |
+| Owner | Product Architecture / Platform Architecture |
+| Summary | Added structured planning documents for Atlas as an operations platform, Atlas in the Driver App, generic work-management positioning, and enterprise architecture expansion. |
+| Reason | GPT planning notes identified durable architecture and product decisions that should be captured before implementation work starts. |
+| Affected Source Documents | `docs/adr/ADR-0029_Atlas_Driver_Assistant_And_Voice_Operations.md`, `docs/atlas-operations-platform-architecture-2026-07-09.md`, `docs/generic-work-management-vs-purpose-built-fleet-compliance-2026-07-09.md`, `docs/enterprise-architecture-specification-expansion-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0021`, `ADR-0025`, `ADR-0028`, `ADR-0029` |
+| Capability IDs | Atlas, Driver App, fleet maintenance, enterprise architecture |
+| Implementation Impact | Medium |
+| Database Impact | None Yet / Future Migration Required |
+| Security Impact | Security Gate Required |
+| Testing Impact | Future Test Coverage Required |
+| Rollback Notes | Remove or supersede these planning documents if Atlas, Driver App, or enterprise architecture direction changes before implementation. |
+
+### Details
+
+Added `ADR-0029` to define Atlas Driver Assistant and Voice Operations. It keeps Driver App Atlas behind backend permissions, audit logging, approved knowledge sources, driver context, driving-safe mode, and approved action templates.
+
+Added the Atlas Operations Platform Architecture note to separate the Atlas Operations API, Operations Assistant, and future AI harness/multi-agent orchestration layers.
+
+Added the generic work-management strategy note to clarify that monday.com-style products are UX benchmarks, not the HourWise product model. HourWise should provide native fleet compliance logic rather than asking users to build formulas and automations.
+
+Added the Enterprise Architecture Specification expansion plan to promote ADR-0022 through ADR-0029 into a future larger implementation reference.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-08 - Add SEC-012 RBAC Security Health Check Pack
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-08-003 |
+| Status | Implemented Locally |
+| Owner | Security / Platform Architecture / Engineering |
+| Summary | Added a repeatable read-only Dashboard SQL pack for RBAC/security health checks across SEC-007, SEC-010, and MIG-001. |
+| Reason | Permission-foundation and shadow-enforcement work needs a single repeatable safety dashboard before further enforcement changes. |
+| Affected Source Documents | `docs/sec-012-rbac-security-health-check-2026-07-08.md`, `docs/sec-012-rbac-security-health-check.sql`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0022`, `ADR-0024` |
+| Capability IDs | Security, RBAC, migration safety |
+| Implementation Impact | Low |
+| Database Impact | None / Read-Only SQL |
+| Security Impact | Security Gate Required |
+| Testing Impact | New Test Coverage Required |
+| Rollback Notes | Remove or supersede the SQL pack if the permission catalogue or expected live dataset changes. |
+
+### Details
+
+Added `docs/sec-012-rbac-security-health-check.sql` and static test coverage in `src/lib/security/sec012SecurityHealthCheck.test.ts`.
+
+The SQL pack checks catalogue counts, role grants, denied-default fleet administrator grants, assignment/profile consistency, organisation-only scope, compatibility view counts, export permission metadata, SEC-010 shadow mismatch counts, deployed function markers, and MIG-001 migration-history notes.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-08 - Add MIG-001 Migration Drift Repair Plan
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-08-002 |
+| Status | Repaired |
+| Owner | Platform Architecture / Engineering |
+| Summary | Recovered the missing remote migration file and documented a safe repair plan for Supabase migration-history drift. |
+| Reason | `supabase db push` is unsafe while remote history and local migration files disagree, especially after SEC-007 and SEC-010 were applied manually outside migration history. |
+| Affected Source Documents | `docs/mig-001-migration-history-drift-2026-07-08.md`, `docs/mig-001-live-migration-drift-verification.sql`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | None |
+| Capability IDs | Database migrations, deployment safety |
+| Implementation Impact | Medium |
+| Database Impact | Migration History Repair Required |
+| Security Impact | Review Required |
+| Testing Impact | Verification SQL Required |
+| Rollback Notes | Remove the recovered migration only if a different canonical source for `20260703130000` is chosen; do not alter remote migration history without marker verification. |
+
+### Details
+
+Recovered `supabase/migrations/20260703130000_add_push_token_and_account_deletion_requests.sql` from linked remote migration history.
+
+Restored tracked migration files that `supabase migration fetch --linked` overwrote, keeping only the newly recovered migration file as the intended migration-directory addition.
+
+Documented remaining local-only versions: `20260705103000`, `20260705170000`, and `20260708120000`. Live marker verification confirmed all three were already deployed, so Supabase migration history was repaired with:
+
+```powershell
+.\supabase.exe migration repair --status applied 20260705103000 20260705170000 20260708120000
+```
+
+`supabase migration list --linked` now aligns local and remote versions through `20260708120000`. A post-repair `db push --dry-run` attempt is blocked by a separate CLI login-role authentication failure, not migration-history drift.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
 ## 2026-07-08 - Add SEC-010 Shadow Permission Comparison
 
 | Field | Value |
 | --- | --- |
 | Change ID | SOT-2026-07-08-001 |
-| Status | Implemented Locally |
+| Status | Deployed / Verified |
 | Owner | Security / Platform Architecture / Engineering |
 | Summary | Added a shadow permission comparison to `patch_tachograph_import_metadata` without changing legacy runtime enforcement. |
 | Reason | SEC-009 selected this RPC as the first low-risk shadow candidate before central permission enforcement swaps begin. |
@@ -106,6 +322,8 @@ Describe the actual source-of-truth change.
 Added migration `20260708120000_shadow_permission_patch_tachograph_import_metadata.sql`.
 
 The function still enforces the legacy `manager` role and company boundary. It now calculates `actor_has_permission('tachograph.import.update', target_company_id, null)` in shadow mode and writes `shadow_permission_mismatch` audit events only when the decisions differ.
+
+Live verification on 2026-07-08 returned `shadow_permission_mismatch_count = 0` after a normal manager metadata patch, so SEC-010 is deployed and ready for observation before any enforcement swap.
 
 ### Completion Checklist
 
@@ -1341,6 +1559,7 @@ Updated related-document links pointing to `10 — Minimum Viable Product (MVP).
 - [x] Database migration impact assessed
 - [x] Security impact assessed
 - [x] Test impact assessed
+
 
 ## 2026-07-02 - Add Source Of Truth Index
 

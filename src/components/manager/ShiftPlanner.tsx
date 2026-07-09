@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, AlertCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban } from 'lucide-react';
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
+
+type ShiftStatus = 'draft' | 'published' | 'updated' | 'cancelled';
 
 interface Shift {
   id: string;
@@ -12,6 +13,11 @@ interface Shift {
   date: string;
   start_time: string;
   end_time: string;
+  status: ShiftStatus;
+  published_at: string | null;
+  published_by: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
   notes: string | null;
   profiles?: { full_name: string };
   vehicles?: { reg_number: string };
@@ -29,7 +35,6 @@ interface Vehicle {
 
 export function ShiftPlanner() {
   const { profile } = useAuth();
-  const { t } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -78,7 +83,7 @@ export function ShiftPlanner() {
         .lte('date', endDate);
 
       if (shiftsError) throw shiftsError;
-      setShifts(shiftsData || []);
+      setShifts((shiftsData || []).map(normaliseShift));
     } catch (err) {
       console.error('Error loading shift data:', err);
     } finally {
@@ -97,6 +102,11 @@ export function ShiftPlanner() {
       start_time: '08:00',
       end_time: '17:00',
       vehicle_id: vehicles[0]?.id || null,
+      status: 'draft',
+      published_at: null,
+      published_by: null,
+      cancelled_at: null,
+      cancelled_by: null,
       notes: ''
     });
     setShowModal(true);
@@ -119,6 +129,7 @@ export function ShiftPlanner() {
         date: selectedShift.date!,
         start_time: selectedShift.start_time!,
         end_time: selectedShift.end_time!,
+        status: getStatusAfterManagerEdit(selectedShift.status),
         notes: selectedShift.notes
       };
 
@@ -136,24 +147,52 @@ export function ShiftPlanner() {
       }
 
       setShowModal(false);
-      loadData();
+      void loadData();
     } catch (err) {
       console.error('Error saving shift:', err);
       alert('Failed to save shift');
     }
   };
 
-  const handleDeleteShift = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this shift?')) return;
+  const handlePublishShift = async (shift: Shift) => {
+    if (!profile?.id) return;
+
     try {
       const { error } = await supabase
         .from('shifts')
-        .delete()
-        .eq('id', id);
+        .update({
+          status: 'published',
+          published_at: new Date().toISOString(),
+          published_by: profile.id,
+          cancelled_at: null,
+          cancelled_by: null,
+        })
+        .eq('id', shift.id);
       if (error) throw error;
-      loadData();
+      void loadData();
     } catch (err) {
-      console.error('Error deleting shift:', err);
+      console.error('Error publishing shift:', err);
+      alert('Failed to publish shift');
+    }
+  };
+
+  const handleCancelShift = async (shift: Shift) => {
+    if (!profile?.id || !confirm('Cancel this shift? Drivers will no longer see it in their rota.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('shifts')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: profile.id,
+        })
+        .eq('id', shift.id);
+      if (error) throw error;
+      void loadData();
+    } catch (err) {
+      console.error('Error cancelling shift:', err);
+      alert('Failed to cancel shift');
     }
   };
 
@@ -216,7 +255,13 @@ export function ShiftPlanner() {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border">
-              {drivers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-slate-500">
+                    Loading roster...
+                  </td>
+                </tr>
+              ) : drivers.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-12 text-center text-slate-500">
                     No drivers found. Add drivers in the Drivers tab to start planning.
@@ -238,18 +283,36 @@ export function ShiftPlanner() {
                               <div
                                 key={shift.id}
                                 onClick={() => handleEditShift(shift)}
-                                className="p-2 bg-brand-dark rounded-lg border border-brand-border hover:border-brand-accent transition cursor-pointer group/shift shadow-sm"
+                                className={`p-2 rounded-lg border transition cursor-pointer group/shift shadow-sm ${getShiftCardClass(shift.status)}`}
                               >
                                 <div className="flex justify-between items-start mb-1">
                                   <div className="text-[10px] font-black text-brand-accent uppercase flex items-center gap-1">
                                     <Clock size={10} /> {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
                                   </div>
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteShift(shift.id); }}
+                                    onClick={(e) => { e.stopPropagation(); void handleCancelShift(shift); }}
                                     className="opacity-0 group-hover/shift:opacity-100 text-slate-500 hover:text-red-500 transition"
+                                    title="Cancel shift"
                                   >
                                     <X size={12} />
                                   </button>
+                                </div>
+                                <div className="mb-2 flex flex-wrap items-center gap-1">
+                                  <ShiftStatusBadge status={shift.status} />
+                                  {shift.status === 'draft' || shift.status === 'updated' ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); void handlePublishShift(shift); }}
+                                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/25"
+                                    >
+                                      <Send size={9} /> Publish
+                                    </button>
+                                  ) : null}
+                                  {shift.status === 'cancelled' ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-red-300">
+                                      <Ban size={9} /> Hidden from driver
+                                    </span>
+                                  ) : null}
                                 </div>
                                 {shift.vehicles?.reg_number && (
                                   <div className="flex items-center gap-1 text-[10px] font-bold text-white uppercase tracking-tight">
@@ -372,13 +435,63 @@ export function ShiftPlanner() {
                   type="submit"
                   className="flex-1 py-3 bg-brand-accent text-white rounded-xl font-black hover:bg-brand-accent-dark transition shadow-lg shadow-brand-accent/20 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
                 >
-                  <Save size={16} /> Save Shift
+                  <Save size={16} /> {selectedShift.id ? 'Save Update' : 'Save Draft'}
                 </button>
               </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                New shifts are saved as drafts. Publish them from the roster grid when ready for the driver.
+              </p>
             </form>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function getStatusAfterManagerEdit(status?: ShiftStatus): ShiftStatus {
+  if (!status || status === 'draft' || status === 'cancelled') return 'draft';
+  return 'updated';
+}
+
+function normaliseShift(shift: Shift): Shift {
+  return {
+    ...shift,
+    status: normaliseShiftStatus(shift.status),
+  };
+}
+
+function normaliseShiftStatus(status?: ShiftStatus): ShiftStatus {
+  return status === 'draft' || status === 'published' || status === 'updated' || status === 'cancelled'
+    ? status
+    : 'published';
+}
+
+function getShiftCardClass(status: ShiftStatus) {
+  switch (status) {
+    case 'draft':
+      return 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400';
+    case 'updated':
+      return 'bg-sky-500/10 border-sky-500/30 hover:border-sky-400';
+    case 'cancelled':
+      return 'bg-red-500/10 border-red-500/30 opacity-70 hover:border-red-400';
+    case 'published':
+    default:
+      return 'bg-brand-dark border-brand-border hover:border-brand-accent';
+  }
+}
+
+function ShiftStatusBadge({ status }: { status: ShiftStatus }) {
+  const styles: Record<ShiftStatus, string> = {
+    draft: 'bg-amber-500/15 text-amber-300',
+    published: 'bg-emerald-500/15 text-emerald-300',
+    updated: 'bg-sky-500/15 text-sky-300',
+    cancelled: 'bg-red-500/15 text-red-300',
+  };
+
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-widest ${styles[status]}`}>
+      {status}
+    </span>
   );
 }

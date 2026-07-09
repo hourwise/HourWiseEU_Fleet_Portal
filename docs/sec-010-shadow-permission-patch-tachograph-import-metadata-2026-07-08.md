@@ -1,7 +1,7 @@
 # SEC-010 - Shadow Permission Comparison For Tachograph Import Metadata Patch
 
 Date: 2026-07-08
-Status: implemented locally; deployment pending
+Status: deployed and verified
 
 ## Scope
 
@@ -63,6 +63,32 @@ npm run test:rules
 
 ## Deployment Verification
 
+Deployment verification was run on 2026-07-08 using:
+
+```text
+docs/sec-010-live-deploy-verify.sql
+```
+
+Observed result:
+
+```json
+[
+  {
+    "check_name": "shadow_permission_mismatch_count",
+    "mismatch_count": 0
+  }
+]
+```
+
+Interpretation:
+
+- The SEC-010 shadow comparison path is deployed.
+- The normal manager metadata patch produced no `shadow_permission_mismatch` audit rows.
+- The legacy manager/company decision and `actor_has_permission('tachograph.import.update', target_company_id, null)` agreed for the verification patch.
+- Runtime enforcement remains unchanged and still follows the legacy manager/company path.
+
+## Verification SQL Reference
+
 After applying the migration to Supabase, verify the function definition includes the shadow comparison:
 
 ```sql
@@ -93,6 +119,30 @@ limit 50;
 ```
 
 Expected steady-state result after SEC-009 role backfill: no mismatch rows for normal fleet administrator metadata patch activity.
+
+## Observation Gate
+
+Keep SEC-010 in shadow mode while normal application metadata patch usage occurs.
+
+Run the read-only observation script periodically:
+
+```text
+docs/sec-010-shadow-observation.sql
+```
+
+Pass condition before considering an enforcement swap:
+
+- `mismatch_count = 0`
+- `mismatch_count_24h = 0`
+- no detail rows returned by the mismatch-detail query
+- function marker checks remain `true`
+
+Fail condition:
+
+- any `shadow_permission_mismatch` row exists for `tachograph.import.update`
+- `metadata.legacy_allowed` and `metadata.permission_allowed` differ
+
+If a mismatch appears, do not swap enforcement. Investigate the affected actor profile, role assignment, company scope, and `fleet_administrator` grant state first.
 
 ## Rollback
 

@@ -20,7 +20,7 @@
     "tacho:finalize-time-007": "node tools/tacho-processing/finalize-time-007-backfill.mjs",
     "tacho:validate-timeline": "node tools/tacho-processing/validate-timeline-comparison.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:rules": "vitest run src/lib/security/sec007PermissionFoundation.test.ts src/lib/security/sec010ShadowPermission.test.ts src/lib/tacho/rules/engine.test.ts src/lib/tacho/rules/reconciliation.test.ts src/lib/tacho/adapters.test.ts src/lib/tacho/importObservability.test.ts src/lib/tacho/securityRegression.test.ts src/lib/tacho/parserRegressionFixtures.test.ts src/lib/tacho/simulator/scenarioCompiler.test.ts"
+    "test:rules": "vitest run src/lib/security/sec007PermissionFoundation.test.ts src/lib/security/sec010ShadowPermission.test.ts src/lib/security/sec012SecurityHealthCheck.test.ts src/lib/rota.test.ts src/lib/rota002PublishStatus.test.ts src/lib/tacho/rules/engine.test.ts src/lib/tacho/rules/reconciliation.test.ts src/lib/tacho/adapters.test.ts src/lib/tacho/importObservability.test.ts src/lib/tacho/securityRegression.test.ts src/lib/tacho/parserRegressionFixtures.test.ts src/lib/tacho/simulator/scenarioCompiler.test.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

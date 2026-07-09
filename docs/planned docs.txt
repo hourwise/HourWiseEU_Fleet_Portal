@@ -1,0 +1,998 @@
+After following the HourWise project for the last few weeks, I actually think you're heading in a slightly different direction to most fleet software, and that's a good thing.
+
+The list Gemini produced is excellent, but it also reflects how most established TMS (Transport Management Systems) evolved: they became collections of modules.
+
+HourWise has the opportunity to become an operating system for transport companies, where Atlas isn't just an AI chatbot—it becomes the digital operations manager.
+
+Where HourWise currently sits
+
+I'd estimate roughly:
+
+Area	Coverage
+Driver Hours / WTD	95% planned
+Tachograph Analysis	90% planned
+Fleet Management	80% planned
+Driver App	95% planned
+Compliance	90% planned
+Incident Reporting	85% planned
+Vehicle Maintenance	90% planned
+Route Planning	65% planned
+Workshop	75% planned
+Reporting	90% planned
+AI Assistant	95% planned
+Office Automation	35% planned
+
+The last category is where I think HourWise can become genuinely different.
+
+Features I think HourWise already exceeds
+
+Some things Gemini lists are already covered, but I think your implementation can be stronger.
+
+Driver App
+
+You actually go much further than many systems.
+
+You already have/planned:
+
+Work timer
+Driving timer
+POA tracking
+Break tracking
+Fatigue prediction
+Shift summaries
+Payroll integration
+Messaging
+Expenses
+Vehicle checks
+Incident reporting
+Offline sync
+Driver rota
+Route integration
+Atlas assistant
+
+Very few driver apps actually combine all of those.
+
+Fleet Maintenance
+
+You're actually building something broader.
+
+Rather than simply:
+
+Vehicle → PMI
+
+you're moving toward
+
+Asset → Rules Engine
+
+meaning every asset can have
+
+Date service
+Mileage service
+Engine hours
+whichever first
+recurring
+warning thresholds
+evidence
+documents
+reminders
+
+That is far more flexible.
+
+Compliance
+
+Atlas changes everything.
+
+Instead of
+
+"Vehicle due PMI"
+
+Atlas will eventually say
+
+Vehicle 132 requires a PMI within 9 days.
+
+The assigned driver also has a CPC expiring next month.
+
+There is an outstanding wheel torque inspection.
+
+The truck is booked onto a route that will exceed its maintenance interval.
+
+That's much closer to an operations assistant than a reporting tool.
+
+Areas I think HourWise should absolutely expand
+
+These are the ones I'd put into future ADRs.
+
+1. Company Knowledge Base
+
+I think this is almost essential.
+
+Atlas should know:
+
+company handbook
+procedures
+HR policy
+accident policy
+FORS documents
+customer instructions
+site rules
+risk assessments
+ADR instructions
+loading procedures
+
+Then staff could ask
+
+Atlas,
+
+what's Tesco's reversing procedure?
+
+or
+
+What's our tyre replacement policy?
+
+No searching PDFs.
+
+2. Company Forms Builder
+
+A really useful feature.
+
+Instead of hard coding every form.
+
+Allow office staff to build forms.
+
+Examples
+
+Vehicle Issue
+
+Near Miss
+
+Customer Complaint
+
+Holiday Request
+
+Training Record
+
+Fuel Theft
+
+Agency Driver Check
+
+Forklift Inspection
+
+Cleaning Checklist
+
+PPE Audit
+
+Site Visit
+
+Risk Assessment
+
+All without coding.
+
+3. Workflow Automation
+
+This is where Atlas could become incredible.
+
+Imagine
+
+Vehicle defect reported
+
+↓
+
+Workshop notified
+
+↓
+
+Vehicle VOR
+
+↓
+
+Planner notified
+
+↓
+
+Driver reassigned
+
+↓
+
+Customer informed
+
+↓
+
+Invoice adjusted
+
+↓
+
+Replacement vehicle allocated
+
+↓
+
+Workshop signs repair
+
+↓
+
+Vehicle automatically returns to available
+
+Entire workflow.
+
+Zero human chasing.
+
+4. Office Automation
+
+I think this becomes Atlas's biggest selling point.
+
+Examples
+
+Incoming email
+
+↓
+
+Atlas identifies customer
+
+↓
+
+Extracts booking
+
+↓
+
+Creates job
+
+↓
+
+Suggests vehicle
+
+↓
+
+Suggests driver
+
+↓
+
+Checks legal hours
+
+↓
+
+Adds calendar
+
+↓
+
+Creates invoice draft
+
+↓
+
+Manager clicks Approve.
+
+5. Smart Document Reader
+
+This is huge.
+
+Upload
+
+Insurance certificate
+
+Atlas extracts
+
+Expiry
+
+Policy Number
+
+Vehicle
+
+Insurer
+
+Reminder dates
+
+Stores everything automatically.
+
+Same for
+
+Invoices
+
+PMI sheets
+
+Driver licences
+
+Training certificates
+
+Medicals
+
+CPC
+
+Risk assessments
+
+Contracts
+
+Vehicle purchase documents
+
+6. AI Scheduler
+
+Instead of planners manually dragging jobs.
+
+Atlas could suggest
+
+Best driver
+
+Best vehicle
+
+Least fuel
+
+Lowest empty mileage
+
+Legal hours
+
+Maintenance schedule
+
+Customer priority
+
+Traffic
+
+Driver preference
+
+Previous routes
+
+Weather
+
+Bridge restrictions
+
+It's almost a planning assistant.
+
+7. Compliance Score
+
+Every driver.
+
+Every vehicle.
+
+Every depot.
+
+Gets a score.
+
+Examples
+
+Driver Compliance
+
+infringements
+walkaround completion
+incidents
+harsh braking
+fuel economy
+attendance
+
+Vehicle
+
+overdue inspections
+defects
+PMIs
+MOT
+downtime
+
+Depot
+
+outstanding defects
+average repair time
+fuel efficiency
+accident rate
+
+Atlas can explain why the score changed.
+
+8. Digital Operations Centre
+
+This excites me most.
+
+Imagine opening HourWise.
+
+Atlas says
+
+Good morning Phil.
+
+Yesterday
+
+✓ 128 jobs completed
+
+✓ 3 defects raised
+
+✓ 2 repaired
+
+✓ Fuel spend down 6%
+
+✓ One driver exceeded working time.
+
+Today's priorities
+
+⚠ Driver Smith CPC expires tomorrow.
+
+⚠ Vehicle 102 PMI in 3 days.
+
+⚠ Two customer invoices awaiting approval.
+
+⚠ Trailer 44 still VOR.
+
+⚠ Four walkaround checks outstanding.
+
+⚠ Agency driver still missing licence verification.
+
+That's something I haven't really seen done well.
+
+9. Predictive AI
+
+Later.
+
+Much later.
+
+But possible.
+
+Atlas learns.
+
+For example
+
+"Every November this vehicle develops ABS faults."
+
+"This driver always exceeds hours on Fridays."
+
+"This customer always books extra work on Mondays."
+
+"Fuel usage is increasing."
+
+"Brake wear is accelerating."
+
+"This depot is seeing more tyre failures."
+
+Instead of reporting history...
+
+predict future.
+
+10. Business Intelligence
+
+Imagine asking
+
+Atlas,
+
+Why did profit fall this month?
+
+Atlas answers
+
+Because
+
+Fuel increased 8%
+Empty mileage increased 14%
+Driver overtime increased 6%
+Two vehicles off road
+Customer ABC reduced work
+Agency spend increased
+
+Not a dashboard.
+
+An explanation.
+
+The biggest opportunity
+
+I think the biggest gap isn't another transport feature—it's turning Atlas into the automation layer that connects every part of the business.
+
+Today, transport managers spend much of their day:
+
+Reading emails.
+Chasing paperwork.
+Updating spreadsheets.
+Checking expiry dates.
+Creating reminders.
+Copying information between systems.
+Answering routine questions.
+Looking for documents.
+Following up outstanding actions.
+
+Those are exactly the kinds of repetitive, rules-based tasks that an AI assistant can automate or dramatically reduce.
+
+If you build Atlas as an operations platform rather than simply a chat interface, HourWise could evolve from being "fleet management software with AI" into an AI-first transport operating system. The transport modules become the trusted data source, while Atlas becomes the layer that interprets information, coordinates workflows, surfaces risks before they become problems, and automates much of the administrative work that currently consumes transport offices.
+
+Looking back over everything we've designed together, I'd estimate HourWise already covers around 85–90% of what most premium fleet/compliance platforms offer. The remaining opportunity isn't to keep adding isolated modules; it's to connect them so that Atlas can reason across them. That's the part that could make HourWise feel fundamentally different from established competitors rather than simply matching their feature lists.I think it's definitely worth studying, but I wouldn't build Atlas around it.
+
+From what I've learned about HourWise and where you're taking it, I think Strands solves a different problem. It's an open-source SDK from Strands Agents designed to make it easier to build AI agents and orchestrate tools, with support for multiple model providers, not just AWS.
+
+Where I think Strands is useful
+
+Imagine Atlas five years from now.
+
+Manager
+
+↓
+
+Atlas
+
+↓
+
+Planner Agent
+
+Compliance Agent
+
+Maintenance Agent
+
+Document Agent
+
+Reporting Agent
+
+HR Agent
+
+↓
+
+Portal
+
+That is exactly the sort of multi-agent orchestration framework Strands is aimed at. It handles agent coordination, tool calling, memory patterns and model integration so you don't have to invent those pieces yourself.
+
+But that's not what Atlas is today
+
+This is the important distinction.
+
+I don't actually think Atlas should begin life as an "AI Agent".
+
+I think it should begin life as an Operations API.
+
+For example:
+
+Atlas
+
+↓
+
+getDriversNearWeeklyLimit()
+
+↓
+
+SQL
+
+↓
+
+Return JSON
+
+or
+
+Atlas
+
+↓
+
+getVehiclesDuePMI()
+
+↓
+
+Service Rule Engine
+
+↓
+
+Return JSON
+
+or
+
+Atlas
+
+↓
+
+startIncidentWorkflow()
+
+↓
+
+Incident API
+
+No LLM involved.
+
+I think Atlas needs three layers
+
+This is where I think our architecture has evolved.
+
+Layer 1 — Intelligence API (MVP)
+
+Not AI.
+
+Just a clean API.
+
+Atlas API
+
+Drivers
+
+Vehicles
+
+Maintenance
+
+Compliance
+
+Planner
+
+Reports
+
+Messaging
+
+Documents
+
+Every function returns structured JSON.
+
+This becomes your public/internal API.
+
+Layer 2 — Operations Assistant
+
+Now add natural language.
+
+"Who's due a PMI?"
+
+↓
+
+Intent
+
+↓
+
+Atlas API
+
+↓
+
+Result
+
+Still no reasoning required.
+
+Just intent mapping.
+
+Layer 3 — AI Harness
+
+Only now would I introduce something like Strands.
+
+Because now the LLM has tools.
+
+Atlas
+
+↓
+
+Tool
+
+↓
+
+getDrivers()
+
+↓
+
+Tool
+
+↓
+
+createShift()
+
+↓
+
+Tool
+
+↓
+
+sendMessage()
+
+↓
+
+Tool
+
+↓
+
+searchKnowledgeBase()
+
+↓
+
+Tool
+
+↓
+
+analyseTacho()
+
+That's where frameworks like Strands really shine.
+
+The mistake lots of people make
+
+They start here:
+
+ChatGPT
+
+↓
+
+SQL
+
+↓
+
+Database
+
+That's fragile.
+
+I'd rather HourWise look like this:
+
+LLM
+
+↓
+
+Atlas API
+
+↓
+
+Business Rules
+
+↓
+
+Database
+
+The LLM never touches SQL directly.
+
+It only uses approved tools.
+
+That gives you:
+
+permissions
+validation
+auditing
+logging
+business rules
+security
+versioning
+
+Which is exactly what you'll want in a compliance-focused product.
+
+This also future-proofs HourWise
+
+Today:
+
+Atlas App
+
+Tomorrow:
+
+Voice Atlas
+WhatsApp Atlas
+Microsoft Teams Atlas
+Slack Atlas
+Customer Portal Atlas
+Driver App Atlas
+API Atlas
+
+They all call the same underlying Atlas API.
+
+The interface changes.
+
+The intelligence layer doesn't.
+
+My recommendation
+
+I wouldn't adopt Strands today.
+
+I would read through it carefully because it contains good architectural ideas and patterns.
+
+I would design Atlas so that if, in two or three years' time, you decide to use Strands, LangChain, LangGraph, or another orchestration framework, it simply becomes the layer above your Atlas API—not a replacement for it.
+
+If I were writing the roadmap today, it would look like this:
+
+Phase 1 (MVP)
+
+✅ Atlas Operations API
+✅ Predefined SQL queries
+✅ Daily operational briefing
+✅ Rule-based recommendations
+✅ Workflow triggers
+
+Phase 2
+
+Natural language intent recognition
+Company knowledge base
+Document search
+Voice input
+
+Phase 3
+
+LLM integration
+Multi-step reasoning
+Planning assistance
+Cross-module analysis
+
+Phase 4
+
+Multi-agent orchestration (this is where something like Strands becomes very interesting)
+Specialist Compliance Agent
+Planning Agent
+Workshop Agent
+Finance Agent
+Document Agent
+
+One thing I would add to the Source of Truth after this discussion is an Atlas Architecture section that explicitly separates:
+
+Business Intelligence Layer (your rules and APIs),
+Tool Layer (safe operations Atlas can perform), and
+Agent Layer (the optional LLM orchestration).
+
+I think that separation is what will make Atlas robust. It means your core transport knowledge and workflows remain under your control, while AI frameworks like Strands can be swapped in or out over time as the technology evolves.
+
+If we could add atlas to the drivers app, how would this work? Could it be as simple as using the already built supabase push to a channel that only atlas can read, so the driver can type or better speak his question, atlas checks the company knowledge base and responds, for instance driver says atlas i am approaching tesco Milton Keynes (to use your exampl) what is their unloading procedure? Atlas will then respond with the info, text or spoken. (Spoken better if the driver is driving) in the future, the driver could say I am approaching dpd hub 2, what is their procedure etc atlas could respond with info and ask would you like me to message and let them know you are *checks notes* 12 minutes out?
+Thought for a couple of seconds
+
+Yes — that’s exactly the right shape for Atlas in the driver app, but I would avoid making it “Supabase push directly to Atlas” as the main architecture.
+
+Better pattern:
+
+Driver App
+↓
+Atlas Request API
+↓
+Permissions + audit log
+↓
+Company knowledge base / job data / site procedures
+↓
+Atlas Response
+↓
+Supabase realtime / push / app response
+↓
+Text + optional spoken reply
+
+Supabase push/realtime can be the delivery channel, but not the “brain”.
+
+How it could work in MVP
+
+Driver asks:
+
+Atlas, I’m approaching Tesco Milton Keynes. What’s the unloading procedure?
+
+The app sends a structured request:
+
+driver_id
+company_id
+current_job_id
+current_location
+question
+mode: voice/text
+
+Atlas checks:
+
+Can this driver access this company?
+Is this driver assigned to this job/site?
+Is there a site procedure for Tesco Milton Keynes?
+Is the document approved/current?
+
+Then responds:
+
+Tesco Milton Keynes unloading procedure:
+Use Gate 3 goods entrance.
+Report to the transport office before entering the yard.
+Hi-vis and safety boots required.
+Reverse only with banksman guidance.
+Do not break seal until instructed by warehouse staff.
+
+Then the app can display it and optionally read it aloud.
+
+Voice version
+
+Voice flow would be:
+
+Driver speech
+↓
+Speech-to-text
+↓
+Atlas request
+↓
+Knowledge lookup
+↓
+Response text
+↓
+Text-to-speech
+
+For MVP, I’d keep voice simple:
+
+Push-to-talk button
+No always-listening
+No wake word yet
+No complex conversation memory
+Read-only answers only
+
+That keeps it safer and cheaper.
+
+Very important driving safety rule
+
+If the vehicle is moving, Atlas should use a driving-safe mode:
+
+spoken answers only
+short responses
+no long document reading
+no typing required
+no complex choices
+large “repeat / stop / call office” buttons
+no distracting UI
+
+For example:
+
+Tesco Milton Keynes: use Gate 3. Report to transport office. Hi-vis required. Wait for banksman before reversing. I’ll send the full procedure to your screen when stopped.
+
+Future version: proactive Atlas
+
+Your DPD example is exactly where it gets powerful.
+
+Driver says:
+
+Atlas, I’m approaching DPD Hub 2. What’s their procedure?
+
+Atlas replies:
+
+DPD Hub 2 requires arrival notice 10 minutes before gate entry. You are approximately 12 minutes away. Would you like me to message them?
+
+Driver says:
+
+Yes.
+
+Atlas sends:
+
+Vehicle HW12 ABC is approximately 12 minutes from DPD Hub 2 for booking 14:30.
+
+But that should go through a controlled workflow:
+
+Atlas suggests action
+↓
+Driver confirms
+↓
+System sends approved message template
+↓
+Action logged
+
+No freeform AI messaging to customers at first.
+
+What this needs in the docs
+
+I would add this as a proper Atlas/Driver App capability:
+
+ATLAS-DRIVER-001: Driver Knowledge Assistant
+ATLAS-DRIVER-002: Site Procedure Lookup
+ATLAS-DRIVER-003: Driving-Safe Voice Mode
+ATLAS-DRIVER-004: Job Context Awareness
+ATLAS-DRIVER-005: Approved Action Suggestions
+ATLAS-DRIVER-006: Customer Arrival Notification Workflow
+My recommendation
+
+Yes, add Atlas to the driver app — but MVP should be basic, safe, and mostly non-AI:
+
+Driver asks typed or spoken question.
+Atlas searches approved company/site knowledge.
+Atlas answers with short text.
+App can read the answer aloud.
+Atlas can suggest limited approved actions later.
+
+This would make the driver app feel much more valuable without turning it into a risky AI free-for-all.Absolutely. The document generation tool appears to have had a temporary error just now, so I couldn't generate the downloadable file.
+
+I think this should become ADR-0028 — Atlas Driver Assistant & Voice Operations, and I'd include the following sections:
+
+Purpose — Why Atlas belongs in the driver app from MVP.
+Architecture — Driver App → Atlas Operations API → Business Rules → Knowledge Base → Response.
+MVP Features — Typed/voice questions, site procedures, company knowledge, spoken responses, driving-safe mode.
+Security & Permissions — Company isolation, audit logs, approved actions only.
+Capability IDs — ATLAS-DRIVER-001 through ATLAS-DRIVER-008.
+Future Vision — Proactive assistance, ETA messaging, customer workflows, predictive advice.
+
+I'd also add one section that I think will become very important:
+
+Driver Context Engine
+
+Rather than asking the driver to explain everything, Atlas should already know:
+
+Current shift
+Current job
+Current trailer
+Current vehicle
+Current customer
+Current delivery site
+Remaining driving time
+Remaining working time
+Current location
+Planned ETA
+
+That means the driver can simply say:
+
+"Atlas, what do I need to know when I arrive?"
+
+And Atlas already knows where they're arriving.
+
+Or:
+
+"Atlas, I'm delayed."
+
+Atlas already knows:
+
+Which customer is affected.
+The current ETA.
+Whether the delay risks a drivers' hours infringement.
+Whether the transport office should be notified.
+Whether another vehicle may be required.
+
+That moves Atlas from a knowledge lookup tool to a genuine transport assistant.
+
+I also think we should update the Source of Truth to make this explicit:
+
+Atlas is not an AI chatbot. It is the primary operational interface for HourWise.
+
+Everything we've discussed over the last week reinforces that philosophy, and I think it will become one of HourWise's biggest differentiators.
+
+When the document generation is working normally again, I'd be happy to produce this as a polished ADR-0028 in your standard format, ready to drop straight into your /docs/adr/ folder.

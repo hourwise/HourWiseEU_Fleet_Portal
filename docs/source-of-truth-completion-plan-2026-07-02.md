@@ -33,7 +33,7 @@ Source set contains 39 Markdown files:
 - `99`: glossary
 - `index`: stable source-of-truth document index
 
-Managed ADR records in `docs/adr` now contain 10 Markdown files:
+Managed ADR records in `docs/adr` now contain 11 Markdown files:
 
 - `ADR-0019`: Windows helper local outbox and sync semantics
 - `ADR-0020`: rota, job planning, route estimates, and compliance-aware updates
@@ -45,6 +45,7 @@ Managed ADR records in `docs/adr` now contain 10 Markdown files:
 - `ADR-0026`: reporting and organisational aggregation
 - `ADR-0027`: resource assignment and transfer lifecycle
 - `ADR-0028`: preventive maintenance and asset compliance rule engine
+- `ADR-0029`: Atlas Driver Assistant and voice operations
 
 Existing supporting documents also found:
 
@@ -200,6 +201,7 @@ These decisions are called out or implied by the source set and should be resolv
 | Reporting aggregation permission model | `ADR-0026`, `20`, `21`, `22` | `[SECURITY-GATE]`, `[DEFER-P1]` | Driver, vehicle, site, region, and organisation reports need upward aggregation without leaking unauthorised site data |
 | Resource assignment and transfer lifecycle | `ADR-0027`, `21`, `ADR-0021`, `ADR-0023` | `[DECISION-ADR]`, `[DEFER-P1]` | Driver/vehicle site transfers must preserve payroll, compliance, maintenance, messages, shifts, and audit history through events |
 | Preventive maintenance and asset compliance rule engine | `ADR-0028`, `17`, `20`, `21`, `22`, `23`, `ADR-0023`, `ADR-0024`, `ADR-0025`, `ADR-0026` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Asset rules, readings, due states, evidence, notifications, Atlas summaries, site visibility, and reporting exports need schema, permission, stale-reading, and audit design before implementation |
+| Atlas Driver Assistant and voice operations | `ADR-0029`, `16`, `19`, `22`, `ADR-0021`, `ADR-0025` | `[SECURITY-GATE]`, `[DEFER-P1]` | Driver-facing Atlas requires approved knowledge sources, driving-safe mode, permissions, audit logging, and controlled action templates before implementation |
 
 ## Implementation Completion Sequence
 
@@ -383,6 +385,7 @@ Exit criteria:
 | `docs/adr/ADR-0026 - Reporting And Organisational Aggregation` | `[SECURITY-GATE]`, `[DEFER-P1]` | Accepted reporting direction; defer broad aggregation until site hierarchy and RBAC are implemented and permission tests prove no cross-site leakage |
 | `docs/adr/ADR-0027 - Resource Assignment And Transfer Lifecycle` | `[DECISION-ADR]`, `[DEFER-P1]` | Accepted direction; implement only after assignment event model and transfer history preserve compliance, payroll, maintenance, messaging, and historical shifts |
 | `docs/adr/ADR-0028 - Preventive Maintenance And Asset Compliance Rule Engine` | `[DECISION-ADR]`, `[SECURITY-GATE]`, `[DEFER-P1]` | Proposed direction; do not build until asset/rule/reading/due-state/evidence schema, stale-reading logic, site permissions, notification rules, Atlas boundaries, and reporting/export audit are specified |
+| `docs/adr/ADR-0029 - Atlas Driver Assistant And Voice Operations` | `[SECURITY-GATE]`, `[DEFER-P1]` | Proposed direction; do not build until Atlas Operations API, approved knowledge base, driver context, driving-safe UX, audit logging, and permission checks are designed |
 | `99 - Glossary.md` | `[SOT-OK]` | Keep authoritative; update during implementation naming decisions |
 
 ## Checklist Roll-Up
@@ -446,6 +449,7 @@ Create a concrete backlog with these initial items:
 34. `SEC-007`: Implement the additive permission foundation migration and static tests. Status: complete/deployed/verified 2026-07-05; migration/test files are present, `npm run test:rules` passes, and SEC-009 Dashboard verification passed. See `docs/sec-007-additive-permission-foundation-implementation-2026-07-05.md`.
 35. `SEC-008`: Capture the fresh linked Supabase dump/evidence after Docker installation. Status: partial 2026-07-05; PostgreSQL 17 native `pg_dump` captured fresh public/storage schema and policy evidence without Docker, Supabase Dashboard SQL captured storage buckets, and expected role backfill counts are 17 `driver` assignments plus 1 `fleet_administrator` assignment. Company-role/null/inactive profile distribution remains uncaptured. See `docs/sec-008-supabase-dump-gate-2026-07-05.md`.
 36. `SEC-009`: Deploy and verify additive permission foundation. Status: complete 2026-07-05; Dashboard verification confirmed expected seed counts, grant counts, backfill counts, denied defaults, no unmatched legacy profiles, organisation-only assignment scope, and compatibility view counts. First shadow enforcement candidate selected: `patch_tachograph_import_metadata`. See `docs/sec-009-additive-permission-foundation-deploy-verify-2026-07-05.md`.
+37. `ADR-0029`: Atlas Driver Assistant and Voice Operations. Status: proposed 2026-07-09 in `docs/adr`; do not build until Atlas Operations API, approved knowledge base, driver context engine, driving-safe mode, audit logging, and action-template boundaries are specified.
 
 ## Definition Of Complete
 
@@ -466,7 +470,7 @@ Phase 0 and Phase 1 are substantially complete for the current MVP thread. The p
 
 `TIME-008` is now blocked/deferred because no real vehicle-unit import is available. Keep the gate open while waiting for tachograph unit manufacturer responses; do not use synthetic VU data to claim the vehicle-unit timeline acceptance gate.
 
-`SEC-010` is implemented locally and awaits deployment. The recommended next task is to apply the SEC-010 migration, run one normal manager metadata patch, and inspect shadow mismatch audit rows before any enforcement swap.
+`SEC-010` is deployed and verified. A normal manager metadata patch produced `shadow_permission_mismatch_count = 0`, so the legacy manager/company decision and `actor_has_permission('tachograph.import.update', target_company_id, null)` agreed for the first shadow check. Do not swap enforcement yet; observe additional normal usage before replacing the legacy guard.
 
 Rationale:
 
@@ -481,10 +485,11 @@ Rationale:
 
 Recommended sequence:
 
-1. Deploy `SEC-010`: Apply `supabase/migrations/20260708120000_shadow_permission_patch_tachograph_import_metadata.sql`, run a normal manager metadata patch, and verify no unexpected `shadow_permission_mismatch` rows.
-2. `HELPER-004`: Implement the `ADR-0019` Phase 2 encrypted retry cache only after Phase 1 remains stable and the ADR acceptance criteria are met.
-3. `TIME-008`: Resume only when a real vehicle-unit tachograph import is available, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
-4. Certified helper export planning: select the standards-certified `.C1B/.DDD` encoding strategy separately from the read-only capture path.
+1. Run `SEC-012`: Use `docs/sec-012-rbac-security-health-check.sql` as the repeatable Dashboard health check before further shadow/enforcement work.
+2. Observe `SEC-010`: Keep the shadow comparison in place through additional normal `patch_tachograph_import_metadata` usage. Do not consider an enforcement swap unless SEC-012 shadow mismatch counts stay at `0`.
+3. `HELPER-004`: Implement the `ADR-0019` Phase 2 encrypted retry cache only after Phase 1 remains stable and the ADR acceptance criteria are met.
+4. `TIME-008`: Resume only when a real vehicle-unit tachograph import is available, then rerun timeline inspection/validation until driver-card and VU imports both have current count-aligned timeline generations.
+5. Certified helper export planning: select the standards-certified `.C1B/.DDD` encoding strategy separately from the read-only capture path.
 
 If reader reliability becomes more urgent than platform security modelling, swap steps 1 and 2, but do not build Tachomaster-style bulk sync before the constrained retry cache is proven.
 
@@ -503,6 +508,10 @@ New ADR impact:
 - `ADR-0027` is accepted and requires driver/vehicle assignment transfers to preserve operational and compliance history through auditable events.
 - `ADR-0028` is proposed and adds a future preventive maintenance and asset compliance rule engine covering date, mileage, engine-hour, whichever-comes-first, stale-reading, evidence, notification, Atlas, and multi-site behaviours.
 - `ADR-0028` should not displace `SEC-005`; it depends on the same organisation/site/RBAC foundation, plus a dedicated asset/rule/reading/evidence schema plan.
+- `ADR-0029` is proposed and adds a future Driver App Atlas assistant with typed/voice requests, site procedure lookup, driving-safe responses, driver context, and approved action suggestions. Build is deferred until the Atlas Operations API, approved knowledge base, permissions, audit logging, and driver safety model are designed.
+- `docs/atlas-operations-platform-architecture-2026-07-09.md` clarifies that Atlas should be built as an Operations API and explanation layer over deterministic HourWise systems before any multi-agent orchestration.
+- `docs/generic-work-management-vs-purpose-built-fleet-compliance-2026-07-09.md` records monday.com and generic-board products as UX benchmarks, not product models.
+- `docs/enterprise-architecture-specification-expansion-plan-2026-07-09.md` proposes expanding the enterprise ADR set into a larger implementation reference before broad multi-site feature work.
 
 Current implementation gate:
 
@@ -538,4 +547,10 @@ Current implementation gate:
 - `SEC-007`: Complete, deployed, and verified as of 2026-07-05. The repo contains additive migration `supabase/migrations/20260705170000_add_security_permission_foundation.sql`, static test `src/lib/security/sec007PermissionFoundation.test.ts`, and `npm run test:rules` coverage. The migration adds the security role/permission/assignment/audit foundation, seeds roles and permissions, backfills active legacy `manager`/`driver` profiles, and keeps site enforcement/export defaults/Atlas/support/RLS replacement out of scope. SEC-009 Dashboard verification passed. See `docs/sec-007-additive-permission-foundation-implementation-2026-07-05.md`.
 - `SEC-008`: Partial as of 2026-07-05. Docker Desktop still cannot start its Linux engine, but PostgreSQL 17 native client tooling captured a fresh non-empty public/storage schema and policy dump at `supabase/.temp/sec-008-live-schema-policy-dump-2026-07-05.sql`. Catalog evidence shows 63/63 captured live public/storage tables with RLS enabled, `public.profiles` forced RLS, 133 policies, and no `security_*` permission foundation tables present. Supabase Dashboard SQL captured storage buckets in `docs/sql results.txt`. Expected role backfill counts are 17 `driver` assignments plus 1 `fleet_administrator` assignment; the dataset is test-seeded, with one real fleet administrator, one driver row also representing the project owner/operator, and remaining drivers fake SQL-injected profiles. Company-role/null/inactive profile distribution remains uncaptured. See `docs/sec-008-supabase-dump-gate-2026-07-05.md`.
 - `SEC-009`: Complete as of 2026-07-05. Dashboard verification confirmed `security_roles = 10`, `security_permissions = 32`, role grants `driver = 6` and `fleet_administrator = 22`, no unexpected fleet-administrator grants for export/role-admin/support/Atlas, active assignments `driver = 17` and `fleet_administrator = 1`, no unmatched active legacy profiles, no orphaned legacy backfill assignments, organisation-only assignment scope with 18 active assignments, and compatibility view counts matching 17 active drivers plus 1 active manager. First shadow enforcement candidate selected: `patch_tachograph_import_metadata`. See `docs/sec-009-additive-permission-foundation-deploy-verify-2026-07-05.md`.
-- `SEC-010`: Implemented locally as of 2026-07-08. Migration `supabase/migrations/20260708120000_shadow_permission_patch_tachograph_import_metadata.sql` adds shadow comparison for `patch_tachograph_import_metadata` between the legacy manager/company decision and `actor_has_permission('tachograph.import.update', target_company_id, null)`, audits mismatches, catches audit failures as warnings, and does not change runtime enforcement. Deployment and live mismatch observation remain pending. See `docs/sec-010-shadow-permission-patch-tachograph-import-metadata-2026-07-08.md`.
+- `SEC-010`: Deployed and verified as of 2026-07-08. Migration `supabase/migrations/20260708120000_shadow_permission_patch_tachograph_import_metadata.sql` adds shadow comparison for `patch_tachograph_import_metadata` between the legacy manager/company decision and `actor_has_permission('tachograph.import.update', target_company_id, null)`, audits mismatches, catches audit failures as warnings, and does not change runtime enforcement. Live verification returned `shadow_permission_mismatch_count = 0` after a normal manager metadata patch. See `docs/sec-010-shadow-permission-patch-tachograph-import-metadata-2026-07-08.md`.
+- `MIG-001`: Repaired as of 2026-07-08. Missing remote migration `20260703130000_add_push_token_and_account_deletion_requests.sql` was recovered locally, accidental fetch overwrites were restored, live markers verified that `20260705103000`, `20260705170000`, and `20260708120000` were already deployed, and Supabase migration history was repaired for those versions. `supabase migration list --linked` now aligns local and remote versions through `20260708120000`; `db push --dry-run` is blocked by a separate CLI login-role authentication issue, not migration drift. See `docs/mig-001-migration-history-drift-2026-07-08.md`.
+- `SEC-012`: Implemented locally as of 2026-07-08. The repo now has a repeatable read-only RBAC/security health-check SQL pack covering catalogue counts, grant counts, denied defaults, assignment gaps, orphaned assignments, organisation-only scope, compatibility view counts, export permission metadata, SEC-010 mismatch counts, deployed function markers, and MIG-001 migration-history notes. See `docs/sec-012-rbac-security-health-check-2026-07-08.md`.
+- `PLAN-2026-07-09`: New planning documents created from supplied GPT planning notes. Added `ADR-0029` for Atlas Driver Assistant and Voice Operations, an Atlas Operations Platform Architecture note, a generic work-management versus purpose-built fleet compliance strategy note, and an Enterprise Architecture Specification expansion plan. These are planning/source-of-truth documents only; no runtime implementation changed.
+- `IMPL-001`: Concrete implementation sequencing is now defined as of 2026-07-09. See `docs/hourwise-concrete-implementation-plan-2026-07-09.md`. Recommended first runtime feature slice is `ROTA-001`: add a driver read-only upcoming rota from the existing `shifts` table, then layer publish/audit semantics, event-backed messaging, driver operational home, route/job planning, asset compliance rules, and deterministic Atlas operations briefing.
+- `ROTA-001`: Implemented locally as of 2026-07-09. Driver Dashboard now has a read-only upcoming rota panel backed by the existing `shifts` table and existing driver-owned RLS SELECT policy. No migration or manager editing behaviour changed. See `docs/rota-001-driver-read-only-rota-2026-07-09.md`.
+- `ROTA-002`: Implemented locally as of 2026-07-09; migration pending deployment. Added additive shift publish/status/audit migration, manager draft/publish/cancel UI, and driver filtering to published/updated own shifts. See `docs/rota-002-publish-status-audit-2026-07-09.md`.

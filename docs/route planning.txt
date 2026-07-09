@@ -1,0 +1,1034 @@
+A feature i started implementing into hourwise but never finished is in two parts. The portal has a rota system that appears on the app for the fleet drivers, its not quite finished but will allow the manager to set a rota several weeks in advance and assign vehicles and trailers if needed through a drop down menu. So the driver will see an entire week or months shifts and his assigned vehicle within the app. If a driver is off sick or late another driver can be assigned, the messaging system (which also needs finishing) can be employed. The second part is a job/route planner. I want to import open route service https://openrouteservice.org/ so that the planner will be able to set jobs with locations ie start at depot, drive to job A, drive to job B, drive to job C, return to depot. The map service is not strong enough to actually trust for live mapping but should be able to give an estimate for a hgv route time from a to b to c. The driver will receive his route in the same place as his rota, maybe under another tab so the route can be updated daily. The mapping service for the driver will give an estimated time to travel between jobs but has the drivers actual drive/work time so will be able to say time to next drop is approx 1hr 15m without traffic, you only have 45 minutes of work available atlas recommends to take a break at this location. It is only ever advisory and the driver will still actually have to map their route using a proper service like Tom Tom hgv for routing and traffic. Possible future app may involve opening something like copilot hgv, similar to dpd Saturn service or microlise.Absolutely. I would actually treat this as one architectural decision covering both applications, because the portal and app are really two clients of the same backend.
+
+One thing I would change from the initial idea is this:
+
+The app should never communicate directly with the portal.
+
+Instead, the architecture should be:
+
+                    OpenRouteService API
+                           │
+                           │
+                    Route Calculation
+                           │
+                           ▼
+                 HourWise Backend (Supabase)
+         ┌────────────────────────────────────┐
+         │ Rotas                             │
+         │ Jobs                              │
+         │ Route Plans                       │
+         │ Vehicles                          │
+         │ Messaging                         │
+         │ Atlas Recommendations             │
+         └────────────────────────────────────┘
+                 ▲                    ▲
+                 │                    │
+         Fleet Portal          Mobile App
+        (Manager edits)     (Driver consumes)
+
+That gives you several advantages:
+
+Only one place stores route data.
+Only one place stores rota changes.
+Drivers instantly receive updates.
+Atlas has access to everything.
+Future web portal, iOS and Android all behave identically.
+No security risk from exposing portal endpoints.
+API usage
+
+Only the Portal needs to call OpenRouteService.
+
+Example:
+
+Manager creates route
+
+Depot
+↓
+Job A
+↓
+Job B
+↓
+Depot
+
+↓
+
+Portal sends request to OpenRouteService
+
+↓
+
+OpenRouteService returns
+
+geometry
+distance
+estimated duration
+legs
+waypoint data
+
+↓
+
+Portal stores this inside Supabase.
+
+The app never calls OpenRouteService.
+
+Instead it simply downloads:
+
+Today's Route
+
+Stop 1
+
+Stop 2
+
+Stop 3
+
+Estimated drive
+
+Estimated arrival
+
+Atlas advice
+
+This has several benefits.
+
+Lower API costs
+Faster app
+Offline availability
+Consistent calculations
+Easier caching
+Future refresh
+
+If traffic changes or the manager edits the route:
+
+Portal recalculates
+
+↓
+
+Updates database
+
+↓
+
+Realtime notification
+
+↓
+
+Driver app refreshes.
+
+Atlas integration
+
+This is where HourWise becomes much stronger than competitors.
+
+Atlas isn't navigating.
+
+It is analysing.
+
+Example:
+
+Current driving
+
+3h 58m
+
+Next leg
+
+1h 05m
+
+Remaining legal drive
+
+32m
+
+Atlas:
+
+You are unlikely to complete the next leg before reaching the driving limit. Consider taking a 45 minute break before departure.
+
+Or
+
+Delaying departure by 30 minutes avoids arriving before the customer's delivery window.
+
+Or
+
+Vehicle inspection is due tomorrow. This vehicle has another assignment afterwards.
+
+Those recommendations come from HourWise's own data combined with the route estimate.
+
+ADR I'd create
+
+I'd actually create three new architecture documents:
+
+ADR-0020 — Centralised Route Planning Architecture
+
+Defines that all routing calculations occur server-side and are shared between all HourWise clients.
+
+ADR-0021 — Driver Rota & Job Assignment Synchronisation
+
+Defines how rotas, vehicles, trailers, jobs and messages are synchronised between Portal and App using Supabase Realtime and push notifications.
+
+ADR-0022 — Advisory Navigation & Compliance Intelligence
+
+Defines an important product philosophy:
+
+HourWise is not a sat-nav.
+Navigation remains the responsibility of approved HGV navigation software.
+HourWise provides planning, compliance, ETA estimation and AI recommendations only.
+Atlas combines route estimates with tachograph data to recommend legally compliant break locations and highlight potential scheduling conflicts.
+
+I think these ADRs are strategically important because they establish one of HourWise's biggest differentiators. Most fleet systems either plan jobs or monitor tachographs. HourWise can plan work while understanding the driver's available legal time, making compliance part of the planning process rather than something checked after the fact. That's a capability worth documenting before implementation so it guides future development across both the portal and the mobile app.
+
+We need to also allow planning to be able to enter a job time ie how long at the job the driver is expected to be. It also all needs to be flexible to allow for unexpected delays. But for the driver any delays should also tie into his working/driving time. For instance if a job is expected to take 20 minutes but is delayed to 45 the route warning will update
+
+That delay behaviour is important enough to include in the ADR, because it changes the system from a static route sheet into a live operational plan tied to legal time.
+
+Thought for 11s
+
+Yes — add this as a core principle:
+
+Planned job duration is an estimate. Actual job duration must update the driver’s remaining work/driving availability and recalculate route risk.ADR-0020 — Rota, Job Planning, Route Estimates and Compliance-Aware Updates
+Status
+
+Proposed
+
+Context
+
+HourWise needs a shared rota and job planning system across the Fleet Portal and Driver App.
+
+The Fleet Portal will allow managers to plan shifts several weeks ahead, assign drivers, vehicles and trailers, and attach one or more jobs to a shift.
+
+The Driver App will display the driver’s assigned rota, vehicle, trailer, jobs, route plan and messages.
+
+HourWise will not act as live HGV navigation. Route planning will use estimated route times only. Drivers must still use approved HGV navigation tools and professional judgement.
+
+Decision
+
+HourWise will implement rota and job planning as a shared backend feature used by both Portal and App.
+
+The Portal will create and manage:
+
+driver rota
+shift start/end times
+vehicle and trailer assignments
+depot location
+job locations
+expected job duration
+expected arrival/departure windows
+route estimates
+job notes
+route warnings
+manager messages
+
+The Driver App will consume this information from the shared backend.
+
+The Driver App will not call the Portal directly.
+
+The Driver App and Fleet Portal will both communicate with the shared HourWise backend.
+
+Architecture
+Fleet Portal
+   │
+   │ creates rota, jobs, routes, assignments
+   ▼
+HourWise Backend / Supabase
+   │
+   ├── stores rota
+   ├── stores job plans
+   ├── stores route estimates
+   ├── stores vehicle/trailer assignments
+   ├── stores planned and actual job duration
+   ├── stores driver work/driving state
+   └── stores Atlas recommendations
+   ▲
+   │ consumes assigned rota/jobs
+Driver App
+
+Route calculation should be performed centrally, not independently by each client.
+
+OpenRouteService should be called from the backend or controlled portal workflow, then the resulting estimates should be stored against the route plan.
+
+Job Duration
+
+Each job must support:
+
+planned arrival time
+planned departure time
+expected job duration
+actual arrival time
+actual departure time
+actual job duration
+delay reason
+driver notes
+manager notes
+completion status
+
+Example:
+
+Job A expected duration: 20 minutes
+Driver actual duration: 45 minutes
+Delay: customer not ready
+
+When actual duration differs from planned duration, HourWise must update the route risk calculation.
+
+Delay Handling
+
+Delays are expected and must be treated as normal operational events, not system failures.
+
+A route plan must remain flexible enough to support:
+
+customer delays
+loading delays
+traffic delays
+vehicle defects
+driver breaks
+late starts
+sickness
+driver reassignment
+vehicle reassignment
+job cancellation
+job reordering
+
+When a delay occurs, the Driver App should update the current route state and recalculate:
+
+remaining work time
+remaining driving time
+estimated time to next job
+expected arrival time
+break requirement
+route risk status
+missed delivery window risk
+whether the current plan remains realistic
+Compliance-Aware Route Warnings
+
+HourWise should compare the planned route against the driver’s live legal availability.
+
+Example:
+
+Next leg estimate: 1h 15m
+Remaining driving time: 45m
+Remaining work time: 1h 05m
+
+Atlas recommendation:
+You are unlikely to complete the next leg before reaching your driving limit.
+Take a compliant break before departure or at an appropriate safe stopping location.
+
+If the job duration changes:
+
+Expected job duration: 20m
+Actual job duration: 45m
+Delay added: 25m
+Next leg: 1h 15m
+Remaining driving time: 45m
+
+Updated warning:
+This delay has made the next planned leg non-compliant without a break.
+Driver App Behaviour
+
+The Driver App should show:
+
+today’s rota
+assigned vehicle
+assigned trailer
+shift start/end time
+job list
+planned route order
+estimated drive time between jobs
+expected job duration
+actual time spent at job
+route warnings
+Atlas recommendations
+manager messages
+external navigation launch button
+
+The driver should be able to mark:
+
+arrived at job
+started job
+delayed
+completed job
+unable to complete
+departed job
+
+These timestamps should update the shared backend.
+
+Portal Behaviour
+
+The Portal should allow managers to:
+
+create rota
+assign drivers
+assign vehicles
+assign trailers
+create job sequences
+set expected job durations
+set delivery/collection time windows
+view route risk before publishing
+publish route to driver
+edit route during the day
+reassign jobs
+reassign drivers
+message affected drivers
+view actual versus planned performance
+Messaging Integration
+
+Messaging must be linked to rota and job events.
+
+Example messages:
+
+Your vehicle has changed from HX12 ABC to HX15 XYZ.
+Job 3 has been cancelled. Return to depot after Job 2.
+You are running late for Job 4. Manager has been notified.
+Atlas recommends a break before travelling to the next job.
+Advisory Navigation Position
+
+HourWise is not a sat-nav.
+
+HourWise must clearly state:
+
+Route estimates are advisory only.
+Drivers must use approved HGV navigation, road signs, traffic conditions, site rules and professional judgement.
+
+HourWise may provide links to external navigation apps, but must not claim to provide live HGV navigation unless a dedicated approved navigation partner is integrated in future.
+
+Future Options
+
+Future integrations may include:
+
+CoPilot HGV
+TomTom HGV
+Microlise-style telematics
+DPD Saturn-style operational routing
+GPS tracking provider integrations
+traffic-aware route refresh
+customer ETA notifications
+automated delay detection
+suggested safe break locations
+proof of delivery
+electronic delivery notes
+vehicle defect escalation
+automatic route resequencing
+Consequences
+
+This creates a major HourWise advantage:
+
+HourWise does not just tell managers where drivers should go.
+
+It tells managers whether the plan is realistic based on the driver’s actual legal working and driving time.
+
+This turns route planning into compliance-aware operational plan I actually think that's the right architecture, and I'd take it a step further.
+
+Rather than thinking of it as a messaging system plus rota sync, make it an Event Bus.
+
+The chat/messages become just one type of event travelling through the same infrastructure.
+
+That means you don't have multiple notification systems competing with each other.
+
+ADR-0021 — Unified Event Synchronisation & Messaging
+
+Instead of this:
+
+Manager edits rota
+
+↓
+
+Realtime update
+
+↓
+
+Separate push notification
+
+↓
+
+Separate messaging system
+
+↓
+
+Driver refreshes
+
+I'd do this:
+
+               Fleet Portal
+                    │
+         Creates an Event
+                    │
+                    ▼
+         HourWise Event Service
+        (Supabase Realtime)
+                    │
+      ┌─────────────┼─────────────┐
+      │             │             │
+      ▼             ▼             ▼
+ Driver App     Messaging      Atlas
+      │             │             │
+      └─────────────┼─────────────┘
+                    ▼
+        Push Notification Service
+
+Everything becomes an event.
+
+Examples:
+
+SHIFT_ASSIGNED
+
+SHIFT_UPDATED
+
+VEHICLE_CHANGED
+
+TRAILER_CHANGED
+
+JOB_ADDED
+
+JOB_CANCELLED
+
+JOB_DELAYED
+
+ROUTE_UPDATED
+
+MESSAGE_RECEIVED
+
+BREAK_RECOMMENDED
+
+COMPLIANCE_WARNING
+
+DRIVER_LATE
+
+SHIFT_COMPLETED
+
+DEFECT_REPORTED
+
+INCIDENT_CREATED
+
+Your existing messaging system simply displays certain event types as conversations.
+
+For example:
+
+Manager changes vehicle.
+
+Instead of:
+
+Update database
+
+↓
+
+Send push
+
+↓
+
+Create message
+
+↓
+
+Refresh app
+
+You simply generate one event:
+
+VEHICLE_CHANGED
+
+The app receives it.
+
+The app then:
+
+updates rota screen
+updates today's dashboard
+refreshes assigned vehicle
+stores local cache
+displays a message
+sends push notification (if app backgrounded)
+
+All from one event.
+
+Atlas becomes far more intelligent
+
+Atlas can subscribe to exactly the same events.
+
+JOB_DELAYED
+
+↓
+
+Atlas recalculates
+
+↓
+
+Remaining work
+
+↓
+
+Remaining drive
+
+↓
+
+ETA
+
+↓
+
+Risk
+
+↓
+
+Recommendation
+
+↓
+
+Publishes
+
+ATLAS_RECOMMENDATION_CREATED
+
+The driver then receives:
+
+Atlas recommends taking a 45 minute break before leaving Customer B.
+
+No polling required.
+
+Conversation View
+
+Your existing chat system doesn't need replacing.
+
+Instead it becomes similar to Teams or Slack.
+
+Example:
+
+Manager
+
+Please swap to vehicle HX14 ABC.
+
+09:32
+
+System message
+
+Vehicle assignment updated.
+
+Atlas
+
+Route recalculated.
+
+Estimated arrival delayed by 28 minutes.
+
+Break now recommended before Job 3.
+
+Driver
+
+Understood.
+
+Everything lives in one conversation.
+
+Event History
+
+Every important action becomes auditable.
+
+08:02
+
+Shift assigned
+
+08:04
+
+Vehicle changed
+
+08:05
+
+Driver acknowledged
+
+08:47
+
+Job started
+
+09:33
+
+Delay reported
+
+09:34
+
+Atlas recalculated
+
+09:35
+
+Manager updated ETA
+
+09:40
+
+Customer notified
+
+That history becomes invaluable if there is a customer complaint, a compliance investigation, or simply to understand what happened during the day.
+
+One more idea I'd add
+
+This fits perfectly with your long-term vision of Atlas.
+
+Introduce event priorities.
+
+Priority	Example	Behaviour
+Information	New message	Badge only
+Advisory	Route updated	Notification + refresh
+Warning	Driver nearing driving limit	Push + banner + Atlas advice
+Critical	Driver exceeded legal limit	Persistent alert, manager notification, compliance log
+Emergency	Accident, panic button, vehicle breakdown	Immediate push to managers, live conversation, incident workflow
+
+Everything—rotas, messaging, compliance, Atlas, route changes, vehicle swaps, incidents—runs through the same event architecture. That gives you a single, scalable communication layer that will continue to work as HourWise grows, rather than a collection of separate features that each need their own synchronisation logic. I think this is one of those architectural decisions that will make the platform much easier to extend over the next several years.
+
+Great, let's make adr 21 with this and tie it to the atlas implementation/build
+Thought for a couple of seconds
+
+Yes — this should sit directly beside the Atlas spec.ADR-0021 — Unified Event Synchronisation, Messaging and Atlas Integration
+Status
+
+Proposed
+
+Related Documents
+ADR-0020 — Rota, Job Planning, Route Estimates and Compliance-Aware Updates
+18.10_Atlas_Interface.md
+19_Atlas_Specification.md
+23_Integration_Architecture.md
+24_Architecture_Decision_Records.md
+Context
+
+HourWise already has the beginnings of a two-way messaging system using Supabase push/realtime behaviour.
+
+The Fleet Portal also needs to communicate rota changes, vehicle assignments, trailer assignments, job updates, route updates, delay events and Atlas recommendations to the Driver App.
+
+Rather than building separate synchronisation systems for rota, jobs, messages, route plans and Atlas alerts, HourWise will use a unified event model.
+
+Messaging becomes one visible part of a wider event synchronisation architecture.
+
+Decision
+
+HourWise will implement a shared event system used by both the Fleet Portal and Driver App.
+
+The Fleet Portal, Driver App and Atlas will communicate through the shared HourWise backend.
+
+The app must not call the portal directly.
+
+The portal must not rely on app-only state.
+
+Both clients must read and write to shared backend tables with strict permissions, role checks and row-level security.
+
+Architecture
+Fleet Portal
+    │
+    │ creates rota, job, route, message and manager events
+    ▼
+HourWise Backend / Supabase
+    │
+    ├── stores event history
+    ├── stores messages
+    ├── stores rota updates
+    ├── stores route updates
+    ├── stores job status
+    ├── stores driver acknowledgements
+    ├── stores Atlas recommendations
+    └── pushes realtime updates
+    ▲
+    │
+Driver App
+    │
+    │ creates driver status, delay, acknowledgement and completion events
+    ▼
+HourWise Backend / Supabase
+    │
+    ▼
+Atlas
+    │
+    │ analyses relevant events
+    ▼
+Atlas Recommendation Events
+Core Principle
+
+Everything important that happens operationally should be represented as an event.
+
+Examples:
+
+SHIFT_ASSIGNED
+SHIFT_UPDATED
+SHIFT_CANCELLED
+VEHICLE_ASSIGNED
+VEHICLE_CHANGED
+TRAILER_ASSIGNED
+TRAILER_CHANGED
+JOB_ADDED
+JOB_UPDATED
+JOB_STARTED
+JOB_DELAYED
+JOB_COMPLETED
+JOB_CANCELLED
+ROUTE_CREATED
+ROUTE_UPDATED
+ROUTE_RECALCULATED
+MESSAGE_SENT
+MESSAGE_READ
+DRIVER_ACKNOWLEDGED
+BREAK_RECOMMENDED
+COMPLIANCE_WARNING
+DRIVER_RUNNING_LATE
+DEFECT_REPORTED
+INCIDENT_CREATED
+ATLAS_RECOMMENDATION_CREATED
+Messaging Integration
+
+The existing two-way messaging system should not be replaced.
+
+It should be expanded so that conversations can include:
+
+manager messages
+driver replies
+system messages
+rota changes
+job changes
+route updates
+compliance warnings
+Atlas recommendations
+
+Example conversation:
+
+Manager:
+Please use vehicle HX14 ABC today.
+
+System:
+Vehicle assignment changed from HX12 ABC to HX14 ABC.
+
+Atlas:
+Route recalculated. Your next leg is estimated at 1h 15m, but you only have 45m driving time remaining. A break is recommended before departure.
+
+Driver:
+Understood.
+Atlas Integration
+
+Atlas will subscribe to relevant operational events.
+
+When a rota, job, route, delay, vehicle or driver timer event changes, Atlas may recalculate:
+
+remaining driving time
+remaining working time
+estimated arrival time
+route risk
+delivery window risk
+break requirement
+missed job risk
+driver lateness risk
+manager action required
+
+Atlas must then publish its own event.
+
+Example:
+
+JOB_DELAYED
+    ↓
+Atlas recalculates route risk
+    ↓
+ATLAS_RECOMMENDATION_CREATED
+    ↓
+Driver App and Portal receive update
+Driver Delay Example
+
+A job is planned to take 20 minutes.
+
+The driver is delayed and records the job as taking 45 minutes.
+
+The Driver App creates:
+
+JOB_DELAYED
+
+The backend updates the job actual duration.
+
+Atlas recalculates the rest of the route.
+
+If the delay affects compliance, Atlas creates:
+
+BREAK_RECOMMENDED
+COMPLIANCE_WARNING
+ROUTE_RECALCULATED
+
+The Driver App then shows:
+
+This delay has changed your route risk.
+
+Next leg estimate: 1h 15m.
+Remaining driving time: 45m.
+
+Atlas recommends taking a compliant break before leaving this job.
+
+The Portal shows the manager:
+
+Driver is delayed by 25 minutes.
+
+Route risk changed from Advisory to Warning.
+
+Break now recommended before Job 3.
+Event Priority
+
+Events should have priority levels.
+
+INFO
+ADVISORY
+WARNING
+CRITICAL
+EMERGENCY
+
+Examples:
+
+INFO:
+Message received
+
+ADVISORY:
+Route updated
+
+WARNING:
+Driver may not reach next job before break is required
+
+CRITICAL:
+Driver has exceeded a legal driving or working time threshold
+
+EMERGENCY:
+Accident, breakdown or panic event
+
+Priority controls:
+
+push notification behaviour
+dashboard banners
+unread badges
+manager alerts
+Atlas escalation
+audit log visibility
+Event Delivery Rules
+
+The system should support:
+
+realtime updates while the app is open
+push notifications while the app is backgrounded
+local caching for poor signal
+acknowledgement tracking
+retry behaviour
+duplicate event protection
+ordered event history where possible
+role-based visibility
+
+The app should be able to recover if it misses events by fetching the latest state from the backend.
+
+Realtime events are for responsiveness.
+
+The backend database remains the source of truth.
+
+Data Model Direction
+
+Suggested core tables:
+
+fleet_events
+messages
+message_threads
+rota_assignments
+job_assignments
+route_plans
+route_plan_legs
+atlas_recommendations
+driver_acknowledgements
+push_notification_log
+
+fleet_events should act as the central operational event log.
+
+Suggested fields:
+
+id
+fleet_id
+driver_id
+vehicle_id
+trailer_id
+shift_id
+job_id
+route_plan_id
+event_type
+priority
+title
+body
+payload_json
+created_by_user_id
+created_by_role
+created_at
+read_at
+acknowledged_at
+expires_at
+Permissions
+
+Drivers should only see events relevant to:
+
+their own assigned shifts
+their assigned vehicles
+their assigned jobs
+messages sent to them
+fleet-wide announcements they are allowed to view
+
+Managers should see events for their fleet, subject to role permissions.
+
+Atlas should only access data needed to generate recommendations for the relevant fleet, driver, shift or route.
+
+Consequences
+
+This architecture gives HourWise a single communication layer for:
+
+rota updates
+job planning
+route updates
+driver messages
+manager messages
+compliance warnings
+Atlas recommendations
+incident workflows
+defect workflows
+future telematics events
+
+This avoids building separate sync systems for each feature.
+
+It also makes Atlas more powerful because it can react to real operational changes instead of only answering user questions.
+
+Risks
+
+The event system could become noisy if every minor update creates a visible notification.
+
+To prevent this:
+
+not every event should create a push notification
+low-priority events may only update the local UI
+events should be grouped where appropriate
+Atlas should avoid repeating the same recommendation too often
+managers should be able to configure notification preferences
+Final Decision
+
+HourWise will treat messaging, rota updates, job updates, route changes and Atlas recommendations as part of one unified event synchronisation system.
+
+The existing Supabase-powered messaging work should be retained and expanded into this event model.
+
+The Fleet Portal and Driver App will communicate through the shared backend, not directly with each other.
+
+Atlas will become an event-aware operational assistant, capable of reacting to delays, route changes, job updates and compliance risks in near real time This gives Codex a clean architectural target: finish messaging by turning it into the operational event layer, not by adding another isolated chat feature.
+
+Should I build atlas before this system or the other way round? If I build the systems first then atlas will compile the results 
+
+Build the systems first, then Atlas.
+
+Atlas should not be the foundation. It should sit on top of reliable data and events.
+
+Recommended order:
+
+1. Rota system finished
+2. Messaging/event sync finished
+3. Job + route planning finished
+4. Delay/status updates working
+5. Compliance calculations connected
+6. Atlas reads events/results and explains them
+
+The reason is simple: Atlas is only useful if the underlying system already knows:
+
+Driver X is on Shift Y
+Vehicle Z is assigned
+Job 2 is delayed
+Next leg is 1h 15m
+Driver has 45m driving left
+Break is required
+
+Then Atlas can compile that into:
+
+“This route is now at risk. The driver should take a compliant break before leaving Job 2, and the manager should warn Job 3 of a late ETA.”
+
+So I’d build it like this:
+
+Phase 1 — Rules engine, no AI
+The system creates warnings using deterministic logic.
+
+Phase 2 — Atlas summaries
+Atlas explains what the rules engine already found.
+
+Phase 3 — Atlas recommendations
+Atlas suggests actions.
+
+Phase 4 — Atlas assistant
+Managers can ask questions.
+
+This keeps HourWise trustworthy. The legal/compliance logic should come from your own calculations, not from AI guessing.
