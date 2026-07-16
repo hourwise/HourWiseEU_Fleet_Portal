@@ -299,6 +299,17 @@ describe('adaptDriverBundleToAnalysis', () => {
             durationSeconds: 300,
             confidenceState: 'confirmed',
           },
+          {
+            id: 'timeline-event-sub-minute',
+            eventType: 'work',
+            driverId: 'driver-1',
+            startTime: '2026-07-03T09:05:00.000Z',
+            endTime: '2026-07-03T09:05:20.000Z',
+            durationSeconds: 20,
+            confidenceState: 'confirmed',
+            sourceSummary: 'Short tachograph work activity',
+            metadata: { activity_type: 'work', tachograph_source: 'driver_card' },
+          },
         ],
         gaps: [],
         dailySummaries: [
@@ -323,18 +334,28 @@ describe('adaptDriverBundleToAnalysis', () => {
 
     const analysis = adaptDriverBundleToAnalysis(bundle, '7d');
 
-    expect(analysis.activitySegments).toHaveLength(1);
+    expect(analysis.activitySegments).toHaveLength(2);
     expect(analysis.activitySegments[0]).toMatchObject({
       id: 'timeline-event-1',
       activityType: 'driving',
       durationMins: 60,
       source: 'driver_card',
     });
+    expect(analysis.activitySegments[1]).toMatchObject({
+      id: 'timeline-event-sub-minute',
+      activityType: 'work',
+      durationMins: 0,
+      startTime: '2026-07-03T09:05:00.000Z',
+      endTime: '2026-07-03T09:05:20.000Z',
+    });
     expect(analysis.dailySummaries).toHaveLength(1);
     expect(analysis.dailySummaries[0]).toMatchObject({
       date: '2026-07-03',
       drivingMins: 60,
-      activities: [expect.objectContaining({ id: 'timeline-event-1' })],
+      activities: [
+        expect.objectContaining({ id: 'timeline-event-1' }),
+        expect.objectContaining({ id: 'timeline-event-sub-minute' }),
+      ],
     });
   });
 });

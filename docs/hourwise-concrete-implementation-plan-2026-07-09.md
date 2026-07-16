@@ -148,7 +148,7 @@ Acceptance:
 
 ### Phase 3 - EVENT-001 Operational Event Spine
 
-Status: Design before build.
+Status: Foundation design implemented locally 2026-07-09; migration pending deployment. See `docs/event-001-operational-event-spine-design-2026-07-09.md`.
 
 Goal: unify rota updates, messages, acknowledgements, notifications, and future Atlas recommendations.
 
@@ -313,7 +313,7 @@ Acceptance:
 | `ROTA-001` | Add driver read-only upcoming rota from existing `shifts`. | P0 | `IMPL-001` | Yes - implemented locally 2026-07-09 |
 | `SEC-013` | Add rota read visibility checks to the security health/check test plan. | P0 | `ROTA-001` schema decision | Maybe |
 | `ROTA-002` | Add publish/status/audit semantics to shifts. | P1 | `ROTA-001` | Yes - implemented locally 2026-07-09, migration pending deployment |
-| `EVENT-001-DESIGN` | Design additive event/thread/ack schema with compatibility to current `messages`. | P1 | `ROTA-001` | No |
+| `EVENT-001-DESIGN` | Design additive event/thread/ack schema with compatibility to current `messages`. | P1 | `ROTA-001` | No - implemented locally 2026-07-09, migration pending deployment |
 | `EVENT-001` | Implement event-backed messages and rota publication events. | P1 | `EVENT-001-DESIGN`, security review | Yes |
 | `DRIVER-001` | Expand driver dashboard into Today/Rota/Messages/Tacho operational home. | P1 | `ROTA-001`, partial `EVENT-001` | Yes |
 | `ROUTE-001-DESIGN` | Finalise route/job schema, provider boundary, advisory wording, and delay flow. | P2 | `EVENT-001` | No |

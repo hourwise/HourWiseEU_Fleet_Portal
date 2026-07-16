@@ -10,6 +10,7 @@ import { supabase } from '../../../lib/supabase';
 import { InviteDriverModal } from '../InviteDriverModal';
 import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
 import { pairTachoImportToDriver } from '../../../lib/tacho/driverPairing';
+import { durationSecondsBetween, formatDurationSeconds } from '../../../lib/tacho/reportTime';
 import { evaluateDriverRules } from '../../../lib/tacho/rules/engine';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
@@ -1052,9 +1053,10 @@ function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
       day.date,
       String(index + 1),
       segment.inferred ? 'inferred_rest_off_card_gap' : segment.activityType,
-      format(segment.start, 'HH:mm'),
-      format(segment.end, 'HH:mm'),
-      minsToHours(segment.durationMins),
+      format(segment.start, 'HH:mm:ss'),
+      format(segment.end, 'HH:mm:ss'),
+      formatDurationSeconds(segment.durationSeconds),
+      String(segment.durationSeconds),
       segment.inferred ? 'Inferred from off-card gap between parsed card activities' : 'Parsed tachograph activity segment',
       segment.sourceLabel,
       overlappingFindingCodes(snapshot.findings, segment.start, segment.end),
@@ -1083,8 +1085,8 @@ function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
       String(day.activities.length),
     ]),
     [],
-    ['Daily activity blocks'],
-    ['Date', 'Block', 'Activity', 'Start', 'End', 'Duration', 'Evidence', 'Source / label', 'Overlapping finding rules'],
+    ['Daily activity blocks (second precision)'],
+    ['Date', 'Block', 'Activity', 'Start (HH:mm:ss)', 'End (HH:mm:ss)', 'Duration (HH:mm:ss)', 'Duration seconds', 'Evidence', 'Source / label', 'Overlapping finding rules'],
     ...blockRows,
     [],
     ['Findings'],
@@ -1246,7 +1248,7 @@ type ReportVisibleSegment = {
   end: Date;
   leftPercent: number;
   widthPercent: number;
-  durationMins: number;
+  durationSeconds: number;
   inferred: boolean;
   sourceLabel: string;
 };
@@ -1270,7 +1272,7 @@ function getSnapshotActivities(snapshot: DriverCardReportSnapshot) {
 function buildReportVisibleDaySegments(dayDate: string, explicitActivities: TachoActivitySegment[]): ReportVisibleSegment[] {
   const dayStart = new Date(`${dayDate}T00:00:00.000Z`);
   const dayEnd = addDays(dayStart, 1);
-  const totalMinutesInDay = 24 * 60;
+  const totalMillisecondsInDay = dayEnd.getTime() - dayStart.getTime();
   const sourceSegments = [
     ...explicitActivities.map((activity) => ({
       id: activity.id,
@@ -1287,17 +1289,17 @@ function buildReportVisibleDaySegments(dayDate: string, explicitActivities: Tach
     .map((segment) => {
       const start = new Date(Math.max(segment.start.getTime(), dayStart.getTime()));
       const end = new Date(Math.min(segment.end.getTime(), dayEnd.getTime()));
-      const durationMins = differenceInMinutes(end, start);
-      if (durationMins <= 0) return null;
+      const durationSeconds = durationSecondsBetween(start, end);
+      if (durationSeconds <= 0) return null;
 
       return {
         id: `${segment.id}-${dayDate}-${start.getTime()}`,
         activityType: segment.activityType,
         start,
         end,
-        leftPercent: (differenceInMinutes(start, dayStart) / totalMinutesInDay) * 100,
-        widthPercent: (durationMins / totalMinutesInDay) * 100,
-        durationMins,
+        leftPercent: ((start.getTime() - dayStart.getTime()) / totalMillisecondsInDay) * 100,
+        widthPercent: ((end.getTime() - start.getTime()) / totalMillisecondsInDay) * 100,
+        durationSeconds,
         inferred: segment.inferred,
         sourceLabel: segment.sourceLabel,
       };
@@ -1434,7 +1436,7 @@ function ReportActivityDayRow({
         {segments.map((segment) => (
           <div
             key={segment.id}
-            title={`${segment.inferred ? 'Inferred rest' : reportActivityLabel(segment.activityType)} ${format(segment.start, 'HH:mm')} - ${format(segment.end, 'HH:mm')} (${minsToHours(segment.durationMins)})`}
+            title={`${segment.inferred ? 'Inferred rest' : reportActivityLabel(segment.activityType)} ${format(segment.start, 'HH:mm:ss')} - ${format(segment.end, 'HH:mm:ss')} (${formatDurationSeconds(segment.durationSeconds)})`}
             className={`absolute inset-y-0 ${reportActivityClass(segment.activityType, segment.inferred)}`}
             style={{
               left: `${segment.leftPercent}%`,

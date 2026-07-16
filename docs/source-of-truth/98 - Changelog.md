@@ -83,6 +83,40 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-09 - Add EVENT-001 Operational Event Spine Foundation
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-09-005 |
+| Status | Implemented Locally / Migration Pending Deployment |
+| Owner | Product Architecture / Engineering |
+| Summary | Added the additive event/thread/acknowledgement database foundation for the operational event spine. |
+| Reason | Rota publishing and messaging need a shared event model before driver notifications, acknowledgements, route/job updates, and Atlas event consumption are implemented. |
+| Affected Source Documents | `docs/event-001-operational-event-spine-design-2026-07-09.md`, `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0021`, `ADR-0022`, `ADR-0024`, `ADR-0025` |
+| Capability IDs | Events, Messaging, Rota, Driver App, Atlas |
+| Implementation Impact | High |
+| Database Impact | Additive migration `20260709110000_add_event_spine_foundation.sql` pending deployment. |
+| Security Impact | Adds company-scoped manager policies, driver assigned/broadcast visibility, acknowledgement constraints, and a security-invoker driver event view. |
+| Testing Impact | Added static migration test and included it in `test:rules`. |
+| Rollback Notes | Revert before deployment if superseded; after deployment, use a controlled rollback/superseding migration because tables may be referenced by future events. |
+
+### Details
+
+Added `message_threads`, `fleet_events`, `driver_acknowledgements`, nullable compatibility links on `messages`, indexes, RLS policies, and `driver_visible_fleet_events`.
+
+No existing messaging UI, rota publish runtime, push notification, realtime, or Atlas behaviour was switched in this slice.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR created or updated if required
+- [x] Implementation backlog updated if required
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
 ## 2026-07-09 - Implement ROTA-002 Publishable Rota Status
 
 | Field | Value |

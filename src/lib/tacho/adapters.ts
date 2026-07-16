@@ -251,13 +251,12 @@ function timelineActivitySegments(bundle: TachoParserBundle): TachoActivitySegme
       const activityType = normalizeTimelineActivityType(event.eventType, event.metadata);
       if (!activityType || !event.endTime) return null;
 
-      const durationMins = secondsToMinutes(
-        typeof event.durationSeconds === 'number'
-          ? event.durationSeconds
-          : Math.max(0, new Date(event.endTime).getTime() - new Date(event.startTime).getTime()) / 1000
-      );
+      const durationSeconds = typeof event.durationSeconds === 'number'
+        ? event.durationSeconds
+        : Math.max(0, new Date(event.endTime).getTime() - new Date(event.startTime).getTime()) / 1000;
 
-      if (durationMins <= 0) return null;
+      if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
+      const durationMins = secondsToMinutes(durationSeconds);
 
       return {
         id: event.sourceId ?? event.id,
