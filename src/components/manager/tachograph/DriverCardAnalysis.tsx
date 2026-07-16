@@ -10,7 +10,7 @@ import { supabase } from '../../../lib/supabase';
 import { InviteDriverModal } from '../InviteDriverModal';
 import { fetchTachoFindingReviews, saveTachoFindingReview } from '../../../lib/tacho/api';
 import { pairTachoImportToDriver } from '../../../lib/tacho/driverPairing';
-import { durationSecondsBetween, formatDurationSeconds } from '../../../lib/tacho/reportTime';
+import { durationSecondsBetween, formatDurationSeconds, inferReportTimeResolution, type ReportTimeResolution } from '../../../lib/tacho/reportTime';
 import { evaluateDriverRules } from '../../../lib/tacho/rules/engine';
 import { TachoActivityTimeline } from './TachoActivityTimeline';
 import { TachoDayDetailDrawer } from './TachoDayDetailDrawer';
@@ -49,6 +49,9 @@ interface DriverCardReportSnapshot {
   periodLabel: string;
   generatedAt: string;
   caveat: string;
+  activityTimeResolution: ReportTimeResolution;
+  activityTimeResolutionLabel: string;
+  activityTimeResolutionNote: string;
   totals: {
     drivingMins: number;
     workMins: number;
@@ -1005,6 +1008,9 @@ function buildDriverCardReportSnapshot(input: {
   isCandidateCard: boolean;
 }): DriverCardReportSnapshot {
   const reconciliationIssues = input.reconciliation.filter((item) => item.status !== 'matched');
+  const activities = getUniqueDayActivities(input.days);
+  const activityTimeResolution = inferReportTimeResolution(activities);
+  const isEf0504MinuteSource = activities.some((activity) => activity.label?.includes('EF 0504'));
   const totals = input.days.reduce(
     (acc, day) => ({
       drivingMins: acc.drivingMins + day.drivingMins,
@@ -1031,6 +1037,17 @@ function buildDriverCardReportSnapshot(input: {
     periodLabel: input.periodLabel,
     generatedAt: new Date().toISOString(),
     caveat: 'HourWise read-only capture and provisional parser output. Use for operational review and validation; do not present as certified C1B/DDD output until the certified export/parser path is complete.',
+    activityTimeResolution,
+    activityTimeResolutionLabel: activityTimeResolution === 'second'
+      ? '1 second'
+      : isEf0504MinuteSource
+      ? '1 minute (driver-card EF 0504)'
+      : '1 minute (observed source data)',
+    activityTimeResolutionNote: isEf0504MinuteSource
+      ? 'Driver-card ActivityChangeInfo records one activity state per calendar minute. Seconds are not present in EF 0504 and cannot be reconstructed; displayed :00 values are minute boundaries, not second-level evidence.'
+      : activityTimeResolution === 'second'
+      ? 'At least one supplied activity boundary contains second-level source data.'
+      : 'All supplied activity boundaries are minute-aligned; no sub-minute source timestamps were available.',
     totals,
     issueCounts: {
       findings: input.findings.length,
@@ -1071,6 +1088,8 @@ function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
     ['Card expiry', snapshot.cardExpiry],
     ['Last download', snapshot.lastDownloadAt],
     ['Period', snapshot.periodLabel],
+    ['Activity time resolution', snapshot.activityTimeResolutionLabel],
+    ['Activity time resolution note', snapshot.activityTimeResolutionNote],
     ['Caveat', snapshot.caveat],
     [],
     ['Daily totals'],
@@ -1085,8 +1104,8 @@ function exportDriverCardCsv(snapshot: DriverCardReportSnapshot) {
       String(day.activities.length),
     ]),
     [],
-    ['Daily activity blocks (second precision)'],
-    ['Date', 'Block', 'Activity', 'Start (HH:mm:ss)', 'End (HH:mm:ss)', 'Duration (HH:mm:ss)', 'Duration seconds', 'Evidence', 'Source / label', 'Overlapping finding rules'],
+    [`Daily activity blocks (source resolution: ${snapshot.activityTimeResolutionLabel})`],
+    ['Date', 'Block', 'Activity', 'Start (recorded HH:mm:ss)', 'End (recorded HH:mm:ss)', 'Recorded duration (HH:mm:ss)', 'Calculated duration seconds', 'Evidence', 'Source / label', 'Overlapping finding rules'],
     ...blockRows,
     [],
     ['Findings'],
@@ -1168,6 +1187,10 @@ function DriverCardReportPanel({
 
       <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-950">
         {snapshot.caveat}
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-950">
+        Activity time resolution: {snapshot.activityTimeResolutionLabel}. {snapshot.activityTimeResolutionNote}
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-4">

@@ -14,3 +14,20 @@ export function formatDurationSeconds(value: number) {
     .map((part) => String(part).padStart(2, '0'))
     .join(':');
 }
+
+export type ReportTimeResolution = 'minute' | 'second';
+
+export function inferReportTimeResolution(
+  activities: Array<{ startTime: string; endTime: string; label?: string }>
+): ReportTimeResolution {
+  if (activities.some((activity) => activity.label?.includes('EF 0504'))) return 'minute';
+
+  return activities.some((activity) =>
+    [activity.startTime, activity.endTime].some((timestamp) => {
+      const milliseconds = new Date(timestamp).getTime();
+      return Number.isFinite(milliseconds) && milliseconds % 60_000 !== 0;
+    })
+  )
+    ? 'second'
+    : 'minute';
+}
