@@ -11,6 +11,16 @@ import {
   Menu, X, ChevronRight, Sparkles, ClipboardList
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import {
+  buildDashboardUrl,
+  readDashboardRouteState,
+  type DashboardRouteState,
+  type FleetSection,
+  type PeopleSection,
+  type SettingsSection,
+  type TachoTab,
+  type Workspace,
+} from '../../lib/dashboardRoute';
 
 // Lazy load dashboard components
 const DriverManagement = lazy(() => import('./DriverManagement').then(m => ({ default: m.DriverManagement })));
@@ -45,83 +55,11 @@ function TabLoading() {
   );
 }
 
-type Workspace = 'dashboard' | 'people' | 'fleet' | 'compliance' | 'reports' | 'settings';
-type PeopleSection = 'drivers' | 'training' | 'shifts' | 'jobs' | 'supervisors' | 'messages';
-type FleetSection = 'vehicles' | 'vehicle_checks' | 'fuel' | 'olicence' | 'incidents';
-type SettingsSection = 'account' | 'company';
-type TachoTab = 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' | 'simulator';
-
-interface DashboardRouteState {
-  workspace: Workspace;
-  people: PeopleSection;
-  fleet: FleetSection;
-  settings: SettingsSection;
-  tacho: TachoTab;
-  focusedDriverId?: string;
-  focusedVehicleId?: string;
-  focusedDate?: string;
-  reportDriverId?: string;
-  reportDate?: string;
-}
-
-const WORKSPACES: Workspace[] = ['dashboard', 'people', 'fleet', 'compliance', 'reports', 'settings'];
-const PEOPLE_SECTIONS: PeopleSection[] = ['drivers', 'training', 'shifts', 'jobs', 'supervisors', 'messages'];
-const FLEET_SECTIONS: FleetSection[] = ['vehicles', 'vehicle_checks', 'fuel', 'olicence', 'incidents'];
-const SETTINGS_SECTIONS: SettingsSection[] = ['account', 'company'];
-const TACHO_TABS: TachoTab[] = ['overview', 'imports', 'driver_cards', 'vehicle_units', 'simulator'];
-
-const DEFAULT_DASHBOARD_ROUTE: DashboardRouteState = {
-  workspace: 'dashboard',
-  people: 'drivers',
-  fleet: 'vehicles',
-  settings: 'account',
-  tacho: 'overview',
-};
-
-function readDashboardRouteState(): DashboardRouteState {
-  const params = new URLSearchParams(window.location.search);
-  const workspace = asOneOf(params.get('workspace'), WORKSPACES, DEFAULT_DASHBOARD_ROUTE.workspace);
-
-  return {
-    workspace,
-    people: asOneOf(params.get('people'), PEOPLE_SECTIONS, DEFAULT_DASHBOARD_ROUTE.people),
-    fleet: asOneOf(params.get('fleet'), FLEET_SECTIONS, DEFAULT_DASHBOARD_ROUTE.fleet),
-    settings: asOneOf(params.get('settings'), SETTINGS_SECTIONS, DEFAULT_DASHBOARD_ROUTE.settings),
-    tacho: asOneOf(params.get('tacho'), TACHO_TABS, DEFAULT_DASHBOARD_ROUTE.tacho),
-    focusedDriverId: params.get('driver') ?? undefined,
-    focusedVehicleId: params.get('vehicle') ?? undefined,
-    focusedDate: params.get('date') ?? undefined,
-    reportDriverId: params.get('reportDriver') ?? undefined,
-    reportDate: params.get('reportDate') ?? undefined,
-  };
-}
-
-function asOneOf<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
-  return value && allowed.includes(value as T) ? value as T : fallback;
-}
-
-function buildDashboardUrl(state: DashboardRouteState) {
-  const params = new URLSearchParams();
-
-  if (state.workspace !== DEFAULT_DASHBOARD_ROUTE.workspace) params.set('workspace', state.workspace);
-  if (state.workspace === 'people' && state.people !== DEFAULT_DASHBOARD_ROUTE.people) params.set('people', state.people);
-  if (state.workspace === 'fleet' && state.fleet !== DEFAULT_DASHBOARD_ROUTE.fleet) params.set('fleet', state.fleet);
-  if (state.workspace === 'settings' && state.settings !== DEFAULT_DASHBOARD_ROUTE.settings) params.set('settings', state.settings);
-  if (state.workspace === 'compliance' && state.tacho !== DEFAULT_DASHBOARD_ROUTE.tacho) params.set('tacho', state.tacho);
-  if ((state.workspace === 'compliance' || state.workspace === 'people') && state.focusedDriverId) params.set('driver', state.focusedDriverId);
-  if ((state.workspace === 'compliance' || state.workspace === 'fleet') && state.focusedVehicleId) params.set('vehicle', state.focusedVehicleId);
-  if (state.workspace === 'compliance' && state.focusedDate) params.set('date', state.focusedDate);
-  if (state.workspace === 'reports' && state.reportDriverId) params.set('reportDriver', state.reportDriverId);
-  if (state.workspace === 'reports' && state.reportDate) params.set('reportDate', state.reportDate);
-
-  const query = params.toString();
-  return query ? `/dashboard?${query}` : '/dashboard';
-}
 
 export function ManagerDashboard() {
   const { profile, signOut } = useAuth();
   const { t } = useTranslation();
-  const initialRoute = readDashboardRouteState();
+  const initialRoute = readDashboardRouteState(window.location.search);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(initialRoute.workspace);
   const [activePeopleSection, setActivePeopleSection] = useState<PeopleSection>(initialRoute.people);
   const [activeFleetSection, setActiveFleetSection] = useState<FleetSection>(initialRoute.fleet);
@@ -131,6 +69,7 @@ export function ManagerDashboard() {
 
   const [focusedDriverRecordId, setFocusedDriverRecordId] = useState<string | undefined>(initialRoute.focusedDriverId);
   const [focusedVehicleRecordId, setFocusedVehicleRecordId] = useState<string | undefined>(initialRoute.focusedVehicleId);
+  const [focusedShiftRecordId, setFocusedShiftRecordId] = useState<string | undefined>(initialRoute.focusedShiftId);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [complianceWorkspaceState, setComplianceWorkspaceState] = useState<{
     tab?: TachoTab;
@@ -162,6 +101,7 @@ export function ManagerDashboard() {
       focusedDriverId: has('focusedDriverId') ? next.focusedDriverId : complianceWorkspaceState.focusedDriverId,
       focusedVehicleId: has('focusedVehicleId') ? next.focusedVehicleId : complianceWorkspaceState.focusedVehicleId,
       focusedDate: has('focusedDate') ? next.focusedDate : complianceWorkspaceState.focusedDate,
+      focusedShiftId: has('focusedShiftId') ? next.focusedShiftId : focusedShiftRecordId,
       reportDriverId: has('reportDriver') ? next.reportDriverId : reportsWorkspaceState.focusedDriverId,
       reportDate: has('reportDate') ? next.reportDate : reportsWorkspaceState.focusedDate,
     };
@@ -172,6 +112,7 @@ export function ManagerDashboard() {
     setActiveSettingsSection(routeState.settings);
     setFocusedDriverRecordId(routeState.focusedDriverId);
     setFocusedVehicleRecordId(routeState.focusedVehicleId);
+    setFocusedShiftRecordId(routeState.focusedShiftId);
     setComplianceWorkspaceState({
       tab: routeState.tacho,
       focusedDriverId: routeState.focusedDriverId,
@@ -197,19 +138,21 @@ export function ManagerDashboard() {
     complianceWorkspaceState.focusedDriverId,
     complianceWorkspaceState.focusedVehicleId,
     complianceWorkspaceState.tab,
+    focusedShiftRecordId,
     reportsWorkspaceState.focusedDate,
     reportsWorkspaceState.focusedDriverId,
   ]);
 
   useEffect(() => {
     const handlePopState = () => {
-      const route = readDashboardRouteState();
+      const route = readDashboardRouteState(window.location.search);
       setActiveWorkspace(route.workspace);
       setActivePeopleSection(route.people);
       setActiveFleetSection(route.fleet);
       setActiveSettingsSection(route.settings);
       setFocusedDriverRecordId(route.focusedDriverId);
       setFocusedVehicleRecordId(route.focusedVehicleId);
+      setFocusedShiftRecordId(route.focusedShiftId);
       setComplianceWorkspaceState({
         tab: route.tacho,
         focusedDriverId: route.focusedDriverId,
@@ -302,6 +245,10 @@ export function ManagerDashboard() {
       reportDriverId: options?.focusedDriverId,
       reportDate: options?.focusedDate,
     });
+  };
+
+  const openJobPlannerForShift = (shiftId: string) => {
+    applyDashboardRoute({ workspace: 'people', people: 'jobs', focusedShiftId: shiftId });
   };
 
   const currentWorkspaceLabel = workspaces.find(w => w.id === activeWorkspace)?.label || 'Dashboard';
@@ -475,7 +422,7 @@ export function ManagerDashboard() {
                     key={section.id}
                     onClick={() => {
                       if (activeWorkspace === 'people') {
-                        applyDashboardRoute({ workspace: 'people', people: section.id as PeopleSection, focusedDriverId: undefined });
+                        applyDashboardRoute({ workspace: 'people', people: section.id as PeopleSection, focusedDriverId: undefined, focusedShiftId: undefined });
                       }
                       if (activeWorkspace === 'fleet') {
                         applyDashboardRoute({ workspace: 'fleet', fleet: section.id as FleetSection, focusedVehicleId: undefined });
@@ -620,8 +567,8 @@ export function ManagerDashboard() {
                 />
               )}
               {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
-              {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner />}
-              {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner />}
+              {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner onOpenJobPlanner={openJobPlannerForShift} />}
+              {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner focusedShiftId={focusedShiftRecordId} />}
               {activeWorkspace === 'people' && activePeopleSection === 'supervisors' && <SupervisorManagement />}
               {activeWorkspace === 'people' && activePeopleSection === 'messages' && <MessagingHub />}
 

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban, ClipboardList } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
-
-type ShiftStatus = 'draft' | 'published' | 'updated' | 'cancelled';
+import { canCancelShift, canPlanJobsForShift, canPublishShift, type ShiftStatus } from '../../lib/shiftActions';
 
 interface Shift {
   id: string;
@@ -33,7 +32,12 @@ interface Vehicle {
   reg_number: string;
 }
 
-export function ShiftPlanner() {
+interface ShiftPlannerProps {
+  /** Opens the Job Planner focused on a published/updated shift from the rota. */
+  onOpenJobPlanner?: (shiftId: string) => void;
+}
+
+export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const { profile } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -42,6 +46,10 @@ export function ShiftPlanner() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Partial<Shift> | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ shiftId: string; action: 'publish' | 'cancel' } | null>(null);
+  const [savingShift, setSavingShift] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
@@ -119,7 +127,9 @@ export function ShiftPlanner() {
 
   const handleSaveShift = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedShift || !profile?.company_id) return;
+    if (!selectedShift || !profile?.company_id || savingShift) return;
+    setSavingShift(true);
+    setModalError(null);
 
     try {
       const shiftData = {
@@ -152,42 +162,56 @@ export function ShiftPlanner() {
       }
 
       setShowModal(false);
+      setActionMessage({ kind: 'success', text: selectedShift.id ? 'Shift updated.' : 'Shift draft saved.' });
       void loadData();
     } catch (err) {
       console.error('Error saving shift:', err);
-      alert('Failed to save shift');
+      setModalError(err instanceof Error ? `Failed to save shift: ${err.message}` : 'Failed to save shift.');
+    } finally {
+      setSavingShift(false);
     }
   };
 
   const handlePublishShift = async (shift: Shift) => {
-    if (!profile?.id) return;
+    if (!profile?.id || pendingAction || !canPublishShift(shift.status)) return;
 
+    setPendingAction({ shiftId: shift.id, action: 'publish' });
+    setActionMessage(null);
     try {
       const { error } = await supabase.rpc('publish_shift_with_event' as never, {
         p_shift_id: shift.id,
         p_requires_ack: true,
       } as never);
       if (error) throw error;
+      setActionMessage({ kind: 'success', text: `Shift ${shift.start_time.slice(0, 5)}–${shift.end_time.slice(0, 5)} published to the driver's rota.` });
       void loadData();
     } catch (err) {
       console.error('Error publishing shift:', err);
-      alert('Failed to publish shift');
+      setActionMessage({ kind: 'error', text: err instanceof Error ? `Failed to publish shift: ${err.message}` : 'Failed to publish shift.' });
+    } finally {
+      setPendingAction(null);
     }
   };
 
   const handleCancelShift = async (shift: Shift) => {
-    if (!profile?.id || !confirm('Cancel this shift? Drivers will no longer see it in their rota.')) return;
+    if (!profile?.id || pendingAction || !canCancelShift(shift.status)) return;
+    if (!confirm('Cancel this shift? Drivers will no longer see it in their rota.')) return;
 
+    setPendingAction({ shiftId: shift.id, action: 'cancel' });
+    setActionMessage(null);
     try {
       const { error } = await supabase.rpc('cancel_shift_with_event' as never, {
         p_shift_id: shift.id,
         p_requires_ack: true,
       } as never);
       if (error) throw error;
+      setActionMessage({ kind: 'success', text: 'Shift cancelled.' });
       void loadData();
     } catch (err) {
       console.error('Error cancelling shift:', err);
-      alert('Failed to cancel shift');
+      setActionMessage({ kind: 'error', text: err instanceof Error ? `Failed to cancel shift: ${err.message}` : 'Failed to cancel shift.' });
+    } finally {
+      setPendingAction(null);
     }
   };
 
@@ -226,6 +250,18 @@ export function ShiftPlanner() {
           </button>
         </div>
       </div>
+
+      {actionMessage ? (
+        <div
+          role="alert"
+          className={`flex items-start justify-between gap-3 rounded-xl border p-4 text-sm ${actionMessage.kind === 'error' ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'}`}
+        >
+          <p className="font-medium">{actionMessage.text}</p>
+          <button type="button" onClick={() => setActionMessage(null)} className="shrink-0 text-slate-400 hover:text-white transition" aria-label="Dismiss message">
+            <X size={16} />
+          </button>
+        </div>
+      ) : null}
 
       <div className="bg-brand-card rounded-2xl border border-brand-border overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
@@ -284,23 +320,37 @@ export function ShiftPlanner() {
                                   <div className="text-[10px] font-black text-brand-accent uppercase flex items-center gap-1">
                                     <Clock size={10} /> {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
                                   </div>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); void handleCancelShift(shift); }}
-                                    className="opacity-0 group-hover/shift:opacity-100 text-slate-500 hover:text-red-500 transition"
-                                    title="Cancel shift"
-                                  >
-                                    <X size={12} />
-                                  </button>
+                                  {canCancelShift(shift.status) ? (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); void handleCancelShift(shift); }}
+                                      disabled={pendingAction !== null}
+                                      className="opacity-0 group-hover/shift:opacity-100 text-slate-500 hover:text-red-500 transition disabled:cursor-not-allowed disabled:opacity-40"
+                                      title="Cancel shift"
+                                      aria-label="Cancel shift"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  ) : null}
                                 </div>
                                 <div className="mb-2 flex flex-wrap items-center gap-1">
                                   <ShiftStatusBadge status={shift.status} />
-                                  {shift.status === 'draft' || shift.status === 'updated' ? (
+                                  {canPublishShift(shift.status) ? (
                                     <button
                                       type="button"
+                                      disabled={pendingAction !== null}
                                       onClick={(e) => { e.stopPropagation(); void handlePublishShift(shift); }}
-                                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/25"
+                                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                      <Send size={9} /> Publish
+                                      <Send size={9} /> {pendingAction?.shiftId === shift.id && pendingAction.action === 'publish' ? 'Publishing…' : 'Publish'}
+                                    </button>
+                                  ) : null}
+                                  {canPlanJobsForShift(shift.status) ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); onOpenJobPlanner?.(shift.id); }}
+                                      className="inline-flex items-center gap-1 rounded-full bg-brand-accent/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/25"
+                                    >
+                                      <ClipboardList size={9} /> Plan jobs
                                     </button>
                                   ) : null}
                                   {shift.status === 'cancelled' ? (
@@ -418,19 +468,22 @@ export function ShiftPlanner() {
                 />
               </div>
 
+              {modalError ? <p role="alert" className="text-sm text-red-300">{modalError}</p> : null}
               <div className="pt-4 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 border border-brand-border rounded-xl font-black text-slate-400 hover:bg-brand-dark transition uppercase tracking-widest text-[10px]"
+                  disabled={savingShift}
+                  className="flex-1 py-3 border border-brand-border rounded-xl font-black text-slate-400 hover:bg-brand-dark transition uppercase tracking-widest text-[10px] disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-brand-accent text-white rounded-xl font-black hover:bg-brand-accent-dark transition shadow-lg shadow-brand-accent/20 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
+                  disabled={savingShift}
+                  className="flex-1 py-3 bg-brand-accent text-white rounded-xl font-black hover:bg-brand-accent-dark transition shadow-lg shadow-brand-accent/20 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Save size={16} /> {selectedShift.id ? 'Save Update' : 'Save Draft'}
+                  <Save size={16} /> {savingShift ? 'Saving…' : (selectedShift.id ? 'Save Update' : 'Save Draft')}
                 </button>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">

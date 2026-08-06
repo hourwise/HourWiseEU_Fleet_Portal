@@ -35,12 +35,18 @@ interface JobAssignmentRow {
 
 const ASSIGNMENT_SELECT = 'id, sequence, status, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions, manager_notes)';
 
-export function JobPlanner() {
+interface JobPlannerProps {
+  /** Shift preselected from the rota via the `shift` query parameter, if any. */
+  focusedShiftId?: string;
+}
+
+export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
   const { profile } = useAuth();
   const [shifts, setShifts] = useState<ShiftOption[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState(true);
   const [shiftsError, setShiftsError] = useState<string | null>(null);
   const [shiftId, setShiftId] = useState('');
+  const [focusMessage, setFocusMessage] = useState<string | null>(null);
 
   const [assignments, setAssignments] = useState<JobAssignmentRow[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
@@ -63,12 +69,14 @@ export function JobPlanner() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
-  // Load the manager's future published/updated shifts once per company.
+  // Load the manager's future published/updated shifts. Re-runs when a focused
+  // shift arrives from the rota (via the `shift` query parameter) or is cleared.
   useEffect(() => {
     if (!profile?.company_id) return;
     let cancelled = false;
     setShiftsLoading(true);
     setShiftsError(null);
+    setFocusMessage(null);
     supabase.from('shifts').select('id, date, start_time, end_time, profiles:driver_id(full_name)')
       .eq('company_id', profile.company_id).in('status', ['published', 'updated'])
       .gte('date', format(new Date(), 'yyyy-MM-dd'))
@@ -78,11 +86,22 @@ export function JobPlanner() {
         if (error) { setShiftsError(error.message); return; }
         const loaded = (data ?? []) as ShiftOption[];
         setShifts(loaded);
-        // Keep the currently selected shift when it is still present.
-        setShiftId(current => (current && loaded.some(s => s.id === current) ? current : (loaded[0]?.id ?? '')));
+        if (focusedShiftId) {
+          // The rota asked us to plan jobs for a specific shift.
+          if (loaded.some(s => s.id === focusedShiftId)) {
+            setShiftId(focusedShiftId);
+          } else {
+            // That shift is no longer available — fall back safely.
+            setShiftId(loaded[0]?.id ?? '');
+            setFocusMessage('That shift is no longer available for job planning, so the first available shift is selected instead.');
+          }
+        } else {
+          // Opened without a focused shift: keep the current selection when valid.
+          setShiftId(current => (current && loaded.some(s => s.id === current) ? current : (loaded[0]?.id ?? '')));
+        }
       });
     return () => { cancelled = true; };
-  }, [profile?.company_id]);
+  }, [profile?.company_id, focusedShiftId]);
 
   const loadAssignments = useCallback(async (shiftToLoad: string) => {
     setAssignmentsLoading(true);
@@ -180,6 +199,9 @@ export function JobPlanner() {
   return <div className="mx-auto max-w-3xl space-y-6">
     <div className="flex items-center gap-3"><ClipboardList className="text-brand-accent" /><div><h2 className="text-2xl font-bold text-white">Job Planner</h2><p className="text-sm text-slate-400">Publish planned jobs to a driver’s existing shift and review what is already assigned.</p></div></div>
     <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-100">Route estimates are advisory only. Drivers must use approved HGV navigation, road signs, site rules, traffic conditions, and professional judgement.</div>
+    {focusMessage ? (
+      <div role="status" className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-100">{focusMessage}</div>
+    ) : null}
     {shiftsLoading ? (
       <div className="flex items-center justify-center gap-2 rounded-2xl border border-brand-border bg-brand-card p-10 text-sm text-slate-400"><Loader2 className="animate-spin" size={16} />Loading published shifts…</div>
     ) : shiftsError ? (
