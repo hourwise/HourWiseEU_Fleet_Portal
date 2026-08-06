@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { ElementType } from 'react';
-import { Activity, CreditCard, FileUp, FlaskConical, ShieldAlert, Truck } from 'lucide-react';
+import type { ElementType, ReactNode } from 'react';
+import { Activity, CreditCard, FileUp, FlaskConical, Truck } from 'lucide-react';
 import { ComplianceScoreboard } from '../ComplianceScoreboard';
 import { InfringementManagement } from '../InfringementManagement';
 import { DriverCardAnalysis } from './DriverCardAnalysis';
@@ -74,6 +74,12 @@ export function TachoComplianceWorkspace({
     onTabChange?.('driver_cards');
   };
 
+  const openDriverCards = () => {
+    setFocusedImportId(undefined);
+    setActiveTab('driver_cards');
+    onTabChange?.('driver_cards');
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 flex flex-wrap gap-2">
@@ -103,19 +109,33 @@ export function TachoComplianceWorkspace({
       {activeTab === 'overview' && (
         <div className="space-y-8">
           <ComplianceScoreboard onViewSession={onViewSession} onOpenDriverAnalysis={onOpenDriverAnalysis} />
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-black text-amber-900 uppercase tracking-widest">Migration note</p>
-              <p className="text-sm text-amber-800 mt-1">
-                The legacy compliance overview remains intact while the new import, driver-card, and VU workspaces are being built out.
-              </p>
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="w-5 h-5 text-blue-600" />
+              <p className="text-sm font-black text-slate-900 uppercase tracking-widest">Tachograph workflow</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <WorkflowCard
+                icon={<CreditCard className="w-5 h-5 text-blue-600" />}
+                title="Driver Cards"
+                text="Live driver-card reading and card analysis. Connect the desktop helper, insert a card, and review the driver's activity."
+              />
+              <WorkflowCard
+                icon={<Truck className="w-5 h-5 text-blue-600" />}
+                title="Vehicle Units"
+                text="Vehicle-unit analysis for VU downloads, technical events and unit-level records."
+              />
+              <WorkflowCard
+                icon={<FileUp className="w-5 h-5 text-blue-600" />}
+                title="Import Centre"
+                text="Manual uploads, VU downloads, import monitoring and support — including the manual driver-card file fallback."
+              />
             </div>
           </div>
           <InfringementManagement onOpenDriverTacho={onOpenDriverAnalysis} />
         </div>
       )}
-      {activeTab === 'imports' && <TachoImportCentre onOpenDriverAnalysis={onOpenDriverAnalysis} onOpenCandidateCardAnalysis={openCandidateCardAnalysis} />}
+      {activeTab === 'imports' && <TachoImportCentre onOpenDriverAnalysis={onOpenDriverAnalysis} onOpenCandidateCardAnalysis={openCandidateCardAnalysis} onOpenDriverCards={openDriverCards} />}
       {activeTab === 'driver_cards' && (
         <DriverCardAnalysis
           driverId={focusedDriverId}
@@ -138,6 +158,18 @@ export function TachoComplianceWorkspace({
         />
       )}
       {isDev && activeTab === 'simulator' && <TachoSimulatorPreview />}
+    </div>
+  );
+}
+
+function WorkflowCard({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{title}</h3>
+      </div>
+      <p className="mt-2 text-sm text-slate-600">{text}</p>
     </div>
   );
 }

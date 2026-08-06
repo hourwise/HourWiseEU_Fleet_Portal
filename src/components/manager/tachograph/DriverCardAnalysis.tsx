@@ -545,8 +545,8 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
   );
   const readerPanel = <DriverCardReaderPanel workflow={readerWorkflow} onManualRefresh={handleManualReaderRefresh} onOpenImportCentre={onOpenImportCentre} />;
 
-  if (loading) return <div className="space-y-6">{picker}{readerPanel}<StateCard title="Loading driver card analysis..." /></div>;
-  if (error) return <div className="space-y-6">{picker}{readerPanel}<StateCard title={error} tone="error" /></div>;
+  if (loading) return <div className="space-y-6">{picker}{readerPanel}<StateCard title="Loading driver card analysis…" text="Fetching the latest card read or import for this driver." /></div>;
+  if (error) return <div className="space-y-6">{picker}{readerPanel}<StateCard title="Unable to load driver card analysis" text={error} tone="error" /></div>;
   if (!data) {
     return (
       <div className="space-y-6">

@@ -45,9 +45,11 @@ const IMPORT_FILTERS: Array<{ value: ImportFilter; label: string }> = [
 export function TachoImportCentre({
   onOpenDriverAnalysis,
   onOpenCandidateCardAnalysis,
+  onOpenDriverCards,
 }: {
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
   onOpenCandidateCardAnalysis?: (importId: string) => void;
+  onOpenDriverCards?: () => void;
 }) {
   const { profile } = useAuth();
   const [activeFilter, setActiveFilter] = useState<ImportFilter>('all');
@@ -104,8 +106,28 @@ export function TachoImportCentre({
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tacho Import Centre</p>
             <h2 className="text-3xl font-black text-slate-900 mt-1">Import VU Downloads And Manual Tacho Files</h2>
             <p className="text-sm text-slate-500 mt-2">
-              Use this workspace for vehicle-unit downloads, manual driver-card file imports, and import monitoring. The live card-reader helper remains available as an advanced driver-card path.
+              Use this workspace for vehicle-unit downloads, manual driver-card file imports, and import monitoring. Live driver-card reading lives in the Driver Cards workspace; the reader helper is available below as an advanced support path.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <CreditCard className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-800">Live card reading</p>
+                <p className="mt-1 text-sm font-semibold text-blue-950">
+                  For normal live driver-card reading and card analysis, use the Driver Cards workspace. Import Centre stays focused on uploads, VU downloads, monitoring and support.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenDriverCards?.()}
+              disabled={!onOpenDriverCards}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CreditCard className="w-4 h-4" /> Open Driver Card Analysis
+            </button>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[1.35fr,0.85fr] gap-6">
@@ -130,15 +152,6 @@ export function TachoImportCentre({
               </div>
             </div>
           </div>
-
-          <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600">
-              Advanced: live driver-card reader helper
-            </summary>
-            <div className="mt-4">
-              <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
-            </div>
-          </details>
         </div>
       </div>
 
@@ -220,12 +233,14 @@ export function TachoImportCentre({
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-slate-500">Loading import queue...</div>
+            <div className="p-8 text-center text-slate-500">Loading imports and processing states…</div>
           ) : error ? (
-            <div className="p-8 text-center text-rose-600">{error}</div>
+            <div className="p-8 text-center text-rose-600">Unable to load imports: {error}</div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {filteredImports.length === 0 ? (
+              {filteredImports.length === 0 && data.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">No imports yet. Upload a VU or manual tachograph file to get started.</div>
+              ) : filteredImports.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">No imports match this filter.</div>
               ) : filteredImports.map((item) => (
                 <button
@@ -384,6 +399,15 @@ export function TachoImportCentre({
           text="Supervisors can now see unassigned motion, driver-link issues, and app-vs-tacho cross-check issues at the import level before navigating into deeper driver or vehicle analysis."
         />
       </div>
+
+      <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600">
+          Advanced: live driver-card reader helper
+        </summary>
+        <div className="mt-4">
+          <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
+        </div>
+      </details>
 
       {invitePrefill ? (
         <InviteDriverModal
