@@ -1,9 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Briefcase, Building2, ClipboardList, Clock, FileText, Loader2, MapPin, Phone, RefreshCw, Send, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { isAvailableJobSequence, nextJobSequence } from '../../lib/jobSequence';
+import {
+  INITIAL_JOB_ASSIGNMENT_LOAD,
+  isJobAssignmentLoadReady,
+  isJobSequenceCollision,
+  jobAssignmentLoadReducer,
+  type JobAssignmentRow,
+} from '../../lib/jobAssignmentLoad';
 
 interface ShiftOption {
   id: string;
@@ -13,44 +20,26 @@ interface ShiftOption {
   profiles?: { full_name: string } | null;
 }
 
-interface JobAssignmentRow {
-  id: string;
-  sequence: number;
-  status: string;
-  planned_arrival_at: string | null;
-  planned_departure_at: string | null;
-  expected_duration_minutes: number | null;
-  jobs: {
-    reference: string;
-    title: string;
-    job_type: string;
-    customer_name: string | null;
-    address_text: string;
-    contact_name: string | null;
-    contact_phone: string | null;
-    instructions: string | null;
-    manager_notes: string | null;
-  } | null;
-}
-
-const ASSIGNMENT_SELECT = 'id, sequence, status, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions, manager_notes)';
+// NOTE: manager-only notes are deliberately not collected here. `jobs.manager_notes`
+// lives on the job row the driver read policy can expose, so capturing private notes
+// through it would leak them to the driver-facing read model. Collection stays deferred
+// until the backend provides a manager-only storage/read boundary.
+const ASSIGNMENT_SELECT = 'id, sequence, status, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
 
 interface JobPlannerProps {
   /** Shift preselected from the rota via the `shift` query parameter, if any. */
   focusedShiftId?: string;
+  /** Reports manual shift selection or fallback so the dashboard can sync `shift=<uuid>`. */
+  onFocusedShiftChange?: (shiftId?: string) => void;
 }
 
-export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
+export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerProps = {}) {
   const { profile } = useAuth();
   const [shifts, setShifts] = useState<ShiftOption[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState(true);
   const [shiftsError, setShiftsError] = useState<string | null>(null);
   const [shiftId, setShiftId] = useState('');
   const [focusMessage, setFocusMessage] = useState<string | null>(null);
-
-  const [assignments, setAssignments] = useState<JobAssignmentRow[]>([]);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
-  const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
 
   const [reference, setReference] = useState('');
   const [title, setTitle] = useState('');
@@ -60,7 +49,6 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [managerNotes, setManagerNotes] = useState('');
   const [plannedArrival, setPlannedArrival] = useState('');
   const [plannedDeparture, setPlannedDeparture] = useState('');
   const [duration, setDuration] = useState('');
@@ -69,14 +57,17 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
-  // Load the manager's future published/updated shifts. Re-runs when a focused
-  // shift arrives from the rota (via the `shift` query parameter) or is cleared.
+  const [assignmentLoad, dispatchAssignmentLoad] = useReducer(jobAssignmentLoadReducer, INITIAL_JOB_ASSIGNMENT_LOAD);
+  const requestTokenRef = useRef(0);
+
+  // Load the manager's future published/updated shifts once per company. This
+  // effect does not depend on the focused shift, so manual dropdown changes do
+  // not trigger a redundant reload; focus application lives in the next effect.
   useEffect(() => {
     if (!profile?.company_id) return;
     let cancelled = false;
     setShiftsLoading(true);
     setShiftsError(null);
-    setFocusMessage(null);
     supabase.from('shifts').select('id, date, start_time, end_time, profiles:driver_id(full_name)')
       .eq('company_id', profile.company_id).in('status', ['published', 'updated'])
       .gte('date', format(new Date(), 'yyyy-MM-dd'))
@@ -84,52 +75,79 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
         if (cancelled) return;
         setShiftsLoading(false);
         if (error) { setShiftsError(error.message); return; }
-        const loaded = (data ?? []) as ShiftOption[];
-        setShifts(loaded);
-        if (focusedShiftId) {
-          // The rota asked us to plan jobs for a specific shift.
-          if (loaded.some(s => s.id === focusedShiftId)) {
-            setShiftId(focusedShiftId);
-          } else {
-            // That shift is no longer available — fall back safely.
-            setShiftId(loaded[0]?.id ?? '');
-            setFocusMessage('That shift is no longer available for job planning, so the first available shift is selected instead.');
-          }
-        } else {
-          // Opened without a focused shift: keep the current selection when valid.
-          setShiftId(current => (current && loaded.some(s => s.id === current) ? current : (loaded[0]?.id ?? '')));
-        }
+        setShifts((data ?? []) as ShiftOption[]);
       });
     return () => { cancelled = true; };
-  }, [profile?.company_id, focusedShiftId]);
+  }, [profile?.company_id]);
 
-  const loadAssignments = useCallback(async (shiftToLoad: string) => {
-    setAssignmentsLoading(true);
-    setAssignmentsError(null);
+  // Apply the focused shift (from the rota URL, Back/Forward, or a manual
+  // selection sync). Falls back safely when the requested shift no longer
+  // exists and reports the resolved shift so the dashboard URL stays correct.
+  useEffect(() => {
+    if (shiftsLoading) return;
+    if (focusedShiftId) {
+      if (shifts.some(s => s.id === focusedShiftId)) {
+        setShiftId(focusedShiftId);
+        setFocusMessage(null);
+      } else {
+        const fallbackId = shifts[0]?.id ?? '';
+        setShiftId(fallbackId);
+        setFocusMessage('That shift is no longer available for job planning, so the first available shift is selected instead.');
+        onFocusedShiftChange?.(fallbackId || undefined);
+      }
+    } else {
+      setShiftId(current => (current && shifts.some(s => s.id === current) ? current : (shifts[0]?.id ?? '')));
+      setFocusMessage(null);
+    }
+  }, [focusedShiftId, onFocusedShiftChange, shifts, shiftsLoading]);
+
+  const loadAssignments = useCallback(async (shiftToLoad: string, requestToken: number) => {
     const { data, error } = await supabase.from('job_assignments')
       .select(ASSIGNMENT_SELECT)
       .eq('shift_id', shiftToLoad)
       .order('sequence');
-    setAssignmentsLoading(false);
-    if (error) { setAssignmentsError(error.message); return; }
-    const rows = (data ?? []) as JobAssignmentRow[];
-    setAssignments(rows);
-    // Default the form to the next safe sequence for this shift.
-    setSequence(String(nextJobSequence(rows.map(r => r.sequence))));
+    // Only the latest request for the current shift can resolve; the reducer
+    // drops stale or out-of-order responses via the request token.
+    dispatchAssignmentLoad({
+      type: 'resolve',
+      requestToken,
+      shiftId: shiftToLoad,
+      assignments: error ? null : ((data ?? []) as JobAssignmentRow[]),
+      error: error ? error.message : null,
+    });
   }, []);
+
+  const beginAssignmentLoad = useCallback((shiftToLoad: string) => {
+    const requestToken = requestTokenRef.current + 1;
+    requestTokenRef.current = requestToken;
+    dispatchAssignmentLoad({ type: 'begin', shiftId: shiftToLoad, requestToken });
+    void loadAssignments(shiftToLoad, requestToken);
+  }, [loadAssignments]);
 
   useEffect(() => {
     if (!shiftId) {
-      setAssignments([]);
-      setAssignmentsLoading(false);
-      setAssignmentsError(null);
+      dispatchAssignmentLoad({ type: 'begin', shiftId: '', requestToken: requestTokenRef.current });
       return;
     }
-    void loadAssignments(shiftId);
-  }, [shiftId, loadAssignments]);
+    beginAssignmentLoad(shiftId);
+  }, [shiftId, beginAssignmentLoad]);
 
-  const takenSequences = useMemo(() => assignments.map(a => a.sequence), [assignments]);
+  const assignmentsReady = isJobAssignmentLoadReady(assignmentLoad, shiftId);
+  const assignmentsLoading = assignmentLoad.loading;
+  const assignmentsError = assignmentLoad.error;
+  const takenSequences = useMemo(
+    () => (assignmentsReady ? assignmentLoad.assignments.map(a => a.sequence) : []),
+    [assignmentLoad.assignments, assignmentsReady]
+  );
   const nextAvailable = useMemo(() => nextJobSequence(takenSequences), [takenSequences]);
+
+  // Once a confirmed load lands, default the form to the next safe sequence for
+  // exactly that shift. Resets again after a successful publish reload.
+  useEffect(() => {
+    if (assignmentsReady) {
+      setSequence(String(nextJobSequence(assignmentLoad.assignments.map(a => a.sequence))));
+    }
+  }, [assignmentLoad, assignmentsReady]);
 
   const sequenceError = useMemo(() => {
     if (sequence === '') return 'Sequence is required.';
@@ -156,9 +174,19 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
 
   const formBlocked = Boolean(sequenceError || plannedWindowError || durationError);
 
+  const handleShiftChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const next = event.target.value;
+    setShiftId(next);
+    onFocusedShiftChange?.(next || undefined);
+  };
+
   const publish = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!shiftId) return;
+    if (submitting) return;
+    if (!shiftId || !assignmentsReady) {
+      setMessage({ kind: 'error', text: 'Assignments for this shift are still loading or could not be confirmed. Wait for the job list, then publish.' });
+      return;
+    }
     if (formBlocked) {
       setMessage({ kind: 'error', text: sequenceError ?? plannedWindowError ?? durationError ?? 'Please fix the highlighted fields before publishing.' });
       return;
@@ -176,7 +204,8 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
         p_contact_name: contactName || null,
         p_contact_phone: contactPhone || null,
         p_instructions: instructions || null,
-        p_manager_notes: managerNotes || null,
+        // Manager-only notes are not collected here (see ASSIGNMENT_SELECT note).
+        p_manager_notes: null,
         p_sequence: Number(sequence),
         p_planned_arrival_at: localDateTimeToIso(plannedArrival),
         p_planned_departure_at: localDateTimeToIso(plannedDeparture),
@@ -186,13 +215,21 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
       if (error) throw error;
       // Clear only the completed form fields; keep the selected shift.
       setReference(''); setTitle(''); setCustomerName(''); setAddress('');
-      setContactName(''); setContactPhone(''); setInstructions(''); setManagerNotes('');
+      setContactName(''); setContactPhone(''); setInstructions('');
       setPlannedArrival(''); setPlannedDeparture(''); setDuration('');
       setJobType('delivery');
       setMessage({ kind: 'success', text: 'Job published to the assigned driver.' });
-      void loadAssignments(shiftId);
+      // Reload assignments before the sequence state is treated as ready again.
+      beginAssignmentLoad(shiftId);
     } catch (error) {
-      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to publish job.' });
+      if (isJobSequenceCollision(error)) {
+        setMessage({
+          kind: 'error',
+          text: 'Another manager published a job on this shift at the same time. Reload the assignments and select the new next sequence before publishing again.',
+        });
+      } else {
+        setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to publish job.' });
+      }
     } finally { setSubmitting(false); }
   };
 
@@ -218,14 +255,14 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
       <>
         <form onSubmit={publish} className="space-y-4 rounded-2xl border border-brand-border bg-brand-card p-6">
           <Field label="Published shift" required>
-            <select required value={shiftId} onChange={e => setShiftId(e.target.value)} className="input">
+            <select required value={shiftId} onChange={handleShiftChange} className="input">
               <option value="">Choose a shift</option>
               {shifts.map(s => <option key={s.id} value={s.id}>{s.date} {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)} · {s.profiles?.full_name ?? 'Driver'}</option>)}
             </select>
           </Field>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Job reference" required><input required value={reference} onChange={e => setReference(e.target.value)} className="input" placeholder="JOB-123" /></Field>
-            <Field label="Sequence" required hint={`Route order on the shift. Next available: ${nextAvailable}.`}>
+            <Field label="Sequence" required hint={assignmentsReady ? `Route order on the shift. Next available: ${nextAvailable}.` : 'Existing jobs for this shift are still loading; the next safe sequence is calculated once they are confirmed.'}>
               <input type="number" min="1" step="1" required value={sequence} onChange={e => setSequence(e.target.value)} className="input" placeholder="1" />
             </Field>
           </div>
@@ -248,9 +285,8 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
           {durationError ? <p className="text-sm text-red-300">{durationError}</p> : null}
           <Field label="Contact name" hint="Optional."><input value={contactName} onChange={e => setContactName(e.target.value)} className="input" placeholder="Site contact name" /></Field>
           <Field label="Driver / site instructions" hint="Optional."><textarea value={instructions} onChange={e => setInstructions(e.target.value)} className="input min-h-20" placeholder="Site access / load notes" /></Field>
-          <Field label="Internal manager notes" hint="Optional. Not shown to the driver."><textarea value={managerNotes} onChange={e => setManagerNotes(e.target.value)} className="input min-h-20" placeholder="Internal notes only" /></Field>
           {message ? <p className={message.kind === 'success' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>{message.text}</p> : null}
-          <button disabled={submitting || formBlocked || shifts.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50"><Send size={16} />{submitting ? 'Publishing…' : 'Publish job to driver'}</button>
+          <button disabled={submitting || !assignmentsReady || formBlocked || shifts.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50"><Send size={16} />{submitting ? 'Publishing…' : 'Publish job to driver'}</button>
         </form>
 
         <section className="rounded-2xl border border-brand-border bg-brand-card p-6">
@@ -259,19 +295,23 @@ export function JobPlanner({ focusedShiftId }: JobPlannerProps = {}) {
               <h3 className="text-lg font-bold text-white">Jobs on this shift</h3>
               <p className="text-sm text-slate-400">Published job assignments for the selected shift, in route order.</p>
             </div>
-            {assignments.length > 0 ? <span className="rounded-full bg-brand-accent/10 px-3 py-1 text-xs font-black text-brand-accent">{assignments.length} job{assignments.length === 1 ? '' : 's'}</span> : null}
+            {assignmentsReady && assignmentLoad.assignments.length > 0 ? <span className="rounded-full bg-brand-accent/10 px-3 py-1 text-xs font-black text-brand-accent">{assignmentLoad.assignments.length} job{assignmentLoad.assignments.length === 1 ? '' : 's'}</span> : null}
           </div>
           {assignmentsLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-400"><Loader2 className="animate-spin" size={16} />Loading assignments…</div>
           ) : assignmentsError ? (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
               <p>Unable to load assignments: {assignmentsError}</p>
-              <button type="button" onClick={() => void loadAssignments(shiftId)} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-bold text-white"><RefreshCw size={12} />Retry</button>
+              <button type="button" onClick={() => beginAssignmentLoad(shiftId)} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-bold text-white"><RefreshCw size={12} />Retry</button>
             </div>
-          ) : assignments.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">No jobs assigned to this shift yet.</p>
+          ) : assignmentsReady ? (
+            assignmentLoad.assignments.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-500">No jobs assigned to this shift yet.</p>
+            ) : (
+              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} />)}</ul>
+            )
           ) : (
-            <ul className="space-y-3">{assignments.map(a => <AssignmentCard key={a.id} assignment={a} />)}</ul>
+            <p className="py-8 text-center text-sm text-slate-500">Choose a shift to review its assigned jobs.</p>
           )}
         </section>
       </>

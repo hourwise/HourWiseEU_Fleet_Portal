@@ -251,6 +251,12 @@ export function ManagerDashboard() {
     applyDashboardRoute({ workspace: 'people', people: 'jobs', focusedShiftId: shiftId });
   };
 
+  // Manual Job Planner dropdown changes sync the `shift` query param without
+  // creating extra browser-history entries (replace, not push).
+  const handleJobPlannerShiftChange = useCallback((shiftId?: string) => {
+    applyDashboardRoute({ focusedShiftId: shiftId }, 'replace');
+  }, [applyDashboardRoute]);
+
   const currentWorkspaceLabel = workspaces.find(w => w.id === activeWorkspace)?.label || 'Dashboard';
 
   return (
@@ -568,7 +574,7 @@ export function ManagerDashboard() {
               )}
               {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
               {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner onOpenJobPlanner={openJobPlannerForShift} />}
-              {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner focusedShiftId={focusedShiftRecordId} />}
+              {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner focusedShiftId={focusedShiftRecordId} onFocusedShiftChange={handleJobPlannerShiftChange} />}
               {activeWorkspace === 'people' && activePeopleSection === 'supervisors' && <SupervisorManagement />}
               {activeWorkspace === 'people' && activePeopleSection === 'messages' && <MessagingHub />}
 

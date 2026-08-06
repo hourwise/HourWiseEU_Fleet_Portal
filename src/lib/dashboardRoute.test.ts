@@ -36,6 +36,13 @@ describe('dashboard route state', () => {
       .toBe('/dashboard?workspace=fleet&fleet=fuel');
   });
 
+  it('emits a manually selected focused shift for People -> Jobs and drops it when cleared', () => {
+    const withShift = buildDashboardUrl({ ...DEFAULT_DASHBOARD_ROUTE, workspace: 'people', people: 'jobs', focusedShiftId: 'shift-manual' });
+    expect(withShift).toBe('/dashboard?workspace=people&people=jobs&shift=shift-manual');
+    const cleared = buildDashboardUrl({ ...DEFAULT_DASHBOARD_ROUTE, workspace: 'people', people: 'jobs', focusedShiftId: undefined });
+    expect(cleared).toBe('/dashboard?workspace=people&people=jobs');
+  });
+
   it('drops the shift param when the focused shift is cleared', () => {
     expect(buildDashboardUrl({ ...DEFAULT_DASHBOARD_ROUTE, workspace: 'people', people: 'jobs', focusedShiftId: undefined }))
       .toBe('/dashboard?workspace=people&people=jobs');
