@@ -1,7 +1,7 @@
 # EVENT-001-DESIGN Operational Event Spine Foundation
 
 Date: 2026-07-09
-Status: Implemented locally, migration pending deployment
+Status: Deployed 2026-07-16
 Runtime scope: additive database foundation only
 
 ## Summary
@@ -128,19 +128,19 @@ The driver read model `driver_visible_fleet_events` uses `security_invoker = tru
 
 ## Non-Goals
 
-This slice does not:
+The foundation migration itself does not:
 
 - send push notifications
 - alter the current `MessagingHub`
-- automatically create events from rota publish/update/cancel
+- create events from rota update/cancel (rota publication is implemented separately by EVENT-001 runtime)
 - backfill old messages into threads
 - expose event UI in the Driver Dashboard
 - change central RBAC enforcement
 - add Atlas event consumption
 
-## Deployment
+## Deployment Record
 
-Migration pending deployment:
+Deployed to the linked Supabase project on 2026-07-16:
 
 ```text
 supabase/migrations/20260709110000_add_event_spine_foundation.sql
@@ -209,4 +209,3 @@ Latest local `test:rules` result:
 4. Set `related_shift_id`.
 5. Optionally set `requires_ack = true`.
 6. Show unread/ack state in the driver operational home.
-

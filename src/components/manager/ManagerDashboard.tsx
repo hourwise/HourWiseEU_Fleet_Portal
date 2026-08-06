@@ -4,11 +4,11 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import {
-  LogOut, LayoutDashboard, Users, FileBarChart2, Settings,
-  Shield, ShieldCheck, ShieldAlert, Truck, Activity,
+  LogOut, LayoutDashboard, Users, Settings,
+  Shield, ShieldCheck, Truck, Activity,
   GraduationCap, MessageSquare, Fuel, Calendar as CalendarIcon,
-  Gauge, FileText, Wrench, AlertTriangle, Bell, Search, UserCircle,
-  Menu, X, ChevronRight, ChevronDown, Sparkles
+  Gauge, FileText, AlertTriangle, Bell, Search, UserCircle,
+  Menu, X, ChevronRight, Sparkles, ClipboardList
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -32,6 +32,7 @@ const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m =>
 const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
 const DriverRiskSnapshot = lazy(() => import('./DriverRiskSnapshot').then(m => ({ default: m.DriverRiskSnapshot })));
 const ShiftPlanner = lazy(() => import('./ShiftPlanner').then(m => ({ default: m.ShiftPlanner })));
+const JobPlanner = lazy(() => import('./JobPlanner').then(m => ({ default: m.JobPlanner })));
 const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
 const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
 const TachoComplianceWorkspace = lazy(() => import('./tachograph/TachoComplianceWorkspace').then(m => ({ default: m.TachoComplianceWorkspace })));
@@ -45,7 +46,7 @@ function TabLoading() {
 }
 
 type Workspace = 'dashboard' | 'people' | 'fleet' | 'compliance' | 'reports' | 'settings';
-type PeopleSection = 'drivers' | 'training' | 'shifts' | 'supervisors' | 'messages';
+type PeopleSection = 'drivers' | 'training' | 'shifts' | 'jobs' | 'supervisors' | 'messages';
 type FleetSection = 'vehicles' | 'vehicle_checks' | 'fuel' | 'olicence' | 'incidents';
 type SettingsSection = 'account' | 'company';
 type TachoTab = 'overview' | 'imports' | 'driver_cards' | 'vehicle_units' | 'simulator';
@@ -64,7 +65,7 @@ interface DashboardRouteState {
 }
 
 const WORKSPACES: Workspace[] = ['dashboard', 'people', 'fleet', 'compliance', 'reports', 'settings'];
-const PEOPLE_SECTIONS: PeopleSection[] = ['drivers', 'training', 'shifts', 'supervisors', 'messages'];
+const PEOPLE_SECTIONS: PeopleSection[] = ['drivers', 'training', 'shifts', 'jobs', 'supervisors', 'messages'];
 const FLEET_SECTIONS: FleetSection[] = ['vehicles', 'vehicle_checks', 'fuel', 'olicence', 'incidents'];
 const SETTINGS_SECTIONS: SettingsSection[] = ['account', 'company'];
 const TACHO_TABS: TachoTab[] = ['overview', 'imports', 'driver_cards', 'vehicle_units', 'simulator'];
@@ -264,6 +265,7 @@ export function ManagerDashboard() {
     { id: 'drivers', label: t('navigation.drivers'), icon: Users },
     { id: 'training', label: t('navigation.training'), icon: GraduationCap },
     { id: 'shifts', label: 'Shifts', icon: CalendarIcon },
+    { id: 'jobs', label: 'Jobs', icon: ClipboardList },
     { id: 'supervisors', label: t('navigation.supervisors'), icon: Users },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessages },
   ];
@@ -619,6 +621,7 @@ export function ManagerDashboard() {
               )}
               {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
               {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner />}
+              {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner />}
               {activeWorkspace === 'people' && activePeopleSection === 'supervisors' && <SupervisorManagement />}
               {activeWorkspace === 'people' && activePeopleSection === 'messages' && <MessagingHub />}
 

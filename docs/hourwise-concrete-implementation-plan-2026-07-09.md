@@ -78,11 +78,11 @@ Completion gate:
 - Security health checks do not show shadow permission mismatches.
 - New feature migrations have explicit rollback notes and RLS/security tests.
 
-### Phase 1 - ROTA-001 Driver Read-Only Rota
+### Phase 1 - ROTA-001 Shared Driver-Rota Output
 
 Status: Implemented locally 2026-07-09. See `docs/rota-001-driver-read-only-rota-2026-07-09.md`.
 
-Goal: turn the existing manager shift planner into visible driver value without a major schema rewrite.
+Goal: turn the existing manager shift planner into a safe shared-backend rota output for the separate Android Driver App, without a major schema rewrite.
 
 Implementation:
 
@@ -119,7 +119,7 @@ Likely files:
 
 ### Phase 2 - ROTA-002 Publishable Rota Changes
 
-Status: Implemented locally 2026-07-09; migration pending deployment. See `docs/rota-002-publish-status-audit-2026-07-09.md`.
+Status: Deployed 2026-07-16. See `docs/rota-002-publish-status-audit-2026-07-09.md`.
 
 Goal: make rota changes explicit operational events rather than silent table edits.
 
@@ -148,7 +148,7 @@ Acceptance:
 
 ### Phase 3 - EVENT-001 Operational Event Spine
 
-Status: Foundation design implemented locally 2026-07-09; migration pending deployment. See `docs/event-001-operational-event-spine-design-2026-07-09.md`.
+Status: Event foundation and first rota-publication producer deployed 2026-07-16. Next: driver unread/acknowledgement UI. See `docs/event-001-rota-publication-runtime-2026-07-16.md`.
 
 Goal: unify rota updates, messages, acknowledgements, notifications, and future Atlas recommendations.
 
@@ -179,9 +179,9 @@ Acceptance:
 - Driver acknowledgements are visible to managers.
 - Existing message UI still works during migration.
 
-### Phase 4 - DRIVER-001 Driver Operational Home
+### Phase 4 - ANDROID-DRIVER-001 Driver Operational Home
 
-Status: Build after ROTA-001 starts proving useful.
+Status: Owned by the separate Android Driver App repository. The Portal’s driver dashboard is an internal diagnostic/staging surface only and must not be treated as the driver product.
 
 Goal: make the driver dashboard a daily work surface, not only a tachograph review surface.
 
@@ -205,7 +205,7 @@ Acceptance:
 
 ### Phase 5 - ROUTE-001 Job And Route Planning MVP
 
-Status: Defer until rota/event spine exists.
+Status: First job-assignment foundation deployed 2026-07-17; edit/cancel and route-estimate work pending. See `docs/route-001-job-route-design-2026-07-17.md`.
 
 Goal: add job and route planning as operational assignments, not as standalone map tooling.
 
@@ -310,14 +310,14 @@ Acceptance:
 | ID | Task | Priority | Depends On | Runtime Change |
 | --- | --- | --- | --- | --- |
 | `IMPL-001` | Refresh current schema/type position for `shifts`, `messages`, and driver dashboard data needs. | P0 | Current repo | No |
-| `ROTA-001` | Add driver read-only upcoming rota from existing `shifts`. | P0 | `IMPL-001` | Yes - implemented locally 2026-07-09 |
+| `ROTA-001` | Provide published driver rota data from the shared backend. | P0 | `IMPL-001` | Yes - deployed for Android app consumption |
 | `SEC-013` | Add rota read visibility checks to the security health/check test plan. | P0 | `ROTA-001` schema decision | Maybe |
-| `ROTA-002` | Add publish/status/audit semantics to shifts. | P1 | `ROTA-001` | Yes - implemented locally 2026-07-09, migration pending deployment |
-| `EVENT-001-DESIGN` | Design additive event/thread/ack schema with compatibility to current `messages`. | P1 | `ROTA-001` | No - implemented locally 2026-07-09, migration pending deployment |
-| `EVENT-001` | Implement event-backed messages and rota publication events. | P1 | `EVENT-001-DESIGN`, security review | Yes |
-| `DRIVER-001` | Expand driver dashboard into Today/Rota/Messages/Tacho operational home. | P1 | `ROTA-001`, partial `EVENT-001` | Yes |
-| `ROUTE-001-DESIGN` | Finalise route/job schema, provider boundary, advisory wording, and delay flow. | P2 | `EVENT-001` | No |
-| `ROUTE-001` | Implement job and route planning MVP. | P2 | `ROUTE-001-DESIGN` | Yes |
+| `ROTA-002` | Publish/status/audit semantics for shifts. | P1 | `ROTA-001` | Yes - deployed 2026-07-16 |
+| `EVENT-001-DESIGN` | Additive event/thread/ack schema with compatibility to current `messages`. | P1 | `ROTA-001` | Yes - deployed 2026-07-16 |
+| `EVENT-001` | Rota publish/update/cancel and manager-message producers are deployed; next define Portal job/route assignment outputs. | P1 | `EVENT-001-DESIGN`, security review | Yes - partially deployed through 2026-07-17 |
+| `ANDROID-DRIVER-001` | Integrate rota/event inbox/acknowledgement into the separate Android Driver App. | P1 | `ROTA-001`, partial `EVENT-001` | External Android repository; Portal provides backend contract only |
+| `ROUTE-001-DESIGN` | Route/job schema, provider boundary, advisory wording, and delay flow. | P2 | `EVENT-001` | Completed locally 2026-07-17 |
+| `ROUTE-001` | Job assignment create/publish is deployed; next add edit/cancel and advisory route estimates. | P2 | `ROUTE-001-DESIGN` | Yes - partially deployed 2026-07-17 |
 | `ASSET-001-DESIGN` | Design asset rule/readings/due-state/evidence model around existing vehicle data. | P2 | Security/site model progress | No |
 | `ASSET-001` | Implement first vehicle maintenance rule engine slice. | P2 | `ASSET-001-DESIGN` | Yes |
 | `ATLAS-001-DESIGN` | Define deterministic Atlas Operations API query set and audit boundary. | P2 | `EVENT-001`, `ASSET-001-DESIGN` | No |

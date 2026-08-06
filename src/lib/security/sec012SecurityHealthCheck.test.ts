@@ -29,6 +29,7 @@ describe('SEC-012 RBAC security health-check SQL pack', () => {
     expect(normalizedSql).toContain("role_key = 'fleet_administrator'");
     expect(sql).toContain('tachograph.raw_file.export');
     expect(sql).toContain('reporting.report.export');
+    expect(sql).toContain('rota.shift.publish');
     expect(sql).toContain('support.session.admin');
     expect(sql).toContain('atlas.fleet_summary.read');
   });
@@ -42,14 +43,22 @@ describe('SEC-012 RBAC security health-check SQL pack', () => {
     expect(sql).toContain('permission_allowed');
   });
 
+  it('includes EVENT-001 rota publication security observation', () => {
+    expect(sql).toContain('sec012_event001_rota_publish_summary');
+    expect(sql).toContain('rota.shift.publish');
+    expect(sql).toContain('rota_shift_published');
+    expect(sql).toContain('legacy_authorisation_denied');
+  });
+
   it('includes deployed function markers and migration-history note', () => {
     expect(sql).toContain('sec012_deployed_function_markers');
     expect(sql).toContain('pair_tacho_card_import_to_driver(uuid,uuid,uuid,text)');
     expect(sql).toContain('patch_tachograph_import_metadata(uuid,jsonb)');
+    expect(sql).toContain('publish_shift_with_event(uuid,boolean)');
     expect(sql).toContain('timeline_generations');
     expect(sql).toContain('timeline_events');
     expect(sql).toContain('sec012_migration_history_note');
-    expect(sql).toContain('20260708120000');
+    expect(sql).toContain('20260717110000');
   });
 
   it('does not perform mutating database operations', () => {

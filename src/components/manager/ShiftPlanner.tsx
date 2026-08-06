@@ -134,10 +134,15 @@ export function ShiftPlanner() {
       };
 
       if (selectedShift.id) {
-        const { error } = await supabase
-          .from('shifts')
-          .update(shiftData)
-          .eq('id', selectedShift.id);
+        const { error } = await supabase.rpc('update_shift_with_event' as never, {
+          p_shift_id: selectedShift.id,
+          p_date: shiftData.date,
+          p_start_time: shiftData.start_time,
+          p_end_time: shiftData.end_time,
+          p_vehicle_id: shiftData.vehicle_id,
+          p_notes: shiftData.notes,
+          p_requires_ack: true,
+        } as never);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -158,16 +163,10 @@ export function ShiftPlanner() {
     if (!profile?.id) return;
 
     try {
-      const { error } = await supabase
-        .from('shifts')
-        .update({
-          status: 'published',
-          published_at: new Date().toISOString(),
-          published_by: profile.id,
-          cancelled_at: null,
-          cancelled_by: null,
-        })
-        .eq('id', shift.id);
+      const { error } = await supabase.rpc('publish_shift_with_event' as never, {
+        p_shift_id: shift.id,
+        p_requires_ack: true,
+      } as never);
       if (error) throw error;
       void loadData();
     } catch (err) {
@@ -180,14 +179,10 @@ export function ShiftPlanner() {
     if (!profile?.id || !confirm('Cancel this shift? Drivers will no longer see it in their rota.')) return;
 
     try {
-      const { error } = await supabase
-        .from('shifts')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          cancelled_by: profile.id,
-        })
-        .eq('id', shift.id);
+      const { error } = await supabase.rpc('cancel_shift_with_event' as never, {
+        p_shift_id: shift.id,
+        p_requires_ack: true,
+      } as never);
       if (error) throw error;
       void loadData();
     } catch (err) {

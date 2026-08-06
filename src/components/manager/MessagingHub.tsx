@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  MessageSquare, Send, Users, Megaphone, ChevronRight,
+  MessageSquare, Send, Users, Megaphone,
   CheckCheck, Clock, RefreshCw, PenSquare, X,
 } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -90,8 +90,8 @@ function ComposeModal({
     try {
       await onSend(body.trim(), recipientId);
       onClose();
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to send.');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to send.');
       setSending(false);
     }
   };
@@ -199,7 +199,7 @@ export function MessagingHub() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `company_id=eq.${profile.company_id}` },
-        payload => {
+        () => {
           // Re-fetch with joined profile names rather than merging partial payload
           loadMessages();
         }
@@ -308,12 +308,10 @@ export function MessagingHub() {
 
   const sendMessage = async (body: string, recipientId: string | null) => {
     if (!profile?.company_id || !profile?.id) throw new Error('Not authenticated');
-    const { error } = await supabase.from('messages').insert({
-      company_id: profile.company_id,
-      sender_id: profile.id,
-      recipient_id: recipientId,
-      body,
-    });
+    const { error } = await supabase.rpc('send_manager_message_with_event' as never, {
+      p_body: body,
+      p_recipient_driver_id: recipientId,
+    } as never);
     if (error) throw error;
   };
 

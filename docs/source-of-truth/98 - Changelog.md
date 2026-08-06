@@ -83,12 +83,166 @@ Describe the actual source-of-truth change.
 
 ## 4. Change Entries
 
+## 2026-07-17 - Deploy ROUTE-001 Job Assignment Foundation
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-17-003 |
+| Status | Partially Implemented / Deployed |
+| Owner | Engineering / Security |
+| Summary | Added the first Manager Portal job-publish workflow, shared job/assignment tables, driver-own read policies, and `job_assigned` event producer. |
+| Reason | Managers need to publish a driver’s planned work through the shared backend before Android job screens can be completed. |
+| Affected Source Documents | `docs/route-001-job-route-design-2026-07-17.md`, `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0024` |
+| Capability IDs | Jobs, Events, Driver App |
+| Implementation Impact | High |
+| Database Impact | Deployed `20260717110000_add_job_assignment_foundation.sql`. |
+| Security Impact | Adds audited job create/publish permissions, company-scoped manager policies, driver-own published assignment reads, and a shadow-authenticated atomic RPC. |
+| Testing Impact | Added migration/RPC regression coverage; focused lint and production build passed. |
+| Rollback Notes | Use forward migrations; retain operational job/event records once drivers have been notified. |
+
+### Details
+
+The new People → Jobs Portal screen publishes delivery, collection, service, or other jobs to an existing published shift. It stores customer/site instructions and expected duration, creates the job assignment, and emits a driver-visible `job_assigned` event. No route provider, live navigation claim, Android UI, edit/cancel, or POD implementation is included.
+
+## 2026-07-17 - Complete ROUTE-001 Job and Route Assignment Design
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-17-002 |
+| Status | Implemented Design / Build Pending |
+| Owner | Product Architecture / Engineering |
+| Summary | Defined the additive job, assignment, and advisory route-plan model for Portal-to-Android operational delivery. |
+| Reason | Route/job implementation must not precede a shared data, security, event, and advisory-navigation contract. |
+| Affected Source Documents | `docs/route-001-job-route-design-2026-07-17.md`, `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0022`, `ADR-0024` |
+| Capability IDs | Jobs, Routes, Events, Driver App |
+| Implementation Impact | High |
+| Database Impact | Additive schema and RPC migration required; not yet created. |
+| Security Impact | Requires manager/company-compatible RPCs, new operations permissions, driver-own assignment reads, and audit events. |
+| Testing Impact | Requires migration, RLS, RPC, and Portal UI regression coverage in the implementation phase. |
+| Rollback Notes | No runtime/database change in this design-only step. |
+
+### Details
+
+The design keeps the Portal as the manager authoring surface and the separate Android app as the driver consumer. Route estimates are advisory only; no live HGV navigation claim or provider integration has been introduced.
+
+## 2026-07-17 - Deploy EVENT-001 Rota Lifecycle Producers
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-17-001 |
+| Status | Implemented / Deployed |
+| Owner | Engineering / Security |
+| Summary | Manager Portal shift edits and cancellations now create atomic driver-visible rota lifecycle events. |
+| Reason | Android Driver App consumers need a complete rota lifecycle, not only initial shift publication. |
+| Affected Source Documents | `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/event-001-rota-publication-runtime-2026-07-16.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0024` |
+| Capability IDs | Rota, Events, Driver App |
+| Implementation Impact | Medium |
+| Database Impact | Deployed `20260717100000_add_rota_update_cancel_event_rpcs.sql`. |
+| Security Impact | Adds audited `rota.shift.update` and `rota.shift.cancel` permissions; legacy manager/company enforcement remains authoritative during the shadow period. |
+| Testing Impact | Added lifecycle producer regression coverage; full test suite and production build passed. |
+| Rollback Notes | Use a forward migration to revoke/supersede RPCs after checking linked shift and event records. |
+
+### Details
+
+Published/updated shifts produce `rota_shift_updated` when edited and `rota_shift_cancelled` when cancelled. Draft-only changes remain silent because they are not visible to the driver. Both producers lock their shift row and update the shift, thread, event, and audit record in one transaction.
+
+## 2026-07-16 - Correct Driver-App Boundary And Deploy Manager Message Events
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-16-003 |
+| Status | Implemented / Deployed |
+| Owner | Product Architecture / Engineering |
+| Summary | Corrected the Driver App boundary: Portal manages and publishes; the separate Android application is the driver product. Deployed the Portal manager-message event producer. |
+| Reason | The initial Portal plan incorrectly described a Portal driver dashboard as the intended driver surface. |
+| Affected Source Documents | `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/source-of-truth-completion-plan-2026-07-02.md`, `docs/event-001-rota-publication-runtime-2026-07-16.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0020`, `ADR-0021` |
+| Capability IDs | Rota, Messaging, Events, Driver App |
+| Implementation Impact | Medium |
+| Database Impact | Deployed `20260716220000_add_manager_message_event_rpc.sql`; manager Portal sends now create compatible messages, threads, and `message_sent` events atomically. |
+| Security Impact | Keeps legacy manager/company enforcement authoritative while observing `messaging.message.create` in shadow mode. |
+| Testing Impact | Added producer regression coverage; full test suite and production build passed. |
+| Rollback Notes | Use a forward migration to revoke/supersede the RPC after checking linked message/event records. |
+
+### Details
+
+The Portal is the manager/control surface. Its data is written to Supabase for Android Driver App consumption; it does not call the app directly. The Portal driver dashboard is retained only as an internal staging/diagnostic aid and is not a product deployment target.
+
+## 2026-07-16 - Implement DRIVER-001 Operational Event Inbox
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-16-002 |
+| Status | Implemented Locally / Frontend Deployment Pending |
+| Owner | Engineering |
+| Summary | Driver Operational Home now reads driver-visible operational events, shows acknowledgement-required rota events, and lets the assigned driver acknowledge them. |
+| Reason | The deployed rota publication producer needs a driver-facing endpoint for the event and acknowledgement flow. |
+| Affected Source Documents | `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/event-001-rota-publication-runtime-2026-07-16.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0021`, `ADR-0022`, `ADR-0024` |
+| Capability IDs | Driver App, Events, Rota |
+| Implementation Impact | Medium |
+| Database Impact | Uses deployed EVENT-001 tables/view; no new migration. |
+| Security Impact | Reads only the security-invoker driver event view and upserts acknowledgements through the existing driver-only RLS policy. |
+| Testing Impact | Added driver event read-model normalisation tests and included them in `test:rules`. |
+| Rollback Notes | Revert the frontend bundle only; the event tables and acknowledgements remain valid operational records. |
+
+### Details
+
+The dashboard shows a rota-event count, event cards, acknowledgement status, and an acknowledgement action. The UI uses `driver_visible_fleet_events`, then joins the current driver’s acknowledgement rows client-side. It does not expose manager/company events outside the RLS-protected view.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR impact assessed; no ADR change required
+- [x] Implementation backlog updated
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
+## 2026-07-16 - Implement EVENT-001 Rota Publication Producer
+
+| Field | Value |
+| --- | --- |
+| Change ID | SOT-2026-07-16-001 |
+| Status | Deployed / Verified Migration History |
+| Owner | Engineering / Security |
+| Summary | Rota publication now uses one planned atomic RPC that publishes the shift, creates or reuses its rota thread, and writes a driver-visible operational event. |
+| Reason | A driver must receive an auditable operational event when a manager publishes or republishes a rota shift. |
+| Affected Source Documents | `docs/hourwise-concrete-implementation-plan-2026-07-09.md`, `docs/event-001-rota-publication-runtime-2026-07-16.md`, `98 - Changelog.md` |
+| Affected ADRs | `ADR-0021`, `ADR-0022`, `ADR-0024` |
+| Capability IDs | Events, Rota, Messaging, Driver App |
+| Implementation Impact | Medium |
+| Database Impact | Additive migration `20260716210000_add_rota_publish_event_rpc.sql` deployed 2026-07-16 after the ROTA-002 and EVENT-001 foundation migrations. |
+| Security Impact | Adds `rota.shift.publish` as an audited RBAC permission, while legacy manager/company enforcement remains active and permission parity is recorded in shadow/audit mode. |
+| Testing Impact | Added runtime-producer migration/UI regression coverage and extended the SEC-012 permission catalogue expectation. |
+| Rollback Notes | Use a forward migration to revoke the RPC and remove the permission grant only after checking dependent event records. |
+
+### Details
+
+The manager rota Publish action calls `publish_shift_with_event`. The function locks the target shift, verifies existing manager/company access, publishes the shift, creates or reuses a `rota` thread, inserts `fleet_events.event_type = 'rota_shift_published'`, links it to the driver and shift, and updates the thread’s latest event. It records both the operation and any legacy/RBAC mismatch.
+
+The current direct table policies remain as compatibility policy during the RBAC shadow phase; the application’s Publish action no longer uses a browser table update.
+
+### Completion Checklist
+
+- [x] Relevant source-of-truth document updated
+- [x] Related documents updated
+- [x] ADR impact assessed; no ADR change required
+- [x] Implementation backlog updated
+- [x] Database migration impact assessed
+- [x] Security impact assessed
+- [x] Test impact assessed
+
 ## 2026-07-09 - Add EVENT-001 Operational Event Spine Foundation
 
 | Field | Value |
 | --- | --- |
 | Change ID | SOT-2026-07-09-005 |
-| Status | Implemented Locally / Migration Pending Deployment |
+| Status | Deployed / Verified Migration History |
 | Owner | Product Architecture / Engineering |
 | Summary | Added the additive event/thread/acknowledgement database foundation for the operational event spine. |
 | Reason | Rota publishing and messaging need a shared event model before driver notifications, acknowledgements, route/job updates, and Atlas event consumption are implemented. |
@@ -96,10 +250,10 @@ Describe the actual source-of-truth change.
 | Affected ADRs | `ADR-0021`, `ADR-0022`, `ADR-0024`, `ADR-0025` |
 | Capability IDs | Events, Messaging, Rota, Driver App, Atlas |
 | Implementation Impact | High |
-| Database Impact | Additive migration `20260709110000_add_event_spine_foundation.sql` pending deployment. |
+| Database Impact | Additive migration `20260709110000_add_event_spine_foundation.sql` deployed 2026-07-16. |
 | Security Impact | Adds company-scoped manager policies, driver assigned/broadcast visibility, acknowledgement constraints, and a security-invoker driver event view. |
 | Testing Impact | Added static migration test and included it in `test:rules`. |
-| Rollback Notes | Revert before deployment if superseded; after deployment, use a controlled rollback/superseding migration because tables may be referenced by future events. |
+| Rollback Notes | Use a controlled superseding migration because tables may be referenced by future events. |
 
 ### Details
 
@@ -122,7 +276,7 @@ No existing messaging UI, rota publish runtime, push notification, realtime, or 
 | Field | Value |
 | --- | --- |
 | Change ID | SOT-2026-07-09-004 |
-| Status | Implemented Locally / Migration Pending Deployment |
+| Status | Deployed / Verified Migration History |
 | Owner | Product Architecture / Engineering |
 | Summary | Added publish/status/audit semantics to manager shifts and tightened driver rota visibility to published/updated shifts. |
 | Reason | ROTA-001 made rota visible to drivers; ROTA-002 adds the minimum lifecycle control needed before event-backed rota notifications. |
@@ -130,10 +284,10 @@ No existing messaging UI, rota publish runtime, push notification, realtime, or 
 | Affected ADRs | `ADR-0020`, `ADR-0021`, `ADR-0022`, `ADR-0024` |
 | Capability IDs | Rota, Driver App, Security Audit |
 | Implementation Impact | High |
-| Database Impact | Additive migration `20260709100000_add_shift_publish_status_audit.sql` pending deployment. |
+| Database Impact | Additive migration `20260709100000_add_shift_publish_status_audit.sql` deployed 2026-07-16. |
 | Security Impact | Tightens driver shift visibility and adds trigger-backed shift audit events; central RBAC enforcement remains unchanged. |
 | Testing Impact | Added static migration test and updated rota helper tests. |
-| Rollback Notes | Revert the migration and UI/helper changes only before deployment; after deployment, use a controlled migration rollback/superseding migration. |
+| Rollback Notes | Use a controlled superseding migration for schema changes after checking affected shift/audit records. |
 
 ### Details
 

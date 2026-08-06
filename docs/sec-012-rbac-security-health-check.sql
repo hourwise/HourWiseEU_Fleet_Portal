@@ -3,9 +3,9 @@
 --
 -- Expected green state for the current live test dataset:
 -- - security_role_count = 10
--- - security_permission_count = 32
+-- - security_permission_count = 37
 -- - driver grant_count = 6
--- - fleet_administrator grant_count = 22
+-- - fleet_administrator grant_count = 27
 -- - denied-default fleet administrator unexpected grants = 0
 -- - active legacy profile assignment gaps = 0
 -- - orphaned legacy backfill assignments = 0
@@ -17,7 +17,7 @@ select
   (select count(*) from public.security_roles) as security_role_count,
   (select count(*) from public.security_permissions) as security_permission_count,
   (select count(*) from public.security_roles) = 10 as security_role_count_ok,
-  (select count(*) from public.security_permissions) = 32 as security_permission_count_ok;
+  (select count(*) from public.security_permissions) = 37 as security_permission_count_ok;
 
 select
   'sec012_role_grant_counts' as check_name,
@@ -25,7 +25,7 @@ select
   count(srp.permission_key) as grant_count,
   case sr.key
     when 'driver' then count(srp.permission_key) = 6
-    when 'fleet_administrator' then count(srp.permission_key) = 22
+    when 'fleet_administrator' then count(srp.permission_key) = 27
     else true
   end as expected_count_ok
 from public.security_roles sr
@@ -197,13 +197,33 @@ order by created_at desc
 limit 50;
 
 select
+  'sec012_event001_rota_publish_summary' as check_name,
+  count(*) filter (
+    where permission_key = 'rota.shift.publish'
+      and reason = 'shadow_permission_mismatch'
+  ) as shadow_mismatch_count,
+  count(*) filter (
+    where permission_key = 'rota.shift.publish'
+      and reason = 'rota_shift_published'
+  ) as allowed_publish_count,
+  count(*) filter (
+    where permission_key = 'rota.shift.publish'
+      and reason = 'legacy_authorisation_denied'
+  ) as legacy_denied_publish_count,
+  max(created_at) filter (
+    where permission_key = 'rota.shift.publish'
+  ) as last_publish_security_event
+from public.security_permission_audit_events;
+
+select
   'sec012_deployed_function_markers' as check_name,
   pg_get_functiondef('public.pair_tacho_card_import_to_driver(uuid,uuid,uuid,text)'::regprocedure) like '%timeline_generations%' as pairing_has_timeline_generations_update,
   pg_get_functiondef('public.pair_tacho_card_import_to_driver(uuid,uuid,uuid,text)'::regprocedure) like '%timeline_events%' as pairing_has_timeline_events_update,
   pg_get_functiondef('public.patch_tachograph_import_metadata(uuid,jsonb)'::regprocedure) like '%shadow_permission_mismatch%' as sec010_has_shadow_mismatch_audit,
-  pg_get_functiondef('public.patch_tachograph_import_metadata(uuid,jsonb)'::regprocedure) like '%actor_has_permission(''tachograph.import.update''%' as sec010_has_permission_shadow_check;
+  pg_get_functiondef('public.patch_tachograph_import_metadata(uuid,jsonb)'::regprocedure) like '%actor_has_permission(''tachograph.import.update''%' as sec010_has_permission_shadow_check,
+  to_regprocedure('public.publish_shift_with_event(uuid,boolean)') is not null as event001_rota_publish_function_deployed;
 
 select
   'sec012_migration_history_note' as check_name,
-  'supabase migration list --linked aligned local and remote through 20260708120000 on 2026-07-08 after MIG-001 repair' as note,
+  'supabase migration list --linked aligned local and remote through 20260717110000 on 2026-07-17 after ROUTE-001 job assignment foundation deployment' as note,
   to_regclass('supabase_migrations.schema_migrations') is not null as migration_history_table_visible_from_sql;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Loader2, LogOut, RefreshCw, Truck } from 'lucide-react';
+import { BellRing, CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Loader2, LogOut, RefreshCw, Truck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   acknowledgeTachoFindingReview,
@@ -8,6 +8,7 @@ import {
   fetchTachoFindingReviewEvents,
 } from '../../lib/tacho/api';
 import { fetchDriverUpcomingShifts, type DriverUpcomingShift } from '../../lib/rota';
+import { acknowledgeDriverOperationalEvent, fetchDriverOperationalEvents, type DriverOperationalEvent } from '../../lib/driverEvents';
 import type { TachoFindingReview } from '../../lib/tacho/rules/types';
 
 type PendingNoteByReviewId = Record<string, string>;
@@ -17,6 +18,7 @@ export function DriverDashboard() {
   const [reviews, setReviews] = useState<TachoFindingReview[]>([]);
   const [events, setEvents] = useState<Record<string, TachoFindingReviewEvent[]>>({});
   const [upcomingShifts, setUpcomingShifts] = useState<DriverUpcomingShift[]>([]);
+  const [operationalEvents, setOperationalEvents] = useState<DriverOperationalEvent[]>([]);
   const [notes, setNotes] = useState<PendingNoteByReviewId>({});
   const [loading, setLoading] = useState(true);
   const [rotaLoading, setRotaLoading] = useState(true);
@@ -24,6 +26,9 @@ export function DriverDashboard() {
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rotaError, setRotaError] = useState<string | null>(null);
+  const [operationalEventsError, setOperationalEventsError] = useState<string | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [acknowledgingEventId, setAcknowledgingEventId] = useState<string | null>(null);
 
   const loadReviews = async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'initial') setLoading(true);
@@ -68,15 +73,33 @@ export function DriverDashboard() {
     }
   };
 
+  const loadOperationalEvents = async () => {
+    if (!profile?.id) {
+      setOperationalEvents([]);
+      setEventsLoading(false);
+      return;
+    }
+    setEventsLoading(true);
+    setOperationalEventsError(null);
+    try {
+      setOperationalEvents(await fetchDriverOperationalEvents(profile.id));
+    } catch (loadError) {
+      setOperationalEventsError(loadError instanceof Error ? loadError.message : 'Unable to load operational events.');
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
   const refreshDashboard = async () => {
     setRefreshing(true);
-    await Promise.all([loadReviews('refresh'), loadRota()]);
+    await Promise.all([loadReviews('refresh'), loadRota(), loadOperationalEvents()]);
     setRefreshing(false);
   };
 
   useEffect(() => {
     void loadReviews();
     void loadRota();
+    void loadOperationalEvents();
     // Driver dashboard is profile-scoped; reload when the signed-in driver changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
@@ -97,6 +120,10 @@ export function DriverDashboard() {
     () => upcomingShifts.filter((shift) => shift.date === formatDateOnly(new Date())),
     [upcomingShifts]
   );
+  const outstandingOperationalEvents = useMemo(
+    () => operationalEvents.filter((event) => event.requiresAck && !event.acknowledgedAt),
+    [operationalEvents]
+  );
 
   const handleAcknowledge = async (review: TachoFindingReview) => {
     setAcknowledgingId(review.id);
@@ -113,6 +140,20 @@ export function DriverDashboard() {
       setError(ackError instanceof Error ? ackError.message : 'Unable to acknowledge this review.');
     } finally {
       setAcknowledgingId(null);
+    }
+  };
+
+  const handleAcknowledgeOperationalEvent = async (event: DriverOperationalEvent) => {
+    if (!profile?.id) return;
+    setAcknowledgingEventId(event.id);
+    setOperationalEventsError(null);
+    try {
+      await acknowledgeDriverOperationalEvent(event, profile.id);
+      await loadOperationalEvents();
+    } catch (ackError) {
+      setOperationalEventsError(ackError instanceof Error ? ackError.message : 'Unable to acknowledge operational event.');
+    } finally {
+      setAcknowledgingEventId(null);
     }
   };
 
@@ -152,12 +193,20 @@ export function DriverDashboard() {
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <MetricCard label="Today's Shifts" value={String(todayShifts.length)} tone={todayShifts.length > 0 ? 'neutral' : 'good'} />
-          <MetricCard label="Awaiting Acknowledgement" value={String(outstandingReviews.length)} tone={outstandingReviews.length > 0 ? 'warning' : 'good'} />
+          <MetricCard label="Rota Events To Read" value={String(outstandingOperationalEvents.length)} tone={outstandingOperationalEvents.length > 0 ? 'warning' : 'good'} />
           <MetricCard label="Open With Manager" value={String(openReviews.length)} tone={openReviews.length > 0 ? 'neutral' : 'good'} />
           <MetricCard label="Acknowledged" value={String(acknowledgedReviews.length)} tone="good" />
         </div>
 
         <DriverRotaPanel shifts={upcomingShifts} loading={rotaLoading} error={rotaError} />
+
+        <DriverOperationalEventsPanel
+          events={operationalEvents}
+          loading={eventsLoading}
+          error={operationalEventsError}
+          acknowledgingEventId={acknowledgingEventId}
+          onAcknowledge={(event) => void handleAcknowledgeOperationalEvent(event)}
+        />
 
         {error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">
@@ -208,6 +257,55 @@ export function DriverDashboard() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+function DriverOperationalEventsPanel({
+  events,
+  loading,
+  error,
+  acknowledgingEventId,
+  onAcknowledge,
+}: {
+  events: DriverOperationalEvent[];
+  loading: boolean;
+  error: string | null;
+  acknowledgingEventId: string | null;
+  onAcknowledge: (event: DriverOperationalEvent) => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-3xl border border-violet-200 bg-white/90 shadow-sm">
+      <div className="flex items-center justify-between border-b border-violet-100 bg-violet-50/80 p-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-700">Operational Events</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Rota and manager updates</h2>
+        </div>
+        <BellRing className="h-9 w-9 text-violet-600" />
+      </div>
+      {error ? <div className="m-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{error}</div> : null}
+      {loading ? <div className="p-5"><StateCard title="Loading operational events..." /></div> : events.length === 0 ? (
+        <div className="p-5"><StateCard icon={<BellRing className="mx-auto h-10 w-10 text-violet-600" />} title="No operational events yet" text="Published rota updates from your manager will appear here." tone="success" /></div>
+      ) : (
+        <div className="space-y-3 p-5">
+          {events.slice(0, 12).map((event) => {
+            const pending = event.requiresAck && !event.acknowledgedAt;
+            return (
+              <article key={event.id} className={`rounded-2xl border p-4 ${pending ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white'}`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap gap-2"><Badge tone={pending ? 'warning' : 'neutral'}>{pending ? 'acknowledgement required' : 'read'}</Badge><Badge tone="neutral">{event.eventType.replaceAll('_', ' ')}</Badge></div>
+                    <h3 className="mt-2 text-base font-black text-slate-950">{event.title}</h3>
+                    {event.body ? <p className="mt-1 text-sm font-medium text-slate-600">{event.body}</p> : null}
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{event.acknowledgedAt ? `Acknowledged ${formatDateTime(event.acknowledgedAt)}` : `Received ${formatDateTime(event.createdAt)}`}</p>
+                  </div>
+                  {pending ? <button type="button" onClick={() => onAcknowledge(event)} disabled={acknowledgingEventId === event.id} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-violet-700 disabled:opacity-50">{acknowledgingEventId === event.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{acknowledgingEventId === event.id ? 'Acknowledging' : 'Acknowledge'}</button> : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

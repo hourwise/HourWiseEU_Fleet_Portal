@@ -1,7 +1,7 @@
 # ROTA-002 Publishable Rota Status And Audit
 
 Date: 2026-07-09
-Status: Implemented locally, migration pending deployment
+Status: Deployed 2026-07-16
 Runtime scope: manager shift planner, driver rota visibility, additive shift status/audit schema
 
 ## Summary
@@ -66,7 +66,7 @@ Manager actions:
 - Save new shift: creates a draft.
 - Save edit to draft/cancelled shift: keeps draft.
 - Save edit to published/updated shift: marks as updated.
-- Publish: marks draft/updated shift as published and stamps `published_at`/`published_by`.
+- Publish: calls the atomic EVENT-001 producer, which marks a draft/updated shift as published, stamps `published_at`/`published_by`, and creates the linked driver event.
 - Cancel: marks shift as cancelled and stamps `cancelled_at`/`cancelled_by`.
 
 The legacy hard delete button has been replaced by cancellation from the grid.
@@ -92,7 +92,11 @@ Security changes are limited to:
 
 No central RBAC enforcement swap was made in this slice.
 
-## Deployment
+## Deployment Record
+
+Deployed to the linked Supabase project on 2026-07-16 as migration `20260709100000_add_shift_publish_status_audit.sql`.
+
+The command below is retained for a future environment only.
 
 Deploy migration:
 
@@ -154,4 +158,3 @@ Known limitation:
 ## Next Step
 
 `EVENT-001-DESIGN` should define how published rota changes become event-backed driver notifications before implementing push/realtime delivery.
-
