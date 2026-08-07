@@ -13,7 +13,7 @@ const getScoreColor = (score: number) => {
 export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
   const { profile } = useAuth();
   const { t } = useTranslation();
-  const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id, 7);
+  const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id ?? undefined, 7);
 
   const stats = React.useMemo(() => {
     if (complianceSummary.length === 0) return { avgScore: 100, totalViolations: 0 };

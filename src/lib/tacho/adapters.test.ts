@@ -245,6 +245,7 @@ describe('adaptDriverBundleToAnalysis', () => {
         }),
         driverCardDownload: {
           importId: 'import-timeline-fallback',
+          companyId: 'company-1',
           driverId: 'driver-1',
           driverName: 'PHILIP CHRISTOPHER GERAN',
           cardNumber: 'DB18220162003911',

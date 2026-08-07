@@ -44,6 +44,7 @@ interface DocumentSubmitPayload {
   file: File | null;
   idNumber: string;
   expiryDate: string;
+  reset: () => void;
 }
 
 const useDocumentUpload = () => {
@@ -747,7 +748,7 @@ export function DriverDetailsModal({
                           <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{doc.document_type.replace('_', ' ')}</p>
                           <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{t('driverDetails.labels.ref', { ref: doc.id_number })}</p>
                           <p className={`text-[10px] flex items-center gap-1 font-black uppercase mt-1 ${status.color}`}>
-                            <status.Icon size={10}/> {status.text}
+                            <status.Icon /> {status.text}
                           </p>
                           <div className="mt-2 flex items-center gap-2">
                             {isVerified ? (

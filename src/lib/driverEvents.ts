@@ -73,7 +73,7 @@ export function normaliseDriverOperationalEvents(rows: unknown, acknowledgements
   if (!Array.isArray(rows)) return [] as DriverOperationalEvent[];
 
   return rows
-    .map((row) => {
+    .map((row): DriverOperationalEvent | null => {
       if (!isRecord(row)) return null;
       const id = asString(row.id);
       const companyId = asString(row.company_id);

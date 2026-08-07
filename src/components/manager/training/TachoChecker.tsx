@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap, Database as DbIcon, Calendar, Info } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, CheckCircle, GraduationCap, Database as DbIcon, Info } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Database } from '../../../lib/database.types';
 import { TRAINING_MODULES } from './TrainingLibrary';
-import { analyzeTachoCompliance, TachoActivity } from '../../../lib/compliance';
 import { detectMissingMileage } from '../../../lib/tachoAnalysis';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];

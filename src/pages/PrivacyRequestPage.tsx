@@ -1,6 +1,5 @@
 // src/pages/PrivacyRequestPage.tsx
 
-import React from 'react';
 import { DataRequestForm } from '../components/manager/DataRequestForm';
 import { useTranslation } from 'react-i18next';
 

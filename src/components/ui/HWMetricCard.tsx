@@ -1,4 +1,3 @@
-import React from 'react';
 import { HWCard } from './HWCard';
 import { cn } from '../../lib/utils';
 import { LucideIcon } from 'lucide-react';
