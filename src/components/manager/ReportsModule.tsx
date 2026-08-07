@@ -40,7 +40,7 @@ interface ReportComponentProps {
   setLoading: (loading: boolean) => void;
 }
 
-function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
+function PayrollReport({ selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
   const { t } = useTranslation();
   const [sessions, setSessions] = useState<(WorkSession & { profile: Profile })[]>([]);
 
@@ -92,7 +92,7 @@ function PayrollReport({ companyId, selectedDriver, startDate, endDate, loading,
   );
 }
 
-function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
+function VehicleChecksReport({ selectedDriver, startDate, endDate, loading, setLoading }: ReportComponentProps) {
   const { t } = useTranslation();
   const [checks, setChecks] = useState<VehicleCheck[]>([]);
 
@@ -157,12 +157,12 @@ function VehicleChecksReport({ companyId, selectedDriver, startDate, endDate, lo
   );
 }
 
-function InfractionsReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+function InfractionsReport() {
   const { t } = useTranslation();
   return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">{t('reports.infractions.moduleReady')}</div>;
 }
 
-function DrivingAnalysisReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: any) {
+function DrivingAnalysisReport() {
   const { t } = useTranslation();
   return <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">{t('reports.driving.moduleReady')}</div>;
 }
@@ -182,7 +182,9 @@ export function ReportsModule() {
   useEffect(() => { if (profile?.company_id) { loadDrivers(); } }, [profile]);
 
   const loadDrivers = async () => {
-    const { data } = await supabase.from('profiles').select('*').eq('company_id', profile!.company_id).eq('role', 'driver');
+    const companyId = profile?.company_id;
+    if (!companyId) return;
+    const { data } = await supabase.from('profiles').select('*').eq('company_id', companyId).eq('role', 'driver');
     setDrivers(data || []);
   };
 
@@ -236,8 +238,8 @@ export function ReportsModule() {
             {activeReport === 'payroll' && <PayrollReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
             {activeReport === 'efficiency' && <EfficiencyReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
             {activeReport === 'vehicle_checks' && <VehicleChecksReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
-            {activeReport === 'infractions' && <InfractionsReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
-            {activeReport === 'driving' && <DrivingAnalysisReport companyId={profile!.company_id!} selectedDriver={selectedDriver} startDate={startDate} endDate={endDate} loading={loading} setLoading={setLoading} />}
+            {activeReport === 'infractions' && <InfractionsReport />}
+            {activeReport === 'driving' && <DrivingAnalysisReport />}
           </div>
         </div>
       </div>

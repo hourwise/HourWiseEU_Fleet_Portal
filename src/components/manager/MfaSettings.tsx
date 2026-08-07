@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { CheckCircle, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export function MfaSettings() {

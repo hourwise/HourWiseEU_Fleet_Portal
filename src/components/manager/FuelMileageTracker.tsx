@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Fuel, Plus, Download, Pencil, X, ChevronDown, ChevronUp,
+  Fuel, Plus, Download, Pencil, X,
   TrendingUp, Gauge, DollarSign, MapPin, Settings2, Save,
   Check, AlertCircle, Droplets
 } from 'lucide-react';
@@ -562,7 +562,6 @@ export function FuelMileageTracker() {
   // UI
   const [showAdd,     setShowAdd]     = useState(false);
   const [editLog,     setEditLog]     = useState<FuelLog | null>(null);
-  const [expandedVeh, setExpandedVeh] = useState<string | null>(null);
   const [filterReg,   setFilterReg]   = useState('');
   const [filterDriver, setFilterDriver] = useState('');
 

@@ -293,7 +293,7 @@ function DriverOperationalEventsPanel({
               <article key={event.id} className={`rounded-2xl border p-4 ${pending ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white'}`}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <div className="flex flex-wrap gap-2"><Badge tone={pending ? 'warning' : 'neutral'}>{pending ? 'acknowledgement required' : 'read'}</Badge><Badge tone="neutral">{event.eventType.replaceAll('_', ' ')}</Badge></div>
+                    <div className="flex flex-wrap gap-2"><Badge tone={pending ? 'warning' : 'neutral'}>{pending ? 'acknowledgement required' : 'read'}</Badge><Badge tone="neutral">{event.eventType.replace(/_/g, ' ')}</Badge></div>
                     <h3 className="mt-2 text-base font-black text-slate-950">{event.title}</h3>
                     {event.body ? <p className="mt-1 text-sm font-medium text-slate-600">{event.body}</p> : null}
                     <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{event.acknowledgedAt ? `Acknowledged ${formatDateTime(event.acknowledgedAt)}` : `Received ${formatDateTime(event.createdAt)}`}</p>

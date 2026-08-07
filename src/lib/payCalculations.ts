@@ -1,5 +1,3 @@
-import type { Database } from './database.types';
-
 // --- 1. Interfaces ---
 interface OvertimeTier {
     threshold: number;

@@ -6,19 +6,15 @@ import {
   Search,
   Plus,
   Filter,
-  Calendar,
   MapPin,
   User,
   Truck,
   ChevronRight,
   LifeBuoy,
   ShieldAlert,
-  Clock,
   MoreVertical,
   CheckCircle2,
-  AlertCircle,
-  FileText,
-  Camera
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 

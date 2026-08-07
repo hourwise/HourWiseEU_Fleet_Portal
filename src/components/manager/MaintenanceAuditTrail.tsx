@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Wrench, Download, Plus, X, Upload, Loader2, Calendar } from 'lucide-react';
+import { FileText, Wrench, Download, Plus, X, Upload, Loader2, Calendar, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface MaintenanceLog {

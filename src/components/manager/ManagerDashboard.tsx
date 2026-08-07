@@ -102,7 +102,7 @@ export function ManagerDashboard() {
       focusedVehicleId: has('focusedVehicleId') ? next.focusedVehicleId : complianceWorkspaceState.focusedVehicleId,
       focusedDate: has('focusedDate') ? next.focusedDate : complianceWorkspaceState.focusedDate,
       focusedShiftId: has('focusedShiftId') ? next.focusedShiftId : focusedShiftRecordId,
-      reportDriverId: has('reportDriver') ? next.reportDriverId : reportsWorkspaceState.focusedDriverId,
+      reportDriverId: has('reportDriverId') ? next.reportDriverId : reportsWorkspaceState.focusedDriverId,
       reportDate: has('reportDate') ? next.reportDate : reportsWorkspaceState.focusedDate,
     };
 

@@ -1,18 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Truck, User, FileText, AlertTriangle, CheckCircle, Clock, Calendar, Download, Info, Settings, GraduationCap, ClipboardCheck, X, Save, Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Shield, Truck, User, FileText, AlertTriangle, Download, Settings, GraduationCap, ClipboardCheck, X, Save, Loader2 } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { FleetCompliancePackPDF } from './reports/compliance-pack/FleetCompliancePackPDF';
-import { analyzeTachoCompliance, TachoActivity } from '../../lib/compliance';
+import { TachoActivity } from '../../lib/compliance';
+import type { Database } from '../../lib/database.types';
 import { detectMissingMileage } from '../../lib/tachoAnalysis';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
 export function OLicenceComplianceCentre() {
   const { profile } = useAuth();
-  const { t } = useTranslation();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,7 +76,6 @@ export function OLicenceComplianceCentre() {
         ? ((vehicles.length - overdueVehicles) / vehicles.length) * 100
         : 100;
 
-      const allInfringements = infringementsRes.data || [];
       const debriefedInfringements = (allInfringementsRes.data || []).filter(i => i.status !== 'open').length;
       const totalInfringements = (allInfringementsRes.data || []).length;
       const infringementDebriefRate = totalInfringements > 0
@@ -165,12 +163,12 @@ export function OLicenceComplianceCentre() {
   const vehicleUtilization = company?.auth_vehicles ? (stats.actualVehicles / company.auth_vehicles) * 100 : 0;
   const trailerUtilization = company?.auth_trailers ? (stats.actualTrailers / company.auth_trailers) * 100 : 0;
 
-  const isExpired = (date: string | null) => {
+  const isExpired = (date: string | null | undefined) => {
     if (!date) return false;
     return new Date(date) < new Date();
   };
 
-  const isExpiringSoon = (date: string | null) => {
+  const isExpiringSoon = (date: string | null | undefined) => {
     if (!date) return false;
     const diff = new Date(date).getTime() - new Date().getTime();
     return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
