@@ -67,7 +67,11 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const [modalError, setModalError] = useState<string | null>(null);
   const [weeklyJobSummaryLoad, dispatchWeeklyJobSummaryLoad] = useReducer(weeklyJobSummaryLoadReducer, INITIAL_WEEKLY_JOB_SUMMARY_LOAD);
   const [weeklyRosterLoad, dispatchWeeklyRosterLoad] = useReducer(weeklyRosterLoadReducer, INITIAL_WEEKLY_ROSTER_LOAD);
+  // Weekly roster request authority: only loadData() may increment this token.
   const weeklyLoadTokenRef = useRef(0);
+  // Job-summary request authority: summary-only retries use this, never the
+  // roster token, so a retry can never invalidate an in-flight roster load.
+  const jobSummaryTokenRef = useRef(0);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
@@ -102,20 +106,21 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
     });
   }, [profile?.company_id]);
 
-  const beginWeeklyJobSummaryLoad = useCallback((shiftIds: string[], weekStartKey: string, requestToken: number) => {
-    // The summary load inherits the authoritative weekly-request token, so a
-    // stale roster response can never manufacture a newer summary token.
+  const beginWeeklyJobSummaryLoad = useCallback((shiftIds: string[], weekStartKey: string) => {
+    // Each summary request gets its own monotonic summary-request identity,
+    // independent of the weekly roster request authority. A summary-only retry
+    // therefore never invalidates an in-flight roster load.
+    const requestToken = jobSummaryTokenRef.current + 1;
+    jobSummaryTokenRef.current = requestToken;
     dispatchWeeklyJobSummaryLoad({ type: 'begin', requestToken, weekStart: weekStartKey });
     void loadJobSummaries(shiftIds, weekStartKey, requestToken);
   }, [loadJobSummaries]);
 
   const retryJobSummaries = useCallback(() => {
     if (!profile?.company_id) return;
-    // A summary-only retry establishes its own authoritative token so it can
-    // supersede any in-flight summary response for this week.
-    const requestToken = weeklyLoadTokenRef.current + 1;
-    weeklyLoadTokenRef.current = requestToken;
-    beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'), requestToken);
+    // A summary-only retry allocates a summary request token only; it must
+    // not touch the roster request authority or its loading state.
+    beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
   }, [beginWeeklyJobSummaryLoad, profile?.company_id, shifts, weekStart]);
 
   const loadData = useCallback(async () => {
@@ -166,9 +171,10 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       if (shiftsError) throw shiftsError;
       const loadedShifts = (shiftsData || []).map(normaliseShift);
       setShifts(loadedShifts);
-      // Load the week's job summaries in one query, inheriting this week's
-      // request token; a summary failure never hides the roster itself.
-      beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), weekStartKey, requestToken);
+      // The roster result passed the current-roster-token check, so start a
+      // summary request with its own summary-request identity for this week. A
+      // stale roster response can never reach this point.
+      beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), weekStartKey);
     } catch (err) {
       if (!isCurrent()) return;
       console.error('Error loading shift data:', err);
