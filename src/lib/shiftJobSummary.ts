@@ -72,18 +72,29 @@ export function buildShiftJobSummaries(rows: readonly ShiftJobSummaryRow[]): Rec
 }
 
 /**
- * Destination label for the first planned job, in priority order:
- * customer/site name, job title, shortened address, then job reference.
+ * Display label for the first planned job: the job reference first, followed
+ * by destination context (customer/site name, job title, or shortened address)
+ * when it differs from the reference. Never renders a dangling separator.
  */
-export function firstJobDestinationLabel(firstJob: ShiftJobSummary['firstJob']): string {
+export function firstJobDisplayLabel(firstJob: ShiftJobSummary['firstJob']): string {
   if (!firstJob) return '';
+  const reference = firstJob.reference.trim();
+  const context = firstJobDestinationContext(firstJob);
+  if (reference && context && context !== reference) {
+    return `${reference} · ${context}`;
+  }
+  return reference || context;
+}
+
+/** Destination context for a first planned job, in priority order. */
+function firstJobDestinationContext(firstJob: NonNullable<ShiftJobSummary['firstJob']>): string {
   const customer = firstJob.customerName?.trim();
   if (customer) return customer;
   const title = firstJob.title.trim();
   if (title) return title;
   const address = firstJob.addressText.trim();
   if (address) return shortenAddress(address);
-  return firstJob.reference.trim();
+  return '';
 }
 
 function shortenAddress(address: string): string {

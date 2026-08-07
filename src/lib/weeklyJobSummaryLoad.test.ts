@@ -82,4 +82,34 @@ describe('weekly job summary load reducer', () => {
     expect(failed.loadedWeekStart).toBe('');
     expect(failed.summaries).toEqual({});
   });
+
+  it('keeps the newer week authoritative when an older week summary resolves late', () => {
+    // Week A begins and its summary request is issued.
+    let state = weeklyJobSummaryLoadReducer(INITIAL_WEEKLY_JOB_SUMMARY_LOAD, {
+      type: 'begin',
+      requestToken: 1,
+      weekStart: '2026-08-03',
+    });
+    // Week B begins and supersedes it.
+    state = weeklyJobSummaryLoadReducer(state, { type: 'begin', requestToken: 2, weekStart: '2026-08-10' });
+    // Week A's slow summary response arrives late — must be dropped.
+    state = weeklyJobSummaryLoadReducer(state, {
+      type: 'resolve',
+      requestToken: 1,
+      weekStart: '2026-08-03',
+      summaries: { 'shift-a': { activeJobCount: 9, firstJob: null } },
+      error: null,
+    });
+    expect(state.summaries).toEqual({});
+    // Week B's summary response applies.
+    state = weeklyJobSummaryLoadReducer(state, {
+      type: 'resolve',
+      requestToken: 2,
+      weekStart: '2026-08-10',
+      summaries: { 'shift-b': { activeJobCount: 1, firstJob: null } },
+      error: null,
+    });
+    expect(state.loadedWeekStart).toBe('2026-08-10');
+    expect(state.summaries).toHaveProperty('shift-b');
+  });
 });

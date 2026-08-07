@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildShiftJobSummaries,
   emptyShiftJobSummary,
-  firstJobDestinationLabel,
+  firstJobDisplayLabel,
   formatPlannedArrivalTime,
   type ShiftJobSummaryRow,
 } from './shiftJobSummary';
@@ -95,27 +95,50 @@ describe('buildShiftJobSummaries', () => {
   });
 });
 
-describe('firstJobDestinationLabel', () => {
-  it('prefers customer/site name over title, address and reference', () => {
-    const firstJob = {
-      sequence: 1,
-      reference: 'JOB-9',
-      title: 'Deliver goods',
-      customerName: 'Acme Distribution',
-      addressText: '99 Industrial Estate, Longtown',
-      plannedArrivalAt: null,
-    };
-    expect(firstJobDestinationLabel(firstJob)).toBe('Acme Distribution');
+describe('firstJobDisplayLabel', () => {
+  const firstJob = (overrides: Record<string, unknown> = {}) => ({
+    sequence: 1,
+    reference: 'JOB-102',
+    title: 'Deliver goods',
+    customerName: null as string | null,
+    addressText: '',
+    plannedArrivalAt: null as string | null,
+    ...overrides,
   });
 
-  it('falls back to title, then address, then reference', () => {
-    expect(firstJobDestinationLabel({ sequence: 1, reference: 'JOB-1', title: 'Pallet drop', customerName: null, addressText: '2 Road', plannedArrivalAt: null })).toBe('Pallet drop');
-    expect(firstJobDestinationLabel({ sequence: 1, reference: 'JOB-1', title: '', customerName: null, addressText: '3 High Street', plannedArrivalAt: null })).toBe('3 High Street');
-    expect(firstJobDestinationLabel({ sequence: 1, reference: 'JOB-1', title: '', customerName: null, addressText: '', plannedArrivalAt: null })).toBe('JOB-1');
+  it('shows reference with customer/site context', () => {
+    expect(firstJobDisplayLabel(firstJob({ customerName: 'Acme Distribution' }))).toBe('JOB-102 · Acme Distribution');
   });
 
-  it('returns empty string when there is no first job', () => {
-    expect(firstJobDestinationLabel(null)).toBe('');
+  it('shows reference with title context', () => {
+    expect(firstJobDisplayLabel(firstJob({ title: 'Pallet drop' }))).toBe('JOB-102 · Pallet drop');
+  });
+
+  it('shows reference with shortened address context', () => {
+    expect(firstJobDisplayLabel(firstJob({ title: '', addressText: '99 Industrial Estate, Longtown' }))).toBe('JOB-102 · 99 Industrial Estate, Longtown');
+  });
+
+  it('shows reference only when no context exists', () => {
+    expect(firstJobDisplayLabel(firstJob({ title: '', addressText: '' }))).toBe('JOB-102');
+  });
+
+  it('prefers customer context over title and address', () => {
+    expect(
+      firstJobDisplayLabel(firstJob({ customerName: 'Acme', title: 'Pallet drop', addressText: '1 Road' }))
+    ).toBe('JOB-102 · Acme');
+  });
+
+  it('tolerates missing joined job data without a dangling separator', () => {
+    expect(firstJobDisplayLabel(firstJob({ reference: '', title: '', addressText: '', customerName: null }))).toBe('');
+    expect(firstJobDisplayLabel(null)).toBe('');
+    // Context present but reference missing.
+    expect(firstJobDisplayLabel(firstJob({ reference: '', customerName: 'Acme' }))).toBe('Acme');
+    // Reference present but context missing.
+    expect(firstJobDisplayLabel(firstJob({ title: '', addressText: '' }))).toBe('JOB-102');
+  });
+
+  it('never renders a duplicated reference/context pair', () => {
+    expect(firstJobDisplayLabel(firstJob({ customerName: 'JOB-102' }))).toBe('JOB-102');
   });
 });
 

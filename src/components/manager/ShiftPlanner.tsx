@@ -7,7 +7,7 @@ import { canCancelShift, canPlanJobsForShift, canPublishShift, type ShiftStatus 
 import {
   buildShiftJobSummaries,
   emptyShiftJobSummary,
-  firstJobDestinationLabel,
+  firstJobDisplayLabel,
   formatPlannedArrivalTime,
   type ShiftJobSummary,
   type ShiftJobSummaryRow,
@@ -16,6 +16,10 @@ import {
   INITIAL_WEEKLY_JOB_SUMMARY_LOAD,
   weeklyJobSummaryLoadReducer,
 } from '../../lib/weeklyJobSummaryLoad';
+import {
+  INITIAL_WEEKLY_ROSTER_LOAD,
+  weeklyRosterLoadReducer,
+} from '../../lib/weeklyRosterLoad';
 
 interface Shift {
   id: string;
@@ -55,7 +59,6 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Partial<Shift> | null>(null);
   const [actionMessage, setActionMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -63,10 +66,12 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const [savingShift, setSavingShift] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [weeklyJobSummaryLoad, dispatchWeeklyJobSummaryLoad] = useReducer(weeklyJobSummaryLoadReducer, INITIAL_WEEKLY_JOB_SUMMARY_LOAD);
-  const jobSummaryTokenRef = useRef(0);
+  const [weeklyRosterLoad, dispatchWeeklyRosterLoad] = useReducer(weeklyRosterLoadReducer, INITIAL_WEEKLY_ROSTER_LOAD);
+  const weeklyLoadTokenRef = useRef(0);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
+  const loading = weeklyRosterLoad.loading;
   const jobSummaryLoading = weeklyJobSummaryLoad.loading;
   const jobSummaryError = weeklyJobSummaryLoad.error;
   const jobSummaries = weeklyJobSummaryLoad.summaries;
@@ -97,21 +102,34 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
     });
   }, [profile?.company_id]);
 
-  const beginWeeklyJobSummaryLoad = useCallback((shiftIds: string[], weekStartKey: string) => {
-    const requestToken = jobSummaryTokenRef.current + 1;
-    jobSummaryTokenRef.current = requestToken;
+  const beginWeeklyJobSummaryLoad = useCallback((shiftIds: string[], weekStartKey: string, requestToken: number) => {
+    // The summary load inherits the authoritative weekly-request token, so a
+    // stale roster response can never manufacture a newer summary token.
     dispatchWeeklyJobSummaryLoad({ type: 'begin', requestToken, weekStart: weekStartKey });
     void loadJobSummaries(shiftIds, weekStartKey, requestToken);
   }, [loadJobSummaries]);
 
   const retryJobSummaries = useCallback(() => {
     if (!profile?.company_id) return;
-    beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
+    // A summary-only retry establishes its own authoritative token so it can
+    // supersede any in-flight summary response for this week.
+    const requestToken = weeklyLoadTokenRef.current + 1;
+    weeklyLoadTokenRef.current = requestToken;
+    beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'), requestToken);
   }, [beginWeeklyJobSummaryLoad, profile?.company_id, shifts, weekStart]);
 
   const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
-    setLoading(true);
+    // Allocate the authoritative weekly-request token the moment the week load
+    // starts and associate it with this week. Every asynchronous result is
+    // checked against the latest token before it may touch state, so a slower
+    // old-week request can never replace the displayed week or start a new
+    // authoritative summary request.
+    const requestToken = weeklyLoadTokenRef.current + 1;
+    weeklyLoadTokenRef.current = requestToken;
+    const weekStartKey = format(weekStart, 'yyyy-MM-dd');
+    dispatchWeeklyRosterLoad({ type: 'begin', requestToken, weekStart: weekStartKey });
+    const isCurrent = () => requestToken === weeklyLoadTokenRef.current;
     try {
       // Load drivers
       const { data: driversData } = await supabase
@@ -119,7 +137,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         .select('id, full_name')
         .eq('company_id', profile.company_id)
         .eq('role', 'driver');
-
+      if (!isCurrent()) return;
       setDrivers(driversData || []);
 
       // Load vehicles
@@ -127,7 +145,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         .from('vehicles')
         .select('id, reg_number')
         .eq('company_id', profile.company_id);
-
+      if (!isCurrent()) return;
       setVehicles(vehiclesData || []);
 
       // Load shifts for the current week
@@ -144,17 +162,20 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         .eq('company_id', profile.company_id)
         .gte('date', startDate)
         .lte('date', endDate);
-
+      if (!isCurrent()) return;
       if (shiftsError) throw shiftsError;
       const loadedShifts = (shiftsData || []).map(normaliseShift);
       setShifts(loadedShifts);
-      // Load the week's job summaries in one query, separately from the core
-      // roster load so a summary failure can never hide the roster itself.
-      beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
+      // Load the week's job summaries in one query, inheriting this week's
+      // request token; a summary failure never hides the roster itself.
+      beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), weekStartKey, requestToken);
     } catch (err) {
+      if (!isCurrent()) return;
       console.error('Error loading shift data:', err);
     } finally {
-      setLoading(false);
+      // The reducer drops a stale week's completion, so only the latest
+      // request can clear the roster loading state.
+      dispatchWeeklyRosterLoad({ type: 'settle', requestToken });
     }
   }, [profile?.company_id, weekStart, beginWeeklyJobSummaryLoad]);
 
@@ -651,7 +672,7 @@ function ShiftJobSummaryBlock({
     return <p className="mt-1 text-[9px] text-slate-400">No jobs planned</p>;
   }
   const first = resolved.firstJob;
-  const label = first ? firstJobDestinationLabel(first) : '';
+  const label = first ? firstJobDisplayLabel(first) : '';
   return (
     <div className="mt-1 space-y-0.5 text-[9px] font-medium text-slate-400">
       <p className="font-bold text-white">
