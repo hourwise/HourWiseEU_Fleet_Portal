@@ -1,9 +1,21 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useReducer, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban, ClipboardList } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Truck, Clock, X, Save, Send, Ban, ClipboardList, RefreshCw } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { canCancelShift, canPlanJobsForShift, canPublishShift, type ShiftStatus } from '../../lib/shiftActions';
+import {
+  buildShiftJobSummaries,
+  emptyShiftJobSummary,
+  firstJobDestinationLabel,
+  formatPlannedArrivalTime,
+  type ShiftJobSummary,
+  type ShiftJobSummaryRow,
+} from '../../lib/shiftJobSummary';
+import {
+  INITIAL_WEEKLY_JOB_SUMMARY_LOAD,
+  weeklyJobSummaryLoadReducer,
+} from '../../lib/weeklyJobSummaryLoad';
 
 interface Shift {
   id: string;
@@ -50,9 +62,52 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const [pendingAction, setPendingAction] = useState<{ shiftId: string; action: 'publish' | 'cancel' } | null>(null);
   const [savingShift, setSavingShift] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [weeklyJobSummaryLoad, dispatchWeeklyJobSummaryLoad] = useReducer(weeklyJobSummaryLoadReducer, INITIAL_WEEKLY_JOB_SUMMARY_LOAD);
+  const jobSummaryTokenRef = useRef(0);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
+  const jobSummaryLoading = weeklyJobSummaryLoad.loading;
+  const jobSummaryError = weeklyJobSummaryLoad.error;
+  const jobSummaries = weeklyJobSummaryLoad.summaries;
+
+  // One query for the whole week's job assignments, restricted to this company
+  // and selecting only the fields the rota summary needs.
+  const loadJobSummaries = useCallback(async (shiftIds: string[], weekStartKey: string, requestToken: number) => {
+    const companyId = profile?.company_id;
+    if (!companyId) {
+      dispatchWeeklyJobSummaryLoad({ type: 'resolve', requestToken, weekStart: weekStartKey, summaries: null, error: 'Company context is unavailable.' });
+      return;
+    }
+    if (shiftIds.length === 0) {
+      dispatchWeeklyJobSummaryLoad({ type: 'resolve', requestToken, weekStart: weekStartKey, summaries: {}, error: null });
+      return;
+    }
+    const { data, error } = await supabase
+      .from('job_assignments')
+      .select('shift_id, sequence, status, planned_arrival_at, jobs:job_id(reference, title, job_type, customer_name, address_text)')
+      .eq('company_id', companyId)
+      .in('shift_id', shiftIds);
+    dispatchWeeklyJobSummaryLoad({
+      type: 'resolve',
+      requestToken,
+      weekStart: weekStartKey,
+      summaries: error ? null : buildShiftJobSummaries((data ?? []) as ShiftJobSummaryRow[]),
+      error: error ? error.message : null,
+    });
+  }, [profile?.company_id]);
+
+  const beginWeeklyJobSummaryLoad = useCallback((shiftIds: string[], weekStartKey: string) => {
+    const requestToken = jobSummaryTokenRef.current + 1;
+    jobSummaryTokenRef.current = requestToken;
+    dispatchWeeklyJobSummaryLoad({ type: 'begin', requestToken, weekStart: weekStartKey });
+    void loadJobSummaries(shiftIds, weekStartKey, requestToken);
+  }, [loadJobSummaries]);
+
+  const retryJobSummaries = useCallback(() => {
+    if (!profile?.company_id) return;
+    beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
+  }, [beginWeeklyJobSummaryLoad, profile?.company_id, shifts, weekStart]);
 
   const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
@@ -91,13 +146,17 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         .lte('date', endDate);
 
       if (shiftsError) throw shiftsError;
-      setShifts((shiftsData || []).map(normaliseShift));
+      const loadedShifts = (shiftsData || []).map(normaliseShift);
+      setShifts(loadedShifts);
+      // Load the week's job summaries in one query, separately from the core
+      // roster load so a summary failure can never hide the roster itself.
+      beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
     } catch (err) {
       console.error('Error loading shift data:', err);
     } finally {
       setLoading(false);
     }
-  }, [profile?.company_id, weekStart]);
+  }, [profile?.company_id, weekStart, beginWeeklyJobSummaryLoad]);
 
   useEffect(() => {
     loadData();
@@ -263,6 +322,25 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         </div>
       ) : null}
 
+      {jobSummaryError ? (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100"
+        >
+          <p className="font-medium">
+            Job summaries could not be loaded. Shift planning remains available.
+            <span className="block text-xs text-amber-200/80">{jobSummaryError}</span>
+          </p>
+          <button
+            type="button"
+            onClick={retryJobSummaries}
+            className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-bold text-white transition hover:bg-brand-accent-dark"
+          >
+            <RefreshCw size={12} /> Retry
+          </button>
+        </div>
+      ) : null}
+
       <div className="bg-brand-card rounded-2xl border border-brand-border overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -369,6 +447,13 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
                                     {shift.notes}
                                   </div>
                                 )}
+                                {canPlanJobsForShift(shift.status) ? (
+                                  <ShiftJobSummaryBlock
+                                    summary={jobSummaries[shift.id]}
+                                    loading={jobSummaryLoading}
+                                    hasError={Boolean(jobSummaryError)}
+                                  />
+                                ) : null}
                               </div>
                             ))}
                             <button
@@ -541,5 +626,39 @@ function ShiftStatusBadge({ status }: { status: ShiftStatus }) {
     <span className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-widest ${styles[status]}`}>
       {status}
     </span>
+  );
+}
+
+function ShiftJobSummaryBlock({
+  summary,
+  loading,
+  hasError,
+}: {
+  summary: ShiftJobSummary | undefined;
+  loading: boolean;
+  hasError: boolean;
+}) {
+  if (loading) {
+    return <p className="mt-1 text-[9px] text-slate-400">Loading jobs…</p>;
+  }
+  // A failed summary is surfaced by the roster-level banner; never present an
+  // unknown state as "no jobs planned".
+  if (hasError) {
+    return null;
+  }
+  const resolved = summary ?? emptyShiftJobSummary();
+  if (resolved.activeJobCount === 0) {
+    return <p className="mt-1 text-[9px] text-slate-400">No jobs planned</p>;
+  }
+  const first = resolved.firstJob;
+  const label = first ? firstJobDestinationLabel(first) : '';
+  return (
+    <div className="mt-1 space-y-0.5 text-[9px] font-medium text-slate-400">
+      <p className="font-bold text-white">
+        {resolved.activeJobCount} planned job{resolved.activeJobCount === 1 ? '' : 's'}
+      </p>
+      {label ? <p className="truncate">First: {label}</p> : null}
+      {first?.plannedArrivalAt ? <p>Arrive {formatPlannedArrivalTime(first.plannedArrivalAt)}</p> : null}
+    </div>
   );
 }

@@ -223,9 +223,14 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
       beginAssignmentLoad(shiftId);
     } catch (error) {
       if (isJobSequenceCollision(error)) {
+        // Refresh immediately: begin invalidates readiness (publication stays
+        // disabled while loading) and the confirmed reload re-calculates the
+        // next safe sequence. If the reload fails, the normal error/retry
+        // state remains. The job is never resubmitted automatically.
+        beginAssignmentLoad(shiftId);
         setMessage({
           kind: 'error',
-          text: 'Another manager published a job on this shift at the same time. Reload the assignments and select the new next sequence before publishing again.',
+          text: 'Another manager published a job on this shift at the same time. The assignments are being refreshed; review the updated sequence and try again.',
         });
       } else {
         setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to publish job.' });
