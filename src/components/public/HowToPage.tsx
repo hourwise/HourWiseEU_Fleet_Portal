@@ -1,21 +1,10 @@
 import { UserPlus, Users, Clock, Shield, AlertTriangle, FileText, ChevronRight, CheckCircle2, Info } from 'lucide-react';
-import { Link } from '../common/Link';
 import { useTranslation } from 'react-i18next';
 import { HWCard } from '../ui/HWCard';
 import { HWButton } from '../ui/HWButton';
 
 export function HowToPage() {
   const { t } = useTranslation();
-
-  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      const element = document.querySelector(href);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-hw-navy-950 text-hw-white">

@@ -1,10 +1,7 @@
 import { Link } from '../common/Link';
-import { useTranslation } from 'react-i18next';
 import { Mail, Shield, ExternalLink, Linkedin, Twitter } from 'lucide-react';
 
 export function Footer() {
-  const { t } = useTranslation();
-
   return (
     <footer className="bg-hw-navy-950 border-t border-white/5 relative">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>

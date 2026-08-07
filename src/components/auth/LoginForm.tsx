@@ -25,7 +25,10 @@ export function LoginForm() {
     setError('');
     setMessage('');
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: window.location.origin,
+        // Redirect to the auth route (not "/"), which now serves the static
+        // landing page. The recovery link session is picked up by AuthProvider
+        // on any React route, so "/login" is the correct destination.
+        redirectTo: window.location.origin + '/login',
     });
     if (error) setError(error.message);
     else setMessage(t('auth.messages.resetSent'));

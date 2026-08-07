@@ -5,12 +5,12 @@ import { Footer } from './components/public/Footer';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { Route, PUBLIC_ROUTES, AUTH_ROUTES, PROTECTED_ROUTES, isRoute } from './lib/routes';
 
 // Lazy load components
 const LoginForm = lazy(() => import('./components/auth/LoginForm').then(m => ({ default: m.LoginForm })));
 const ManagerDashboard = lazy(() => import('./components/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
 const DriverDashboard = lazy(() => import('./components/driver/DriverDashboard').then(m => ({ default: m.DriverDashboard })));
-const HomePage = lazy(() => import('./components/public/HomePage').then(m => ({ default: m.HomePage })));
 const PrivacyPage = lazy(() => import('./components/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./components/public/TermsPage').then(m => ({ default: m.TermsPage })));
 const HowToPage = lazy(() => import('./components/public/HowToPage').then(m => ({ default: m.HowToPage })));
@@ -18,16 +18,10 @@ const ContactPage = lazy(() => import('./components/public/ContactPage').then(m 
 const MfaChallengeScreen = lazy(() => import('./components/auth/MfaChallengeScreen').then(m => ({ default: m.MfaChallengeScreen })));
 const PrivacyRequestPage = lazy(() => import('./pages/PrivacyRequestPage').then(m => ({ default: m.PrivacyRequestPage })));
 
-type Route = '/' | '/login' | '/signup' | '/privacy' | '/terms' | '/how-to' | '/dashboard' | '/privacy-request' | '/contact';
-
-const PUBLIC_ROUTES: Route[] = ['/', '/signup', '/privacy', '/terms', '/how-to', '/privacy-request', '/contact'];
-const AUTH_ROUTES: Route[] = ['/login'];
-const PROTECTED_ROUTES: Route[] = ['/dashboard'];
-
-interface RouterContextType {
+type RouterContextType = {
   currentPath: Route;
   navigate: (path: Route) => void;
-}
+};
 
 const RouterContext = createContext<RouterContextType | undefined>(undefined);
 
@@ -42,7 +36,7 @@ export function useRouter() {
 function RouterProvider({ children }: { children: React.ReactNode }) {
   const getPath = () => {
     const path = window.location.pathname;
-    return isRoute(path) ? path : '/';
+    return isRoute(path) ? path : '/login';
   };
 
   const [currentPath, setCurrentPath] = useState<Route>(getPath());
@@ -64,20 +58,6 @@ function RouterProvider({ children }: { children: React.ReactNode }) {
     <RouterContext.Provider value={{ currentPath, navigate }}>
       {children}
     </RouterContext.Provider>
-  );
-}
-
-function isRoute(path: string): path is Route {
-  return (
-    path === '/' ||
-    path === '/login' ||
-    path === '/signup' ||
-    path === '/privacy' ||
-    path === '/terms' ||
-    path === '/how-to' ||
-    path === '/dashboard' ||
-    path === '/privacy-request' ||
-    path === '/contact'
   );
 }
 
@@ -174,7 +154,6 @@ function AppContent() {
       <>
         <PublicLayout>
           <Suspense fallback={<LoadingScreen />}>
-            {currentPath === '/' && <HomePage />}
             {currentPath === '/privacy' && <PrivacyPage />}
             {currentPath === '/terms' && <TermsPage />}
             {currentPath === '/how-to' && <HowToPage />}

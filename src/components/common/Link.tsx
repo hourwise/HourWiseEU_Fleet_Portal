@@ -1,4 +1,5 @@
 import { useRouter } from '../../App';
+import { isRoute } from '../../lib/routes';
 
 interface LinkProps {
   href: string;
@@ -31,8 +32,12 @@ export function Link({ href, children, className = '', onClick, target, rel, tit
 
     e.preventDefault();
 
-    if (href.startsWith('/')) {
-      navigate(href as any);
+    if (href.startsWith('/') && isRoute(href)) {
+      navigate(href);
+    } else if (href.startsWith('/')) {
+      // Paths outside the React app routes (e.g. the static landing page at
+      // "/") require a full page load so the correct static asset is served.
+      window.location.href = href;
     }
 
     onClick?.();
