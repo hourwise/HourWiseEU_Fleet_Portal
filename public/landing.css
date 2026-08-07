@@ -601,11 +601,6 @@ p {
   left: 46%;
 }
 
-.metric-b {
-  bottom: 14%;
-  right: 4%;
-}
-
 /* ---------- Sections ---------- */
 .section {
   padding: 96px 0;
@@ -1281,10 +1276,6 @@ p {
 
   .metric-a {
     left: 40%;
-  }
-
-  .metric-b {
-    right: 0;
   }
 
   .workflow {
