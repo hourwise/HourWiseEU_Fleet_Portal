@@ -89,6 +89,27 @@ Implementation will add a manager Job Planner linked from the existing Shift Pla
 
 The additive migration `20260809100000_complete_route_001_job_assignment_lifecycle.sql` adds locked, company-scoped `update_job_assignment_with_event` and `cancel_job_assignment_with_event` RPCs. Both require the assignment `updated_at` value observed by the manager UI, reject stale writes, and write the fleet event plus `record_security_event` audit row in the same transaction. The edit RPC updates only the driver-visible job contract and deliberately has no manager-notes parameter.
 
+The follow-up additive migration `20260809151559_enforce_route_001_job_schedule_invariants.sql` makes the create and update RPCs explicitly reject blank required values, unknown job types, null or non-positive sequences, non-positive durations, and planned departure before planned arrival. It preserves the published table constraints, stale-version checks, lifecycle checks, event contracts, RLS, and authenticated-only RPC grants.
+
+The Job Planner now reads the latest relevant `job_assigned`, `job_updated`, or `job_cancelled` event and shows the matching driver's acknowledgement state. The readback is company-scoped, batched, deterministic, note-free, and non-blocking when loading or unavailable.
+
+## Live Deployment Record
+
+The lifecycle and hardening SQL were not present in the live project before this
+completion batch. On 2026-08-09 they were applied to the verified project
+`lcvahjmoobmpifrexurb` in order. The migration API recorded the logical names
+under these remote history versions:
+
+1. `complete_route_001_job_assignment_lifecycle` — `20260809151811`
+2. `enforce_route_001_job_schedule_invariants` — `20260809151823`
+
+Post-deploy checks confirmed the create, update, and cancel RPC signatures;
+`authenticated` execution with `anon` execution denied; the three job
+permissions and `fleet_administrator` organisation grants; and the existing
+company/driver RLS policies for jobs, assignments, fleet events, and driver
+acknowledgements. Supabase security advisors still report the intentional
+authenticated `SECURITY DEFINER` warnings for these manager RPCs.
+
 Verification is covered by `src/lib/route001JobAssignment.test.ts`, with UI/load and sequence protections covered by the focused Job Planner helper tests. Rollback is additive: remove the two RPCs and permission catalogue grants if needed, retaining historical job, assignment, event, and audit rows.
 
 ## Open Business Inputs Before Route Provider Work

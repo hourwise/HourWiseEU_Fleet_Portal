@@ -12,7 +12,7 @@ The manager rota **Publish** action now calls an atomic database function instea
 3. Inserts `fleet_events.event_type = 'rota_shift_published'` for the assigned driver and links it to the shift.
 4. Updates the thread’s latest event and returns the created IDs.
 
-The event includes the shift date, start/end time, vehicle ID and notes payload. Events require driver acknowledgement by default; the driver unread/acknowledgement UI remains the next slice.
+The event includes the shift date, start/end time, vehicle ID and notes payload. Events require driver acknowledgement by default. The manager Shift Planner now reads back the latest relevant shift event and shows a compact acknowledgement state without exposing driver notes.
 
 ## Files
 
@@ -55,6 +55,18 @@ Implemented locally on 2026-07-16 as an internal Portal diagnostic/staging surfa
 - Acknowledgements are upserted to `driver_acknowledgements` under the existing driver-only RLS policy.
 
 It is not the intended driver product and should not be deployed as a substitute for the separate Android Driver App.
+
+## Manager Acknowledgement Readback
+
+The existing manager RLS policy on `driver_acknowledgements` is reused. The
+Portal loads company-scoped `fleet_events` and acknowledgement rows in batch,
+matches an acknowledgement to the event's recipient driver, and selects the
+latest event deterministically. It displays `Awaiting driver acknowledgement`
+only when the latest relevant event requires acknowledgement and has no
+matching row; otherwise it displays `Acknowledged` and the timestamp when
+available. Events that do not require acknowledgement are not presented as
+outstanding. Readback failures do not block rota planning, and stale week
+responses are ignored.
 
 ## Next Task
 

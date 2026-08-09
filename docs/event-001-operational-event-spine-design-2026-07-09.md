@@ -1,8 +1,8 @@
 # EVENT-001-DESIGN Operational Event Spine Foundation
 
 Date: 2026-07-09
-Status: Deployed 2026-07-16
-Runtime scope: additive database foundation only
+Status: Deployed 2026-07-16; manager acknowledgement readback added 2026-08-09
+Runtime scope: shared event/acknowledgement foundation plus manager readback
 
 ## Summary
 
@@ -126,6 +126,14 @@ Driver policies:
 
 The driver read model `driver_visible_fleet_events` uses `security_invoker = true`.
 
+Manager acknowledgement readback is company-scoped and reuses the existing
+`fleet_events` and `driver_acknowledgements` tables. The Portal batches the
+latest relevant shift/job events, then batches acknowledgement rows without
+selecting the private `note` field. It matches acknowledgements to both the
+event and its `recipient_driver_id`, selects the newest event deterministically
+by `created_at` and event ID, and treats an event with `requires_ack = false`
+as `not_required` rather than outstanding.
+
 ## Non-Goals
 
 The foundation migration itself does not:
@@ -199,9 +207,21 @@ Latest local `test:rules` result:
 - Acknowledgements are constrained to the driver and visible event.
 - No push/realtime/UI behaviour changes until `EVENT-001` implementation.
 
+## Manager Readback
+
+The manager Shift Planner shows the latest relevant published/updated/cancelled
+shift event as `Awaiting driver acknowledgement` or `Acknowledged` with the
+acknowledgement timestamp when available. The Job Planner applies the same
+readback to the latest `job_assigned`, `job_updated`, or `job_cancelled` event
+for each assignment, including cancelled historical assignments.
+
+The readback is deliberately non-blocking: loading or failure leaves the core
+rota/job planning surface usable, and independent request tokens prevent an
+older week or shift response from replacing a newer selection.
+
 ## Next Step
 
-`EVENT-001` should implement the first runtime producer:
+`EVENT-001` should continue the event-spine work with:
 
 1. On rota publish, create or reuse a rota thread.
 2. Insert `fleet_events.event_type = 'rota_shift_published'`.

@@ -12,6 +12,15 @@ import {
   jobAssignmentLoadReducer,
   type JobAssignmentRow,
 } from '../../lib/jobAssignmentLoad';
+import {
+  fetchManagerOperationalAcknowledgements,
+  type ManagerAcknowledgementSummary,
+} from '../../lib/operationalAcknowledgements';
+import {
+  INITIAL_OPERATIONAL_ACKNOWLEDGEMENT_LOAD,
+  operationalAcknowledgementLoadReducer,
+} from '../../lib/operationalAcknowledgementLoad';
+import { OperationalAcknowledgementBadge } from './OperationalAcknowledgementBadge';
 
 interface ShiftOption {
   id: string;
@@ -60,7 +69,12 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   const [editingAssignment, setEditingAssignment] = useState<JobAssignmentRow | null>(null);
 
   const [assignmentLoad, dispatchAssignmentLoad] = useReducer(jobAssignmentLoadReducer, INITIAL_JOB_ASSIGNMENT_LOAD);
+  const [acknowledgementLoad, dispatchAcknowledgementLoad] = useReducer(
+    operationalAcknowledgementLoadReducer,
+    INITIAL_OPERATIONAL_ACKNOWLEDGEMENT_LOAD
+  );
   const requestTokenRef = useRef(0);
+  const acknowledgementRequestTokenRef = useRef(0);
 
   // Load the manager's future published/updated shifts once per company. This
   // effect does not depend on the focused shift, so manual dropdown changes do
@@ -104,8 +118,13 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   }, [focusedShiftId, onFocusedShiftChange, shifts, shiftsLoading]);
 
   const loadAssignments = useCallback(async (shiftToLoad: string, requestToken: number) => {
+    if (!profile?.company_id) {
+      dispatchAssignmentLoad({ type: 'resolve', requestToken, shiftId: shiftToLoad, assignments: null, error: 'Company context is unavailable.' });
+      return;
+    }
     const { data, error } = await supabase.from('job_assignments')
       .select(ASSIGNMENT_SELECT)
+      .eq('company_id', profile.company_id)
       .eq('shift_id', shiftToLoad)
       .order('sequence');
     // Only the latest request for the current shift can resolve; the reducer
@@ -117,22 +136,50 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
       assignments: error ? null : ((data ?? []) as JobAssignmentRow[]),
       error: error ? error.message : null,
     });
-  }, []);
+  }, [profile?.company_id]);
+
+  const loadAcknowledgements = useCallback(async (shiftToLoad: string, requestToken: number) => {
+    if (!profile?.company_id) {
+      dispatchAcknowledgementLoad({ type: 'resolve', requestToken, scope: shiftToLoad, model: null, error: 'Company context is unavailable.' });
+      return;
+    }
+    try {
+      const model = await fetchManagerOperationalAcknowledgements(profile.company_id, shiftToLoad ? [shiftToLoad] : []);
+      dispatchAcknowledgementLoad({ type: 'resolve', requestToken, scope: shiftToLoad, model, error: null });
+    } catch (error) {
+      dispatchAcknowledgementLoad({
+        type: 'resolve',
+        requestToken,
+        scope: shiftToLoad,
+        model: null,
+        error: error instanceof Error ? error.message : 'Unable to load driver acknowledgement status.',
+      });
+    }
+  }, [profile?.company_id]);
+
+  const beginAcknowledgementLoad = useCallback((shiftToLoad: string) => {
+    const requestToken = acknowledgementRequestTokenRef.current + 1;
+    acknowledgementRequestTokenRef.current = requestToken;
+    dispatchAcknowledgementLoad({ type: 'begin', requestToken, scope: shiftToLoad });
+    void loadAcknowledgements(shiftToLoad, requestToken);
+  }, [loadAcknowledgements]);
 
   const beginAssignmentLoad = useCallback((shiftToLoad: string) => {
     const requestToken = requestTokenRef.current + 1;
     requestTokenRef.current = requestToken;
     dispatchAssignmentLoad({ type: 'begin', shiftId: shiftToLoad, requestToken });
+    beginAcknowledgementLoad(shiftToLoad);
     void loadAssignments(shiftToLoad, requestToken);
-  }, [loadAssignments]);
+  }, [beginAcknowledgementLoad, loadAssignments]);
 
   useEffect(() => {
     if (!shiftId) {
       dispatchAssignmentLoad({ type: 'begin', shiftId: '', requestToken: requestTokenRef.current });
+      beginAcknowledgementLoad('');
       return;
     }
     beginAssignmentLoad(shiftId);
-  }, [shiftId, beginAssignmentLoad]);
+  }, [beginAcknowledgementLoad, beginAssignmentLoad, shiftId]);
 
   const assignmentsReady = isJobAssignmentLoadReady(assignmentLoad, shiftId);
   const assignmentsLoading = assignmentLoad.loading;
@@ -383,6 +430,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
             </div>
             {assignmentsReady && assignmentLoad.assignments.length > 0 ? <span className="rounded-full bg-brand-accent/10 px-3 py-1 text-xs font-black text-brand-accent">{assignmentLoad.assignments.filter(a => a.status !== 'cancelled').length} active · {assignmentLoad.assignments.filter(a => a.status === 'cancelled').length} cancelled</span> : null}
           </div>
+          {acknowledgementLoad.error ? <p role="status" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">Driver acknowledgement status is unavailable right now. Job planning remains available.</p> : null}
           {assignmentsLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-400"><Loader2 className="animate-spin" size={16} />Loading assignments…</div>
           ) : assignmentsError ? (
@@ -394,7 +442,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
             assignmentLoad.assignments.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">No jobs assigned to this shift yet.</p>
             ) : (
-              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} onEdit={startEditing} onCancel={cancelAssignment} actionPending={submitting} />)}</ul>
+              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} onEdit={startEditing} onCancel={cancelAssignment} actionPending={submitting} acknowledgement={acknowledgementLoad.model.byAssignmentId[a.id]} acknowledgementLoading={acknowledgementLoad.loading} />)}</ul>
             )
           ) : (
             <p className="py-8 text-center text-sm text-slate-500">Choose a shift to review its assigned jobs.</p>
@@ -405,7 +453,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   </div>;
 }
 
-function AssignmentCard({ assignment, onEdit, onCancel, actionPending }: { assignment: JobAssignmentRow; onEdit: (assignment: JobAssignmentRow) => void; onCancel: (assignment: JobAssignmentRow) => void; actionPending: boolean }) {
+function AssignmentCard({ assignment, onEdit, onCancel, actionPending, acknowledgement, acknowledgementLoading }: { assignment: JobAssignmentRow; onEdit: (assignment: JobAssignmentRow) => void; onCancel: (assignment: JobAssignmentRow) => void; actionPending: boolean; acknowledgement?: ManagerAcknowledgementSummary; acknowledgementLoading: boolean }) {
   const job = assignment.jobs;
   const windowText = buildPlannedWindow(assignment.planned_arrival_at, assignment.planned_departure_at);
   const isCancelled = assignment.status === 'cancelled';
@@ -419,6 +467,7 @@ function AssignmentCard({ assignment, onEdit, onCancel, actionPending }: { assig
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <AssignmentStatusBadge status={assignment.status} />
+          <OperationalAcknowledgementBadge summary={acknowledgement} loading={acknowledgementLoading} />
           {!isCancelled ? <>
             <button type="button" onClick={() => onEdit(assignment)} disabled={actionPending || !job} className="inline-flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"><Pencil size={12} />Edit</button>
             <button type="button" onClick={() => onCancel(assignment)} disabled={actionPending} className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-300 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Ban size={12} />Cancel</button>

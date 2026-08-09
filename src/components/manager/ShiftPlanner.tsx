@@ -20,6 +20,14 @@ import {
   INITIAL_WEEKLY_ROSTER_LOAD,
   weeklyRosterLoadReducer,
 } from '../../lib/weeklyRosterLoad';
+import {
+  fetchManagerOperationalAcknowledgements,
+} from '../../lib/operationalAcknowledgements';
+import {
+  INITIAL_OPERATIONAL_ACKNOWLEDGEMENT_LOAD,
+  operationalAcknowledgementLoadReducer,
+} from '../../lib/operationalAcknowledgementLoad';
+import { OperationalAcknowledgementBadge } from './OperationalAcknowledgementBadge';
 
 interface Shift {
   id: string;
@@ -67,11 +75,16 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const [modalError, setModalError] = useState<string | null>(null);
   const [weeklyJobSummaryLoad, dispatchWeeklyJobSummaryLoad] = useReducer(weeklyJobSummaryLoadReducer, INITIAL_WEEKLY_JOB_SUMMARY_LOAD);
   const [weeklyRosterLoad, dispatchWeeklyRosterLoad] = useReducer(weeklyRosterLoadReducer, INITIAL_WEEKLY_ROSTER_LOAD);
+  const [acknowledgementLoad, dispatchAcknowledgementLoad] = useReducer(
+    operationalAcknowledgementLoadReducer,
+    INITIAL_OPERATIONAL_ACKNOWLEDGEMENT_LOAD
+  );
   // Weekly roster request authority: only loadData() may increment this token.
   const weeklyLoadTokenRef = useRef(0);
   // Job-summary request authority: summary-only retries use this, never the
   // roster token, so a retry can never invalidate an in-flight roster load.
   const jobSummaryTokenRef = useRef(0);
+  const acknowledgementTokenRef = useRef(0);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
@@ -79,6 +92,9 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
   const jobSummaryLoading = weeklyJobSummaryLoad.loading;
   const jobSummaryError = weeklyJobSummaryLoad.error;
   const jobSummaries = weeklyJobSummaryLoad.summaries;
+  const acknowledgementLoading = acknowledgementLoad.loading;
+  const acknowledgementError = acknowledgementLoad.error;
+  const acknowledgementSummaries = acknowledgementLoad.model.byShiftId;
 
   // One query for the whole week's job assignments, restricted to this company
   // and selecting only the fields the rota summary needs.
@@ -122,6 +138,38 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
     // not touch the roster request authority or its loading state.
     beginWeeklyJobSummaryLoad(shifts.map(s => s.id), format(weekStart, 'yyyy-MM-dd'));
   }, [beginWeeklyJobSummaryLoad, profile?.company_id, shifts, weekStart]);
+
+  const loadAcknowledgements = useCallback(async (shiftIds: string[], weekStartKey: string, requestToken: number) => {
+    const companyId = profile?.company_id;
+    if (!companyId) {
+      dispatchAcknowledgementLoad({ type: 'resolve', requestToken, scope: weekStartKey, model: null, error: 'Company context is unavailable.' });
+      return;
+    }
+    try {
+      const model = await fetchManagerOperationalAcknowledgements(companyId, shiftIds);
+      dispatchAcknowledgementLoad({ type: 'resolve', requestToken, scope: weekStartKey, model, error: null });
+    } catch (error) {
+      dispatchAcknowledgementLoad({
+        type: 'resolve',
+        requestToken,
+        scope: weekStartKey,
+        model: null,
+        error: error instanceof Error ? error.message : 'Unable to load driver acknowledgement status.',
+      });
+    }
+  }, [profile?.company_id]);
+
+  const beginAcknowledgementLoad = useCallback((shiftIds: string[], weekStartKey: string) => {
+    const requestToken = acknowledgementTokenRef.current + 1;
+    acknowledgementTokenRef.current = requestToken;
+    dispatchAcknowledgementLoad({ type: 'begin', requestToken, scope: weekStartKey });
+    void loadAcknowledgements(shiftIds, weekStartKey, requestToken);
+  }, [loadAcknowledgements]);
+
+  const retryAcknowledgements = useCallback(() => {
+    if (!profile?.company_id) return;
+    beginAcknowledgementLoad(shifts.map(shift => shift.id), format(weekStart, 'yyyy-MM-dd'));
+  }, [beginAcknowledgementLoad, profile?.company_id, shifts, weekStart]);
 
   const loadData = useCallback(async () => {
     if (!profile?.company_id) return;
@@ -175,6 +223,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       // summary request with its own summary-request identity for this week. A
       // stale roster response can never reach this point.
       beginWeeklyJobSummaryLoad(loadedShifts.map(s => s.id), weekStartKey);
+      beginAcknowledgementLoad(loadedShifts.map(s => s.id), weekStartKey);
     } catch (err) {
       if (!isCurrent()) return;
       console.error('Error loading shift data:', err);
@@ -183,7 +232,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       // request can clear the roster loading state.
       dispatchWeeklyRosterLoad({ type: 'settle', requestToken });
     }
-  }, [profile?.company_id, weekStart, beginWeeklyJobSummaryLoad]);
+  }, [beginAcknowledgementLoad, beginWeeklyJobSummaryLoad, profile?.company_id, weekStart]);
 
   useEffect(() => {
     loadData();
@@ -368,6 +417,25 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         </div>
       ) : null}
 
+      {acknowledgementError ? (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100"
+        >
+          <p className="font-medium">
+            Driver acknowledgement status could not be loaded. Shift planning remains available.
+            <span className="block text-xs text-amber-200/80">{acknowledgementError}</span>
+          </p>
+          <button
+            type="button"
+            onClick={retryAcknowledgements}
+            className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-bold text-white transition hover:bg-brand-accent-dark"
+          >
+            <RefreshCw size={12} /> Retry
+          </button>
+        </div>
+      ) : null}
+
       <div className="bg-brand-card rounded-2xl border border-brand-border overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -439,6 +507,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
                                 </div>
                                 <div className="mb-2 flex flex-wrap items-center gap-1">
                                   <ShiftStatusBadge status={shift.status} />
+                                  <OperationalAcknowledgementBadge summary={acknowledgementSummaries[shift.id]} loading={acknowledgementLoading} />
                                   {canPublishShift(shift.status) ? (
                                     <button
                                       type="button"
