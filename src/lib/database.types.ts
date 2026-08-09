@@ -1081,6 +1081,61 @@ export type Database = {
           },
         ]
       }
+      expense_reviews: {
+        Row: {
+          created_at: string
+          decision: string
+          expense_id: string
+          id: string
+          note: string | null
+          reviewed_at: string
+          reviewed_by: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          expense_id: string
+          id?: string
+          note?: string | null
+          reviewed_at?: string
+          reviewed_by: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          expense_id?: string
+          id?: string
+          note?: string | null
+          reviewed_at?: string
+          reviewed_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_reviews_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: true
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "expense_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -5562,6 +5617,37 @@ export type Database = {
         Returns: string
       }
       resolve_tacho_range_start: { Args: { p_range: string }; Returns: string }
+      review_expense: {
+        Args: {
+          p_decision: string
+          p_expected_updated_at?: string
+          p_expense_id: string
+          p_note?: string
+        }
+        Returns: {
+          created_at: string
+          decision: string
+          expense_id: string
+          id: string
+          note: string | null
+          reviewed_at: string
+          reviewed_by: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "expense_reviews"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rotate_company_auth_code: {
+        Args: never
+        Returns: {
+          auth_code: string
+          auth_code_expires_at: string
+        }[]
+      }
       save_tachograph_finding_review: {
         Args: {
           p_company_id: string
@@ -5592,6 +5678,31 @@ export type Database = {
           p_generation: Database["public"]["Tables"]["timeline_generations"]["Row"]
         }
         Returns: Json
+      }
+      update_company_name: {
+        Args: { p_name: string }
+        Returns: {
+          auth_code: string | null
+          auth_code_expires_at: string | null
+          created_at: string | null
+          created_by: string | null
+          default_fuel_cost_per_litre: number | null
+          id: string
+          max_drivers: number | null
+          name: string
+          pmi_alert_days: number | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_period_end: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "companies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_job_assignment_with_event: {
         Args: {

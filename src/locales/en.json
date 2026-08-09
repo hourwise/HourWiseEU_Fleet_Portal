@@ -574,11 +574,11 @@
     "unknown": "Unknown"
   },
   "expensesManager": {
-    "title": "Expense Approval",
-    "subtitle": "{{count}} pending expenses require your review.",
-    "loading": "Loading pending expenses...",
-    "allClear": "All Clear!",
-    "noPending": "There are no pending expenses to review.",
+    "title": "Expense Review",
+    "subtitle": "Captured expenses awaiting an operational manager decision.",
+    "loading": "Loading expense review...",
+    "allClear": "No expenses awaiting review",
+    "noPending": "There are no expenses awaiting review.",
     "headers": {
       "driver": "Driver",
       "date": "Date",
