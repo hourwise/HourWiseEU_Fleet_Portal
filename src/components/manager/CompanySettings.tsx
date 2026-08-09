@@ -48,13 +48,9 @@ export function CompanySettings() {
     if (!company || !editedName.trim()) return;
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ name: editedName.trim() })
-        .eq('id', company.id);
-
-      if (error) throw error;
-      setCompany({ ...company, name: editedName.trim() });
+      const { data, error } = await supabase.rpc('update_company_name', { p_name: editedName.trim() });
+      if (error || !data) throw error ?? new Error('Company name update returned no data');
+      setCompany(data);
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating company name:', error);
@@ -68,16 +64,10 @@ export function CompanySettings() {
     if (!company || !window.confirm('Are you sure? Drivers or Supervisors currently trying to join with the old code will be blocked.')) return;
     setRegenerating(true);
     try {
-      // Generate a secure 8-character random code
-      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      const { error } = await supabase
-        .from('companies')
-        .update({ auth_code: newCode })
-        .eq('id', company.id);
-
-      if (error) throw error;
-      setCompany({ ...company, auth_code: newCode });
+      const { data, error } = await supabase.rpc('rotate_company_auth_code');
+      const rotated = data?.[0];
+      if (error || !rotated) throw error ?? new Error('Rotation returned no data');
+      setCompany({ ...company, auth_code: rotated.auth_code, auth_code_expires_at: rotated.auth_code_expires_at });
     } catch (error) {
       console.error('Error regenerating code:', error);
       alert('Failed to regenerate code.');
