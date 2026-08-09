@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync('supabase/migrations/20260717110000_add_job_assignment_foundation.sql', 'utf8');
 const lifecycleMigration = readFileSync('supabase/migrations/20260809100000_complete_route_001_job_assignment_lifecycle.sql', 'utf8');
+const hardeningMigration = readFileSync('supabase/migrations/20260809151559_enforce_route_001_job_schedule_invariants.sql', 'utf8');
 
 describe('ROUTE-001 job assignment foundation', () => {
   it('adds company-scoped jobs and driver-scoped published assignments', () => {
@@ -46,6 +47,19 @@ describe('ROUTE-001 job assignment foundation', () => {
     expect(lifecycleMigration).toContain("'operations.job.cancel'");
     expect(lifecycleMigration).toContain("'shadow_permission_mismatch'");
     expect(lifecycleMigration).toContain('GRANT EXECUTE ON FUNCTION public.cancel_job_assignment_with_event');
+  });
+
+  it('enforces schedule and input invariants at both create and update RPC boundaries', () => {
+    expect(hardeningMigration).toContain('CREATE OR REPLACE FUNCTION public.create_job_assignment_with_event');
+    expect(hardeningMigration).toContain('CREATE OR REPLACE FUNCTION public.update_job_assignment_with_event');
+    expect(hardeningMigration.match(/Planned departure must be at or after planned arrival/g)?.length).toBe(2);
+    expect(hardeningMigration.match(/Expected duration must be positive/g)?.length).toBe(2);
+    expect(hardeningMigration.match(/p_job_type IS NULL OR p_job_type NOT IN/g)?.length).toBe(2);
+    expect(hardeningMigration.match(/p_sequence IS NULL OR p_sequence < 1/g)?.length).toBe(2);
+    expect(hardeningMigration).toContain("IF target_assignment.status = 'cancelled'");
+    expect(hardeningMigration).toContain("IF target_assignment.status NOT IN ('draft', 'published', 'updated')");
+    expect(hardeningMigration).toContain('GRANT EXECUTE ON FUNCTION public.create_job_assignment_with_event');
+    expect(hardeningMigration).toContain('GRANT EXECUTE ON FUNCTION public.update_job_assignment_with_event');
   });
 
   it('documents additive verification and rollback without deleting historical rows', () => {
