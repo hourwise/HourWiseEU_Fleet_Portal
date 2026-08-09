@@ -43,11 +43,9 @@ const IMPORT_FILTERS: Array<{ value: ImportFilter; label: string }> = [
 ];
 
 export function TachoImportCentre({
-  onOpenDriverAnalysis,
   onOpenCandidateCardAnalysis,
   onOpenDriverCards,
 }: {
-  onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
   onOpenCandidateCardAnalysis?: (importId: string) => void;
   onOpenDriverCards?: () => void;
 }) {
@@ -104,7 +102,7 @@ export function TachoImportCentre({
         <div className="flex flex-col gap-6">
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tacho Import Centre</p>
-            <h2 className="text-3xl font-black text-slate-900 mt-1">Import VU Downloads And Manual Tacho Files</h2>
+            <h2 className="text-3xl font-black text-slate-900 mt-1">Import Centre: VU Downloads And Manual Tacho Files</h2>
             <p className="text-sm text-slate-500 mt-2">
               Use this workspace for vehicle-unit downloads, manual driver-card file imports, and import monitoring. Live driver-card reading lives in the Driver Cards workspace; the reader helper is available below as an advanced support path.
             </p>
@@ -402,10 +400,13 @@ export function TachoImportCentre({
 
       <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600">
-          Advanced: live driver-card reader helper
+          Technical diagnostics: desktop helper setup and probing
         </summary>
         <div className="mt-4">
-          <TachoReaderHelperPanel onOpenDriverAnalysis={onOpenDriverAnalysis} onImportRegistered={reload} />
+          <p className="mb-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+            Normal live driver-card reading and automatic analysis routing belong in Driver Card Analysis. Use this contained area only for Windows helper setup, status probing, export diagnostics, and support correlation. Vehicle-unit live reading remains deferred until its helper/download path is production-ready; use the VU file upload above meanwhile.
+          </p>
+          <TachoReaderHelperPanel technicalOnly onImportRegistered={reload} />
         </div>
       </details>
 

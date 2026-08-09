@@ -359,9 +359,11 @@ function buildStatus(helperUrl: string, response: ReaderHelperResponse): ReaderH
 export function TachoReaderHelperPanel({
   onOpenDriverAnalysis,
   onImportRegistered,
+  technicalOnly = false,
 }: {
   onOpenDriverAnalysis?: (driverId: string, date?: string) => void;
   onImportRegistered?: () => void;
+  technicalOnly?: boolean;
 }) {
   const { profile, user } = useAuth();
   const helperUrl = DEFAULT_HELPER_URL.replace(/\/$/, '');
@@ -573,7 +575,7 @@ export function TachoReaderHelperPanel({
   }, [status.stage]);
 
   useEffect(() => {
-    if (status.stage !== 'complete' || !status.driverId || !onOpenDriverAnalysis) return;
+    if (technicalOnly || status.stage !== 'complete' || !status.driverId || !onOpenDriverAnalysis) return;
     if (!canAutoOpenReviewRef.current) return;
     const reviewKey = `${status.importId ?? status.readSessionId ?? 'no-import'}:${status.driverId}:${status.focusedDate ?? 'no-date'}`;
     if (openedReviewKeyRef.current === reviewKey) return;
@@ -582,10 +584,10 @@ export function TachoReaderHelperPanel({
     canAutoOpenReviewRef.current = false;
     setAutoOpenedReviewKey(reviewKey);
     onOpenDriverAnalysis(status.driverId, status.focusedDate);
-  }, [onOpenDriverAnalysis, status]);
+  }, [onOpenDriverAnalysis, status, technicalOnly]);
 
   useEffect(() => {
-    if (helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
+    if (technicalOnly || helperStatus.stage !== 'uploading' || !helperStatus.readSessionId || !helperStatus.exportDownloadPath) return;
     const companyId = profile?.company_id;
     if (!companyId) return;
     const readSessionId = helperStatus.readSessionId;
@@ -692,6 +694,7 @@ export function TachoReaderHelperPanel({
     profile?.company_id,
     refreshStatus,
     registeredImport?.readSessionId,
+    technicalOnly,
     user?.id,
   ]);
 
@@ -769,6 +772,49 @@ export function TachoReaderHelperPanel({
       ? 'border-amber-200 bg-amber-50'
       : 'border-blue-200 bg-blue-50';
 
+  if (technicalOnly) {
+    return (
+      <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Desktop helper support surface</p>
+            <h3 className="mt-1 text-xl font-black text-slate-900">Setup, status probing and diagnostics</h3>
+            <p className="mt-2 text-sm text-slate-600">This panel does not start or route live card reads. Driver Card Analysis owns that workflow; this area keeps support information available without making it the Import Centre’s main job.</p>
+          </div>
+          <button
+            type="button"
+            onClick={refreshStatus}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Probe helper status
+          </button>
+        </div>
+
+        <HelperDownloadCard />
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <MetaCard label="Helper endpoint" value={status.helperUrl} />
+          <MetaCard label="Helper version" value={status.helperVersion ?? 'Not reported'} />
+          <MetaCard label="Reader status" value={status.readerConnected ? status.readerDeviceName ?? 'Connected' : 'Not detected'} />
+        </div>
+
+        {!isMockHelper ? (
+          <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-500">Support diagnostics and recent events</summary>
+            <div className="mt-4">
+              <HelperDiagnosticsPanel diagnostics={diagnostics} pending={diagnosticsPending} message={diagnosticsMessage} onRefresh={loadDiagnostics} />
+            </div>
+          </details>
+        ) : (
+          <p className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">Mock helper probing is available only in development and is intentionally not exposed as an operational Import Centre read action.</p>
+        )}
+
+        {lastError ? <p className="text-xs text-amber-800">Last helper status error: {lastError}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-slate-100">
@@ -779,9 +825,9 @@ export function TachoReaderHelperPanel({
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reader Helper</p>
-              <h3 className="mt-1 text-xl font-black text-slate-900">Live Card Reader Flow</h3>
+              <h3 className="mt-1 text-xl font-black text-slate-900">Reader helper workflow bridge</h3>
               <p className="mt-2 text-sm text-slate-500">
-                Polls the local Windows helper and auto-opens driver review when a card read completes.
+                Support view for the local Windows helper; normal live card reading is owned by Driver Card Analysis.
               </p>
             </div>
           </div>

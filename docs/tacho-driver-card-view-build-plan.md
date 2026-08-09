@@ -467,6 +467,8 @@ Required behaviour:
   - card removal clears the auto-opened live result back to the blank calendar when the helper returns to ready/unavailable
 - Remaining workflow/UI cleanup:
   - retest the new Driver Card Analysis live flow after frontend deployment with the real helper/card
-  - reduce Import Centre to VU import/download, manual driver-card file import, and collapsed technical diagnostics
+  - [x] reduce Import Centre to VU import/download, manual driver-card file import, and collapsed technical diagnostics
   - reuse the same reader workflow pattern for Vehicle Unit Analysis after the VU helper/download path is ready
+
+The Vehicle Unit live-reader workflow remains a later dependency. Until its helper/download path is production-ready, Vehicle Unit Analysis continues to use the existing status/import fallback rather than presenting a fabricated live-reader flow.
 - Review/sign-off still needs persistence design before implementation because personnel files should store issues/actions/sign-offs, not full card reads.
