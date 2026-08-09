@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Download, FileDown, Calendar, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
+import { buildComplianceReportCsv, loadComplianceReportRows } from '../../lib/complianceReports';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -30,7 +31,7 @@ export function AuditTrail() {
     } catch (error) {
       console.error('Error loading drivers:', error);
     }
-  }, [profile?.company_id]);
+  }, [profile]);
 
   const setDefaultDates = useCallback(() => {
     const end = new Date();
@@ -132,65 +133,15 @@ export function AuditTrail() {
     setGenerating(true);
 
     try {
-      const { data: logs, error } = await supabase
-        .from('tachograph_activity_segments')
-        .select('driver_id, activity_type, start_time, end_time, duration_mins')
-        .eq('company_id', profile!.company_id!)
-        .gte('start_time', new Date(startDate).toISOString())
-        .lte('start_time', new Date(endDate + 'T23:59:59').toISOString());
+      if (!profile?.company_id) throw new Error('A company is required to generate a compliance report');
 
-      if (error) throw error;
-
-      const driverIds = [...new Set((logs || []).map((log) => log.driver_id).filter((id): id is string => Boolean(id)))];
-      const { data: driverProfiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', driverIds);
-
-      const driverMap = new Map(driverProfiles?.map((d) => [d.id, d]) || []);
-
-      const summary = driverIds.map((driverId) => {
-        const driver = driverMap.get(driverId);
-        const driverLogs = logs?.filter((log) => log.driver_id === driverId) || [];
-        const violations = 0;
-        const warnings = 0;
-        const totalLogs = driverLogs.length;
-        const complianceRate = totalLogs > 0
-          ? (((totalLogs - violations - warnings) / totalLogs) * 100).toFixed(1)
-          : '100';
-
-        return {
-          driverName: driver?.full_name || t('audit.unknown'),
-          licenseNumber: driver?.driver_license_number || 'N/A',
-          totalLogs,
-          violations,
-          warnings,
-          complianceRate: `${complianceRate}%`,
-        };
+      const rows = await loadComplianceReportRows({
+        companyId: profile.company_id,
+        startDate,
+        endDate,
+        driverId: selectedDriver === 'all' ? undefined : selectedDriver,
       });
-
-      const csv = [
-        [
-          t('audit.csvHeaders.driverName'),
-          t('audit.csvHeaders.license'),
-          t('audit.csvHeaders.totalLogs'),
-          t('audit.csvHeaders.violations'),
-          t('audit.csvHeaders.warnings'),
-          t('audit.csvHeaders.complianceRate')
-        ].join(','),
-        ...summary.map((row) =>
-          [
-            row.driverName,
-            row.licenseNumber,
-            row.totalLogs,
-            row.violations,
-            row.warnings,
-            row.complianceRate,
-          ]
-            .map((field) => `"${field}"`)
-            .join(',')
-        ),
-      ].join('\n');
+      const csv = buildComplianceReportCsv(rows);
 
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -326,19 +277,19 @@ export function AuditTrail() {
             <ul className="space-y-2 mb-6 text-sm text-gray-700">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                {t('audit.summaryCard.item1')}
+                {t('audit.summaryCard.evidenceItem1')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                {t('audit.summaryCard.item2')}
+                {t('audit.summaryCard.evidenceItem2')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                {t('audit.summaryCard.item3')}
+                {t('audit.summaryCard.evidenceItem3')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                {t('audit.summaryCard.item4')}
+                {t('audit.summaryCard.evidenceItem4')}
               </li>
             </ul>
 

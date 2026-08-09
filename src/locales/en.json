@@ -543,6 +543,10 @@
       "item2": "Violation and warning counts",
       "item3": "Total activity summary",
       "item4": "Quick audit overview",
+      "evidenceItem1": "Per-driver activity segment totals",
+      "evidenceItem2": "Open and debriefed infringement counts",
+      "evidenceItem3": "Exact severity and status breakdowns",
+      "evidenceItem4": "Date and driver-filtered evidence",
       "button": "Download Summary"
     },
     "footerNotice": "Audit Ready: These reports are formatted for regulatory compliance and can be submitted directly to authorities for HOS and WTD verification.",
