@@ -125,8 +125,8 @@ npm run typecheck
 
 Known typecheck note:
 
-- Full `npm run typecheck` is currently blocked by pre-existing generated Supabase type/schema drift and unrelated app type issues.
-- Recent feature slices use focused lint, build, and `test:rules` validation until database types are refreshed and the wider drift is resolved.
+- `npm run typecheck` is the required project-wide TypeScript gate and currently passes with zero errors.
+- Regenerate the live public-schema contract with `npm run db:types` (project `lcvahjmoobmpifrexurb`); this requires the Supabase CLI authentication available to the developer.
 
 ## Supabase Migrations
 
@@ -219,4 +219,3 @@ npm run build
 Then deploy through the configured hosting provider.
 
 Ensure Supabase environment variables are configured in the deployment environment.
-

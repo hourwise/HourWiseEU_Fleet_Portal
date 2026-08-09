@@ -63,11 +63,9 @@ The existing `20260422000000_create_shifts_table.sql` migration already enables 
 
 The new UI relies on that existing driver-owned SELECT policy.
 
-## Known Constraint
+## Historical Constraint
 
-`database.types.ts` is stale and does not include all live tables/features used elsewhere in the app. To avoid broad type-regeneration churn inside ROTA-001, `src/lib/rota.ts` uses a narrow local query contract and normalises unknown Supabase rows into a typed `DriverUpcomingShift` shape.
-
-Full `npm run typecheck` remains blocked by pre-existing unrelated stale-type/schema drift across manager, marketing, subscription, vehicle, payroll, and reporting files. ROTA-001 did not attempt to fix those wider issues.
+At the time of the ROTA-001 slice, `database.types.ts` was stale and the wider application typecheck was blocked by schema drift. Batch 3 refreshed the live public-schema contract and reconciled the dependent manager/reporting paths; `npm run typecheck` now passes with zero errors.
 
 ## Validation
 
@@ -93,4 +91,3 @@ Latest local `test:rules` result:
 ## Next Step
 
 `ROTA-002` should add publish/status/audit semantics before rota changes become event-backed.
-

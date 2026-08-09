@@ -143,9 +143,9 @@ Latest local `test:rules` result:
 - 12 test files passed
 - 119 tests passed
 
-Known limitation:
+Typecheck status:
 
-- Full `npm run typecheck` remains blocked by pre-existing unrelated stale generated Supabase types and app type drift.
+- Batch 3 refreshed the live public-schema contract and reconciled the dependent application paths; `npm run typecheck` now passes with zero errors.
 
 ## Acceptance
 
