@@ -73,7 +73,7 @@ Implementation will add a manager Job Planner linked from the existing Shift Pla
 
 1. [x] Add the additive schema, RLS policies, permissions, and atomic manager publish RPC.
 2. [x] Add the Portal Job Planner for create/publish assignments.
-3. [ ] Add job edit/cancel and controlled route-estimate storage with an explicit advisory presentation.
+3. [x] Add manager job edit/cancel with driver-visible lifecycle events and audit records. Controlled route-estimate storage remains deferred.
 4. Hand the Android agent the stable data/event contract for its unfinished schedule, messages, job, and route screens.
 5. Add Android driver-status/POD actions only in the Android repository.
 
@@ -84,6 +84,12 @@ Implementation will add a manager Job Planner linked from the existing Shift Pla
 - Publishing, editing, and cancelling create auditable driver-visible events.
 - The Portal never claims to provide live HGV navigation.
 - Existing rota and two-way messaging remain compatible.
+
+## Manager Edit/Cancel Completion Notes
+
+The additive migration `20260809100000_complete_route_001_job_assignment_lifecycle.sql` adds locked, company-scoped `update_job_assignment_with_event` and `cancel_job_assignment_with_event` RPCs. Both require the assignment `updated_at` value observed by the manager UI, reject stale writes, and write the fleet event plus `record_security_event` audit row in the same transaction. The edit RPC updates only the driver-visible job contract and deliberately has no manager-notes parameter.
+
+Verification is covered by `src/lib/route001JobAssignment.test.ts`, with UI/load and sequence protections covered by the focused Job Planner helper tests. Rollback is additive: remove the two RPCs and permission catalogue grants if needed, retaining historical job, assignment, event, and audit rows.
 
 ## Open Business Inputs Before Route Provider Work
 

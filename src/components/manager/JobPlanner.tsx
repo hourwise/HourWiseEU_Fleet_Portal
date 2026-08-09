@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Briefcase, Building2, ClipboardList, Clock, FileText, Loader2, MapPin, Phone, RefreshCw, Send, User } from 'lucide-react';
+import { Ban, Briefcase, Building2, ClipboardList, Clock, FileText, Loader2, MapPin, Pencil, Phone, RefreshCw, Save, Send, User, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,6 +7,7 @@ import { isAvailableJobSequence, nextJobSequence } from '../../lib/jobSequence';
 import {
   INITIAL_JOB_ASSIGNMENT_LOAD,
   isJobAssignmentLoadReady,
+  isJobAssignmentStale,
   isJobSequenceCollision,
   jobAssignmentLoadReducer,
   type JobAssignmentRow,
@@ -24,7 +25,7 @@ interface ShiftOption {
 // lives on the job row the driver read policy can expose, so capturing private notes
 // through it would leak them to the driver-facing read model. Collection stays deferred
 // until the backend provides a manager-only storage/read boundary.
-const ASSIGNMENT_SELECT = 'id, sequence, status, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
+const ASSIGNMENT_SELECT = 'id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
 
 interface JobPlannerProps {
   /** Shift preselected from the rota via the `shift` query parameter, if any. */
@@ -56,6 +57,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<JobAssignmentRow | null>(null);
 
   const [assignmentLoad, dispatchAssignmentLoad] = useReducer(jobAssignmentLoadReducer, INITIAL_JOB_ASSIGNMENT_LOAD);
   const requestTokenRef = useRef(0);
@@ -141,21 +143,22 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   );
   const nextAvailable = useMemo(() => nextJobSequence(takenSequences), [takenSequences]);
 
-  // Once a confirmed load lands, default the form to the next safe sequence for
-  // exactly that shift. Resets again after a successful publish reload.
+  // Once a confirmed load lands, default a new-job form to the next safe
+  // sequence for exactly that shift. Editing keeps its loaded sequence so a
+  // reload cannot silently change the submitted form.
   useEffect(() => {
-    if (assignmentsReady) {
+    if (assignmentsReady && !editingAssignment) {
       setSequence(String(nextJobSequence(assignmentLoad.assignments.map(a => a.sequence))));
     }
-  }, [assignmentLoad, assignmentsReady]);
+  }, [assignmentLoad, assignmentsReady, editingAssignment]);
 
   const sequenceError = useMemo(() => {
     if (sequence === '') return 'Sequence is required.';
     const n = Number(sequence);
     if (!Number.isInteger(n) || n < 1) return 'Sequence must be a whole number of at least 1.';
-    if (!isAvailableJobSequence(n, takenSequences)) return `Sequence ${n} is already used by another job on this shift.`;
+    if (!isAvailableJobSequence(n, takenSequences, editingAssignment?.sequence)) return `Sequence ${n} is already used by another job on this shift.`;
     return null;
-  }, [sequence, takenSequences]);
+  }, [editingAssignment?.sequence, sequence, takenSequences]);
 
   const plannedWindowError = useMemo(() => {
     if (!plannedArrival || !plannedDeparture) return null;
@@ -176,15 +179,50 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
 
   const handleShiftChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value;
+    if (editingAssignment) {
+      setEditingAssignment(null);
+      resetJobForm();
+    }
     setShiftId(next);
     onFocusedShiftChange?.(next || undefined);
+  };
+
+  const resetJobForm = () => {
+    setReference(''); setTitle(''); setCustomerName(''); setAddress('');
+    setContactName(''); setContactPhone(''); setInstructions('');
+    setPlannedArrival(''); setPlannedDeparture(''); setDuration('');
+    setJobType('delivery');
+    setEditingAssignment(null);
+  };
+
+  const startEditing = (assignment: JobAssignmentRow) => {
+    if (assignment.status === 'cancelled' || !assignment.jobs) return;
+    setEditingAssignment(assignment);
+    setReference(assignment.jobs.reference);
+    setTitle(assignment.jobs.title);
+    setJobType(assignment.jobs.job_type);
+    setCustomerName(assignment.jobs.customer_name ?? '');
+    setAddress(assignment.jobs.address_text);
+    setContactName(assignment.jobs.contact_name ?? '');
+    setContactPhone(assignment.jobs.contact_phone ?? '');
+    setInstructions(assignment.jobs.instructions ?? '');
+    setPlannedArrival(isoToLocalDateTimeInput(assignment.planned_arrival_at));
+    setPlannedDeparture(isoToLocalDateTimeInput(assignment.planned_departure_at));
+    setDuration(assignment.expected_duration_minutes ? String(assignment.expected_duration_minutes) : '');
+    setSequence(String(assignment.sequence));
+    setMessage(null);
+  };
+
+  const cancelEditing = () => {
+    resetJobForm();
+    setMessage(null);
   };
 
   const publish = async (event: React.FormEvent) => {
     event.preventDefault();
     if (submitting) return;
     if (!shiftId || !assignmentsReady) {
-      setMessage({ kind: 'error', text: 'Assignments for this shift are still loading or could not be confirmed. Wait for the job list, then publish.' });
+      setMessage({ kind: 'error', text: 'Assignments for this shift are still loading or could not be confirmed. Wait for the job list, then try again.' });
       return;
     }
     if (formBlocked) {
@@ -194,8 +232,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     setSubmitting(true);
     setMessage(null);
     try {
-      const { error } = await supabase.rpc('create_job_assignment_with_event' as never, {
-        p_shift_id: shiftId,
+      const rpcArgs = {
         p_reference: reference,
         p_title: title,
         p_job_type: jobType,
@@ -205,20 +242,27 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
         p_contact_phone: contactPhone || null,
         p_instructions: instructions || null,
         // Manager-only notes are not collected here (see ASSIGNMENT_SELECT note).
-        p_manager_notes: null,
         p_sequence: Number(sequence),
         p_planned_arrival_at: localDateTimeToIso(plannedArrival),
         p_planned_departure_at: localDateTimeToIso(plannedDeparture),
         p_expected_duration_minutes: duration ? Number(duration) : null,
         p_requires_ack: true,
-      } as never);
+      };
+      const { error } = editingAssignment
+        ? await supabase.rpc('update_job_assignment_with_event' as never, {
+            ...rpcArgs,
+            p_assignment_id: editingAssignment.id,
+            p_expected_updated_at: editingAssignment.updated_at,
+          } as never)
+        : await supabase.rpc('create_job_assignment_with_event' as never, {
+            ...rpcArgs,
+            p_shift_id: shiftId,
+            p_manager_notes: null,
+          } as never);
       if (error) throw error;
-      // Clear only the completed form fields; keep the selected shift.
-      setReference(''); setTitle(''); setCustomerName(''); setAddress('');
-      setContactName(''); setContactPhone(''); setInstructions('');
-      setPlannedArrival(''); setPlannedDeparture(''); setDuration('');
-      setJobType('delivery');
-      setMessage({ kind: 'success', text: 'Job published to the assigned driver.' });
+      const wasEditing = Boolean(editingAssignment);
+      resetJobForm();
+      setMessage({ kind: 'success', text: wasEditing ? 'Job assignment updated for the driver.' : 'Job published to the assigned driver.' });
       // Reload assignments before the sequence state is treated as ready again.
       beginAssignmentLoad(shiftId);
     } catch (error) {
@@ -230,10 +274,40 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
         beginAssignmentLoad(shiftId);
         setMessage({
           kind: 'error',
-          text: 'Another manager published a job on this shift at the same time. The assignments are being refreshed; review the updated sequence and try again.',
+          text: 'Another manager used that sequence on this shift at the same time. The assignments are being refreshed; review the updated sequence and try again.',
         });
+      } else if (isJobAssignmentStale(error)) {
+        beginAssignmentLoad(shiftId);
+        setMessage({ kind: 'error', text: 'This assignment changed after it was loaded. The assignments are being refreshed; reopen the job before trying again.' });
       } else {
-        setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to publish job.' });
+        setMessage({ kind: 'error', text: error instanceof Error ? error.message : editingAssignment ? 'Unable to update job assignment.' : 'Unable to publish job.' });
+      }
+    } finally { setSubmitting(false); }
+  };
+
+  const cancelAssignment = async (assignment: JobAssignmentRow) => {
+    if (submitting || assignment.status === 'cancelled') return;
+    const referenceLabel = assignment.jobs?.reference ?? 'this job';
+    if (!window.confirm(`Cancel ${referenceLabel}? The job will be removed from active planned work and the driver will be notified.`)) return;
+
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const { error } = await supabase.rpc('cancel_job_assignment_with_event' as never, {
+        p_assignment_id: assignment.id,
+        p_expected_updated_at: assignment.updated_at,
+        p_requires_ack: true,
+      } as never);
+      if (error) throw error;
+      if (editingAssignment?.id === assignment.id) resetJobForm();
+      setMessage({ kind: 'success', text: `${referenceLabel} was cancelled and the driver was notified.` });
+      beginAssignmentLoad(shiftId);
+    } catch (error) {
+      if (isJobAssignmentStale(error)) {
+        beginAssignmentLoad(shiftId);
+        setMessage({ kind: 'error', text: 'This assignment changed after it was loaded. The assignments are being refreshed; review the current job before trying again.' });
+      } else {
+        setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to cancel job assignment.' });
       }
     } finally { setSubmitting(false); }
   };
@@ -259,8 +333,15 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     ) : (
       <>
         <form onSubmit={publish} className="space-y-4 rounded-2xl border border-brand-border bg-brand-card p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{editingAssignment ? 'Edit assignment' : 'New assignment'}</p>
+              <p className="mt-1 text-sm text-slate-400">{editingAssignment ? 'Update the driver-visible job contract. The shift and driver stay fixed.' : 'Publish a planned job to the selected driver shift.'}</p>
+            </div>
+            {editingAssignment ? <button type="button" onClick={cancelEditing} className="inline-flex items-center gap-2 rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/5"><X size={14} />Cancel edit</button> : null}
+          </div>
           <Field label="Published shift" required>
-            <select required value={shiftId} onChange={handleShiftChange} className="input">
+            <select required value={shiftId} onChange={handleShiftChange} disabled={Boolean(editingAssignment)} className="input disabled:cursor-not-allowed disabled:opacity-60">
               <option value="">Choose a shift</option>
               {shifts.map(s => <option key={s.id} value={s.id}>{s.date} {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)} · {s.profiles?.full_name ?? 'Driver'}</option>)}
             </select>
@@ -291,16 +372,16 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
           <Field label="Contact name" hint="Optional."><input value={contactName} onChange={e => setContactName(e.target.value)} className="input" placeholder="Site contact name" /></Field>
           <Field label="Driver / site instructions" hint="Optional."><textarea value={instructions} onChange={e => setInstructions(e.target.value)} className="input min-h-20" placeholder="Site access / load notes" /></Field>
           {message ? <p className={message.kind === 'success' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>{message.text}</p> : null}
-          <button disabled={submitting || !assignmentsReady || formBlocked || shifts.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50"><Send size={16} />{submitting ? 'Publishing…' : 'Publish job to driver'}</button>
+          <button disabled={submitting || !assignmentsReady || formBlocked || shifts.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{editingAssignment ? <Save size={16} /> : <Send size={16} />}{submitting ? editingAssignment ? 'Saving…' : 'Publishing…' : editingAssignment ? 'Save job changes' : 'Publish job to driver'}</button>
         </form>
 
         <section className="rounded-2xl border border-brand-border bg-brand-card p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-white">Jobs on this shift</h3>
-              <p className="text-sm text-slate-400">Published job assignments for the selected shift, in route order.</p>
+              <p className="text-sm text-slate-400">Active planned work for the selected shift, in route order. Cancelled jobs remain visible for history.</p>
             </div>
-            {assignmentsReady && assignmentLoad.assignments.length > 0 ? <span className="rounded-full bg-brand-accent/10 px-3 py-1 text-xs font-black text-brand-accent">{assignmentLoad.assignments.length} job{assignmentLoad.assignments.length === 1 ? '' : 's'}</span> : null}
+            {assignmentsReady && assignmentLoad.assignments.length > 0 ? <span className="rounded-full bg-brand-accent/10 px-3 py-1 text-xs font-black text-brand-accent">{assignmentLoad.assignments.filter(a => a.status !== 'cancelled').length} active · {assignmentLoad.assignments.filter(a => a.status === 'cancelled').length} cancelled</span> : null}
           </div>
           {assignmentsLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-400"><Loader2 className="animate-spin" size={16} />Loading assignments…</div>
@@ -313,7 +394,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
             assignmentLoad.assignments.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">No jobs assigned to this shift yet.</p>
             ) : (
-              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} />)}</ul>
+              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} onEdit={startEditing} onCancel={cancelAssignment} actionPending={submitting} />)}</ul>
             )
           ) : (
             <p className="py-8 text-center text-sm text-slate-500">Choose a shift to review its assigned jobs.</p>
@@ -324,20 +405,27 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   </div>;
 }
 
-function AssignmentCard({ assignment }: { assignment: JobAssignmentRow }) {
+function AssignmentCard({ assignment, onEdit, onCancel, actionPending }: { assignment: JobAssignmentRow; onEdit: (assignment: JobAssignmentRow) => void; onCancel: (assignment: JobAssignmentRow) => void; actionPending: boolean }) {
   const job = assignment.jobs;
   const windowText = buildPlannedWindow(assignment.planned_arrival_at, assignment.planned_departure_at);
+  const isCancelled = assignment.status === 'cancelled';
   return (
-    <li className="rounded-xl border border-brand-border bg-brand-dark/40 p-4">
+    <li className={`rounded-xl border p-4 ${isCancelled ? 'border-red-500/30 bg-red-950/20 opacity-75' : 'border-brand-border bg-brand-dark/40'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-accent/15 text-xs font-black text-brand-accent">{assignment.sequence}</span>
-          <span className="font-bold text-white">{job?.reference ?? 'Unknown job'}</span>
+          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${isCancelled ? 'bg-red-500/20 text-red-300' : 'bg-brand-accent/15 text-brand-accent'}`}>{assignment.sequence}</span>
+          <span className={`font-bold ${isCancelled ? 'text-red-200 line-through' : 'text-white'}`}>{job?.reference ?? 'Unknown job'}</span>
           {job ? <span className="text-sm text-slate-300">· {job.title}</span> : null}
         </div>
-        <AssignmentStatusBadge status={assignment.status} />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <AssignmentStatusBadge status={assignment.status} />
+          {!isCancelled ? <>
+            <button type="button" onClick={() => onEdit(assignment)} disabled={actionPending || !job} className="inline-flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"><Pencil size={12} />Edit</button>
+            <button type="button" onClick={() => onCancel(assignment)} disabled={actionPending} className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-300 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Ban size={12} />Cancel</button>
+          </> : null}
+        </div>
       </div>
-      <div className="mt-3 space-y-1.5 text-sm text-slate-400">
+      <div className={`mt-3 space-y-1.5 text-sm ${isCancelled ? 'text-red-200/70' : 'text-slate-400'}`}>
         {job ? <p className="flex items-center gap-2"><Briefcase size={14} className="shrink-0 text-slate-500" />{capitalise(job.job_type)}</p> : null}
         {job?.customer_name ? <p className="flex items-center gap-2"><Building2 size={14} className="shrink-0 text-slate-500" />{job.customer_name}</p> : null}
         {job ? <p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0 text-slate-500" />{job.address_text}</p> : null}
@@ -369,6 +457,14 @@ function localDateTimeToIso(value: string): string | null {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function isoToLocalDateTimeInput(value: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function formatIsoDateTime(value: string | null): string {

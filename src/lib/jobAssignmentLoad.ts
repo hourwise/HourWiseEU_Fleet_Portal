@@ -13,6 +13,7 @@ export interface JobAssignmentRow {
   id: string;
   sequence: number;
   status: string;
+  updated_at: string;
   planned_arrival_at: string | null;
   planned_departure_at: string | null;
   expected_duration_minutes: number | null;
@@ -119,4 +120,12 @@ export function isJobSequenceCollision(error: unknown): boolean {
     return /unique constraint|duplicate key/i.test(candidate.message);
   }
   return false;
+}
+
+/** Detect the serializable/stale-version error returned by lifecycle RPCs. */
+export function isJobAssignmentStale(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  if (candidate.code === '40001') return true;
+  return typeof candidate.message === 'string' && /changed since it was loaded|stale/i.test(candidate.message);
 }

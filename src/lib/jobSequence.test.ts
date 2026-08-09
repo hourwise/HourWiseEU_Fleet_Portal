@@ -41,5 +41,10 @@ describe('job assignment sequence helpers', () => {
       expect(isAvailableJobSequence(-1, [])).toBe(false);
       expect(isAvailableJobSequence(1.5, [])).toBe(false);
     });
+
+    it('allows the assignment being edited to retain its current sequence', () => {
+      expect(isAvailableJobSequence(2, [1, 2, 3], 2)).toBe(true);
+      expect(isAvailableJobSequence(3, [1, 2, 3], 2)).toBe(false);
+    });
   });
 });

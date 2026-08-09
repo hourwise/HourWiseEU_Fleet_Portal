@@ -17,7 +17,7 @@ export function nextJobSequence(sequences: readonly number[]): number {
   return candidate;
 }
 
-/** True when the sequence is a positive integer that is not already taken on the shift. */
-export function isAvailableJobSequence(sequence: number, taken: readonly number[]): boolean {
-  return Number.isInteger(sequence) && sequence > 0 && !taken.includes(sequence);
+/** True when the sequence is available, optionally allowing the row being edited to keep its current sequence. */
+export function isAvailableJobSequence(sequence: number, taken: readonly number[], currentSequence?: number): boolean {
+  return Number.isInteger(sequence) && sequence > 0 && (sequence === currentSequence || !taken.includes(sequence));
 }

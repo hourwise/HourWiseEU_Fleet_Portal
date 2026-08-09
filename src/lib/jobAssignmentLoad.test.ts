@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   INITIAL_JOB_ASSIGNMENT_LOAD,
   isJobAssignmentLoadReady,
+  isJobAssignmentStale,
   isJobSequenceCollision,
   jobAssignmentLoadReducer,
   type JobAssignmentRow,
@@ -15,6 +16,7 @@ function assignment(id: string, sequence: number): JobAssignmentRow {
     planned_arrival_at: null,
     planned_departure_at: null,
     expected_duration_minutes: null,
+    updated_at: '2026-08-09T09:00:00.000Z',
     jobs: null,
   };
 }
@@ -125,5 +127,17 @@ describe('job sequence collision detection', () => {
     expect(isJobSequenceCollision(new Error('Shift not found'))).toBe(false);
     expect(isJobSequenceCollision(null)).toBe(false);
     expect(isJobSequenceCollision('just a string')).toBe(false);
+  });
+});
+
+describe('job assignment stale-version detection', () => {
+  it('detects the serializable error code from lifecycle RPCs', () => {
+    expect(isJobAssignmentStale({ code: '40001', message: 'serialization failure' })).toBe(true);
+  });
+
+  it('detects a stale assignment message without masking unrelated errors', () => {
+    expect(isJobAssignmentStale(new Error('Job assignment changed since it was loaded; refresh before editing'))).toBe(true);
+    expect(isJobAssignmentStale(new Error('Only managers in the assignment company can update job assignments'))).toBe(false);
+    expect(isJobAssignmentStale(null)).toBe(false);
   });
 });
