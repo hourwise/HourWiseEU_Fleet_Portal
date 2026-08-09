@@ -4,7 +4,7 @@
 
 `companies.auth_code` remains the shared, time-limited driver/company onboarding code consumed by `validate_auth_code`; it is not a staff or supervisor invitation. The broken public `Join Existing` / `Supervisor Signup` route was removed because it looked up a company and then called manager creation, so it created a new fleet rather than joining the selected fleet. Existing `driver_invites`, `lookup_pending_driver_invite`, and `accept_driver_invite` flows are unchanged.
 
-`20260809201940_govern_fleet_authorization_codes.sql` adds server-side rotation using `pgcrypto.gen_random_bytes`, a seven-day expiry refresh, the existing primary-manager (`companies.created_by`) rule plus the additive settings permission, and an audited RPC. Company-name updates use a protected RPC in the same migration. Authenticated drivers can currently read their company row's `auth_code` under the existing shared RLS contract; changing that exposure requires coordinated Driver App work and is deferred.
+`20260809201940_govern_fleet_authorization_codes.sql` adds server-side rotation using `pgcrypto.gen_random_bytes`, a seven-day expiry refresh, the existing primary-manager (`companies.created_by`) rule plus the additive settings permission, and an audited RPC. Company-name updates use a protected RPC in the same migration. Live RLS confirms company-row reads are creator-only, so drivers cannot retrieve `companies.auth_code` by selecting their company row; the Driver App remains compatible through `validate_auth_code` and the separate driver-invite RPCs.
 
 ## FIN-002 Expense Review
 
