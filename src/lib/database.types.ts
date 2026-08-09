@@ -2,7 +2,6 @@
 // Source project: lcvahjmoobmpifrexurb
 // Regenerate with: supabase gen types --lang=typescript --project-id lcvahjmoobmpifrexurb --schema public
 // Do not edit manually.
-
 export type Json =
   | string
   | number
@@ -417,6 +416,96 @@ export type Database = {
           subscription_tier?: string | null
         }
         Relationships: []
+      }
+      company_operator_licence_profiles: {
+        Row: {
+          authorised_trailer_count: number
+          authorised_vehicle_count: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          operator_licence_expiry: string | null
+          operator_licence_number: string | null
+          operator_licence_region: string | null
+          operator_licence_status: string | null
+          operator_licence_type: string | null
+          transport_manager_cpc_expiry: string | null
+          transport_manager_name: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          authorised_trailer_count?: number
+          authorised_vehicle_count?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          operator_licence_expiry?: string | null
+          operator_licence_number?: string | null
+          operator_licence_region?: string | null
+          operator_licence_status?: string | null
+          operator_licence_type?: string | null
+          transport_manager_cpc_expiry?: string | null
+          transport_manager_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          authorised_trailer_count?: number
+          authorised_vehicle_count?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          operator_licence_expiry?: string | null
+          operator_licence_number?: string | null
+          operator_licence_region?: string | null
+          operator_licence_status?: string | null
+          operator_licence_type?: string | null
+          transport_manager_cpc_expiry?: string | null
+          transport_manager_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_operator_licence_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_operator_licence_profiles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_operator_licence_profiles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_operator_licence_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_operator_licence_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_timeline_summaries: {
         Row: {
@@ -5535,6 +5624,42 @@ export type Database = {
           p_vehicle_id?: string
         }
         Returns: Json
+      }
+      upsert_company_operator_licence_profile: {
+        Args: {
+          p_authorised_trailer_count?: number
+          p_authorised_vehicle_count?: number
+          p_operator_licence_expiry?: string
+          p_operator_licence_number?: string
+          p_operator_licence_region?: string
+          p_operator_licence_status?: string
+          p_operator_licence_type?: string
+          p_transport_manager_cpc_expiry?: string
+          p_transport_manager_name?: string
+        }
+        Returns: {
+          authorised_trailer_count: number
+          authorised_vehicle_count: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          operator_licence_expiry: string | null
+          operator_licence_number: string | null
+          operator_licence_region: string | null
+          operator_licence_status: string | null
+          operator_licence_type: string | null
+          transport_manager_cpc_expiry: string | null
+          transport_manager_name: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company_operator_licence_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_auth_code: { Args: { code: string }; Returns: string }
     }

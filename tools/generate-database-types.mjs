@@ -3,8 +3,16 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const projectId = 'lcvahjmoobmpifrexurb';
-const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const generated = execFileSync(command, [
+const command = process.platform === 'win32' ? resolve('supabase.exe') : 'npx';
+const commandArgs = process.platform === 'win32' ? [
+  'gen',
+  'types',
+  '--lang=typescript',
+  '--project-id',
+  projectId,
+  '--schema',
+  'public',
+] : [
   'supabase',
   'gen',
   'types',
@@ -13,7 +21,8 @@ const generated = execFileSync(command, [
   projectId,
   '--schema',
   'public',
-], { encoding: 'utf8' });
+];
+const generated = execFileSync(command, commandArgs, { encoding: 'utf8' });
 
 const header = [
   '// Generated from the live Supabase public schema.',

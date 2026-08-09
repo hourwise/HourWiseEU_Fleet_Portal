@@ -10,27 +10,27 @@ import type { Database } from '../../lib/database.types';
 import { detectMissingMileage } from '../../lib/tachoAnalysis';
 
 type Company = Database['public']['Tables']['companies']['Row'];
-type OLicenceDetails = {
-  olicence_number: string | null;
-  olicence_region: string | null;
-  olicence_type: string | null;
-  olicence_status: string | null;
-  olicence_expiry: string | null;
-  auth_vehicles: number | null;
-  auth_trailers: number | null;
+type OLicenceFormData = {
+  operator_licence_number: string | null;
+  operator_licence_region: string | null;
+  operator_licence_type: string | null;
+  operator_licence_status: string | null;
+  operator_licence_expiry: string | null;
+  authorised_vehicle_count: number;
+  authorised_trailer_count: number;
   transport_manager_name: string | null;
   transport_manager_cpc_expiry: string | null;
 };
-type CompanyView = Company & OLicenceDetails;
+type CompanyView = Company & OLicenceFormData;
 
-const EMPTY_LICENCE_DETAILS: OLicenceDetails = {
-  olicence_number: null,
-  olicence_region: null,
-  olicence_type: null,
-  olicence_status: null,
-  olicence_expiry: null,
-  auth_vehicles: null,
-  auth_trailers: null,
+const EMPTY_LICENCE_DETAILS: OLicenceFormData = {
+  operator_licence_number: null,
+  operator_licence_region: null,
+  operator_licence_type: null,
+  operator_licence_status: null,
+  operator_licence_expiry: null,
+  authorised_vehicle_count: 0,
+  authorised_trailer_count: 0,
   transport_manager_name: null,
   transport_manager_cpc_expiry: null,
 };
@@ -41,7 +41,7 @@ export function OLicenceComplianceCentre() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<OLicenceDetails>>({});
+  const [formData, setFormData] = useState<Partial<OLicenceFormData>>({});
   const [stats, setStats] = useState({
     actualVehicles: 0,
     actualTrailers: 0,
@@ -62,6 +62,7 @@ export function OLicenceComplianceCentre() {
     try {
       const [
         companyRes,
+        licenceRes,
         vehiclesRes,
         infringementsRes,
         defectsRes,
@@ -73,6 +74,7 @@ export function OLicenceComplianceCentre() {
         workSessionsRes
       ] = await Promise.all([
         supabase.from('companies').select('*').eq('id', profile.company_id).single(),
+        supabase.from('company_operator_licence_profiles').select('*').eq('company_id', profile.company_id).maybeSingle(),
         supabase.from('vehicles').select('*').eq('company_id', profile.company_id),
         supabase.from('infringements').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('status', 'open'),
         supabase.from('vehicle_checks').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('check_status', 'defect').neq('defect_lifecycle_status', 'fixed'),
@@ -84,10 +86,26 @@ export function OLicenceComplianceCentre() {
         supabase.from('work_sessions').select('total_work_minutes, user_id, start_time, end_time, date').eq('status', 'completed').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
       ]);
 
+      if (companyRes.error) throw companyRes.error;
+      if (licenceRes.error) throw licenceRes.error;
+
       if (companyRes.data) {
-        const companyView = { ...companyRes.data, ...EMPTY_LICENCE_DETAILS };
+        const licenceDetails: OLicenceFormData = licenceRes.data
+          ? {
+              operator_licence_number: licenceRes.data.operator_licence_number,
+              operator_licence_region: licenceRes.data.operator_licence_region,
+              operator_licence_type: licenceRes.data.operator_licence_type,
+              operator_licence_status: licenceRes.data.operator_licence_status,
+              operator_licence_expiry: licenceRes.data.operator_licence_expiry,
+              authorised_vehicle_count: licenceRes.data.authorised_vehicle_count,
+              authorised_trailer_count: licenceRes.data.authorised_trailer_count,
+              transport_manager_name: licenceRes.data.transport_manager_name,
+              transport_manager_cpc_expiry: licenceRes.data.transport_manager_cpc_expiry,
+            }
+          : EMPTY_LICENCE_DETAILS;
+        const companyView = { ...companyRes.data, ...licenceDetails };
         setCompany(companyView);
-        setFormData(companyView);
+        setFormData(licenceDetails);
       }
 
       const vehicles = vehiclesRes.data || [];
@@ -159,11 +177,21 @@ export function OLicenceComplianceCentre() {
     if (!profile?.company_id) return;
     setSaving(true);
     try {
-      // The deployed companies table does not expose O-Licence columns. Keep
-      // this view honest about the live contract and retain edits for the
-      // current evidence-pack session until a dedicated storage boundary is
-      // deployed.
-      setCompany(previous => previous ? Object.assign({}, previous, formData) : previous);
+      const { data, error } = await supabase.rpc('upsert_company_operator_licence_profile', {
+        p_operator_licence_number: formData.operator_licence_number ?? undefined,
+        p_operator_licence_region: formData.operator_licence_region ?? undefined,
+        p_operator_licence_type: formData.operator_licence_type ?? undefined,
+        p_operator_licence_status: formData.operator_licence_status ?? undefined,
+        p_operator_licence_expiry: formData.operator_licence_expiry ?? undefined,
+        p_authorised_vehicle_count: formData.authorised_vehicle_count ?? 0,
+        p_authorised_trailer_count: formData.authorised_trailer_count ?? 0,
+        p_transport_manager_name: formData.transport_manager_name ?? undefined,
+        p_transport_manager_cpc_expiry: formData.transport_manager_cpc_expiry ?? undefined,
+      });
+      if (error) throw error;
+      if (!data) throw new Error('The operator licence update returned no record');
+      setCompany(previous => previous ? { ...previous, ...data } : previous);
+      setFormData(data);
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error updating O-Licence:', error);
@@ -181,8 +209,8 @@ export function OLicenceComplianceCentre() {
     );
   }
 
-  const vehicleUtilization = company?.auth_vehicles ? (stats.actualVehicles / company.auth_vehicles) * 100 : 0;
-  const trailerUtilization = company?.auth_trailers ? (stats.actualTrailers / company.auth_trailers) * 100 : 0;
+  const vehicleUtilization = company?.authorised_vehicle_count ? (stats.actualVehicles / company.authorised_vehicle_count) * 100 : 0;
+  const trailerUtilization = company?.authorised_trailer_count ? (stats.actualTrailers / company.authorised_trailer_count) * 100 : 0;
 
   const isExpired = (date: string | null | undefined) => {
     if (!date) return false;
@@ -226,9 +254,9 @@ export function OLicenceComplianceCentre() {
               <h3 className="font-black text-white uppercase tracking-wider text-sm">Licence Details</h3>
             </div>
             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-              company?.olicence_status === 'valid' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
+              company?.operator_licence_status === 'valid' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
             }`}>
-              {company?.olicence_status?.replace('_', ' ') || 'NOT SET'}
+              {company?.operator_licence_status?.replace('_', ' ') || 'NOT SET'}
             </span>
           </div>
           <div className="p-6">
@@ -236,25 +264,25 @@ export function OLicenceComplianceCentre() {
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Licence Number</label>
-                  <p className="text-xl font-black text-white font-mono tracking-tighter">{company?.olicence_number || 'REQUIRED'}</p>
+                  <p className="text-xl font-black text-white font-mono tracking-tighter">{company?.operator_licence_number || 'REQUIRED'}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Type</label>
-                    <p className="text-sm font-bold text-slate-300 capitalize">{company?.olicence_type?.replace(/_/g, ' ') || 'Not Specified'}</p>
+                    <p className="text-sm font-bold text-slate-300 capitalize">{company?.operator_licence_type?.replace(/_/g, ' ') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Region</label>
-                    <p className="text-sm font-bold text-slate-300">{company?.olicence_region || 'Not Specified'}</p>
+                    <p className="text-sm font-bold text-slate-300">{company?.operator_licence_region || 'Not Specified'}</p>
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Expiry Date</label>
                   <div className="flex items-center gap-2">
-                    <p className={`text-sm font-bold ${isExpired(company?.olicence_expiry) ? 'text-red-500' : isExpiringSoon(company?.olicence_expiry) ? 'text-amber-500' : 'text-slate-300'}`}>
-                      {company?.olicence_expiry ? new Date(company.olicence_expiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'NOT SET'}
+                    <p className={`text-sm font-bold ${isExpired(company?.operator_licence_expiry) ? 'text-red-500' : isExpiringSoon(company?.operator_licence_expiry) ? 'text-amber-500' : 'text-slate-300'}`}>
+                      {company?.operator_licence_expiry ? new Date(company.operator_licence_expiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'NOT SET'}
                     </p>
-                    {isExpired(company?.olicence_expiry) && <AlertTriangle size={14} className="text-red-500" />}
+                    {isExpired(company?.operator_licence_expiry) && <AlertTriangle size={14} className="text-red-500" />}
                   </div>
                 </div>
               </div>
@@ -263,7 +291,7 @@ export function OLicenceComplianceCentre() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-end">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Vehicle Authorization</label>
-                    <span className="text-xs font-black text-white">{stats.actualVehicles} / {company?.auth_vehicles || 0}</span>
+                    <span className="text-xs font-black text-white">{stats.actualVehicles} / {company?.authorised_vehicle_count || 0}</span>
                   </div>
                   <div className="h-2 w-full bg-brand-dark rounded-full overflow-hidden border border-brand-border">
                     <div
@@ -272,14 +300,14 @@ export function OLicenceComplianceCentre() {
                     />
                   </div>
                   <p className="text-[10px] text-slate-500 italic">
-                    {vehicleUtilization >= 100 ? '⚠ Authorization limit reached' : `${company?.auth_vehicles ? (company.auth_vehicles - stats.actualVehicles) : 0} margins remaining`}
+                    {vehicleUtilization >= 100 ? '⚠ Authorization limit reached' : `${company?.authorised_vehicle_count ? (company.authorised_vehicle_count - stats.actualVehicles) : 0} margins remaining`}
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-end">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Trailer Authorization</label>
-                    <span className="text-xs font-black text-white">{stats.actualTrailers} / {company?.auth_trailers || 0}</span>
+                    <span className="text-xs font-black text-white">{stats.actualTrailers} / {company?.authorised_trailer_count || 0}</span>
                   </div>
                   <div className="h-2 w-full bg-brand-dark rounded-full overflow-hidden border border-brand-border">
                     <div
@@ -488,8 +516,8 @@ export function OLicenceComplianceCentre() {
                     <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Licence Number</label>
                     <input
                       type="text"
-                      value={formData.olicence_number || ''}
-                      onChange={e => setFormData({ ...formData, olicence_number: e.target.value })}
+                      value={formData.operator_licence_number || ''}
+                      onChange={e => setFormData({ ...formData, operator_licence_number: e.target.value })}
                       placeholder="e.g. OB1234567"
                       className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition font-mono"
                     />
@@ -497,8 +525,8 @@ export function OLicenceComplianceCentre() {
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Licence Type</label>
                     <select
-                      value={formData.olicence_type || ''}
-                      onChange={e => setFormData({ ...formData, olicence_type: e.target.value })}
+                      value={formData.operator_licence_type || ''}
+                      onChange={e => setFormData({ ...formData, operator_licence_type: e.target.value })}
                       className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                     >
                       <option value="">Select Type...</option>
@@ -512,8 +540,8 @@ export function OLicenceComplianceCentre() {
                       <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Region</label>
                       <input
                         type="text"
-                        value={formData.olicence_region || ''}
-                        onChange={e => setFormData({ ...formData, olicence_region: e.target.value })}
+                        value={formData.operator_licence_region || ''}
+                        onChange={e => setFormData({ ...formData, operator_licence_region: e.target.value })}
                         placeholder="e.g. North East"
                         className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                       />
@@ -521,8 +549,8 @@ export function OLicenceComplianceCentre() {
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Status</label>
                       <select
-                        value={formData.olicence_status || ''}
-                        onChange={e => setFormData({ ...formData, olicence_status: e.target.value })}
+                        value={formData.operator_licence_status || ''}
+                        onChange={e => setFormData({ ...formData, operator_licence_status: e.target.value })}
                         className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                       >
                         <option value="valid">Valid</option>
@@ -536,8 +564,8 @@ export function OLicenceComplianceCentre() {
                     <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Expiry Date</label>
                     <input
                       type="date"
-                      value={formData.olicence_expiry || ''}
-                      onChange={e => setFormData({ ...formData, olicence_expiry: e.target.value })}
+                      value={formData.operator_licence_expiry || ''}
+                      onChange={e => setFormData({ ...formData, operator_licence_expiry: e.target.value })}
                       className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                     />
                   </div>
@@ -550,8 +578,8 @@ export function OLicenceComplianceCentre() {
                       <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Vehicles</label>
                       <input
                         type="number"
-                        value={formData.auth_vehicles || 0}
-                        onChange={e => setFormData({ ...formData, auth_vehicles: parseInt(e.target.value) || 0 })}
+                        value={formData.authorised_vehicle_count || 0}
+                        onChange={e => setFormData({ ...formData, authorised_vehicle_count: parseInt(e.target.value) || 0 })}
                         className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                       />
                     </div>
@@ -559,8 +587,8 @@ export function OLicenceComplianceCentre() {
                       <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Trailers</label>
                       <input
                         type="number"
-                        value={formData.auth_trailers || 0}
-                        onChange={e => setFormData({ ...formData, auth_trailers: parseInt(e.target.value) || 0 })}
+                        value={formData.authorised_trailer_count || 0}
+                        onChange={e => setFormData({ ...formData, authorised_trailer_count: parseInt(e.target.value) || 0 })}
                         className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                       />
                     </div>
