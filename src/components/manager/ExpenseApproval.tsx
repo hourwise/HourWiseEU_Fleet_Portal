@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Receipt, Check, X } from 'lucide-react';
+import { Receipt, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
 type Expense = Database['public']['Tables']['expenses']['Row'] & {
-  profiles: { full_name: string } | null;
+  profiles: { full_name: string | null } | null;
 };
 
 export function ExpenseApproval() {
@@ -14,7 +14,6 @@ export function ExpenseApproval() {
   const { t } = useTranslation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const loadPendingExpenses = useCallback(async () => {
     if (!profile?.company_id) {
@@ -23,15 +22,22 @@ export function ExpenseApproval() {
     }
     setLoading(true);
     try {
+      const { data: drivers, error: driversError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('company_id', profile.company_id)
+        .eq('role', 'driver');
+      if (driversError) throw driversError;
+      const driverIds = (drivers ?? []).map(driver => driver.id);
       const { data, error } = await supabase
         .from('expenses')
-        .select('*, profiles(full_name)')
-        .eq('company_id', profile.company_id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
+        .select('*')
+        .in('user_id', driverIds)
+        .order('date', { ascending: false });
 
       if (error) throw error;
-      setExpenses(data as Expense[]);
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      setExpenses((data ?? []).map(expense => ({ ...expense, profiles: driverMap.get(expense.user_id) ?? null })));
     } catch (err) {
       console.error('Error loading expenses:', err);
     } finally {
@@ -44,24 +50,6 @@ export function ExpenseApproval() {
       loadPendingExpenses();
     }
   }, [loadPendingExpenses, profile?.company_id]);
-
-  const handleUpdateStatus = async (expenseId: string, newStatus: 'approved' | 'rejected') => {
-    setActionLoading(expenseId);
-    try {
-      const { error } = await supabase
-        .from('expenses')
-        .update({ status: newStatus })
-        .eq('id', expenseId);
-
-      if (error) throw error;
-      setExpenses(prev => prev.filter(exp => exp.id !== expenseId));
-    } catch (err) {
-      console.error(`Error updating expense status to ${newStatus}:`, err);
-      alert(t('expensesManager.errors.actionFailed', { action: t(`expensesManager.${newStatus === 'approved' ? 'approve' : 'reject'}`).toLowerCase() }));
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const handleDownloadReceipt = async (path: string | null) => {
       if (!path) {
@@ -119,16 +107,13 @@ export function ExpenseApproval() {
                 {expenses.map((exp) => (
                   <tr key={exp.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{exp.profiles?.full_name || t('audit.unknown')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(exp.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(exp.date).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">£{exp.amount}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">{exp.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">{exp.notes || exp.merchant || exp.category}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button onClick={() => handleDownloadReceipt(exp.receipt_path)} className="text-blue-600 hover:underline">{t('expensesManager.viewReceipt')}</button>
+                        <button onClick={() => handleDownloadReceipt(exp.image_url)} className="text-blue-600 hover:underline">{t('expensesManager.viewReceipt')}</button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button onClick={() => handleUpdateStatus(exp.id, 'approved')} disabled={actionLoading === exp.id} className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 disabled:opacity-50"><Check className="w-4 h-4" /></button>
-                      <button onClick={() => handleUpdateStatus(exp.id, 'rejected')} disabled={actionLoading === exp.id} className="p-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 disabled:opacity-50"><X className="w-4 h-4" /></button>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">Recorded</td>
                   </tr>
                 ))}
               </tbody>

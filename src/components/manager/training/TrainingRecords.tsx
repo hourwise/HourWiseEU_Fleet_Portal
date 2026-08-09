@@ -64,7 +64,7 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
         TYPE_LABEL[r.training_type] ?? r.training_type,
         r.title,
         r.status,
-        new Date(r.assigned_at).toLocaleDateString(),
+        r.assigned_at ? new Date(r.assigned_at).toLocaleDateString() : 'Not recorded',
         r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '',
       ].join(',')
     ).join('\n');
@@ -139,10 +139,10 @@ export function TrainingRecords({ refresh }: TrainingRecordsProps) {
                     <td className="px-4 py-3 text-sm text-slate-700 max-w-[220px] truncate">{r.title}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${STATUS_STYLES[r.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.assigned}`}>
-                        {r.status.replace('_', ' ')}
+                        {(r.status ?? 'assigned').replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">{new Date(r.assigned_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{r.assigned_at ? new Date(r.assigned_at).toLocaleDateString() : 'Not recorded'}</td>
                     <td className="px-4 py-3">
                       {r.status !== 'complete' ? (
                         <button

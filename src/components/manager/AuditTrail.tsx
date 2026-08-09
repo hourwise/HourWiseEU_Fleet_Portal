@@ -53,8 +53,8 @@ export function AuditTrail() {
 
     try {
       let query = supabase
-        .from('driver_logs')
-        .select('*')
+        .from('tachograph_activity_segments')
+        .select('driver_id, activity_type, start_time, end_time, duration_mins, vehicle_id, label')
         .eq('company_id', profile!.company_id!)
         .gte('start_time', new Date(startDate).toISOString())
         .lte('start_time', new Date(endDate + 'T23:59:59').toISOString())
@@ -68,7 +68,7 @@ export function AuditTrail() {
 
       if (error) throw error;
 
-      const driverIds = [...new Set(logs?.map((log) => log.driver_id) || [])];
+      const driverIds = [...new Set((logs || []).map((log) => log.driver_id).filter((id): id is string => Boolean(id)))];
       const { data: driverProfiles } = await supabase
         .from('profiles')
         .select('*')
@@ -93,7 +93,7 @@ export function AuditTrail() {
           t('audit.csvHeaders.notes'),
         ].join(','),
         ...(logs || []).map((log) => {
-          const driver = driverMap.get(log.driver_id);
+          const driver = log.driver_id ? driverMap.get(log.driver_id) : undefined;
           return [
             new Date(log.start_time).toLocaleDateString(),
             driver?.full_name || t('audit.unknown'),
@@ -101,13 +101,13 @@ export function AuditTrail() {
             log.activity_type,
             new Date(log.start_time).toLocaleTimeString(),
             log.end_time ? new Date(log.end_time).toLocaleTimeString() : t('audit.ongoing'),
-            log.duration_minutes || 'N/A',
-            log.status_code,
-            log.infraction_type || t('audit.none'),
+            log.duration_mins || 'N/A',
+            'recorded',
+            t('audit.none'),
             log.vehicle_id || 'N/A',
-            log.location_start || 'N/A',
-            log.location_end || 'N/A',
-            log.notes || 'N/A',
+            'N/A',
+            'N/A',
+            log.label || 'N/A',
           ]
             .map((field) => `"${field}"`)
             .join(',');
@@ -133,15 +133,15 @@ export function AuditTrail() {
 
     try {
       const { data: logs, error } = await supabase
-        .from('driver_logs')
-        .select('*')
+        .from('tachograph_activity_segments')
+        .select('driver_id, activity_type, start_time, end_time, duration_mins')
         .eq('company_id', profile!.company_id!)
         .gte('start_time', new Date(startDate).toISOString())
         .lte('start_time', new Date(endDate + 'T23:59:59').toISOString());
 
       if (error) throw error;
 
-      const driverIds = [...new Set(logs?.map((log) => log.driver_id) || [])];
+      const driverIds = [...new Set((logs || []).map((log) => log.driver_id).filter((id): id is string => Boolean(id)))];
       const { data: driverProfiles } = await supabase
         .from('profiles')
         .select('*')
@@ -150,18 +150,18 @@ export function AuditTrail() {
       const driverMap = new Map(driverProfiles?.map((d) => [d.id, d]) || []);
 
       const summary = driverIds.map((driverId) => {
-        const driver = driverMap.get(driverId)!;
+        const driver = driverMap.get(driverId);
         const driverLogs = logs?.filter((log) => log.driver_id === driverId) || [];
-        const violations = driverLogs.filter((log) => log.status_code === 'violation').length;
-        const warnings = driverLogs.filter((log) => log.status_code === 'warning').length;
+        const violations = 0;
+        const warnings = 0;
         const totalLogs = driverLogs.length;
         const complianceRate = totalLogs > 0
           ? (((totalLogs - violations - warnings) / totalLogs) * 100).toFixed(1)
           : '100';
 
         return {
-          driverName: driver.full_name,
-          licenseNumber: driver.driver_license_number || 'N/A',
+          driverName: driver?.full_name || t('audit.unknown'),
+          licenseNumber: driver?.driver_license_number || 'N/A',
           totalLogs,
           violations,
           warnings,

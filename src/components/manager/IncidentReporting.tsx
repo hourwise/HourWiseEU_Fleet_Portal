@@ -17,25 +17,14 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
+import type { Database } from '../../lib/database.types';
 
-interface Incident {
-  id: string;
-  type: 'accident' | 'incident' | 'injury';
-  occurred_at: string;
-  location: string;
-  description: string;
-  has_injury: boolean;
-  status: 'reported' | 'investigating' | 'closed';
-  vehicle_id: string | null;
-  driver_id: string;
-  police_ref: string | null;
-  profiles: {
-    full_name: string;
-  };
-  vehicles: {
-    reg_number: string;
-  } | null;
-}
+type Incident = Database['public']['Tables']['incidents']['Row'] & {
+  profiles: { full_name: string | null } | null;
+  vehicles: { reg_number: string } | null;
+};
+type IncidentVehicle = Pick<Database['public']['Tables']['vehicles']['Row'], 'id' | 'reg_number'>;
+type IncidentDriver = Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'full_name'>;
 
 export function IncidentReporting() {
   const { profile } = useAuth();
@@ -76,7 +65,7 @@ export function IncidentReporting() {
     const matchesSearch =
       incident.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       incident.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      incident.profiles.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+      (incident.profiles?.full_name ?? '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesType = filterType === 'all' || incident.type === filterType;
 
@@ -205,7 +194,7 @@ export function IncidentReporting() {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                         <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-bold uppercase">
                           <User size={14} className="text-slate-600" />
-                          {incident.profiles.full_name}
+                          {incident.profiles?.full_name ?? 'Unknown driver'}
                         </div>
                         {incident.vehicles && (
                           <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-bold uppercase">
@@ -255,8 +244,8 @@ export function IncidentReporting() {
 function ReportModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<IncidentVehicle[]>([]);
+  const [drivers, setDrivers] = useState<IncidentDriver[]>([]);
 
   const [formData, setFormData] = useState({
     type: 'accident',
@@ -302,8 +291,8 @@ function ReportModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: (
 
       if (error) throw error;
       onSuccess();
-    } catch (err: any) {
-      alert('Error reporting incident: ' + err.message);
+    } catch (err: unknown) {
+      alert('Error reporting incident: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }

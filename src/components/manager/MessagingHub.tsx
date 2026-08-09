@@ -13,8 +13,8 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type Message = Database['public']['Tables']['messages']['Row'];
 
 interface MessageWithProfiles extends Message {
-  sender?: { full_name: string } | null;
-  recipient?: { full_name: string } | null;
+  sender?: { full_name: string | null } | null;
+  recipient?: { full_name: string | null } | null;
 }
 
 type ThreadType = 'broadcast' | string; // 'broadcast' or driver's user_id
@@ -58,7 +58,7 @@ function Bubble({ msg, isMe }: { msg: MessageWithProfiles; isMe: boolean }) {
           {msg.body}
         </div>
         <div className={`flex items-center gap-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[10px] text-slate-500">{fmtTime(msg.created_at)}</span>
+          <span className="text-[10px] text-slate-500">{msg.created_at ? fmtTime(msg.created_at) : 'Unknown time'}</span>
           {isMe && msg.read_at && <CheckCheck size={11} className="text-brand-accent" />}
           {isMe && !msg.read_at && <Clock size={11} className="text-slate-500" />}
         </div>
@@ -175,11 +175,21 @@ export function MessagingHub() {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select('*, sender:sender_id(full_name), recipient:recipient_id(full_name)')
+        .select('*')
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      setMessages((data as MessageWithProfiles[]) ?? []);
+      const profileIds = [...new Set((data ?? []).flatMap(message => [message.sender_id, message.recipient_id]).filter((id): id is string => Boolean(id)))];
+      const { data: messageProfiles, error: profilesError } = profileIds.length > 0
+        ? await supabase.from('profiles').select('id, full_name').in('id', profileIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+      const profileMap = new Map((messageProfiles ?? []).map(messageProfile => [messageProfile.id, { full_name: messageProfile.full_name }]));
+      setMessages((data ?? []).map(message => ({
+        ...message,
+        sender: message.sender_id ? profileMap.get(message.sender_id) ?? null : null,
+        recipient: message.recipient_id ? profileMap.get(message.recipient_id) ?? null : null,
+      })));
     } catch (e) {
       console.error('Error loading messages:', e);
     } finally {
@@ -250,7 +260,7 @@ export function MessagingHub() {
       result.push({
         type: 'broadcast',
         lastBody: last.body,
-        lastAt: last.created_at,
+        lastAt: last.created_at ?? '',
         unreadCount: 0, // broadcasts don't have per-manager read tracking
       });
     } else {
@@ -308,10 +318,10 @@ export function MessagingHub() {
 
   const sendMessage = async (body: string, recipientId: string | null) => {
     if (!profile?.company_id || !profile?.id) throw new Error('Not authenticated');
-    const { error } = await supabase.rpc('send_manager_message_with_event' as never, {
+    const { error } = await supabase.rpc('send_manager_message_with_event', {
       p_body: body,
-      p_recipient_driver_id: recipientId,
-    } as never);
+      ...(recipientId ? { p_recipient_driver_id: recipientId } : {}),
+    });
     if (error) throw error;
   };
 

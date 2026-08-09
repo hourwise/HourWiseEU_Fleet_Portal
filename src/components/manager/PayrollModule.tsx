@@ -8,8 +8,17 @@ import { useTranslation } from 'react-i18next';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
-type PayConfiguration = Database['public']['Tables']['pay_configurations']['Row'];
 type Expense = Database['public']['Tables']['expenses']['Row'];
+
+type PayConfiguration = {
+  hourly_rate: number | null;
+  overtime_threshold_hours: number | null;
+  unpaid_break_minutes: number;
+  overtime_rate_multiplier: number | null;
+  overtime_rate_percentage: number | null;
+  additional_overtime_tiers: Array<{ threshold: number; multiplier?: number; percentage?: number }> | null;
+  shift_allowance: number | null;
+};
 
 interface DriverWithPay extends Profile {
   pay_configurations: PayConfiguration | null;
@@ -45,7 +54,7 @@ export function PayrollModule() {
     try {
       const { data: driverData, error: driverError } = await supabase
           .from('profiles')
-          .select('*, pay_configurations(*)')
+          .select('*')
           .eq('company_id', profile.company_id)
           .eq('role', 'driver');
       
@@ -55,13 +64,26 @@ export function PayrollModule() {
       if (driverIds.length > 0) {
           const sessionsPromise = supabase.from('work_sessions').select('*').in('user_id', driverIds).gte('date', startDateString).lte('date', endDateString);
           const expensesPromise = supabase.from('expenses').select('*').in('user_id', driverIds).gte('date', startDateString).lte('date', endDateString);
-          const [{data: sessionsData}, {data: expensesData}] = await Promise.all([sessionsPromise, expensesPromise]);
+          const payConfigurationsPromise = supabase.from('pay_configurations').select('*').in('user_id', driverIds);
+          const [{data: sessionsData}, {data: expensesData}, {data: payConfigurationsData}] = await Promise.all([sessionsPromise, expensesPromise, payConfigurationsPromise]);
+          const payConfigurationMap = new Map((payConfigurationsData ?? []).map(configuration => [configuration.user_id, configuration]));
 
           const driversWithData = driverData?.map(driver => ({
               ...driver,
+              pay_configurations: payConfigurationMap.get(driver.id)
+                ? {
+                    hourly_rate: payConfigurationMap.get(driver.id)!.hourly_rate,
+                    overtime_threshold_hours: payConfigurationMap.get(driver.id)!.overtime_threshold_hours,
+                    unpaid_break_minutes: payConfigurationMap.get(driver.id)!.unpaid_break_minutes,
+                    overtime_rate_multiplier: payConfigurationMap.get(driver.id)!.overtime_rate_multiplier,
+                    overtime_rate_percentage: payConfigurationMap.get(driver.id)!.overtime_rate_percentage,
+                    additional_overtime_tiers: parseOvertimeTiers(payConfigurationMap.get(driver.id)!.additional_overtime_tiers),
+                    shift_allowance: 0,
+                  }
+                : null,
               work_sessions: sessionsData?.filter(s => s.user_id === driver.id) || [],
               expenses: expensesData?.filter(e => e.user_id === driver.id) || [],
-          })) as DriverWithPay[];
+          })) ?? [];
           setDrivers(driversWithData);
       } else {
           setDrivers([]);
@@ -219,4 +241,18 @@ export function PayrollModule() {
       </div>
     </div>
   );
+}
+
+function parseOvertimeTiers(value: Database['public']['Tables']['pay_configurations']['Row']['additional_overtime_tiers']): PayConfiguration['additional_overtime_tiers'] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(tier => {
+    if (!tier || typeof tier !== 'object' || Array.isArray(tier)) return [];
+    const record = tier as Record<string, unknown>;
+    if (typeof record.threshold !== 'number') return [];
+    return [{
+      threshold: record.threshold,
+      ...(typeof record.multiplier === 'number' ? { multiplier: record.multiplier } : {}),
+      ...(typeof record.percentage === 'number' ? { percentage: record.percentage } : {}),
+    }];
+  });
 }

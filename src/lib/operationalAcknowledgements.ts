@@ -49,20 +49,6 @@ export interface ManagerAcknowledgementReadModel {
   byAssignmentId: Record<string, ManagerAcknowledgementSummary>;
 }
 
-type QueryError = { message: string };
-type QueryResult<T> = { data: T | null; error: QueryError | null };
-
-interface Query<T> extends PromiseLike<QueryResult<T>> {
-  eq(column: string, value: string): Query<T>;
-  in(column: string, values: string[]): Query<T>;
-  order(column: string, options?: { ascending?: boolean }): Query<T>;
-}
-
-interface ManagerAcknowledgementClient {
-  from(table: 'fleet_events'): { select<T = unknown>(columns: string): Query<T> };
-  from(table: 'driver_acknowledgements'): { select<T = unknown>(columns: string): Query<T> };
-}
-
 export function emptyManagerAcknowledgementReadModel(): ManagerAcknowledgementReadModel {
   return { byShiftId: {}, byAssignmentId: {} };
 }
@@ -78,10 +64,9 @@ export async function fetchManagerOperationalAcknowledgements(
   const uniqueShiftIds = [...new Set(shiftIds.filter(Boolean))];
   if (!companyId || uniqueShiftIds.length === 0) return emptyManagerAcknowledgementReadModel();
 
-  const managerClient = supabase as unknown as ManagerAcknowledgementClient;
-  const { data: eventRows, error: eventError } = await managerClient
+  const { data: eventRows, error: eventError } = await supabase
     .from('fleet_events')
-    .select<unknown>('id, company_id, event_type, related_shift_id, recipient_driver_id, payload, requires_ack, created_at')
+    .select('id, company_id, event_type, related_shift_id, recipient_driver_id, payload, requires_ack, created_at')
     .eq('company_id', companyId)
     .in('related_shift_id', uniqueShiftIds)
     .in('event_type', [...MANAGER_SHIFT_EVENT_TYPES, ...MANAGER_JOB_EVENT_TYPES])
@@ -93,9 +78,9 @@ export async function fetchManagerOperationalAcknowledgements(
   const events = normaliseManagerOperationalEvents(eventRows, companyId);
   if (events.length === 0) return emptyManagerAcknowledgementReadModel();
 
-  const { data: acknowledgementRows, error: acknowledgementError } = await managerClient
+  const { data: acknowledgementRows, error: acknowledgementError } = await supabase
     .from('driver_acknowledgements')
-    .select<unknown>('event_id, driver_id, acknowledged_at, company_id')
+    .select('event_id, driver_id, acknowledged_at, company_id')
     .eq('company_id', companyId)
     .in('event_id', events.map(event => event.id))
     .order('acknowledged_at', { ascending: false })

@@ -27,7 +27,7 @@ interface ShiftOption {
   date: string;
   start_time: string;
   end_time: string;
-  profiles?: { full_name: string } | null;
+  profiles?: { full_name: string | null } | null;
 }
 
 // NOTE: manager-only notes are deliberately not collected here. `jobs.manager_notes`
@@ -84,14 +84,27 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     let cancelled = false;
     setShiftsLoading(true);
     setShiftsError(null);
-    supabase.from('shifts').select('id, date, start_time, end_time, profiles:driver_id(full_name)')
+    supabase.from('shifts').select('id, date, start_time, end_time, driver_id')
       .eq('company_id', profile.company_id).in('status', ['published', 'updated'])
       .gte('date', format(new Date(), 'yyyy-MM-dd'))
-      .order('date').order('start_time').then(({ data, error }) => {
+      .order('date').order('start_time').then(async ({ data, error }) => {
         if (cancelled) return;
         setShiftsLoading(false);
         if (error) { setShiftsError(error.message); return; }
-        setShifts((data ?? []) as ShiftOption[]);
+        const driverIds = [...new Set((data ?? []).map(shift => shift.driver_id))];
+        const { data: driverProfiles, error: driverError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', driverIds);
+        if (driverError) { setShiftsError(driverError.message); return; }
+        const driverMap = new Map((driverProfiles ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+        setShifts((data ?? []).map(shift => ({
+          id: shift.id,
+          date: shift.date,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          profiles: driverMap.get(shift.driver_id) ?? null,
+        })));
       });
     return () => { cancelled = true; };
   }, [profile?.company_id]);
@@ -284,28 +297,32 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
         p_title: title,
         p_job_type: jobType,
         p_address_text: address,
-        p_customer_name: customerName || null,
-        p_contact_name: contactName || null,
-        p_contact_phone: contactPhone || null,
-        p_instructions: instructions || null,
+        ...(customerName ? { p_customer_name: customerName } : {}),
+        ...(contactName ? { p_contact_name: contactName } : {}),
+        ...(contactPhone ? { p_contact_phone: contactPhone } : {}),
+        ...(instructions ? { p_instructions: instructions } : {}),
         // Manager-only notes are not collected here (see ASSIGNMENT_SELECT note).
         p_sequence: Number(sequence),
-        p_planned_arrival_at: localDateTimeToIso(plannedArrival),
-        p_planned_departure_at: localDateTimeToIso(plannedDeparture),
-        p_expected_duration_minutes: duration ? Number(duration) : null,
+        ...(duration ? { p_expected_duration_minutes: Number(duration) } : {}),
         p_requires_ack: true,
       };
+      const plannedArrivalAt = plannedArrival ? localDateTimeToIso(plannedArrival) : null;
+      const plannedDepartureAt = plannedDeparture ? localDateTimeToIso(plannedDeparture) : null;
+      const typedRpcArgs = {
+        ...rpcArgs,
+        ...(plannedArrivalAt ? { p_planned_arrival_at: plannedArrivalAt } : {}),
+        ...(plannedDepartureAt ? { p_planned_departure_at: plannedDepartureAt } : {}),
+      };
       const { error } = editingAssignment
-        ? await supabase.rpc('update_job_assignment_with_event' as never, {
-            ...rpcArgs,
+        ? await supabase.rpc('update_job_assignment_with_event', {
+            ...typedRpcArgs,
             p_assignment_id: editingAssignment.id,
-            p_expected_updated_at: editingAssignment.updated_at,
-          } as never)
-        : await supabase.rpc('create_job_assignment_with_event' as never, {
-            ...rpcArgs,
+            p_expected_updated_at: editingAssignment.updated_at ?? undefined,
+          })
+        : await supabase.rpc('create_job_assignment_with_event', {
+            ...typedRpcArgs,
             p_shift_id: shiftId,
-            p_manager_notes: null,
-          } as never);
+          });
       if (error) throw error;
       const wasEditing = Boolean(editingAssignment);
       resetJobForm();
@@ -340,11 +357,11 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     setSubmitting(true);
     setMessage(null);
     try {
-      const { error } = await supabase.rpc('cancel_job_assignment_with_event' as never, {
+      const { error } = await supabase.rpc('cancel_job_assignment_with_event', {
         p_assignment_id: assignment.id,
         p_expected_updated_at: assignment.updated_at,
         p_requires_ack: true,
-      } as never);
+      });
       if (error) throw error;
       if (editingAssignment?.id === assignment.id) resetJobForm();
       setMessage({ kind: 'success', text: `${referenceLabel} was cancelled and the driver was notified.` });

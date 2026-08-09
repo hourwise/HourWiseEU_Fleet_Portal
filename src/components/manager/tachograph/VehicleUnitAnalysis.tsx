@@ -153,7 +153,7 @@ export function VehicleUnitAnalysis({ vehicleId, focusedDate, onOpenImportCentre
       Object.fromEntries(
         drivers
           .filter((entry) => entry.role === 'driver')
-          .map((entry) => [entry.id, entry.full_name || entry.email])
+          .map((entry) => [entry.id, entry.full_name || entry.email || 'Unknown driver'])
       ),
     [drivers]
   );

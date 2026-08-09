@@ -48,7 +48,7 @@ export function MfaSettings() {
     setLoading(true);
 
     const { error } = await supabase.auth.mfa.challengeAndVerify({
-      challengeId: challengeId!,
+      factorId: challengeId!,
       code: verifyCode,
     });
 

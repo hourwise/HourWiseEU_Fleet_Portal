@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { TachoActivity } from '../lib/compliance';
+import type { TachoActivity, WorkSession } from '../lib/compliance';
+import type { Database, Json } from '../lib/database.types';
 import { fetchCompanyTachoSignals } from '../lib/tacho/api';
 import {
   buildDriverTachoComplianceSignal,
@@ -12,6 +13,25 @@ import type { TachoReconciliationSummary, TachoReviewFocus } from '../lib/tacho/
 export type RiskLabel = 'Low Risk' | 'Medium Risk' | 'High Risk' | 'Critical';
 export type RiskColour = 'green' | 'amber' | 'orange' | 'red';
 type TachoActivityRecord = TachoActivity & { driver_id?: string | null };
+type RiskWorkSession = WorkSession & { user_id: string; compliance_score: number | null };
+
+function readDrivingData(value: Json | null): { driving?: number } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const driving = (value as Record<string, Json | undefined>).driving;
+  return typeof driving === 'number' ? { driving } : null;
+}
+
+function normaliseTachoActivity(row: Database['public']['Tables']['tachograph_activities']['Row']): TachoActivityRecord | null {
+  const activityTypes: TachoActivity['activity_type'][] = ['driving', 'work', 'poa', 'rest'];
+  if (!activityTypes.includes(row.activity_type as TachoActivity['activity_type'])) return null;
+  return {
+    driver_id: row.driver_id,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    activity_type: row.activity_type as TachoActivity['activity_type'],
+    distance_km: row.distance_km ?? undefined,
+  };
+}
 
 export interface DriverRiskFactors {
   complianceScore: number;       // 0-100 avg over last 28 days
@@ -99,7 +119,7 @@ export function useDriverRiskScores(
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState<{
     drivers: { id: string; full_name: string; driving_licence_expiry: string | null; cpc_dqc_expiry: string | null }[];
-    sessions: { user_id: string; compliance_score: number | null; start_time: string; end_time: string | null }[];
+    sessions: RiskWorkSession[];
     infringements: { driver_id: string; severity: string; status: string }[];
     training: { driver_id: string; status: string }[];
     defects: { driver_id: string }[];
@@ -147,7 +167,7 @@ export function useDriverRiskScores(
           normalizedSignals,
         ] = await Promise.all([
           supabase.from('work_sessions')
-            .select('user_id, compliance_score, start_time, end_time')
+            .select('user_id, compliance_score, start_time, end_time, total_work_minutes, total_break_minutes, other_data')
             .in('user_id', driverIds)
             .gte('date', sinceStr),
 
@@ -181,13 +201,18 @@ export function useDriverRiskScores(
         ]);
 
         setRaw({
-          drivers: profiles ?? [],
-          sessions: (sessions as any) ?? [],
-          infringements: infringements ?? [],
-          training: training ?? [],
-          defects: defects ?? [],
+          drivers: (profiles ?? []).map(driver => ({ ...driver, full_name: driver.full_name ?? 'Unknown driver' })),
+          sessions: (sessions ?? []).map(session => ({
+            ...session,
+            other_data: readDrivingData(session.other_data),
+          })),
+          infringements: (infringements ?? []).filter((row): row is { driver_id: string; severity: string; status: string } => Boolean(row.driver_id && row.severity && row.status)),
+          training: (training ?? []).filter((row): row is { driver_id: string; status: string } => Boolean(row.driver_id && row.status)),
+          defects: (defects ?? []).filter((row): row is { driver_id: string } => Boolean(row.driver_id)),
           documents: documents ?? [],
-          tachoActivities: (tacho as any) ?? [],
+          tachoActivities: (tacho ?? [])
+            .map(normaliseTachoActivity)
+            .filter((activity): activity is TachoActivityRecord => activity !== null),
           normalizedSignals,
         });
       } catch (e) {
@@ -238,7 +263,7 @@ export function useDriverRiskScores(
           buildDriverTachoComplianceSignal({
             driverId: driver.id,
             activities: dTacho,
-            workSessions: dSessions as any,
+            workSessions: dSessions,
           })
         );
 

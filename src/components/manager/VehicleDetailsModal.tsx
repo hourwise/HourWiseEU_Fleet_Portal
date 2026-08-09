@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
-import { X, Save, Trash2, Edit, ShieldCheck, FileText, Download, ShieldAlert, AlertTriangle, LifeBuoy, Scan, Check, Clock, Ban } from 'lucide-react';
+import { X, Save, Trash2, Edit, ShieldCheck, FileText, Download, ShieldAlert, AlertTriangle, LifeBuoy, Scan, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -10,27 +10,10 @@ import { scanDocument } from '../../lib/ocr';
 
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 
-interface VehicleDocument {
-  id: string;
-  vehicle_id: string;
-  company_id: string;
-  document_type: string;
-  storage_path: string;
-  id_number: string | null;
-  expiry_date: string | null;
-  uploaded_at: string;
-  verified_at: string | null;
-}
-
-interface VehicleIncident {
-  id: string;
-  type: string;
-  occurred_at: string;
-  description: string;
-  has_injury: boolean;
-  status: string;
-  profiles: { full_name: string };
-}
+type VehicleDocument = Database['public']['Tables']['vehicle_documents']['Row'];
+type VehicleIncident = Database['public']['Tables']['incidents']['Row'] & {
+  profiles: { full_name: string | null } | null;
+};
 
 interface VehicleDetailsModalProps {
   vehicle: Vehicle;
@@ -91,20 +74,6 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
     setFormData(prev => ({ ...prev, [name]: value || null }));
   };
 
-  const handleDocumentStatus = async (docId: string, status: 'verified' | 'rejected') => {
-    try {
-      const { error } = await supabase
-        .from('vehicle_documents')
-        .update({ verified_at: status === 'verified' ? new Date().toISOString() : null })
-        .eq('id', docId);
-
-      if (error) throw error;
-      fetchData();
-    } catch (err: any) {
-      alert("Verification failed: " + err.message);
-    }
-  };
-
   const handleDocumentSubmit = async (type: string) => {
     if (!docState.file) return alert("Please select a file.");
     setIsUploading(true);
@@ -126,8 +95,8 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
 
       docState.reset();
       fetchData();
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + (err instanceof Error ? err.message : 'Unknown error'));
     } finally { setIsUploading(false); }
   };
 
@@ -138,8 +107,8 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
       if (error) throw error;
       onSave();
       onClose();
-    } catch (err: any) {
-      alert(t('common.error') + ": " + err.message);
+    } catch (err: unknown) {
+      alert(t('common.error') + ": " + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
     }
@@ -259,36 +228,13 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                           <p className="text-xs font-black text-slate-900 uppercase">{doc.document_type}</p>
                           <div className="flex items-center gap-2 mt-1">
                             {doc.expiry_date && <p className="text-[10px] font-bold text-slate-500 uppercase">Expires: {new Date(doc.expiry_date).toLocaleDateString()}</p>}
-                            {doc.verified_at ? (
-                              <span className="flex items-center gap-1 text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase">
-                                <Check size={10}/> Verified
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase">
-                                <Clock size={10}/> Pending
-                              </span>
-                            )}
+                            <span className="flex items-center gap-1 text-[9px] font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded uppercase">
+                              <Clock size={10}/> Stored
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {!doc.verified_at ? (
-                          <button
-                            onClick={() => handleDocumentStatus(doc.id, 'verified')}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                            title="Verify Document"
-                          >
-                            <Check size={16}/>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleDocumentStatus(doc.id, 'rejected')}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Unverify Document"
-                          >
-                            <Ban size={16}/>
-                          </button>
-                        )}
                         <button className="p-2 text-slate-300 hover:text-blue-600 transition"><Download size={16}/></button>
                         <button className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
                       </div>
@@ -322,7 +268,7 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                           <p className="text-[10px] font-bold text-slate-500">{format(new Date(incident.occurred_at), 'PPp')}</p>
                         </div>
                         <p className="text-[11px] text-slate-600 mt-1 line-clamp-1">{incident.description}</p>
-                        <p className="text-[10px] font-bold text-blue-600 uppercase mt-1">Driver: {incident.profiles.full_name}</p>
+                        <p className="text-[10px] font-bold text-blue-600 uppercase mt-1">Driver: {incident.profiles?.full_name ?? 'Unknown driver'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

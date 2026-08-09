@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, PieChart, DollarSign, Zap, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 import { EfficiencyReport } from './reports/EfficiencyReport';
 import { useTranslation } from 'react-i18next';
@@ -60,7 +61,7 @@ function PayrollReport({ selectedDriver, startDate, endDate, loading, setLoading
   const payrollSummary = useMemo(() => {
     const driverMap = new Map<string, PayrollReportRow>();
     sessions.forEach((s) => {
-      const current = driverMap.get(s.user_id) || { name: s.profile.full_name, totalHours: 0, totalBreakHours: 0, totalDrivingHours: 0, sessions: 0 };
+      const current = driverMap.get(s.user_id) || { name: s.profile.full_name ?? 'Unknown driver', totalHours: 0, totalBreakHours: 0, totalDrivingHours: 0, sessions: 0 };
       current.totalHours += (s.total_work_minutes || 0) / 60;
       current.totalBreakHours += (s.total_break_minutes || 0) / 60;
       current.totalDrivingHours += ((s.other_data as { driving?: number } | null)?.driving || 0) / 60;
@@ -188,7 +189,7 @@ export function ReportsModule() {
     setDrivers(data || []);
   };
 
-  const reportTabs: { id: ReportType; label: string; icon: any }[] = [
+  const reportTabs: { id: ReportType; label: string; icon: LucideIcon }[] = [
     { id: 'payroll', label: t('reports.tabs.payroll'), icon: DollarSign },
     { id: 'efficiency', label: t('reports.tabs.efficiency'), icon: Zap },
     { id: 'vehicle_checks', label: t('reports.tabs.vehicleChecks'), icon: ShieldCheck },
@@ -243,6 +244,44 @@ export function ReportsModule() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FilterSection({
+  drivers,
+  selectedDriver,
+  setSelectedDriver,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+}: {
+  drivers: Profile[];
+  selectedDriver: string;
+  setSelectedDriver: (value: string) => void;
+  startDate: string;
+  setStartDate: (value: string) => void;
+  endDate: string;
+  setEndDate: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <label className="text-sm font-medium text-gray-700">
+        Driver
+        <select value={selectedDriver} onChange={(event) => setSelectedDriver(event.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 bg-white">
+          <option value="all">All drivers</option>
+          {drivers.map(driver => <option key={driver.id} value={driver.id}>{driver.full_name ?? 'Unknown driver'}</option>)}
+        </select>
+      </label>
+      <label className="text-sm font-medium text-gray-700">
+        From
+        <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </label>
+      <label className="text-sm font-medium text-gray-700">
+        To
+        <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </label>
     </div>
   );
 }

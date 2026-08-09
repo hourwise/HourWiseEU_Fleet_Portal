@@ -53,8 +53,8 @@ export function SupervisorManagement() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (s) =>
-          s.full_name.toLowerCase().includes(query) ||
-          s.email.toLowerCase().includes(query)
+          (s.full_name ?? '').toLowerCase().includes(query) ||
+          (s.email ?? '').toLowerCase().includes(query)
       );
     }
     setFilteredSupervisors(filtered);
@@ -173,7 +173,7 @@ export function SupervisorManagement() {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => toggleSupervisorStatus(supervisor.id, supervisor.is_active)}
+                    onClick={() => toggleSupervisorStatus(supervisor.id, supervisor.is_active ?? false)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition ${
                       supervisor.is_active
                         ? 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -207,7 +207,7 @@ export function SupervisorManagement() {
 function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: Profile, onClose: () => void, onSave: () => void }) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
-    full_name: supervisor.full_name,
+    full_name: supervisor.full_name ?? '',
     phone_number: supervisor.phone_number || '',
   });
   const [loading, setLoading] = useState(false);
@@ -262,7 +262,7 @@ function SupervisorDetailsModal({ supervisor, onClose, onSave }: { supervisor: P
               type="email"
               disabled
               className="w-full p-3 border border-slate-100 rounded-xl bg-slate-50 text-slate-400 font-medium cursor-not-allowed"
-              value={supervisor.email}
+              value={supervisor.email ?? ''}
             />
           </div>
           <div>

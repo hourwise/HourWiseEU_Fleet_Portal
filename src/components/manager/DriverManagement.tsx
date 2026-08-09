@@ -97,14 +97,6 @@ interface PendingInviteUpdate {
   tacho_card_issuing_authority: string | null;
 }
 
-interface PendingInviteUpdateQuery {
-  update(values: PendingInviteUpdate): {
-    eq(column: string, value: unknown): {
-      eq(column: string, value: unknown): Promise<{ error: { message: string } | null }>;
-    };
-  };
-}
-
 function PendingInviteDetailsModal({
   invite,
   onClose,
@@ -142,8 +134,8 @@ function PendingInviteDetailsModal({
     };
 
     try {
-      const inviteTable = supabase.from('driver_invites') as unknown as PendingInviteUpdateQuery;
-      const { error: saveError } = await inviteTable
+      const { error: saveError } = await supabase
+        .from('driver_invites')
         .update(updateData)
         .eq('id', invite.id)
         .eq('company_id', invite.company_id);
@@ -465,7 +457,7 @@ export function DriverManagement({
                           Tacho: {item.tacho_card_number}
                         </span>
                       )}
-                      {item.is_contractor && (
+                      {!isInvite && item.is_contractor && (
                         <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                           Agency: {item.agency_name || 'Unspecified'}
                         </span>

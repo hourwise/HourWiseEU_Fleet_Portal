@@ -3,18 +3,9 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Wrench, Download, Plus, X, Upload, Loader2, Calendar, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { Database } from '../../lib/database.types';
 
-interface MaintenanceLog {
-  id: string;
-  vehicle_id: string;
-  event_type: string;
-  service_provider: string;
-  odometer_at_service: number;
-  cost: number;
-  description: string;
-  document_url: string | null;
-  completed_at: string;
-}
+type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
 
 interface MaintenanceAuditTrailProps {
   vehicleId: string;
@@ -113,14 +104,14 @@ export function MaintenanceAuditTrail({ vehicleId, isTrailer, onUpdate, triggerA
                     {getEventTypeLabel(log.event_type)}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {log.service_provider}
+                    {log.service_provider || 'Unknown provider'}
                   </span>
                 </div>
-                <p className="text-sm text-slate-700 font-medium leading-snug">{log.description}</p>
+                <p className="text-sm text-slate-700 font-medium leading-snug">{log.description || 'No description recorded'}</p>
                 <div className="text-[10px] text-slate-400 font-black flex gap-4 mt-1.5">
                   <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(log.completed_at).toLocaleDateString()}</span>
                   {!isTrailer && <span>{t('maintenance.labels.odo')}: {log.odometer_at_service?.toLocaleString()} km</span>}
-                  {log.cost > 0 && <span className="text-green-600">{t('maintenance.labels.cost')}: £{Number(log.cost).toFixed(2)}</span>}
+                  {(log.cost ?? 0) > 0 && <span className="text-green-600">{t('maintenance.labels.cost')}: £{Number(log.cost).toFixed(2)}</span>}
                 </div>
               </div>
 
@@ -223,7 +214,7 @@ export function AddLogModal({ vehicleId, isTrailer, onClose, onSuccess }: { vehi
       if (insertError) throw insertError;
 
       // 4. AUTOMATED COMPLIANCE: Update Vehicle Master
-      const updates: any = {
+      const updates: Database['public']['Tables']['vehicles']['Update'] = {
         updated_at: new Date().toISOString()
       };
 
@@ -265,9 +256,9 @@ export function AddLogModal({ vehicleId, isTrailer, onClose, onSuccess }: { vehi
         .eq('id', vehicleId);
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving log:', err);
-      setError(err.message || 'Failed to save maintenance record.');
+      setError(err instanceof Error ? err.message : 'Failed to save maintenance record.');
     } finally {
       setLoading(false);
     }

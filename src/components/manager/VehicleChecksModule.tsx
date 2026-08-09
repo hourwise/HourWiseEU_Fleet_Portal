@@ -3,27 +3,15 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShieldCheck, Calendar, AlertTriangle, CheckCircle, ChevronRight, FileText, Truck, Gauge, Search, ArrowRight, Camera, X, ZoomIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { Database, Json } from '../../lib/database.types';
 
-interface VehicleCheck {
-  id: string;
-  driver_id: string;
-  check_date: string;
-  reg_number: string;
-  vehicle_type: string;
-  vehicle_make: string | null;
-  check_status: 'pass' | 'defect';
-  defect_details: string | null;
-  items: Record<string, boolean>;
-  odometer_reading: number | null;
-  created_at: string;
-  profiles: {
-    full_name: string;
-  };
-}
+type VehicleCheck = Database['public']['Tables']['vehicle_checks']['Row'] & {
+  profiles: { full_name: string | null } | null;
+};
 
 interface FleetVehicle {
-  is_vor: boolean;
-  maintenance_called: boolean;
+  is_vor: boolean | null;
+  maintenance_called: boolean | null;
   status_notes: string | null;
   make: string;
   model: string | null;
@@ -53,6 +41,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const loadVehicleChecks = useCallback(async () => {
+    if (!profile?.company_id) return;
     try {
       const { data, error } = await supabase
         .from('vehicle_checks')
@@ -60,7 +49,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
           *,
           profiles:driver_id (full_name)
         `)
-        .eq('company_id', profile!.company_id)
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -123,7 +112,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
   }, [selectedCheck?.id]);
 
   const filteredChecks = checks.filter(check =>
-    check.profiles.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (check.profiles?.full_name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     check.reg_number.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -196,7 +185,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900">{check.profiles.full_name}</p>
+                        <p className="font-semibold text-gray-900">{check.profiles?.full_name ?? 'Unknown driver'}</p>
                         {check.check_status === 'defect' && (
                           <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-100 text-red-700">
                             DEFECT
@@ -206,7 +195,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
                       <p className="text-xs font-bold text-blue-600 uppercase">{check.reg_number}</p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                         <Calendar size={14} />
-                        {new Date(check.check_date || check.created_at).toLocaleDateString()}
+                        {new Date(check.created_at ?? '').toLocaleDateString()}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -229,13 +218,13 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{selectedCheck.profiles.full_name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedCheck.profiles?.full_name ?? 'Unknown driver'}</h3>
                   <div className="flex items-center gap-4 mt-1">
                     <span className="text-sm font-bold text-blue-600 uppercase flex items-center gap-1">
                       <Truck size={14} /> {selectedCheck.reg_number}
                     </span>
                     <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Calendar size={14} /> {new Date(selectedCheck.check_date || selectedCheck.created_at).toLocaleDateString()}
+                      <Calendar size={14} /> {new Date(selectedCheck.created_at ?? '').toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -273,7 +262,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <label className="block text-xs font-medium text-gray-500 mb-1">{t('vehicleChecklist.manager.details.timeRecorded')}</label>
-                    <p className="font-bold text-gray-900">{new Date(selectedCheck.created_at).toLocaleTimeString()}</p>
+                    <p className="font-bold text-gray-900">{selectedCheck.created_at ? new Date(selectedCheck.created_at).toLocaleTimeString() : 'Not recorded'}</p>
                   </div>
                 </div>
 
@@ -377,7 +366,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                  {Object.entries(selectedCheck.items).map(([id, status]) => (
+                  {Object.entries(asChecklistItems(selectedCheck.items)).map(([id, status]) => (
                     <div key={id} className="flex items-center justify-between py-2 border-b border-gray-50">
                       <span className="text-sm text-gray-700">{t(`vehicleChecklist.items.${id}`)}</span>
                       {status ? (
@@ -405,4 +394,9 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
       </div>
     </div>
   );
+}
+
+function asChecklistItems(value: Json): Record<string, boolean> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).flatMap(([key, item]) => typeof item === 'boolean' ? [[key, item]] : []));
 }

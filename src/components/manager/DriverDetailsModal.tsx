@@ -20,14 +20,7 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
 type Translator = (key: string, options?: Record<string, unknown>) => string;
 
-type TachoFindingReviewSummary = {
-  id: string;
-  status: 'open' | 'reviewed' | 'action_required' | 'closed';
-  manager_note: string | null;
-  corrective_action_type: 'training' | 'manager_debrief' | 'manual_entry' | 'other' | null;
-  driver_acknowledged_at: string | null;
-  updated_at: string;
-};
+type TachoFindingReviewSummary = Pick<Database['public']['Tables']['tachograph_finding_reviews']['Row'], 'id' | 'status' | 'manager_note' | 'corrective_action_type' | 'driver_acknowledged_at' | 'updated_at'>;
 
 type TachoReviewFilter = 'all' | 'open' | 'action_required' | 'closed' | 'acknowledged';
 
@@ -182,7 +175,7 @@ export function DriverDetailsModal({
         .order('assigned_at', { ascending: false })
         .limit(5),
       supabase
-        .from('tachograph_finding_reviews' as never)
+        .from('tachograph_finding_reviews')
         .select('id,status,manager_note,corrective_action_type,driver_acknowledged_at,updated_at')
         .eq('company_id', driver.company_id)
         .eq('driver_id', driver.id)
@@ -191,7 +184,7 @@ export function DriverDetailsModal({
     ]);
 
     setTachoTrainingActions(trainingResult.data || []);
-    const reviews = (reviewResult.data as unknown as TachoFindingReviewSummary[] | null) || [];
+    const reviews: TachoFindingReviewSummary[] = reviewResult.data || [];
     setTachoReviewActions(reviews);
 
     if (reviews.length > 0) {
@@ -587,7 +580,7 @@ export function DriverDetailsModal({
                             <div key={record.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
                               <p className="text-xs font-black text-slate-800">{record.title}</p>
                               <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                {record.status.replace('_', ' ')} - assigned {new Date(record.assigned_at).toLocaleDateString()}
+                                {(record.status ?? 'assigned').replace('_', ' ')} - assigned {record.assigned_at ? new Date(record.assigned_at).toLocaleDateString() : 'date not recorded'}
                               </p>
                             </div>
                           ))}
@@ -800,7 +793,7 @@ export function DriverDetailsModal({
                     <div key={s.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl bg-white hover:bg-slate-50 transition shadow-sm">
                       <div>
                         <p className="text-xs font-black text-slate-900 uppercase">{new Date(s.start_time).toLocaleDateString()} @ {new Date(s.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">{t('driverDetails.labels.duration', { hours: s.duration_ms ? (s.duration_ms / 3600000).toFixed(2) : '?' })}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{t('driverDetails.labels.duration', { hours: s.end_time ? ((new Date(s.end_time).getTime() - new Date(s.start_time).getTime()) / 3600000).toFixed(2) : '?' })}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => setEditingShift(s)} className="p-2 hover:bg-blue-50 rounded-lg border border-slate-100 text-blue-600 transition"><Edit size={14}/></button>

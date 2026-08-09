@@ -5,11 +5,19 @@ import { FileText, AlertCircle, Download, Calendar, User, MapPin } from 'lucide-
 import { useTranslation } from 'react-i18next';
 import type { Database } from '../../lib/database.types';
 
-type DriverLog = Database['public']['Tables']['driver_logs']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
-interface InfractionWithDriver extends DriverLog {
-  driver: Profile;
+interface InfractionWithDriver {
+  id: string;
+  driver_id: string;
+  status_code: 'violation' | 'warning';
+  start_time: string;
+  activity_type: string;
+  infraction_type: string | null;
+  duration_minutes: number | null;
+  location_start: string | null;
+  notes: string | null;
+  driver: Pick<Profile, 'full_name'> | null;
 }
 
 export function InfractionReport() {
@@ -21,17 +29,16 @@ export function InfractionReport() {
 
   const loadInfractions = useCallback(async () => {
     try {
-      const { data: logs, error: logsError } = await supabase
-        .from('driver_logs')
+      const { data: infringementRows, error: logsError } = await supabase
+        .from('infringements')
         .select('*')
         .eq('company_id', profile!.company_id!)
-        .in('status_code', ['warning', 'violation'])
-        .order('start_time', { ascending: false })
+        .order('occurred_at', { ascending: false })
         .limit(100);
 
       if (logsError) throw logsError;
 
-      const driverIds = [...new Set(logs?.map((log) => log.driver_id) || [])];
+      const driverIds = [...new Set(infringementRows?.map((log) => log.driver_id) || [])];
 
       const { data: drivers, error: driversError } = await supabase
         .from('profiles')
@@ -42,9 +49,17 @@ export function InfractionReport() {
 
       const driverMap = new Map(drivers?.map((d) => [d.id, d]) || []);
 
-      const infractionsWithDrivers: InfractionWithDriver[] = (logs || []).map((log) => ({
-        ...log,
-        driver: driverMap.get(log.driver_id)!,
+      const infractionsWithDrivers: InfractionWithDriver[] = (infringementRows || []).map((log) => ({
+        id: log.id,
+        driver_id: log.driver_id,
+        status_code: ['critical', 'high', 'serious', 'very_serious'].includes(log.severity.toLowerCase()) ? 'violation' : 'warning',
+        start_time: log.occurred_at,
+        activity_type: 'infringement',
+        infraction_type: log.violation_type,
+        duration_minutes: null,
+        location_start: null,
+        notes: log.manager_notes || log.regulation || null,
+        driver: driverMap.get(log.driver_id) ? { full_name: driverMap.get(log.driver_id)!.full_name } : null,
       }));
 
       setInfractions(infractionsWithDrivers);
@@ -78,7 +93,7 @@ export function InfractionReport() {
       ...filtered.map((inf) =>
         [
           new Date(inf.start_time).toLocaleString(),
-          inf.driver.full_name,
+          inf.driver?.full_name ?? 'Unknown driver',
           inf.activity_type,
           inf.status_code,
           inf.infraction_type || 'N/A',
@@ -214,7 +229,7 @@ export function InfractionReport() {
                     <User className="w-4 h-4 text-gray-500" />
                     <div>
                       <span className="text-gray-600 block text-xs">{t('infractions.labels.driver')}</span>
-                      <span className="font-medium text-gray-900">{infraction.driver.full_name}</span>
+                      <span className="font-medium text-gray-900">{infraction.driver?.full_name ?? 'Unknown driver'}</span>
                     </div>
                   </div>
 

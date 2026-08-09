@@ -4,37 +4,63 @@ import { FileText, Download, Loader2, User, ShieldCheck } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { CompliancePackPDF } from './CompliancePackPDF';
 import { useAuth } from '../../../../contexts/AuthContext';
+import type { Database, Json } from '../../../../lib/database.types';
 
-type TachoFindingRow = {
-  id: string;
-  import_id: string;
-  source: string;
-  severity: string;
-  status: string;
-  rule_code: string;
-  title: string;
-  summary: string;
-  legal_basis: string | null;
-  occurred_at: string;
-  period_start: string;
-  period_end: string;
-};
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
+type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
+type Infringement = Database['public']['Tables']['infringements']['Row'];
+type VehicleCheck = Database['public']['Tables']['vehicle_checks']['Row'];
+type TachoFindingRow = Pick<Database['public']['Tables']['tachograph_findings']['Row'], 'id' | 'import_id' | 'source' | 'severity' | 'status' | 'rule_code' | 'title' | 'summary' | 'legal_basis' | 'occurred_at' | 'period_start' | 'period_end'>;
+type TachoFindingReviewRow = Pick<Database['public']['Tables']['tachograph_finding_reviews']['Row'], 'finding_id' | 'status' | 'corrective_action_type' | 'manager_note' | 'reviewed_at' | 'closed_at'>;
+type TachoDownload = Pick<Database['public']['Tables']['driver_card_downloads']['Row'], 'import_id' | 'card_number' | 'card_expiry' | 'issuing_country' | 'downloaded_at' | 'period_start' | 'period_end' | 'download_status'>;
+type TachoImport = Pick<Database['public']['Tables']['tachograph_files']['Row'], 'id' | 'filename' | 'file_type' | 'status' | 'uploaded_at' | 'processed_at' | 'source_type' | 'external_card_number' | 'metadata'>;
+type TachoDaySummary = Pick<Database['public']['Tables']['tachograph_day_summaries']['Row'], 'import_id' | 'summary_date' | 'driving_mins' | 'work_mins' | 'poa_mins' | 'rest_mins' | 'findings_count' | 'vu_event_count'>;
+type TachoReconciliation = Pick<Database['public']['Tables']['tachograph_reconciliation_items']['Row'], 'id' | 'import_id' | 'recon_date' | 'status' | 'app_label' | 'tacho_label' | 'summary' | 'app_driving_mins' | 'tacho_driving_mins'>;
 
-type TachoFindingReviewRow = {
-  finding_id: string;
-  status: string;
-  corrective_action_type: string | null;
-  manager_note: string | null;
-  reviewed_at: string | null;
-  closed_at: string | null;
-};
+interface CompliancePackData {
+  driver: Profile;
+  sessions: WorkSession[];
+  training: TrainingRecord[];
+  infringements: Infringement[];
+  checks: VehicleCheck[];
+  tacho: {
+    downloads: TachoDownload[];
+    imports: TachoImport[];
+    daySummaries: TachoDaySummary[];
+    findings: (TachoFindingRow & { review: TachoFindingReviewRow | null })[];
+    reconciliation: TachoReconciliation[];
+    totals: {
+      downloadCount: number;
+      importCount: number;
+      activeImportCount: number;
+      dayCount: number;
+      drivingMins: number;
+      workMins: number;
+      poaMins: number;
+      restMins: number;
+      findingCount: number;
+      criticalFindingCount: number;
+      unreviewedFindingCount: number;
+      reconciliationIssueCount: number;
+    };
+  };
+  generatedAt: string;
+  companyName?: string;
+}
+
+function isActiveImport(metadata: Json | null): boolean {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return true;
+  const value = (metadata as Record<string, Json | undefined>).helper_capture_active_analysis_rows;
+  return value !== false;
+}
 
 export function CompliancePackGenerator({ preferredDriverId }: { preferredDriverId?: string }) {
   const { profile: managerProfile } = useAuth();
   const [selectedDriverId, setSelectedDriverId] = useState('');
-  const [drivers, setDrivers] = useState<{ id: string; full_name: string }[]>([]);
+  const [drivers, setDrivers] = useState<{ id: string; full_name: string | null }[]>([]);
   const [isPreparing, setIsPreparing] = useState(false);
-  const [packData, setPackData] = useState<any>(null);
+  const [packData, setPackData] = useState<CompliancePackData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,14 +120,14 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
         supabase.from('infringements').select('*').eq('driver_id', selectedDriverId).eq('status', 'debriefed').order('occurred_at', { ascending: false }),
         supabase.from('vehicle_checks').select('*').eq('user_id', selectedDriverId).gte('created_at', startDateTime).order('created_at', { ascending: false }),
         supabase
-          .from('driver_card_downloads' as any)
+          .from('driver_card_downloads')
           .select('import_id, card_number, card_expiry, issuing_country, downloaded_at, period_start, period_end, download_status')
           .eq('company_id', managerProfile.company_id)
           .eq('driver_id', selectedDriverId)
           .gte('downloaded_at', startDateTime)
           .order('downloaded_at', { ascending: false }),
         supabase
-          .from('tachograph_files' as any)
+          .from('tachograph_files')
           .select('id, filename, file_type, status, uploaded_at, processed_at, source_type, external_card_number, metadata')
           .eq('company_id', managerProfile.company_id)
           .eq('driver_id', selectedDriverId)
@@ -109,21 +135,21 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
           .gte('uploaded_at', startDateTime)
           .order('uploaded_at', { ascending: false }),
         supabase
-          .from('tachograph_day_summaries' as any)
+          .from('tachograph_day_summaries')
           .select('import_id, summary_date, driving_mins, work_mins, poa_mins, rest_mins, findings_count, vu_event_count')
           .eq('company_id', managerProfile.company_id)
           .eq('driver_id', selectedDriverId)
           .gte('summary_date', startDate)
           .order('summary_date', { ascending: false }),
         supabase
-          .from('tachograph_findings' as any)
+          .from('tachograph_findings')
           .select('id, import_id, source, severity, status, rule_code, title, summary, legal_basis, occurred_at, period_start, period_end')
           .eq('company_id', managerProfile.company_id)
           .eq('driver_id', selectedDriverId)
           .gte('occurred_at', startDateTime)
           .order('occurred_at', { ascending: false }),
         supabase
-          .from('tachograph_reconciliation_items' as any)
+          .from('tachograph_reconciliation_items')
           .select('id, import_id, recon_date, status, app_label, tacho_label, summary, app_driving_mins, tacho_driving_mins')
           .eq('company_id', managerProfile.company_id)
           .eq('driver_id', selectedDriverId)
@@ -138,12 +164,12 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
       if (tachoFindingsRes.error) throw tachoFindingsRes.error;
       if (tachoReconciliationRes.error) throw tachoReconciliationRes.error;
 
-      const tachoFindings = (tachoFindingsRes.data as unknown as TachoFindingRow[] | null) || [];
+      const tachoFindings: TachoFindingRow[] = tachoFindingsRes.data || [];
       let tachoReviewByFindingId = new Map<string, TachoFindingReviewRow>();
 
       if (tachoFindings.length > 0) {
         const { data: reviewRows, error: reviewError } = await supabase
-          .from('tachograph_finding_reviews' as any)
+          .from('tachograph_finding_reviews')
           .select('finding_id, status, corrective_action_type, manager_note, reviewed_at, closed_at')
           .eq('company_id', managerProfile.company_id)
           .in('finding_id', tachoFindings.map((finding) => finding.id));
@@ -151,13 +177,13 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
         if (reviewError) throw reviewError;
 
         tachoReviewByFindingId = new Map(
-          ((reviewRows as unknown as TachoFindingReviewRow[] | null) || []).map((review) => [review.finding_id, review])
+          (reviewRows || []).map((review) => [review.finding_id, review])
         );
       }
 
-      const tachoDaySummaries = (tachoDaySummaryRes.data as unknown as any[] | null) || [];
-      const tachoImports = (tachoImportsRes.data as unknown as any[] | null) || [];
-      const tachoReconciliation = (tachoReconciliationRes.data as unknown as any[] | null) || [];
+      const tachoDaySummaries: TachoDaySummary[] = tachoDaySummaryRes.data || [];
+      const tachoImports: TachoImport[] = tachoImportsRes.data || [];
+      const tachoReconciliation: TachoReconciliation[] = tachoReconciliationRes.data || [];
       const tachoCriticalFindings = tachoFindings.filter((finding) => finding.severity === 'critical' || finding.severity === 'high');
       const tachoUnreviewedFindings = tachoFindings.filter((finding) => {
         const review = tachoReviewByFindingId.get(finding.id);
@@ -182,7 +208,7 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
           totals: {
             downloadCount: (tachoDownloadsRes.data || []).length,
             importCount: tachoImports.length,
-            activeImportCount: tachoImports.filter((row) => row.metadata?.helper_capture_active_analysis_rows !== false).length,
+            activeImportCount: tachoImports.filter((row) => isActiveImport(row.metadata)).length,
             dayCount: tachoDaySummaries.length,
             drivingMins: tachoDaySummaries.reduce((sum, row) => sum + (row.driving_mins || 0), 0),
             workMins: tachoDaySummaries.reduce((sum, row) => sum + (row.work_mins || 0), 0),
@@ -197,9 +223,9 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
         generatedAt: new Date().toLocaleString('en-GB'),
         companyName: managerProfile?.company_id
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error preparing compliance pack:', err);
-      setError(err.message || 'Failed to prepare data');
+      setError(err instanceof Error ? err.message : 'Failed to prepare data');
     } finally {
       setIsPreparing(false);
     }
@@ -263,7 +289,7 @@ export function CompliancePackGenerator({ preferredDriverId }: { preferredDriver
             {packData && (
               <PDFDownloadLink
                 document={<CompliancePackPDF data={packData} />}
-                fileName={`Compliance_Pack_${packData.driver.full_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`}
+                fileName={`Compliance_Pack_${(packData.driver.full_name ?? 'driver').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-widest transition animate-in fade-in slide-in-from-bottom-2"
               >
                 {({ loading }) => (

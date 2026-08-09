@@ -34,8 +34,8 @@ export function UserProfileSettings() {
       await refreshSession();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Unable to update profile.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export function UserProfileSettings() {
                 type="email"
                 disabled
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-100 rounded-lg text-slate-400 font-medium bg-slate-50 cursor-not-allowed"
-                value={profile?.email}
+                value={profile?.email ?? ''}
               />
             </div>
           </div>

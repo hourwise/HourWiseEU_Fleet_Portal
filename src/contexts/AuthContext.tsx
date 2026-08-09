@@ -151,8 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         let companyId: string | null = null;
         if (role === 'manager' && companyName) {
-          const { data: authCode, error: authCodeError } = await supabase.rpc('generate_auth_code');
-          if (authCodeError) throw authCodeError;
+          const authCode = crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
 
           const { data: company, error: companyError } = await supabase
             .from('companies')
@@ -161,7 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               auth_code: authCode,
               auth_code_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
               created_by: userId,
-              require_vehicle_checklist: false // Explicitly set default
             })
             .select()
             .single();

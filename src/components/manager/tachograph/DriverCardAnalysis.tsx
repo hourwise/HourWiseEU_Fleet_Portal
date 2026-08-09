@@ -292,8 +292,8 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
     const query = searchValue.trim().toLowerCase();
     return drivers
       .filter((entry) => entry.role === 'driver')
-      .filter((entry) => !query || entry.full_name.toLowerCase().includes(query) || entry.email.toLowerCase().includes(query))
-      .map((entry) => ({ id: entry.id, label: entry.full_name || entry.email, meta: entry.email }));
+      .filter((entry) => !query || (entry.full_name ?? '').toLowerCase().includes(query) || (entry.email ?? '').toLowerCase().includes(query))
+      .map((entry) => ({ id: entry.id, label: entry.full_name || entry.email || 'Unknown driver', meta: entry.email ?? undefined }));
   }, [drivers, searchValue]);
 
   const persistedFindings = data?.findings ?? EMPTY_FINDINGS;
@@ -521,7 +521,7 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
           ? 'Candidate card check reviewed without creating an invite or driver profile.'
           : 'Candidate card check reviewed.',
       };
-      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review' as never, reviewPayload as never);
+      const { error: reviewError } = await supabase.rpc('mark_tacho_candidate_card_review', reviewPayload);
       if (reviewError) throw reviewError;
       setCandidateActionMessage(decision === 'no_hire'
         ? 'Marked as checked / no hire. No profile or invite was created.'

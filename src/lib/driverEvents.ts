@@ -12,36 +12,15 @@ export interface DriverOperationalEvent {
   acknowledgedAt: string | null;
 }
 
-type QueryError = { message: string };
-type QueryResult<T> = { data: T | null; error: QueryError | null };
-
-interface Query<T> extends PromiseLike<QueryResult<T>> {
-  eq(column: string, value: string): Query<T>;
-  order(column: string, options?: { ascending?: boolean }): Query<T>;
-}
-
-interface EventReadClient {
-  from(table: 'driver_visible_fleet_events'): { select<T = unknown>(columns: string): Query<T> };
-}
-
-interface AckClient {
-  from(table: 'driver_acknowledgements'): {
-    select<T = unknown>(columns: string): Query<T>;
-    upsert(values: unknown, options: { onConflict: string }): PromiseLike<QueryResult<unknown>>;
-  };
-}
-
 export async function fetchDriverOperationalEvents(driverId: string): Promise<DriverOperationalEvent[]> {
-  const eventClient = supabase as unknown as EventReadClient;
-  const ackClient = supabase as unknown as AckClient;
   const [{ data: events, error: eventsError }, { data: acknowledgements, error: acknowledgementsError }] = await Promise.all([
-    eventClient
+    supabase
       .from('driver_visible_fleet_events')
-      .select<unknown>('id, company_id, event_type, priority, title, body, requires_ack, created_at')
+      .select('id, company_id, event_type, priority, title, body, requires_ack, created_at')
       .order('created_at', { ascending: false }),
-    ackClient
+    supabase
       .from('driver_acknowledgements')
-      .select<unknown>('event_id, acknowledged_at')
+      .select('event_id, acknowledged_at')
       .eq('driver_id', driverId)
       .order('acknowledged_at', { ascending: false }),
   ]);
@@ -54,8 +33,7 @@ export async function fetchDriverOperationalEvents(driverId: string): Promise<Dr
 }
 
 export async function acknowledgeDriverOperationalEvent(event: DriverOperationalEvent, driverId: string, note?: string | null) {
-  const ackClient = supabase as unknown as AckClient;
-  const { error } = await ackClient.from('driver_acknowledgements').upsert(
+  const { error } = await supabase.from('driver_acknowledgements').upsert(
     {
       company_id: event.companyId,
       event_id: event.id,

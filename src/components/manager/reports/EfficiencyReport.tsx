@@ -3,8 +3,8 @@ import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/database.types';
 import { Zap, Download } from 'lucide-react';
 
-type DriverLog = Database['public']['Tables']['driver_logs']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type ActivitySegment = Database['public']['Tables']['tachograph_activity_segments']['Row'];
 
 interface ReportProps {
   companyId: string;
@@ -19,18 +19,18 @@ const ACTIVITY_TYPES = ['driving', 'work', 'available', 'break', 'rest'];
 const PRODUCTIVE_TYPES = ['driving', 'work'];
 
 export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate, loading, setLoading }: ReportProps) {
-  const [logs, setLogs] = useState<(DriverLog & { profile: Profile })[]>([]);
+  const [logs, setLogs] = useState<(ActivitySegment & { profile: Profile | null })[]>([]);
 
   const loadEfficiencyData = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
-        .from('driver_logs')
-        .select('*, profile:driver_id(*)')
+        .from('tachograph_activity_segments')
+        .select('id, driver_id, vehicle_id, activity_type, start_time, end_time, duration_mins, company_id, created_at, distance_km, confidence, import_id, label, parser_run_id, source')
         .eq('company_id', companyId)
         .gte('start_time', startDate)
         .lte('end_time', endDate)
-        .not('duration_minutes', 'is', null);
+        .not('duration_mins', 'is', null);
 
       if (selectedDriver !== 'all') {
         query = query.eq('driver_id', selectedDriver);
@@ -38,12 +38,11 @@ export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate
 
       const { data, error } = await query;
       if (error) throw error;
-
-      const logsWithProfile = (data || []).map((log: any) => ({
-        ...log,
-        profile: Array.isArray(log.profile) ? log.profile[0] : log.profile,
-      }));
-      setLogs(logsWithProfile.filter((l: any) => l.profile?.id));
+      const driverIds = [...new Set((data ?? []).map(segment => segment.driver_id).filter((id): id is string => Boolean(id)))];
+      const { data: profiles, error: profilesError } = await supabase.from('profiles').select('*').in('id', driverIds);
+      if (profilesError) throw profilesError;
+      const profileMap = new Map((profiles ?? []).map(profile => [profile.id, profile]));
+      setLogs((data ?? []).map(segment => ({ ...segment, profile: segment.driver_id ? profileMap.get(segment.driver_id) ?? null : null })));
     } catch (error) {
       console.error('Error loading efficiency data:', error);
     } finally {
@@ -59,6 +58,7 @@ export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate
     const driverMap = new Map<string, { name: string; totalMinutes: number; productiveMinutes: number; activities: Record<string, number> }>();
 
     logs.forEach(log => {
+      if (!log.driver_id) return;
       const driverId = log.driver_id;
       const driverData = driverMap.get(driverId) || {
         name: log.profile?.full_name || 'Unknown',
@@ -67,7 +67,7 @@ export function EfficiencyReport({ companyId, selectedDriver, startDate, endDate
         activities: Object.fromEntries(ACTIVITY_TYPES.map(type => [type, 0])),
       };
 
-      const duration = log.duration_minutes || 0;
+      const duration = log.duration_mins || 0;
       driverData.totalMinutes += duration;
       driverData.activities[log.activity_type] += duration;
 

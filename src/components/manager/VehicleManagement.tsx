@@ -5,26 +5,41 @@ import { Truck, AlertTriangle, Calendar, Plus, PenSquare, Gauge, Shield, Clock, 
 import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
 import { useVehicleTachoSummary } from '../../hooks/useVehicleTachoSummary';
+import type { Database, Json } from '../../lib/database.types';
 
-interface Vehicle {
-  id: string;
-  reg_number: string;
-  make: string;
-  model: string | null;
-  year: number | null;
-  vehicle_type: string;
-  vehicle_class: 'rigid' | 'artic_unit' | 'trailer' | 'van';
-  vin_number: string | null;
+type VehicleRow = Database['public']['Tables']['vehicles']['Row'];
+type DriverOption = Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'full_name'>;
+type VehicleClass = 'rigid' | 'artic_unit' | 'trailer' | 'van';
+type Vehicle = Omit<VehicleRow, 'vehicle_class' | 'is_vor' | 'current_odometer' | 'maintenance_called' | 'created_at'> & {
+  vehicle_class: VehicleClass;
   is_vor: boolean;
-  status_notes: string | null;
   current_odometer: number;
-  mot_due_date: string | null;
-  pmi_due_date: string | null;
-  tacho_calibration_due: string | null;
-  loler_due_date: string | null;
-  insurance_expiry: string | null;
   maintenance_called: boolean;
   created_at: string;
+};
+
+function normaliseVehicle(vehicle: VehicleRow): Vehicle {
+  const vehicleClass: VehicleClass = vehicle.vehicle_class === 'rigid' || vehicle.vehicle_class === 'artic_unit' || vehicle.vehicle_class === 'trailer' || vehicle.vehicle_class === 'van'
+    ? vehicle.vehicle_class
+    : 'van';
+  return {
+    ...vehicle,
+    vehicle_class: vehicleClass,
+    is_vor: vehicle.is_vor ?? false,
+    current_odometer: vehicle.current_odometer ?? 0,
+    maintenance_called: vehicle.maintenance_called ?? false,
+    created_at: vehicle.created_at ?? new Date(0).toISOString(),
+  };
+}
+
+function readAlertRegNumber(metadata: Json | null): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const value = (metadata as Record<string, Json | undefined>).reg_number;
+  return typeof value === 'string' ? value : null;
+}
+
+function parseVehicleClass(value: string): VehicleClass {
+  return value === 'rigid' || value === 'artic_unit' || value === 'trailer' || value === 'van' ? value : 'van';
 }
 
 export function VehicleManagement({
@@ -54,15 +69,17 @@ export function VehicleManagement({
   const { data: tachoSummary } = useVehicleTachoSummary(profile?.company_id ?? undefined, selectedVehicle?.id);
 
   const loadVehicles = useCallback(async () => {
+    const companyId = profile?.company_id;
+    if (!companyId) return;
     try {
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
-        .eq('company_id', profile!.company_id)
+        .eq('company_id', companyId)
         .order('reg_number', { ascending: true });
 
       if (error) throw error;
-      const vehicleList = data || [];
+      const vehicleList = (data || []).map(normaliseVehicle);
       setVehicles(vehicleList);
 
       if (selectedVehicle) {
@@ -74,7 +91,7 @@ export function VehicleManagement({
       const { data: defectData } = await supabase
         .from('vehicle_checks')
         .select('reg_number')
-        .eq('company_id', profile!.company_id)
+        .eq('company_id', companyId)
         .eq('check_status', 'defect')
         .neq('defect_lifecycle_status', 'fixed');
       setOpenDefectRegs(new Set((defectData || []).map(d => d.reg_number)));
@@ -83,31 +100,29 @@ export function VehicleManagement({
       const { data: alertsData } = await supabase
         .from('alerts')
         .select('metadata')
-        .eq('company_id', profile!.company_id)
+        .eq('company_id', companyId)
         .eq('is_dismissed', false)
         .in('type', ['pmi', 'mot', 'tacho', 'loler', 'insurance']);
 
       const counts: Record<string, number> = {};
       (alertsData || []).forEach(alert => {
-        const reg = (alert.metadata as any)?.reg_number;
+        const reg = readAlertRegNumber(alert.metadata);
         if (reg) {
           counts[reg] = (counts[reg] || 0) + 1;
         }
       });
       setComplianceAlertsCount(counts);
 
-      // Fetch pending documents (those without verified_at)
-      // Note: vehicle_documents doesn't exist in the current database.types.ts snippet
-      // but is used in VehicleDetailsModal. Assuming it exists in the actual DB.
+      // The live vehicle_documents contract has no verification column, so
+      // document presence is the only locally observable pending signal.
       const { data: docData } = await supabase
-        .from('vehicle_documents' as any)
-        .select('vehicle_id')
-        .is('verified_at' as any, null);
+        .from('vehicle_documents')
+        .select('vehicle_id');
 
       const docCounts: Record<string, number> = {};
-      (docData || []).forEach((doc: any) => {
+      (docData || []).forEach(doc => {
         const vId = doc.vehicle_id;
-        docCounts[vId] = (docCounts[vId] || 0) + 1;
+        if (vId) docCounts[vId] = (docCounts[vId] || 0) + 1;
       });
       setPendingDocsCount(docCounts);
 
@@ -628,7 +643,7 @@ export function VehicleManagement({
 function IncidentReportQuickModal({ vehicleId, onClose }: { vehicleId: string, onClose: () => void }) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [formData, setFormData] = useState({
     type: 'accident',
     occurred_at: new Date().toISOString().slice(0, 16),
@@ -639,16 +654,21 @@ function IncidentReportQuickModal({ vehicleId, onClose }: { vehicleId: string, o
   });
 
   useEffect(() => {
-    supabase.from('profiles').select('id, full_name').eq('company_id', profile!.company_id).then(({data}) => setDrivers(data || []));
-  }, []);
+    if (!profile?.company_id) return;
+    supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).then(({data}) => setDrivers(data || []));
+  }, [profile?.company_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (!profile?.company_id || !formData.driver_id) {
+      setLoading(false);
+      return;
+    }
     const { error } = await supabase.from('incidents').insert({
       ...formData,
       vehicle_id: vehicleId,
-      company_id: profile!.company_id,
+      company_id: profile.company_id,
       status: 'reported'
     });
     if (error) alert(error.message);
@@ -720,11 +740,11 @@ function IncidentReportQuickModal({ vehicleId, onClose }: { vehicleId: string, o
 
 interface RecentCheck {
   id: string;
-  created_at: string;
-  check_status: 'pass' | 'defect';
-  defect_lifecycle_status: 'reported' | 'in_progress' | 'fixed' | null;
+  created_at: string | null;
+  check_status: string | null;
+  defect_lifecycle_status: string | null;
   defect_details: string | null;
-  profiles: { full_name: string } | null;
+  profiles: { full_name: string | null } | null;
 }
 
 function RecentChecksPanel({ regNumber }: { regNumber: string }) {
@@ -737,13 +757,16 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
     setLoading(true);
     supabase
       .from('vehicle_checks')
-      .select('id, created_at, check_status, defect_lifecycle_status, defect_details, profiles:driver_id(full_name)')
+      .select('id, driver_id, created_at, check_status, defect_lifecycle_status, defect_details')
       .eq('reg_number', regNumber)
       .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false })
       .limit(6)
-      .then(({ data }) => {
-        setChecks((data as any) ?? []);
+      .then(async ({ data }) => {
+        const driverIds = [...new Set((data ?? []).map(check => check.driver_id).filter((id): id is string => Boolean(id)))];
+        const { data: driverRows } = await supabase.from('profiles').select('id, full_name').in('id', driverIds);
+        const driverMap = new Map((driverRows ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+        setChecks((data ?? []).map(check => ({ ...check, profiles: check.driver_id ? driverMap.get(check.driver_id) ?? null : null })));
         setLoading(false);
       });
   }, [regNumber, profile?.company_id]);
@@ -784,10 +807,10 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
               >
                 <div className="space-y-0.5">
                   <p className="font-bold text-slate-800">
-                    {(c.profiles as any)?.full_name ?? 'Unknown driver'}
+                    {c.profiles?.full_name ?? 'Unknown driver'}
                   </p>
                   <p className="text-slate-400">
-                    {new Date(c.created_at).toLocaleDateString()} {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(c.created_at ?? '').toLocaleDateString()} {new Date(c.created_at ?? '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   {isDefect && c.defect_details && (
                     <p className="text-orange-700 font-medium mt-1 max-w-[180px] truncate" title={c.defect_details}>
@@ -863,8 +886,8 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
 
       if (error) throw error;
       onSuccess();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Unable to update vehicle dates.');
     } finally {
       setLoading(false);
     }
@@ -909,7 +932,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
               <select
                 className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white"
                 value={formData.vehicle_class}
-                onChange={e => setFormData({...formData, vehicle_class: e.target.value as any})}
+                onChange={e => setFormData({...formData, vehicle_class: parseVehicleClass(e.target.value)})}
               >
                 <option value="van">Van</option>
                 <option value="rigid">Rigid</option>
@@ -990,12 +1013,14 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
 
       if (insertError) throw insertError;
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding vehicle:', err);
-      if (err.code === '23505') {
+      const code = typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined;
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (code === '23505') {
         setError(t('fleet.modal.errors.duplicate'));
       } else {
-        setError(err.message || t('fleet.modal.errors.generic'));
+        setError(message || t('fleet.modal.errors.generic'));
       }
     } finally {
       setLoading(false);
@@ -1049,7 +1074,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                 <select
                   className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 transition-all shadow-sm appearance-none cursor-pointer"
                   value={formData.vehicle_class}
-                  onChange={e => setFormData({...formData, vehicle_class: e.target.value as any})}
+                  onChange={e => setFormData({...formData, vehicle_class: parseVehicleClass(e.target.value)})}
                 >
                   <option value="van">Van</option>
                   <option value="rigid">Rigid</option>

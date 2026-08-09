@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FileBarChart2, Download, Calendar, DollarSign, Receipt,
   Clock, AlertTriangle, ShieldCheck, Truck, GraduationCap,
-  Check, X, ChevronDown, ChevronUp, Wrench, RefreshCw,
+  Check, ChevronDown, ChevronUp, Wrench, RefreshCw,
   ClipboardList, Bell, FileText, LifeBuoy,
 } from 'lucide-react';
 import { calculateDailyPay, formatCurrency } from '../../lib/payCalculations';
@@ -13,7 +13,6 @@ import { CompliancePackGenerator } from './reports/compliance-pack/CompliancePac
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
@@ -21,38 +20,8 @@ type VehicleCheck = Database['public']['Tables']['vehicle_checks']['Row'];
 type TrainingRecord = Database['public']['Tables']['training_records']['Row'];
 type Infringement = Database['public']['Tables']['infringements']['Row'];
 
-interface Incident {
-  id: string;
-  company_id: string;
-  driver_id: string;
-  vehicle_id: string | null;
-  type: string;
-  occurred_at: string;
-  location: string;
-  description: string;
-  has_injury: boolean;
-  injury_details: string | null;
-  is_third_party_involved: boolean;
-  third_party_details: any;
-  police_ref: string | null;
-  photo_urls: string[];
-  status: string;
-  manager_notes: string | null;
-  created_at: string;
-}
-
-// Inline interfaces for tables not yet in database.types.ts
-interface Expense {
-  id: string;
-  user_id: string;
-  company_id: string;
-  date: string | null;
-  amount: number | null;
-  description: string | null;
-  status: string | null;
-  receipt_path: string | null;
-  created_at: string;
-}
+type Incident = Database['public']['Tables']['incidents']['Row'];
+type Expense = Database['public']['Tables']['expenses']['Row'];
 
 interface PayConfiguration {
   hourly_rate: number | null;
@@ -62,6 +31,30 @@ interface PayConfiguration {
   overtime_rate_multiplier: number | null;
   overtime_rate_percentage: number | null;
   additional_overtime_tiers: { threshold: number; multiplier?: number; percentage?: number }[] | null;
+}
+
+function normalisePayConfiguration(configuration: Database['public']['Tables']['pay_configurations']['Row']): PayConfiguration {
+  const tiers = Array.isArray(configuration.additional_overtime_tiers)
+    ? configuration.additional_overtime_tiers.flatMap(tier => {
+        if (!tier || typeof tier !== 'object' || Array.isArray(tier)) return [];
+        const record = tier as Record<string, unknown>;
+        if (typeof record.threshold !== 'number') return [];
+        return [{
+          threshold: record.threshold,
+          ...(typeof record.multiplier === 'number' ? { multiplier: record.multiplier } : {}),
+          ...(typeof record.percentage === 'number' ? { percentage: record.percentage } : {}),
+        }];
+      })
+    : [];
+  return {
+    hourly_rate: configuration.hourly_rate,
+    shift_allowance: 0,
+    overtime_threshold_hours: configuration.overtime_threshold_hours,
+    unpaid_break_minutes: configuration.unpaid_break_minutes,
+    overtime_rate_multiplier: configuration.overtime_rate_multiplier,
+    overtime_rate_percentage: configuration.overtime_rate_percentage,
+    additional_overtime_tiers: tiers,
+  };
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -322,8 +315,6 @@ function PreviewTable({ headers, rows, emptyMsg = 'No data for this period.' }: 
 // CARD 1 — Payroll Export
 // ═════════════════════════════════════════════════════════════════════════════
 
-type DriverWithPay = Profile & { pay_configurations: PayConfiguration | null; work_sessions: WorkSession[]; expenses: Expense[] };
-
 interface PayrollRow { driverId: string; name: string; payrollNumber: string; normalHours: string; overtimeHours: string; wagePay: string; expenses: string; grossPay: string }
 
 function PayrollExportCard({ range }: { range: DateRange }) {
@@ -337,29 +328,32 @@ function PayrollExportCard({ range }: { range: DateRange }) {
     setLoading(true);
     try {
       const start = toISO(range.start), end = toISO(range.end);
-      const { data: drivers } = await supabase.from('profiles').select('*, pay_configurations(*)').eq('company_id', profile.company_id).eq('role', 'driver');
+      const { data: drivers } = await supabase.from('profiles').select('*').eq('company_id', profile.company_id).eq('role', 'driver');
       if (!drivers?.length) { setRows([]); return; }
       const ids = drivers.map(d => d.id);
-      const [{ data: sessions }, { data: expenses }] = await Promise.all([
+      const [{ data: sessions }, { data: expenses }, { data: configurations }] = await Promise.all([
         supabase.from('work_sessions').select('*').in('user_id', ids).gte('date', start).lte('date', end),
         supabase.from('expenses').select('*').in('user_id', ids).gte('date', start).lte('date', end),
+        supabase.from('pay_configurations').select('*').in('user_id', ids),
       ]);
-      const payrollRows: PayrollRow[] = (drivers as DriverWithPay[]).map(d => {
+      const configurationMap = new Map((configurations ?? []).map(configuration => [configuration.user_id, normalisePayConfiguration(configuration)]));
+      const payrollRows: PayrollRow[] = drivers.map(d => {
         const dSessions = sessions?.filter(s => s.user_id === d.id) ?? [];
         const dExpenses = expenses?.filter(e => e.user_id === d.id) ?? [];
         let normalH = 0, overtimeH = 0, wage = 0;
-        if (d.pay_configurations) {
+        const payConfiguration = configurationMap.get(d.id);
+        if (payConfiguration) {
           const byDate: Record<string, WorkSession[]> = {};
           dSessions.forEach(s => { if (s.date) (byDate[s.date] = byDate[s.date] || []).push(s); });
           Object.values(byDate).forEach(daySessions => {
-            const r = calculateDailyPay(daySessions, d.pay_configurations!);
+            const r = calculateDailyPay(daySessions, payConfiguration);
             normalH += r.normalHours; overtimeH += r.overtimeHours; wage += r.totalPay;
           });
         }
         const expTotal = dExpenses.reduce((s, e) => s + (e.amount ?? 0), 0);
         return {
           driverId: d.id,
-          name: d.full_name,
+          name: d.full_name ?? 'Unknown driver',
           payrollNumber: d.payroll_number ?? 'N/A',
           normalHours: normalH.toFixed(2),
           overtimeHours: overtimeH.toFixed(2),
@@ -396,37 +390,32 @@ function PayrollExportCard({ range }: { range: DateRange }) {
 // CARD 2 — Expense Approvals (interactive, no date filter)
 // ═════════════════════════════════════════════════════════════════════════════
 
-type ExpenseWithProfile = Expense & { profiles: { full_name: string } | null };
+type ExpenseWithProfile = Expense & { profiles: { full_name: string | null } | null };
 
 function ExpenseApprovalsCard() {
   const { profile } = useAuth();
   const [pending, setPending] = useState<ExpenseWithProfile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [acting, setActing] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(true);
 
   const fetch = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data } = await supabase.from('expenses').select('*, profiles(full_name)').eq('company_id', profile.company_id).eq('status', 'pending').order('created_at');
-      setPending((data as ExpenseWithProfile[]) ?? []);
+      const { data: drivers } = await supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver');
+      const ids = (drivers ?? []).map(driver => driver.id);
+      const { data } = await supabase.from('expenses').select('*').in('user_id', ids).order('date', { ascending: false });
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      setPending((data ?? []).map(expense => ({ ...expense, profiles: driverMap.get(expense.user_id) ?? null })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const handleAction = async (id: string, status: 'approved' | 'rejected') => {
-    setActing(id);
-    const { error } = await supabase.from('expenses').update({ status }).eq('id', id);
-    if (!error) setPending(p => p.filter(e => e.id !== id));
-    setActing(null);
-  };
-
   const badge = pending.length > 0 ? String(pending.length) : undefined;
 
   return (
-    <ExportCard icon={Receipt} title="Expense Approvals" description="Approve or reject pending driver expense claims."
+    <ExportCard icon={Receipt} title="Expense Records" description="Driver expense records available in the live expense contract."
       badge={badge} badgeColour="bg-amber-500"
       loading={loading} rowCount={pending.length} onRefresh={fetch}
       expanded={expanded} onToggleExpand={() => setExpanded(v => !v)}>
@@ -439,7 +428,7 @@ function ExpenseApprovalsCard() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-brand-border">
-              {['Driver', 'Date', 'Amount', 'Description', 'Receipt', 'Action'].map(h => (
+              {['Driver', 'Date', 'Amount', 'Notes', 'Receipt', 'Status'].map(h => (
                 <th key={h} className="px-3 py-2 text-left font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -450,30 +439,19 @@ function ExpenseApprovalsCard() {
                 <td className="px-3 py-2 text-slate-300 font-medium">{exp.profiles?.full_name ?? '—'}</td>
                 <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{fmtDate(exp.date ?? exp.created_at)}</td>
                 <td className="px-3 py-2 text-white font-bold whitespace-nowrap">£{(exp.amount ?? 0).toFixed(2)}</td>
-                <td className="px-3 py-2 text-slate-300 max-w-[200px] truncate">{exp.description}</td>
+                <td className="px-3 py-2 text-slate-300 max-w-[200px] truncate">{exp.notes || exp.merchant || exp.category}</td>
                 <td className="px-3 py-2">
-                  {exp.receipt_path ? (
+                  {exp.image_url ? (
                     <button
                       onClick={async () => {
-                        const { data } = await supabase.storage.from('expense-receipts').download(exp.receipt_path!);
+                        const { data } = await supabase.storage.from('expense-receipts').download(exp.image_url!);
                         if (data) { const url = URL.createObjectURL(data); window.open(url, '_blank'); }
                       }}
                       className="text-brand-accent hover:underline text-xs"
                     >View</button>
                   ) : <span className="text-slate-600">—</span>}
                 </td>
-                <td className="px-3 py-2">
-                  <div className="flex gap-1.5">
-                    <button onClick={() => handleAction(exp.id, 'approved')} disabled={acting === exp.id}
-                      className="p-1.5 bg-green-900/30 text-green-400 hover:bg-green-900/60 rounded-lg transition disabled:opacity-40" title="Approve">
-                      <Check size={12} />
-                    </button>
-                    <button onClick={() => handleAction(exp.id, 'rejected')} disabled={acting === exp.id}
-                      className="p-1.5 bg-red-900/30 text-red-400 hover:bg-red-900/60 rounded-lg transition disabled:opacity-40" title="Reject">
-                      <X size={12} />
-                    </button>
-                  </div>
-                </td>
+                <td className="px-3 py-2 text-slate-500">Recorded</td>
               </tr>
             ))}
           </tbody>
@@ -497,17 +475,22 @@ function ExpenseHistoryCard({ range }: { range: DateRange }) {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data } = await supabase.from('expenses').select('*, profiles(full_name)').eq('company_id', profile.company_id)
+      const { data: drivers } = await supabase.from('profiles').select('id, full_name')
+        .eq('company_id', profile.company_id).eq('role', 'driver');
+      const driverIds = (drivers ?? []).map(driver => driver.id);
+      if (driverIds.length === 0) { setRows([]); return; }
+      const { data } = await supabase.from('expenses').select('*').in('user_id', driverIds)
         .gte('date', toISO(range.start)).lte('date', toISO(range.end)).order('date', { ascending: false });
-      setRows((data as ExpenseWithProfile[]) ?? []);
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      setRows((data ?? []).map(expense => ({ ...expense, profiles: driverMap.get(expense.user_id) ?? null })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id, range]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const download = () => downloadCSV(
-    ['Driver', 'Date', 'Amount (£)', 'Description', 'Status'],
-    rows.map(r => [r.profiles?.full_name ?? '—', r.date ?? '', (r.amount ?? 0).toFixed(2), r.description ?? '', r.status ?? '']),
+    ['Driver', 'Date', 'Amount', 'Notes', 'Status'],
+    rows.map(r => [r.profiles?.full_name ?? 'Unknown driver', r.date, (r.amount ?? 0).toFixed(2), r.notes ?? r.merchant ?? r.category, 'Recorded']),
     `expenses_${toISO(range.start)}_${toISO(range.end)}.csv`,
   );
 
@@ -516,13 +499,13 @@ function ExpenseHistoryCard({ range }: { range: DateRange }) {
       loading={loading} rowCount={rows.length} onRefresh={fetch} onDownload={download}
       expanded={expanded} onToggleExpand={() => setExpanded(v => !v)}>
       <PreviewTable
-        headers={['Driver', 'Date', 'Amount (£)', 'Description', 'Status']}
+        headers={['Driver', 'Date', 'Amount', 'Notes', 'Status']}
         rows={rows.map(r => [
           r.profiles?.full_name ?? '—',
           fmtDate(r.date ?? r.created_at),
           `£${(r.amount ?? 0).toFixed(2)}`,
-          r.description ?? '—',
-          <span className={`font-bold ${r.status === 'approved' ? 'text-green-400' : r.status === 'rejected' ? 'text-red-400' : 'text-amber-400'}`}>{(r.status ?? '').toUpperCase()}</span>,
+          r.notes ?? r.merchant ?? r.category,
+          <span className="font-bold text-slate-400">RECORDED</span>,
         ])}
       />
     </ExportCard>
@@ -584,36 +567,8 @@ function DriverHoursAuditCard({ range }: { range: DateRange }) {
   );
 }
 
-type InfringementWithProfile = Infringement & {
-  profiles: { full_name: string } | null;
-  source?: string | null;
-};
-
-type TachoTrainingWithProfile = TrainingRecord & { profiles: { full_name: string } | null };
-
-type TachoFindingWithProfile = {
-  id: string;
-  driver_id: string | null;
-  occurred_at: string;
-  severity: string;
-  status: string;
-  rule_code: string;
-  title: string;
-  summary: string;
-  source: string;
-  profiles: { full_name: string } | null;
-};
-
-type TachoReconciliationWithProfile = {
-  id: string;
-  driver_id: string | null;
-  recon_date: string;
-  status: string;
-  app_label: string;
-  tacho_label: string;
-  summary: string;
-  profiles: { full_name: string } | null;
-};
+type TachoFinding = Database['public']['Tables']['tachograph_findings']['Row'];
+type TachoReconciliation = Database['public']['Tables']['tachograph_reconciliation_items']['Row'];
 
 interface TachoFollowUpRow {
   id: string;
@@ -648,7 +603,7 @@ function TachoFollowUpExportCard({
     try {
       let infringementsQuery = supabase
         .from('infringements')
-        .select('*, profiles:driver_id(full_name)')
+        .select('*')
         .eq('company_id', profile.company_id)
         .gte('occurred_at', range.start.toISOString())
         .lte('occurred_at', range.end.toISOString())
@@ -656,23 +611,23 @@ function TachoFollowUpExportCard({
 
       let trainingQuery = supabase
         .from('training_records')
-        .select('*, profiles:driver_id(full_name)')
+        .select('*')
         .eq('company_id', profile.company_id)
         .gte('assigned_at', range.start.toISOString())
         .lte('assigned_at', range.end.toISOString())
         .order('assigned_at', { ascending: false });
 
       let findingsQuery = supabase
-        .from('tachograph_findings' as any)
-        .select('id, driver_id, occurred_at, severity, status, rule_code, title, summary, source, profiles:driver_id(full_name)')
+        .from('tachograph_findings')
+        .select('id, driver_id, occurred_at, severity, status, rule_code, title, summary, source, company_id, created_at, evidence_refs, import_id, legal_basis, metadata, parser_run_id, period_end, period_start, vehicle_id')
         .eq('company_id', profile.company_id)
         .gte('occurred_at', range.start.toISOString())
         .lte('occurred_at', range.end.toISOString())
         .order('occurred_at', { ascending: false });
 
       let reconciliationQuery = supabase
-        .from('tachograph_reconciliation_items' as any)
-        .select('id, driver_id, recon_date, status, app_label, tacho_label, summary, profiles:driver_id(full_name)')
+        .from('tachograph_reconciliation_items')
+        .select('id, driver_id, recon_date, status, app_label, tacho_label, summary, company_id, created_at, app_driving_mins, import_id, metadata, parser_run_id, tacho_driving_mins, vehicle_id')
         .eq('company_id', profile.company_id)
         .neq('status', 'matched')
         .gte('recon_date', toISO(range.start))
@@ -698,15 +653,26 @@ function TachoFollowUpExportCard({
         reconciliationQuery,
       ]);
 
+      const driverIds = [...new Set([
+        ...(infringementData ?? []).map(row => row.driver_id),
+        ...(trainingData ?? []).map(row => row.driver_id),
+        ...(findingData ?? []).map(row => row.driver_id),
+        ...(reconciliationData ?? []).map(row => row.driver_id),
+      ].filter((id): id is string => Boolean(id)))];
+      const { data: drivers } = driverIds.length > 0
+        ? await supabase.from('profiles').select('id, full_name').in('id', driverIds)
+        : { data: [] };
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, driver.full_name]));
+
       const tachoRows: TachoFollowUpRow[] = [];
 
-      ((findingData as unknown as TachoFindingWithProfile[]) ?? [])
+      ((findingData as TachoFinding[]) ?? [])
         .filter((row) => row.driver_id)
         .forEach((row) => {
           tachoRows.push({
             id: `finding-${row.id}`,
             driverId: row.driver_id!,
-            driverName: row.profiles?.full_name ?? '—',
+            driverName: driverMap.get(row.driver_id!) ?? 'Unknown driver',
             reviewDate: row.occurred_at.slice(0, 10),
             recordType: 'Finding',
             status: `${row.severity} ${row.status}`.replace('_', ' '),
@@ -715,13 +681,13 @@ function TachoFollowUpExportCard({
           });
         });
 
-      ((reconciliationData as unknown as TachoReconciliationWithProfile[]) ?? [])
+      ((reconciliationData as TachoReconciliation[]) ?? [])
         .filter((row) => row.driver_id)
         .forEach((row) => {
           tachoRows.push({
             id: `recon-${row.id}`,
             driverId: row.driver_id!,
-            driverName: row.profiles?.full_name ?? '—',
+            driverName: driverMap.get(row.driver_id!) ?? 'Unknown driver',
             reviewDate: row.recon_date,
             recordType: 'Reconciliation',
             status: row.status.replace('_', ' '),
@@ -730,34 +696,34 @@ function TachoFollowUpExportCard({
           });
         });
 
-      ((infringementData as InfringementWithProfile[]) ?? [])
-        .filter((row) => row.regulation === 'REG_561' || row.source === 'tacho')
+      ((infringementData as Infringement[]) ?? [])
+        .filter((row) => row.driver_id && row.regulation === 'REG_561')
         .forEach((row) => {
           tachoRows.push({
             id: `inf-${row.id}`,
-            driverId: row.driver_id,
-            driverName: row.profiles?.full_name ?? '—',
+            driverId: row.driver_id!,
+            driverName: driverMap.get(row.driver_id!) ?? 'Unknown driver',
             reviewDate: row.occurred_at.slice(0, 10),
             recordType: 'Infringement',
             status: row.status.replace('_', ' '),
             summary: row.violation_type,
-            origin: row.source === 'tacho' ? 'Verified tacho import' : 'EU Reg 561 workflow',
+            origin: 'EU Reg 561 workflow',
           });
         });
 
-      ((trainingData as TachoTrainingWithProfile[]) ?? [])
-        .filter((row) =>
+      ((trainingData as TrainingRecord[]) ?? [])
+        .filter((row) => Boolean(row.driver_id && row.assigned_at) && (
           ['remedial', 'tacho_refresher'].includes(row.training_type) ||
           /tacho/i.test(`${row.title} ${row.notes ?? ''}`)
-        )
+        ))
         .forEach((row) => {
           tachoRows.push({
             id: `training-${row.id}`,
-            driverId: row.driver_id,
-            driverName: row.profiles?.full_name ?? '—',
-            reviewDate: row.assigned_at.slice(0, 10),
+            driverId: row.driver_id!,
+            driverName: driverMap.get(row.driver_id!) ?? 'Unknown driver',
+            reviewDate: row.assigned_at!.slice(0, 10),
             recordType: 'Training',
-            status: row.status.replace('_', ' '),
+            status: (row.status ?? 'assigned').replace('_', ' '),
             summary: row.title,
             origin: row.training_type,
           });
@@ -849,8 +815,12 @@ function UpcomingRenewalsCard() {
 
       // From driver_documents
       const { data: docs } = await supabase.from('driver_documents')
-        .select('*, profiles:user_id(full_name)').eq('company_id', profile.company_id)
+        .select('*').eq('company_id', profile.company_id)
         .not('expiry_date', 'is', null).lte('expiry_date', horizonStr).order('expiry_date');
+
+      const docDriverIds = [...new Set((docs ?? []).map(doc => doc.user_id))];
+      const { data: docDrivers } = await supabase.from('profiles').select('id, full_name').in('id', docDriverIds);
+      const docDriverMap = new Map((docDrivers ?? []).map(driver => [driver.id, driver.full_name]));
 
       // From profiles — driving licence + DQC
       const { data: drivers } = await supabase.from('profiles').select('full_name, driving_licence_expiry, cpc_dqc_expiry, cpc_dqc_number, driving_licence_number')
@@ -858,16 +828,16 @@ function UpcomingRenewalsCard() {
 
       const renewals: RenewalRow[] = [];
 
-      docs?.forEach((d: any) => {
-        renewals.push({ driver: d.profiles?.full_name ?? '—', type: d.document_type, idNumber: d.id_number, expiry: d.expiry_date, daysLeft: daysUntil(d.expiry_date) });
+      docs?.forEach(d => {
+        renewals.push({ driver: docDriverMap.get(d.user_id) ?? 'Unknown driver', type: d.document_type, idNumber: d.id_number, expiry: d.expiry_date, daysLeft: daysUntil(d.expiry_date) });
       });
 
       drivers?.forEach(d => {
         if (d.driving_licence_expiry && d.driving_licence_expiry <= horizonStr) {
-          renewals.push({ driver: d.full_name, type: 'Driving Licence', idNumber: d.driving_licence_number, expiry: d.driving_licence_expiry, daysLeft: daysUntil(d.driving_licence_expiry) });
+          renewals.push({ driver: d.full_name ?? 'Unknown driver', type: 'Driving Licence', idNumber: d.driving_licence_number, expiry: d.driving_licence_expiry, daysLeft: daysUntil(d.driving_licence_expiry) });
         }
         if (d.cpc_dqc_expiry && d.cpc_dqc_expiry <= horizonStr) {
-          renewals.push({ driver: d.full_name, type: 'DQC / CPC Card', idNumber: d.cpc_dqc_number, expiry: d.cpc_dqc_expiry, daysLeft: daysUntil(d.cpc_dqc_expiry) });
+          renewals.push({ driver: d.full_name ?? 'Unknown driver', type: 'DQC / CPC Card', idNumber: d.cpc_dqc_number, expiry: d.cpc_dqc_expiry, daysLeft: daysUntil(d.cpc_dqc_expiry) });
         }
       });
 
@@ -917,7 +887,7 @@ function UpcomingRenewalsCard() {
 // CARD 6 — Safety Checks Log
 // ═════════════════════════════════════════════════════════════════════════════
 
-type CheckWithProfile = VehicleCheck & { profiles: { full_name: string } | null };
+type CheckWithProfile = VehicleCheck & { profiles: { full_name: string | null } | null };
 
 function SafetyChecksLogCard({ range }: { range: DateRange }) {
   const { profile } = useAuth();
@@ -929,11 +899,14 @@ function SafetyChecksLogCard({ range }: { range: DateRange }) {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data } = await supabase.from('vehicle_checks').select('*, profiles:driver_id(full_name)')
+      const { data } = await supabase.from('vehicle_checks').select('*')
         .eq('company_id', profile.company_id)
         .gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString())
         .order('created_at', { ascending: false });
-      setRows((data as CheckWithProfile[]) ?? []);
+      const driverIds = [...new Set((data ?? []).map(check => check.driver_id).filter((id): id is string => Boolean(id)))];
+      const { data: drivers } = await supabase.from('profiles').select('id, full_name').in('id', driverIds);
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      setRows((data ?? []).map(check => ({ ...check, profiles: check.driver_id ? driverMap.get(check.driver_id) ?? null : null })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id, range]);
 
@@ -944,12 +917,12 @@ function SafetyChecksLogCard({ range }: { range: DateRange }) {
   const download = () => downloadCSV(
     ['Date', 'Time', 'Driver', 'Vehicle Reg', 'Vehicle Type', 'Make', 'Odometer', 'Status', 'Defect Details', 'Defect Status'],
     rows.map(r => [
-      new Date(r.created_at).toLocaleDateString('en-GB'),
-      new Date(r.created_at).toLocaleTimeString('en-GB'),
+      new Date(r.created_at ?? '').toLocaleDateString('en-GB'),
+      new Date(r.created_at ?? '').toLocaleTimeString('en-GB'),
       r.profiles?.full_name ?? '—',
       r.reg_number, r.vehicle_type, r.vehicle_make ?? '—',
       r.odometer_reading ?? '—',
-      r.check_status.toUpperCase(),
+      r.check_status?.toUpperCase() ?? 'UNKNOWN',
       r.defect_details ?? '—',
       r.defect_lifecycle_status ?? '—',
     ]),
@@ -969,7 +942,7 @@ function SafetyChecksLogCard({ range }: { range: DateRange }) {
           fmtDate(r.created_at),
           r.profiles?.full_name ?? '—',
           <span className="font-bold text-blue-400">{r.reg_number}</span>,
-          <span className={`font-black text-[10px] ${r.check_status === 'pass' ? 'text-green-400' : 'text-red-400'}`}>{r.check_status.toUpperCase()}</span>,
+          <span className={`font-black text-[10px] ${r.check_status === 'pass' ? 'text-green-400' : 'text-red-400'}`}>{r.check_status?.toUpperCase() ?? 'UNKNOWN'}</span>,
           r.defect_details ? <span className="text-amber-300 italic">{r.defect_details.slice(0, 60)}{r.defect_details.length > 60 ? '…' : ''}</span> : '—',
         ])}
       />
@@ -1100,7 +1073,7 @@ function MaintenanceHistoryCard({ range }: { range: DateRange }) {
           r.event_type,
           r.service_provider,
           `£${(r.cost ?? 0).toFixed(2)}`,
-          <span className="text-slate-400 italic">{r.description.slice(0, 50)}{r.description.length > 50 ? '…' : ''}</span>,
+          <span className="text-slate-400 italic">{(r.description ?? 'No description').slice(0, 50)}{(r.description?.length ?? 0) > 50 ? '…' : ''}</span>,
         ])}
       />
     </ExportCard>
@@ -1111,7 +1084,7 @@ function MaintenanceHistoryCard({ range }: { range: DateRange }) {
 // CARD 9 — Training Records Export
 // ═════════════════════════════════════════════════════════════════════════════
 
-type TrainingWithProfile = TrainingRecord & { profiles: { full_name: string } | null };
+type TrainingWithProfile = TrainingRecord & { profiles: { full_name: string | null } | null };
 
 function TrainingRecordsCard({ range }: { range: DateRange }) {
   const { profile } = useAuth();
@@ -1123,11 +1096,14 @@ function TrainingRecordsCard({ range }: { range: DateRange }) {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data } = await supabase.from('training_records').select('*, profiles:driver_id(full_name)')
+      const { data } = await supabase.from('training_records').select('*')
         .eq('company_id', profile.company_id)
         .gte('assigned_at', range.start.toISOString()).lte('assigned_at', range.end.toISOString())
         .order('assigned_at', { ascending: false });
-      setRows((data as TrainingWithProfile[]) ?? []);
+      const driverIds = [...new Set((data ?? []).map(record => record.driver_id).filter((id): id is string => Boolean(id)))];
+      const { data: drivers } = await supabase.from('profiles').select('id, full_name').in('id', driverIds);
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      setRows((data ?? []).map(record => ({ ...record, profiles: record.driver_id ? driverMap.get(record.driver_id) ?? null : null })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id, range]);
 
@@ -1137,7 +1113,7 @@ function TrainingRecordsCard({ range }: { range: DateRange }) {
     ['Driver', 'Module Title', 'Type', 'Status', 'Assigned Date', 'Completed Date', 'Notes'],
     rows.map(r => [
       r.profiles?.full_name ?? '—',
-      r.title, r.training_type, r.status,
+      r.title, r.training_type, r.status ?? 'assigned',
       fmtDate(r.assigned_at), r.completed_at ? fmtDate(r.completed_at) : '—',
       r.notes ?? '—',
     ]),
@@ -1153,7 +1129,7 @@ function TrainingRecordsCard({ range }: { range: DateRange }) {
         rows={rows.map(r => [
           r.profiles?.full_name ?? '—',
           r.title,
-          <span className={`text-[10px] font-black ${r.status === 'complete' ? 'text-green-400' : r.status === 'in_progress' ? 'text-amber-400' : 'text-slate-400'}`}>{r.status.toUpperCase()}</span>,
+          <span className={`text-[10px] font-black ${r.status === 'complete' ? 'text-green-400' : r.status === 'in_progress' ? 'text-amber-400' : 'text-slate-400'}`}>{(r.status ?? 'assigned').toUpperCase()}</span>,
           fmtDate(r.assigned_at),
           r.completed_at ? fmtDate(r.completed_at) : <span className="text-slate-600">Pending</span>,
         ])}
@@ -1235,7 +1211,7 @@ function OpenDefectsCard() {
 // CARD 11 — Incident Log Export
 // ═════════════════════════════════════════════════════════════════════════════
 
-type IncidentWithProfiles = Incident & { profiles: { full_name: string } | null; vehicles: { reg_number: string } | null };
+type IncidentWithProfiles = Incident & { profiles: { full_name: string | null } | null; vehicles: { reg_number: string } | null };
 
 function IncidentLogCard({ range }: { range: DateRange }) {
   const { profile } = useAuth();
@@ -1247,11 +1223,23 @@ function IncidentLogCard({ range }: { range: DateRange }) {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data } = await supabase.from('incidents').select('*, profiles:driver_id(full_name), vehicles(reg_number)')
+      const { data } = await supabase.from('incidents').select('*')
         .eq('company_id', profile.company_id)
         .gte('occurred_at', range.start.toISOString()).lte('occurred_at', range.end.toISOString())
         .order('occurred_at', { ascending: false });
-      setRows((data as any) ?? []);
+      const driverIds = [...new Set((data ?? []).map(incident => incident.driver_id).filter((id): id is string => Boolean(id)))];
+      const vehicleIds = [...new Set((data ?? []).map(incident => incident.vehicle_id).filter((id): id is string => Boolean(id)))];
+      const [{ data: drivers }, { data: vehicles }] = await Promise.all([
+        supabase.from('profiles').select('id, full_name').in('id', driverIds),
+        supabase.from('vehicles').select('id, reg_number').in('id', vehicleIds),
+      ]);
+      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      const vehicleMap = new Map((vehicles ?? []).map(vehicle => [vehicle.id, { reg_number: vehicle.reg_number }]));
+      setRows((data ?? []).map(incident => ({
+        ...incident,
+        profiles: incident.driver_id ? driverMap.get(incident.driver_id) ?? null : null,
+        vehicles: incident.vehicle_id ? vehicleMap.get(incident.vehicle_id) ?? null : null,
+      })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id, range]);
 

@@ -26,15 +26,15 @@ interface FuelLog {
   total_fuel_cost: number | null;
   mpg: number | null;
   notes: string | null;
-  source: 'driver_app' | 'manual_entry';
-  created_at: string;
+  source: string;
+  created_at: string | null;
   // client-joined
   driver_name: string;
 }
 
 interface DriverOption {
   id: string;
-  full_name: string;
+  full_name: string | null;
 }
 
 interface VehicleOption {
@@ -42,7 +42,7 @@ interface VehicleOption {
   reg_number: string;
   make: string;
   model: string | null;
-  current_odometer: number;
+  current_odometer: number | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ function AddFuelLogModal({ companyId, managerId, vehicles, drivers, companyPpl, 
     const v = vehicles.find(x => x.id === vid);
     if (v) {
       setRegNumber(v.reg_number);
-      if (!startOdo) setStartOdo(v.current_odometer.toString());
+      if (!startOdo) setStartOdo((v.current_odometer ?? 0).toString());
     }
   };
 
@@ -606,7 +606,7 @@ export function FuelMileageTracker() {
       ]);
 
       const driverMap = new Map<string, string>(
-        (driversRes.data ?? []).map(d => [d.id, d.full_name])
+        (driversRes.data ?? []).map(d => [d.id, d.full_name ?? 'Unknown driver'])
       );
 
       setLogs(

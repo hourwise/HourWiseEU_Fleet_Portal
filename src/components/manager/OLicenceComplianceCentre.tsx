@@ -2,21 +2,46 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Shield, Truck, User, FileText, AlertTriangle, Download, Settings, GraduationCap, ClipboardCheck, X, Save, Loader2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { FleetCompliancePackPDF } from './reports/compliance-pack/FleetCompliancePackPDF';
-import { TachoActivity } from '../../lib/compliance';
+import { TachoActivity, WorkSession } from '../../lib/compliance';
 import type { Database } from '../../lib/database.types';
 import { detectMissingMileage } from '../../lib/tachoAnalysis';
 
 type Company = Database['public']['Tables']['companies']['Row'];
+type OLicenceDetails = {
+  olicence_number: string | null;
+  olicence_region: string | null;
+  olicence_type: string | null;
+  olicence_status: string | null;
+  olicence_expiry: string | null;
+  auth_vehicles: number | null;
+  auth_trailers: number | null;
+  transport_manager_name: string | null;
+  transport_manager_cpc_expiry: string | null;
+};
+type CompanyView = Company & OLicenceDetails;
+
+const EMPTY_LICENCE_DETAILS: OLicenceDetails = {
+  olicence_number: null,
+  olicence_region: null,
+  olicence_type: null,
+  olicence_status: null,
+  olicence_expiry: null,
+  auth_vehicles: null,
+  auth_trailers: null,
+  transport_manager_name: null,
+  transport_manager_cpc_expiry: null,
+};
 
 export function OLicenceComplianceCentre() {
   const { profile } = useAuth();
-  const [company, setCompany] = useState<Company | null>(null);
+  const [company, setCompany] = useState<CompanyView | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<Company>>({});
+  const [formData, setFormData] = useState<Partial<OLicenceDetails>>({});
   const [stats, setStats] = useState({
     actualVehicles: 0,
     actualTrailers: 0,
@@ -60,8 +85,9 @@ export function OLicenceComplianceCentre() {
       ]);
 
       if (companyRes.data) {
-        setCompany(companyRes.data);
-        setFormData(companyRes.data);
+        const companyView = { ...companyRes.data, ...EMPTY_LICENCE_DETAILS };
+        setCompany(companyView);
+        setFormData(companyView);
       }
 
       const vehicles = vehiclesRes.data || [];
@@ -95,7 +121,14 @@ export function OLicenceComplianceCentre() {
 
       // Calculate Missing Mileage Alerts using Tacho Data
       const tachoActivities = (tachoActivitiesRes.data || []) as TachoActivity[];
-      const missingMileageGaps = detectMissingMileage(tachoActivities, (workSessionsRes.data || []) as any);
+      const mileageWorkSessions: WorkSession[] = (workSessionsRes.data || []).map(session => ({
+        start_time: session.start_time,
+        end_time: session.end_time,
+        total_work_minutes: session.total_work_minutes,
+        total_break_minutes: null,
+        other_data: null,
+      }));
+      const missingMileageGaps = detectMissingMileage(tachoActivities, mileageWorkSessions);
 
       setStats({
         actualVehicles: vehicles.filter(v => v.vehicle_class !== 'trailer').length,
@@ -126,23 +159,11 @@ export function OLicenceComplianceCentre() {
     if (!profile?.company_id) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('companies')
-        .update({
-          olicence_number: formData.olicence_number,
-          olicence_region: formData.olicence_region,
-          olicence_type: formData.olicence_type,
-          olicence_status: formData.olicence_status,
-          olicence_expiry: formData.olicence_expiry,
-          auth_vehicles: formData.auth_vehicles,
-          auth_trailers: formData.auth_trailers,
-          transport_manager_name: formData.transport_manager_name,
-          transport_manager_cpc_expiry: formData.transport_manager_cpc_expiry,
-        })
-        .eq('id', profile.company_id);
-
-      if (error) throw error;
-      await loadData();
+      // The deployed companies table does not expose O-Licence columns. Keep
+      // this view honest about the live contract and retain edits for the
+      // current evidence-pack session until a dedicated storage boundary is
+      // deployed.
+      setCompany(previous => previous ? Object.assign({}, previous, formData) : previous);
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error updating O-Licence:', error);
@@ -477,7 +498,7 @@ export function OLicenceComplianceCentre() {
                     <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Licence Type</label>
                     <select
                       value={formData.olicence_type || ''}
-                      onChange={e => setFormData({ ...formData, olicence_type: e.target.value as any })}
+                      onChange={e => setFormData({ ...formData, olicence_type: e.target.value })}
                       className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                     >
                       <option value="">Select Type...</option>
@@ -501,7 +522,7 @@ export function OLicenceComplianceCentre() {
                       <label className="text-[10px] font-black text-slate-500 uppercase block mb-1.5">Status</label>
                       <select
                         value={formData.olicence_status || ''}
-                        onChange={e => setFormData({ ...formData, olicence_status: e.target.value as any })}
+                        onChange={e => setFormData({ ...formData, olicence_status: e.target.value })}
                         className="w-full bg-brand-dark border border-brand-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-accent transition"
                       >
                         <option value="valid">Valid</option>
@@ -589,7 +610,7 @@ export function OLicenceComplianceCentre() {
   );
 }
 
-function EvidenceCard({ icon: Icon, label, value, status }: { icon: any, label: string, value: number, status: 'success' | 'warning' | 'critical' | 'info' }) {
+function EvidenceCard({ icon: Icon, label, value, status }: { icon: LucideIcon, label: string, value: number, status: 'success' | 'warning' | 'critical' | 'info' }) {
   const colours = {
     success: 'text-green-500 bg-green-500/10 border-green-500/20',
     warning: 'text-amber-500 bg-amber-500/10 border-amber-500/20',

@@ -397,11 +397,7 @@ export function ManagerDashboard() {
                     <p className="text-[10px] font-bold text-hw-blue-600 uppercase tracking-widest mt-1">Fleet Manager</p>
                   </div>
                   <button className="h-10 w-10 rounded-xl bg-hw-navy-800 border border-white/10 flex items-center justify-center hover:border-hw-blue-600 transition-colors group overflow-hidden">
-                     {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
-                     ) : (
-                        <UserCircle size={24} className="text-hw-slate-400 group-hover:text-hw-blue-600 transition-colors" />
-                     )}
+                     <UserCircle size={24} className="text-hw-slate-400 group-hover:text-hw-blue-600 transition-colors" />
                   </button>
                   <button onClick={signOut} className="hidden sm:flex p-2 text-hw-slate-400 hover:text-hw-red-500 hover:bg-hw-red-500/10 rounded-xl transition-all" title="Sign Out">
                     <LogOut size={20} />

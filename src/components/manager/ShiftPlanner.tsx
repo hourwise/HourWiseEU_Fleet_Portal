@@ -42,7 +42,7 @@ interface Shift {
   cancelled_at: string | null;
   cancelled_by: string | null;
   notes: string | null;
-  profiles?: { full_name: string };
+  profiles?: { full_name: string | null };
   vehicles?: { reg_number: string };
 }
 
@@ -191,7 +191,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         .eq('company_id', profile.company_id)
         .eq('role', 'driver');
       if (!isCurrent()) return;
-      setDrivers(driversData || []);
+      setDrivers((driversData || []).map(driver => ({ ...driver, full_name: driver.full_name ?? 'Unknown driver' })));
 
       // Load vehicles
       const { data: vehiclesData } = await supabase
@@ -207,17 +207,25 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
 
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('shifts')
-        .select(`
-          *,
-          profiles:driver_id(full_name),
-          vehicles:vehicle_id(reg_number)
-        `)
+        .select('*')
         .eq('company_id', profile.company_id)
         .gte('date', startDate)
         .lte('date', endDate);
       if (!isCurrent()) return;
       if (shiftsError) throw shiftsError;
-      const loadedShifts = (shiftsData || []).map(normaliseShift);
+      const driverIds = [...new Set((shiftsData ?? []).map(shift => shift.driver_id))];
+      const vehicleIds = [...new Set((shiftsData ?? []).map(shift => shift.vehicle_id).filter((id): id is string => Boolean(id)))];
+      const [{ data: shiftDrivers }, { data: shiftVehicles }] = await Promise.all([
+        supabase.from('profiles').select('id, full_name').in('id', driverIds),
+        supabase.from('vehicles').select('id, reg_number').in('id', vehicleIds),
+      ]);
+      const driverMap = new Map((shiftDrivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
+      const vehicleMap = new Map((shiftVehicles ?? []).map(vehicle => [vehicle.id, { reg_number: vehicle.reg_number }]));
+      const loadedShifts = (shiftsData || []).map(shift => normaliseShift({
+        ...shift,
+        profiles: driverMap.get(shift.driver_id),
+        vehicles: shift.vehicle_id ? vehicleMap.get(shift.vehicle_id) : undefined,
+      }));
       setShifts(loadedShifts);
       // The roster result passed the current-roster-token check, so start a
       // summary request with its own summary-request identity for this week. A
@@ -279,15 +287,15 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       };
 
       if (selectedShift.id) {
-        const { error } = await supabase.rpc('update_shift_with_event' as never, {
+        const { error } = await supabase.rpc('update_shift_with_event', {
           p_shift_id: selectedShift.id,
           p_date: shiftData.date,
           p_start_time: shiftData.start_time,
           p_end_time: shiftData.end_time,
-          p_vehicle_id: shiftData.vehicle_id,
-          p_notes: shiftData.notes,
+          p_vehicle_id: shiftData.vehicle_id ?? undefined,
+          p_notes: shiftData.notes ?? undefined,
           p_requires_ack: true,
-        } as never);
+        });
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -313,10 +321,10 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
     setPendingAction({ shiftId: shift.id, action: 'publish' });
     setActionMessage(null);
     try {
-      const { error } = await supabase.rpc('publish_shift_with_event' as never, {
+      const { error } = await supabase.rpc('publish_shift_with_event', {
         p_shift_id: shift.id,
         p_requires_ack: true,
-      } as never);
+      });
       if (error) throw error;
       setActionMessage({ kind: 'success', text: `Shift ${shift.start_time.slice(0, 5)}–${shift.end_time.slice(0, 5)} published to the driver's rota.` });
       void loadData();
@@ -335,10 +343,10 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
     setPendingAction({ shiftId: shift.id, action: 'cancel' });
     setActionMessage(null);
     try {
-      const { error } = await supabase.rpc('cancel_shift_with_event' as never, {
+      const { error } = await supabase.rpc('cancel_shift_with_event', {
         p_shift_id: shift.id,
         p_requires_ack: true,
-      } as never);
+      });
       if (error) throw error;
       setActionMessage({ kind: 'success', text: 'Shift cancelled.' });
       void loadData();
