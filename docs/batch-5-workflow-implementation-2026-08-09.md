@@ -12,4 +12,15 @@
 
 `ExpenseApproval` now separates Pending, Approved, and Rejected views, preserves receipt downloads and captured evidence, and distinguishes no expenses from no pending expenses. Payroll and Reports continue to total captured expenses unchanged; whether rejected expenses should be excluded from reimbursement is deferred to a later finance decision.
 
-Remote deployment and generated type refresh remain pending because Supabase CLI authentication was unavailable in this session.
+## Deployment record
+
+The linked project was verified as `lcvahjmoobmpifrexurb`. The known ROUTE-001 deployment-time aliases `20260809151811` and `20260809151823` were read-only-verified against the live RPCs, constraints, grants, lifecycle checks, event writes, and audit writes, then reconciled in migration history only:
+
+```text
+supabase migration repair --linked --status reverted 20260809151811
+supabase migration repair --linked --status reverted 20260809151823
+supabase migration repair --linked --status applied 20260809100000
+supabase migration repair --linked --status applied 20260809151559
+```
+
+The dry run then proposed exactly the two Batch 5 migrations. Both were deployed normally and remote history now matches the canonical local versions through `20260809201941`. `npm run db:types` regenerated the authoritative contracts; no generated file was edited manually.
