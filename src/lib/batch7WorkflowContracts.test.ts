@@ -4,6 +4,28 @@ import { describe, expect, it } from 'vitest';
 import { buildPersistedTachoReviewQueue } from './tacho/reviewQueue';
 
 const batch7Migration = readFileSync(fileURLToPath(new URL('../../supabase/migrations/20260810100753_batch7_operational_completion.sql', import.meta.url)), 'utf8');
+const batch7VorRepairMigration = readFileSync(fileURLToPath(new URL('../../supabase/migrations/20260810145114_enforce_defect_return_to_service_invariant.sql', import.meta.url)), 'utf8');
+
+type DefectScenario = {
+  companyId: string | null;
+  regNumber: string;
+  checkStatus: string;
+  lifecycleStatus: string | null;
+};
+
+function shouldBlockReturnToService(
+  vehicle: { isVor: boolean; companyId: string | null; regNumber: string },
+  defects: DefectScenario[],
+): boolean {
+  if (!vehicle.isVor || vehicle.companyId === null) return false;
+
+  return defects.some((defect) => (
+    defect.companyId === vehicle.companyId
+    && defect.regNumber.toUpperCase() === vehicle.regNumber.toUpperCase()
+    && defect.checkStatus === 'defect'
+    && (defect.lifecycleStatus ?? 'reported') !== 'fixed'
+  ));
+}
 
 describe('Batch 7 persisted tachograph review queue', () => {
   it('keeps open and action-required findings actionable while excluding closed findings', () => {
@@ -65,5 +87,39 @@ describe('Batch 7 governed backend contracts', () => {
     expect(batch7Migration).toContain("public.save_tachograph_finding_review(");
     expect(batch7Migration).toContain('revoke all on function public.assign_tachograph_training');
     expect(batch7Migration).toContain('grant execute on function public.assign_tachograph_training');
+  });
+});
+
+describe('Batch 7 vehicle return-to-service invariant', () => {
+  const companyId = 'company-1';
+  const vehicle = { isVor: true, companyId, regNumber: 'AB12 CDE' };
+
+  it('blocks unresolved reported and in-progress defects, including null lifecycle', () => {
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'defect', lifecycleStatus: 'reported' }])).toBe(true);
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'defect', lifecycleStatus: 'in_progress' }])).toBe(true);
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'defect', lifecycleStatus: null }])).toBe(true);
+  });
+
+  it('allows only fixed defects, setting VOR true, and unrelated vehicle edits', () => {
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'defect', lifecycleStatus: 'fixed' }])).toBe(false);
+    expect(shouldBlockReturnToService({ ...vehicle, isVor: false }, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'defect', lifecycleStatus: 'reported' }])).toBe(false);
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'ZZ99 ZZZ', checkStatus: 'defect', lifecycleStatus: 'reported' }])).toBe(false);
+    expect(shouldBlockReturnToService(vehicle, [{ companyId, regNumber: 'AB12 CDE', checkStatus: 'pass', lifecycleStatus: null }])).toBe(false);
+  });
+
+  it('keeps the database trigger authoritative and private', () => {
+    expect(batch7VorRepairMigration).toContain('create or replace function public.prevent_vehicle_return_to_service_with_open_defects()');
+    expect(batch7VorRepairMigration).toContain('security definer');
+    expect(batch7VorRepairMigration).toContain('set search_path = public, pg_temp');
+    expect(batch7VorRepairMigration).toContain('old.is_vor is true');
+    expect(batch7VorRepairMigration).toContain('new.is_vor is false');
+    expect(batch7VorRepairMigration).toContain('check_record.company_id = old.company_id');
+    expect(batch7VorRepairMigration).toContain('upper(check_record.reg_number) = upper(old.reg_number)');
+    expect(batch7VorRepairMigration).toContain("check_record.check_status = 'defect'");
+    expect(batch7VorRepairMigration).toContain("coalesce(check_record.defect_lifecycle_status, 'reported') <> 'fixed'");
+    expect(batch7VorRepairMigration).toContain('before update of is_vor on public.vehicles');
+    expect(batch7VorRepairMigration).toContain('revoke all on function public.prevent_vehicle_return_to_service_with_open_defects() from public');
+    expect(batch7VorRepairMigration).toContain('revoke all on function public.prevent_vehicle_return_to_service_with_open_defects() from anon');
+    expect(batch7VorRepairMigration).toContain('revoke all on function public.prevent_vehicle_return_to_service_with_open_defects() from authenticated');
   });
 });
