@@ -222,10 +222,10 @@ export function AddLogModal({ vehicleId, isTrailer, onClose, onSuccess }: { vehi
         updates.current_odometer = formData.odometer_at_service;
       }
 
-      // If repair/pmi done, vehicle is likely safe
+      // A maintenance entry is evidence, not a lifecycle decision. A defect
+      // is returned to service only through the explicit governed defect
+      // lifecycle action after its originating check is closed.
       if (formData.event_type === 'PMI' || formData.event_type === 'Defect Repair') {
-        updates.is_vor = false;
-        updates.maintenance_called = false; // Reset maintenance called flag
         updates.status_notes = `Last work: ${formData.event_type} on ${formData.completed_at}`;
       }
 
@@ -250,10 +250,12 @@ export function AddLogModal({ vehicleId, isTrailer, onClose, onSuccess }: { vehi
         updates.tacho_calibration_due = nextTacho.toISOString().split('T')[0];
       }
 
-      await supabase
+      const { error: vehicleUpdateError } = await supabase
         .from('vehicles')
         .update(updates)
         .eq('id', vehicleId);
+
+      if (vehicleUpdateError) throw vehicleUpdateError;
 
       onSuccess();
     } catch (err: unknown) {

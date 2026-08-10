@@ -8,6 +8,7 @@ import { useVehicleTachoSummary } from '../../hooks/useVehicleTachoSummary';
 import type { Database, Json } from '../../lib/database.types';
 
 type VehicleRow = Database['public']['Tables']['vehicles']['Row'];
+type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
 type DriverOption = Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'full_name'>;
 type VehicleClass = 'rigid' | 'artic_unit' | 'trailer' | 'van';
 type Vehicle = Omit<VehicleRow, 'vehicle_class' | 'is_vor' | 'current_odometer' | 'maintenance_called' | 'created_at'> & {
@@ -66,6 +67,7 @@ export function VehicleManagement({
   const [openDefectRegs, setOpenDefectRegs] = useState<Set<string>>(new Set());
   const [complianceAlertsCount, setComplianceAlertsCount] = useState<Record<string, number>>({});
   const [pendingDocsCount, setPendingDocsCount] = useState<Record<string, number>>({});
+  const selectedVehicleId = selectedVehicle?.id;
   const { data: tachoSummary } = useVehicleTachoSummary(profile?.company_id ?? undefined, selectedVehicle?.id);
 
   const loadVehicles = useCallback(async () => {
@@ -82,8 +84,8 @@ export function VehicleManagement({
       const vehicleList = (data || []).map(normaliseVehicle);
       setVehicles(vehicleList);
 
-      if (selectedVehicle) {
-        const updated = vehicleList.find(v => v.id === selectedVehicle.id);
+      if (selectedVehicleId) {
+        const updated = vehicleList.find(v => v.id === selectedVehicleId);
         if (updated) setSelectedVehicle(updated);
       }
 
@@ -131,7 +133,7 @@ export function VehicleManagement({
     } finally {
       setLoading(false);
     }
-  }, [profile?.company_id, selectedVehicle?.id]);
+  }, [profile?.company_id, selectedVehicleId]);
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -167,6 +169,10 @@ export function VehicleManagement({
 
   const toggleVOR = async () => {
     if (!selectedVehicle) return;
+    if (selectedVehicle.is_vor && openDefectRegs.has(selectedVehicle.reg_number)) {
+      alert('Resolve all open safety defects before returning this vehicle to service.');
+      return;
+    }
     const { error } = await supabase
       .from('vehicles')
       .update({
@@ -424,7 +430,11 @@ export function VehicleManagement({
               </div>
             </div>
 
-            <RecentChecksPanel regNumber={selectedVehicle.reg_number} />
+            <RecentChecksPanel
+              regNumber={selectedVehicle.reg_number}
+              vehicleId={selectedVehicle.id}
+              onUpdated={loadVehicles}
+            />
 
             <div className="bg-slate-900 rounded-xl p-6 text-white space-y-3 shadow-xl">
               <div className="flex items-center gap-2 text-amber-400">
@@ -740,24 +750,33 @@ function IncidentReportQuickModal({ vehicleId, onClose }: { vehicleId: string, o
 
 interface RecentCheck {
   id: string;
+  updated_at: string;
   created_at: string | null;
   check_status: string | null;
   defect_lifecycle_status: string | null;
   defect_details: string | null;
+  resolution_notes: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  closing_odometer: number | null;
   profiles: { full_name: string | null } | null;
+  resolved_by_name?: string | null;
+  repair?: Pick<MaintenanceLog, 'id' | 'completed_at' | 'document_url' | 'description'> | null;
 }
 
-function RecentChecksPanel({ regNumber }: { regNumber: string }) {
+function RecentChecksPanel({ regNumber, vehicleId, onUpdated }: { regNumber: string; vehicleId: string; onUpdated?: () => void }) {
   const { profile } = useAuth();
   const [checks, setChecks] = useState<RecentCheck[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionCheck, setActionCheck] = useState<RecentCheck | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     if (!profile?.company_id) return;
     setLoading(true);
     supabase
       .from('vehicle_checks')
-      .select('id, driver_id, created_at, check_status, defect_lifecycle_status, defect_details')
+      .select('id, driver_id, updated_at, created_at, check_status, defect_lifecycle_status, defect_details, resolution_notes, resolved_at, resolved_by, closing_odometer')
       .eq('reg_number', regNumber)
       .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false })
@@ -766,10 +785,27 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
         const driverIds = [...new Set((data ?? []).map(check => check.driver_id).filter((id): id is string => Boolean(id)))];
         const { data: driverRows } = await supabase.from('profiles').select('id, full_name').in('id', driverIds);
         const driverMap = new Map((driverRows ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
-        setChecks((data ?? []).map(check => ({ ...check, profiles: check.driver_id ? driverMap.get(check.driver_id) ?? null : null })));
+        const checkIds = (data ?? []).map(check => check.id);
+        const resolvedByIds = [...new Set((data ?? []).map(check => check.resolved_by).filter((id): id is string => Boolean(id)))];
+        const [{ data: repairRows }, { data: resolverRows }] = await Promise.all([
+          checkIds.length > 0
+            ? supabase.from('maintenance_logs').select('id, vehicle_check_id, completed_at, document_url, description').in('vehicle_check_id', checkIds)
+            : Promise.resolve({ data: [] as Array<{ id: string; vehicle_check_id: string | null; completed_at: string; document_url: string | null; description: string | null }> }),
+          resolvedByIds.length > 0
+            ? supabase.from('profiles').select('user_id, full_name').in('user_id', resolvedByIds)
+            : Promise.resolve({ data: [] as Array<{ user_id: string; full_name: string | null }> }),
+        ]);
+        const repairMap = new Map((repairRows ?? []).map(repair => [repair.vehicle_check_id, repair]));
+        const resolverMap = new Map((resolverRows ?? []).map(resolver => [resolver.user_id, resolver.full_name]));
+        setChecks((data ?? []).map(check => ({
+          ...check,
+          profiles: check.driver_id ? driverMap.get(check.driver_id) ?? null : null,
+          resolved_by_name: check.resolved_by ? resolverMap.get(check.resolved_by) ?? null : null,
+          repair: check.id ? repairMap.get(check.id) ?? null : null,
+        })));
         setLoading(false);
       });
-  }, [regNumber, profile?.company_id]);
+  }, [regNumber, profile?.company_id, refreshToken]);
 
   const lifecycleLabel: Record<string, string> = {
     reported: 'Reported',
@@ -817,6 +853,16 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
                       {c.defect_details}
                     </p>
                   )}
+                  {isDefect && lifecycle === 'fixed' && (
+                    <div className="mt-2 space-y-0.5 text-[10px] text-slate-500">
+                      <p>{c.resolution_notes || 'No resolution note recorded.'}</p>
+                      <p>Resolved {c.resolved_at ? new Date(c.resolved_at).toLocaleString() : '—'}{c.resolved_by_name ? ` by ${c.resolved_by_name}` : ''}</p>
+                      {c.closing_odometer !== null && <p>Closing odometer: {c.closing_odometer.toLocaleString()} km</p>}
+                      {c.repair && (
+                        <p className="text-blue-600">Repair linked · {c.repair.document_url ? 'evidence attached' : 'no evidence file'}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
                   {isDefect ? (
@@ -835,6 +881,15 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
                           {lifecycleLabel[lifecycle] ?? lifecycle}
                         </span>
                       )}
+                      {isDefect && lifecycle !== 'fixed' && (
+                        <button
+                          type="button"
+                          onClick={() => setActionCheck(c)}
+                          className="mt-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-blue-700 hover:bg-blue-100"
+                        >
+                          {lifecycle === 'reported' ? 'Start repair' : 'Close defect'}
+                        </button>
+                      )}
                     </>
                   ) : (
                     <span className="flex items-center gap-1 font-black uppercase text-[9px] text-green-700 bg-green-100 px-2 py-0.5 rounded border border-green-200">
@@ -847,6 +902,119 @@ function RecentChecksPanel({ regNumber }: { regNumber: string }) {
           })}
         </div>
       )}
+      {actionCheck && (
+        <DefectLifecycleModal
+          check={actionCheck}
+          vehicleId={vehicleId}
+          onClose={() => setActionCheck(null)}
+          onSuccess={() => {
+            setActionCheck(null);
+            setRefreshToken((value) => value + 1);
+            onUpdated?.();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function DefectLifecycleModal({
+  check,
+  vehicleId,
+  onClose,
+  onSuccess,
+}: {
+  check: RecentCheck;
+  vehicleId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { profile } = useAuth();
+  const [notes, setNotes] = useState(check.resolution_notes ?? '');
+  const [closingOdometer, setClosingOdometer] = useState(check.closing_odometer?.toString() ?? '');
+  const [maintenanceLogId, setMaintenanceLogId] = useState('');
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const nextStatus = check.defect_lifecycle_status === 'reported' ? 'in_progress' : 'fixed';
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    supabase
+      .from('maintenance_logs')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .eq('company_id', profile.company_id)
+      .is('vehicle_check_id', null)
+      .order('completed_at', { ascending: false })
+      .then(({ data, error: loadError }) => {
+        if (loadError) setError(loadError.message);
+        setMaintenanceLogs(data ?? []);
+      });
+  }, [profile?.company_id, vehicleId]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      if (nextStatus === 'fixed' && !maintenanceLogId) {
+        throw new Error('Select the repair log that resolved this defect.');
+      }
+      const { error: rpcError } = await supabase.rpc('update_vehicle_check_lifecycle', {
+        p_check_id: check.id,
+        p_to_status: nextStatus,
+        p_resolution_notes: notes.trim() || undefined,
+        p_closing_odometer: closingOdometer ? Number(closingOdometer) : undefined,
+        p_expected_updated_at: check.updated_at,
+        p_maintenance_log_id: maintenanceLogId || undefined,
+      });
+      if (rpcError) throw rpcError;
+      onSuccess();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Unable to update defect lifecycle.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Defect lifecycle</p>
+            <h2 className="mt-1 text-xl font-black text-slate-900">{nextStatus === 'in_progress' ? 'Start repair' : 'Close defect'}</h2>
+            <p className="mt-1 text-xs text-slate-500">{check.defect_details || 'No defect detail recorded.'}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700">×</button>
+        </div>
+        {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{error}</div>}
+        {nextStatus === 'fixed' && (
+          <div>
+            <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">Repair log</label>
+            <select required value={maintenanceLogId} onChange={(event) => setMaintenanceLogId(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900">
+              <option value="">Select a maintenance record</option>
+              {maintenanceLogs.map((log) => <option key={log.id} value={log.id}>{log.completed_at} · {log.event_type} · {log.description || 'No description'}</option>)}
+            </select>
+            {maintenanceLogs.length === 0 && <p className="mt-1 text-[10px] text-amber-700">Add a maintenance record first; logging work alone does not close this defect.</p>}
+          </div>
+        )}
+        <div>
+          <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">Resolution notes</label>
+          <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 p-2.5 text-sm text-slate-900" placeholder="Describe the manager decision or repair outcome." />
+        </div>
+        {nextStatus === 'fixed' && (
+          <div>
+            <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">Closing odometer (km)</label>
+            <input type="number" min="0" value={closingOdometer} onChange={(event) => setClosingOdometer(event.target.value)} className="w-full rounded-lg border border-slate-200 p-2.5 text-sm text-slate-900" />
+          </div>
+        )}
+        <div className="flex gap-3 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-slate-200 py-2.5 text-xs font-black uppercase tracking-widest text-slate-500">Cancel</button>
+          <button type="submit" disabled={loading} className="flex-1 rounded-lg bg-blue-600 py-2.5 text-xs font-black uppercase tracking-widest text-white disabled:opacity-50">{loading ? 'Saving...' : nextStatus === 'fixed' ? 'Close defect' : 'Start repair'}</button>
+        </div>
+      </form>
     </div>
   );
 }

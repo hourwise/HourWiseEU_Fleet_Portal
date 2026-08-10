@@ -1,7 +1,3 @@
-// Generated from the live Supabase public schema.
-// Source project: lcvahjmoobmpifrexurb
-// Regenerate with: supabase gen types --lang=typescript --project-id lcvahjmoobmpifrexurb --schema public
-// Do not edit manually.
 export type Json =
   | string
   | number
@@ -1887,6 +1883,7 @@ export type Database = {
           id: string
           odometer_at_service: number | null
           service_provider: string | null
+          vehicle_check_id: string | null
           vehicle_id: string | null
         }
         Insert: {
@@ -1901,6 +1898,7 @@ export type Database = {
           id?: string
           odometer_at_service?: number | null
           service_provider?: string | null
+          vehicle_check_id?: string | null
           vehicle_id?: string | null
         }
         Update: {
@@ -1915,6 +1913,7 @@ export type Database = {
           id?: string
           odometer_at_service?: number | null
           service_provider?: string | null
+          vehicle_check_id?: string | null
           vehicle_id?: string | null
         }
         Relationships: [
@@ -1923,6 +1922,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_vehicle_check_id_fkey"
+            columns: ["vehicle_check_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checks"
             referencedColumns: ["id"]
           },
           {
@@ -4755,6 +4761,7 @@ export type Database = {
           session_id: string | null
           signature_url: string | null
           trailer_reg: string | null
+          updated_at: string
           vehicle_make: string | null
           vehicle_type: string
         }
@@ -4777,6 +4784,7 @@ export type Database = {
           session_id?: string | null
           signature_url?: string | null
           trailer_reg?: string | null
+          updated_at?: string
           vehicle_make?: string | null
           vehicle_type: string
         }
@@ -4799,6 +4807,7 @@ export type Database = {
           session_id?: string | null
           signature_url?: string | null
           trailer_reg?: string | null
+          updated_at?: string
           vehicle_make?: string | null
           vehicle_type?: string
         }
@@ -5417,6 +5426,16 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_tachograph_training: {
+        Args: {
+          p_driver_id: string
+          p_finding_ids?: string[]
+          p_module_id: string
+          p_notes?: string
+          p_title: string
+        }
+        Returns: Json
+      }
       can_access_defect_photo_object: {
         Args: { p_name: string }
         Returns: boolean
@@ -5785,6 +5804,17 @@ export type Database = {
           p_shift_id: string
           p_start_time: string
           p_vehicle_id?: string
+        }
+        Returns: Json
+      }
+      update_vehicle_check_lifecycle: {
+        Args: {
+          p_check_id: string
+          p_closing_odometer?: number
+          p_expected_updated_at?: string
+          p_maintenance_log_id?: string
+          p_resolution_notes?: string
+          p_to_status: string
         }
         Returns: Json
       }
