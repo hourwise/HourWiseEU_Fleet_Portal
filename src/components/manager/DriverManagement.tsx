@@ -8,6 +8,7 @@ import { DriverDetailsModal } from './DriverDetailsModal';
 import { DriverOnboardingModal } from './DriverOnboardingModal';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { evaluateDriverDocumentCompliance } from '../../lib/driverCompliance';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Invite = Database['public']['Tables']['driver_invites']['Row'];
@@ -48,44 +49,22 @@ async function getFunctionErrorMessage(error: { message?: string; context?: unkn
 
 const getDriverComplianceStatus = (driverId: string, allDocuments: Document[], t: TFunction) => {
   const driverDocs = allDocuments.filter(doc => doc.user_id === driverId);
-  if (driverDocs.length === 0) {
-    return { level: 'amber', text: t('driverManagement.status.noDocuments'), Icon: AlertTriangle, color: 'text-amber-600' };
-  }
+  const compliance = evaluateDriverDocumentCompliance(driverDocs, new Date());
 
-  let mostUrgentStatus = { level: 'green', daysDiff: Infinity };
-
-  for (const doc of driverDocs) {
-    if (!doc.expiry_date) {
-      if (mostUrgentStatus.level !== 'red') {
-        mostUrgentStatus = { level: 'amber', daysDiff: 999 };
-      }
-      continue;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiry = new Date(doc.expiry_date);
-    const timeDiff = expiry.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-    if (daysDiff < 0) {
+  switch (compliance.state) {
+    case 'missing':
+      return { level: 'amber', text: t('driverManagement.status.noDocuments'), Icon: AlertTriangle, color: 'text-amber-600' };
+    case 'expired':
       return { level: 'red', text: t('driverManagement.status.expired'), Icon: AlertTriangle, color: 'text-red-600' };
-    }
-    if (daysDiff <= 30 && daysDiff < mostUrgentStatus.daysDiff) {
-      mostUrgentStatus = { level: 'amber', daysDiff };
-    }
+    case 'unverified':
+      return { level: 'amber', text: t('driverManagement.status.verificationRequired', 'Verification required'), Icon: AlertTriangle, color: 'text-amber-600' };
+    case 'expiry_unknown':
+      return { level: 'amber', text: t('driverManagement.status.checkExpiry'), Icon: AlertTriangle, color: 'text-amber-600' };
+    case 'expiring':
+      return { level: 'amber', text: t('driverManagement.status.expiresIn', { days: compliance.daysUntilExpiry ?? 0 }), Icon: AlertTriangle, color: 'text-amber-600' };
+    case 'verified_valid':
+      return { level: 'green', text: t('driverManagement.status.compliant'), Icon: CheckCircle, color: 'text-green-600' };
   }
-
-  if (mostUrgentStatus.level === 'amber') {
-    return {
-      level: 'amber',
-      text: mostUrgentStatus.daysDiff === 999 ? t('driverManagement.status.checkExpiry') : t('driverManagement.status.expiresIn', { days: mostUrgentStatus.daysDiff }),
-      Icon: AlertTriangle,
-      color: 'text-amber-600'
-    };
-  }
-
-  return { level: 'green', text: t('driverManagement.status.compliant'), Icon: CheckCircle, color: 'text-green-600' };
 };
 
 interface PendingInviteUpdate {
