@@ -379,43 +379,30 @@ export function DriverCardAnalysis({ driverId, importId, focusedDate, onOpenImpo
 
   const handleAssignTraining = async (recommendation: TrainingRecommendation) => {
     if (!profile?.company_id || !profile.id || !activeDriverId) return;
-    const companyId = profile.company_id;
     setAssigningTrainingId(recommendation.id);
     setTrainingAssignError(null);
     try {
-      const trainingRecordId = crypto.randomUUID();
-      const { error } = await supabase.from('training_records').insert({
-        id: trainingRecordId,
-        company_id: companyId,
-        driver_id: activeDriverId,
-        training_type: 'tacho_refresher',
-        module_id: recommendation.moduleId,
-        title: recommendation.title,
-        hours_credited: 0,
-        status: 'assigned',
-        assigned_by: profile.id,
-        notes: recommendation.reason,
+      // Evidence-derived recommendations can contain synthetic finding IDs.
+      // Only persisted tachograph findings are eligible for review linkage;
+      // the governed RPC rejects any cross-company or unknown IDs.
+      const persistedFindingIds = recommendation.findingIds.filter((findingId) => persistedFindings.some((finding) => finding.id === findingId));
+      const { data: assignment, error } = await supabase.rpc('assign_tachograph_training', {
+        p_driver_id: activeDriverId,
+        p_module_id: recommendation.moduleId,
+        p_title: recommendation.title,
+        p_notes: recommendation.reason,
+        p_finding_ids: persistedFindingIds,
       });
 
       if (error) throw error;
 
-      const linkedReviews = await Promise.all(
-        recommendation.findingIds.map(async (findingId) => {
-          const finding = findings.find((entry) => entry.id === findingId);
-          if (!finding) return null;
-          const currentReview = findingReviews[findingId];
-          return saveTachoFindingReview({
-            companyId,
-            findingId,
-            status: 'action_required',
-            managerNote: currentReview?.managerNote || recommendation.reason,
-            correctiveActionType: 'training',
-            correctiveActionRefId: trainingRecordId,
-          });
-        })
-      );
-
-      const savedReviews = linkedReviews.filter((review): review is TachoFindingReview => Boolean(review));
+      const assignmentObject = assignment && typeof assignment === 'object' && !Array.isArray(assignment)
+        ? assignment as { reviews?: unknown }
+        : {};
+      const linkedReviews = Array.isArray(assignmentObject.reviews)
+        ? assignmentObject.reviews as TachoFindingReview[]
+        : [];
+      const savedReviews = linkedReviews.filter((review): review is TachoFindingReview => Boolean(review?.findingId));
       if (savedReviews.length > 0) {
         setFindingReviews((current) => ({
           ...current,
