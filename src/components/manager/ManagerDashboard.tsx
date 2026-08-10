@@ -7,7 +7,7 @@ import {
   LogOut, LayoutDashboard, Users, Settings,
   Shield, ShieldCheck, Truck, Activity,
   GraduationCap, MessageSquare, Fuel, Calendar as CalendarIcon,
-  Gauge, FileText, AlertTriangle, Bell, Search, UserCircle,
+  Gauge, FileText, DollarSign, AlertTriangle, Bell, Search, UserCircle,
   Menu, X, ChevronRight, Sparkles, ClipboardList
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -25,6 +25,7 @@ import {
 // Lazy load dashboard components
 const DriverManagement = lazy(() => import('./DriverManagement').then(m => ({ default: m.DriverManagement })));
 const ReportsAndExports = lazy(() => import('./ReportsAndExports').then(m => ({ default: m.ReportsAndExports })));
+const ExpenseApproval = lazy(() => import('./ExpenseApproval').then(m => ({ default: m.ExpenseApproval })));
 const CompanySettings = lazy(() => import('./CompanySettings').then(m => ({ default: m.CompanySettings })));
 const SupervisorManagement = lazy(() => import('./SupervisorManagement').then(m => ({ default: m.SupervisorManagement })));
 const AlertsFeed = lazy(() => import('./AlertsFeed').then(m => ({ default: m.AlertsFeed })));
@@ -201,6 +202,7 @@ export function ManagerDashboard() {
     { id: 'fleet' as Workspace, label: t('navigation.fleet'), icon: Truck },
     { id: 'compliance' as Workspace, label: t('navigation.compliance'), icon: Gauge },
     { id: 'reports' as Workspace, label: 'Reports', icon: FileText },
+    { id: 'finance' as Workspace, label: 'Finance', icon: DollarSign },
     { id: 'settings' as Workspace, label: t('navigation.settings'), icon: Settings },
   ];
 
@@ -629,6 +631,7 @@ export function ManagerDashboard() {
                   }
                 />
               )}
+              {activeWorkspace === 'finance' && <ExpenseApproval />}
               {activeWorkspace === 'settings' && activeSettingsSection === 'account' && (
                 <div className="space-y-6 pb-12">
                     <UserProfileSettings />

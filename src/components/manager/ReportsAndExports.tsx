@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  FileBarChart2, Download, Calendar, DollarSign, Receipt,
+  FileBarChart2, Download, Calendar, DollarSign,
   Clock, AlertTriangle, ShieldCheck, Truck, GraduationCap,
   Check, ChevronDown, ChevronUp, Wrench, RefreshCw,
   ClipboardList, Bell, FileText, LifeBuoy,
@@ -392,82 +392,13 @@ function PayrollExportCard({ range }: { range: DateRange }) {
 
 type ExpenseWithProfile = Expense & { profiles: { full_name: string | null } | null };
 
-function ExpenseApprovalsCard() {
-  const { profile } = useAuth();
-  const [pending, setPending] = useState<ExpenseWithProfile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(true);
-
-  const fetch = useCallback(async () => {
-    if (!profile?.company_id) return;
-    setLoading(true);
-    try {
-      const { data: drivers } = await supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver');
-      const ids = (drivers ?? []).map(driver => driver.id);
-      const { data } = await supabase.from('expenses').select('*').in('user_id', ids).order('date', { ascending: false });
-      const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
-      setPending((data ?? []).map(expense => ({ ...expense, profiles: driverMap.get(expense.user_id) ?? null })));
-    } catch (e) { console.error(e); } finally { setLoading(false); }
-  }, [profile?.company_id]);
-
-  useEffect(() => { fetch(); }, [fetch]);
-
-  const badge = pending.length > 0 ? String(pending.length) : undefined;
-
-  return (
-    <ExportCard icon={Receipt} title="Expense Records" description="Driver expense records available in the live expense contract."
-      badge={badge} badgeColour="bg-amber-500"
-      loading={loading} rowCount={pending.length} onRefresh={fetch}
-      expanded={expanded} onToggleExpand={() => setExpanded(v => !v)}>
-      {pending.length === 0 ? (
-        <div className="text-center py-6">
-          <Check className="w-10 h-10 text-green-500 mx-auto mb-2" />
-          <p className="text-xs text-slate-400">All clear — no pending expenses.</p>
-        </div>
-      ) : (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-brand-border">
-              {['Driver', 'Date', 'Amount', 'Notes', 'Receipt', 'Status'].map(h => (
-                <th key={h} className="px-3 py-2 text-left font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-brand-border/50">
-            {pending.map(exp => (
-              <tr key={exp.id} className="hover:bg-brand-card/50">
-                <td className="px-3 py-2 text-slate-300 font-medium">{exp.profiles?.full_name ?? '—'}</td>
-                <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{fmtDate(exp.date ?? exp.created_at)}</td>
-                <td className="px-3 py-2 text-white font-bold whitespace-nowrap">£{(exp.amount ?? 0).toFixed(2)}</td>
-                <td className="px-3 py-2 text-slate-300 max-w-[200px] truncate">{exp.notes || exp.merchant || exp.category}</td>
-                <td className="px-3 py-2">
-                  {exp.image_url ? (
-                    <button
-                      onClick={async () => {
-                        const { data } = await supabase.storage.from('expense-receipts').download(exp.image_url!);
-                        if (data) { const url = URL.createObjectURL(data); window.open(url, '_blank'); }
-                      }}
-                      className="text-brand-accent hover:underline text-xs"
-                    >View</button>
-                  ) : <span className="text-slate-600">—</span>}
-                </td>
-                <td className="px-3 py-2 text-slate-500">Recorded</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </ExportCard>
-  );
-}
-
 // ═════════════════════════════════════════════════════════════════════════════
 // CARD 3 — Expense History Export
 // ═════════════════════════════════════════════════════════════════════════════
 
 function ExpenseHistoryCard({ range }: { range: DateRange }) {
   const { profile } = useAuth();
-  const [rows, setRows] = useState<ExpenseWithProfile[]>([]);
+  const [rows, setRows] = useState<(ExpenseWithProfile & { review: Database['public']['Tables']['expense_reviews']['Row'] | null })[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -482,7 +413,17 @@ function ExpenseHistoryCard({ range }: { range: DateRange }) {
       const { data } = await supabase.from('expenses').select('*').in('user_id', driverIds)
         .gte('date', toISO(range.start)).lte('date', toISO(range.end)).order('date', { ascending: false });
       const driverMap = new Map((drivers ?? []).map(driver => [driver.id, { full_name: driver.full_name }]));
-      setRows((data ?? []).map(expense => ({ ...expense, profiles: driverMap.get(expense.user_id) ?? null })));
+      const expenseIds = (data ?? []).map(expense => expense.id);
+      const { data: reviewData, error: reviewError } = expenseIds.length > 0
+        ? await supabase.from('expense_reviews').select('*').in('expense_id', expenseIds)
+        : { data: [], error: null };
+      if (reviewError) throw reviewError;
+      const reviewMap = new Map((reviewData ?? []).map(review => [review.expense_id, review]));
+      setRows((data ?? []).map(expense => ({
+        ...expense,
+        profiles: driverMap.get(expense.user_id) ?? null,
+        review: reviewMap.get(expense.id) ?? null,
+      })));
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [profile?.company_id, range]);
 
@@ -490,7 +431,7 @@ function ExpenseHistoryCard({ range }: { range: DateRange }) {
 
   const download = () => downloadCSV(
     ['Driver', 'Date', 'Amount', 'Notes', 'Status'],
-    rows.map(r => [r.profiles?.full_name ?? 'Unknown driver', r.date, (r.amount ?? 0).toFixed(2), r.notes ?? r.merchant ?? r.category, 'Recorded']),
+    rows.map(r => [r.profiles?.full_name ?? 'Unknown driver', r.date, (r.amount ?? 0).toFixed(2), r.notes ?? r.merchant ?? r.category, r.review?.decision ?? 'Pending']),
     `expenses_${toISO(range.start)}_${toISO(range.end)}.csv`,
   );
 
@@ -505,7 +446,9 @@ function ExpenseHistoryCard({ range }: { range: DateRange }) {
           fmtDate(r.date ?? r.created_at),
           `£${(r.amount ?? 0).toFixed(2)}`,
           r.notes ?? r.merchant ?? r.category,
-          <span className="font-bold text-slate-400">RECORDED</span>,
+          <span className={`font-bold ${r.review?.decision === 'approved' ? 'text-green-400' : r.review?.decision === 'rejected' ? 'text-red-400' : 'text-amber-400'}`}>
+            {(r.review?.decision ?? 'pending').toUpperCase()}
+          </span>,
         ])}
       />
     </ExportCard>
@@ -1312,7 +1255,7 @@ export function ReportsAndExports({
         </div>
         <div>
           <h2 className="text-2xl font-black text-white">Reports &amp; Exports</h2>
-          <p className="text-sm text-slate-400">Generate CSV exports, approve expenses, and monitor compliance from one place.</p>
+          <p className="text-sm text-slate-400">Generate CSV exports and monitor compliance evidence from one place.</p>
         </div>
       </div>
 
@@ -1343,9 +1286,8 @@ export function ReportsAndExports({
 
       {/* ── Section 1: Payroll & Expenses ── */}
       <div className="space-y-4">
-        <SectionHeader icon={DollarSign} title="Payroll & Expenses" subtitle="Export pay data and manage driver expense claims." />
+        <SectionHeader icon={DollarSign} title="Payroll & Expenses" subtitle="Export pay data and review captured expense evidence." />
         <PayrollExportCard range={range} />
-        <ExpenseApprovalsCard />
         <ExpenseHistoryCard range={range} />
       </div>
 
