@@ -1,5 +1,5 @@
 // src/components/manager/DriverDetailsModal.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
 import { X, Save, Trash2, Edit, MapPin, CreditCard, ShieldCheck, BadgeCheck, Clock, GraduationCap, Check, Ban, Paperclip, Scan } from 'lucide-react';
@@ -130,6 +130,7 @@ export function DriverDetailsModal({
   const [tachoReviewActions, setTachoReviewActions] = useState<TachoFindingReviewSummary[]>([]);
   const [tachoReviewEvents, setTachoReviewEvents] = useState<TachoFindingReviewEvent[]>([]);
   const [tachoReviewFilter, setTachoReviewFilter] = useState<TachoReviewFilter>('all');
+  const expectedUpdatedAt = useRef<string | null>(driver.updated_at);
 
   const licenceState = useDocumentUpload();
   const cpcState = useDocumentUpload();
@@ -271,9 +272,16 @@ export function DriverDetailsModal({
       }
 
       if (Object.keys(profileUpdates).length > 0) {
-        const { error: updateError } = await supabase.from('profiles').update(profileUpdates).eq('id', driver.id);
+        const { data: updatedProfile, error: updateError } = await supabase.rpc('update_driver_profile', {
+          p_driver_id: driver.id,
+          p_patch: profileUpdates,
+          p_expected_updated_at: expectedUpdatedAt.current ?? undefined,
+        });
         if (updateError) throw updateError;
-        setFormData(prev => ({ ...prev, ...profileUpdates }));
+        if (updatedProfile) {
+          expectedUpdatedAt.current = updatedProfile.updated_at;
+          setFormData(prev => ({ ...prev, ...updatedProfile }));
+        }
       }
 
       state.reset();
@@ -295,7 +303,6 @@ export function DriverDetailsModal({
       phone_number: formData.phone_number,
       emergency_contact_name: formData.emergency_contact_name,
       emergency_contact_phone: formData.emergency_contact_phone,
-      is_active: formData.is_active,
       is_contractor: formData.is_contractor,
       agency_name: formData.is_contractor ? formData.agency_name : null,
       full_address: formData.full_address,
@@ -303,8 +310,13 @@ export function DriverDetailsModal({
     };
 
     try {
-      const { error } = await supabase.from('profiles').update(updateData).eq('id', driver.id);
+      const { data: updatedProfile, error } = await supabase.rpc('update_driver_profile', {
+        p_driver_id: driver.id,
+        p_patch: updateData,
+        p_expected_updated_at: expectedUpdatedAt.current ?? undefined,
+      });
       if (error) throw error;
+      if (updatedProfile) expectedUpdatedAt.current = updatedProfile.updated_at;
       onSave();
       onClose();
     } catch (err: unknown) {
@@ -397,15 +409,10 @@ export function DriverDetailsModal({
                 {renderInput(t('driverDetails.labels.emergencyPhone'), "emergency_contact_phone")}
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('driverDetails.labels.status')}</label>
-                  <select
-                    name="is_active"
-                    value={formData.is_active ? 'true' : 'false'}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
-                  >
-                    <option value="true">{t('driverDetails.status.active')}</option>
-                    <option value="false">{t('driverDetails.status.inactive')}</option>
-                  </select>
+                  <div className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700 font-bold">
+                    {formData.is_active ? t('driverDetails.status.active') : t('driverDetails.status.inactive')}
+                  </div>
+                  <p className="mt-1 text-[10px] text-slate-400">Account status is protected from personnel-profile edits.</p>
                 </div>
                 <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-6">
                   <div className="flex items-center gap-3">

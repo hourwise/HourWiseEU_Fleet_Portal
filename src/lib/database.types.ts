@@ -5704,6 +5704,58 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_driver_profile: {
+        Args: {
+          p_driver_id: string
+          p_expected_updated_at?: string
+          p_patch: Json
+        }
+        Returns: {
+          account_type: string | null
+          agency_name: string | null
+          company_id: string | null
+          cpc_dqc_expiry: string | null
+          cpc_dqc_number: string | null
+          cpc_training_hours_done: number | null
+          created_at: string | null
+          date_of_birth: string | null
+          deactivated_at: string | null
+          deletion_requested_at: string | null
+          driver_license_number: string | null
+          driving_licence_expiry: string | null
+          driving_licence_number: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          expo_push_token: string | null
+          first_time_setup_completed_at: string | null
+          full_address: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          is_contractor: boolean | null
+          last_shift_onboarding_completed_at: string | null
+          national_insurance_number: string | null
+          payroll_number: string | null
+          phone_number: string | null
+          role: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_period_end: string | null
+          subscription_status: string | null
+          tacho_card_expiry: string | null
+          tacho_card_number: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_job_assignment_with_event: {
         Args: {
           p_address_text: string

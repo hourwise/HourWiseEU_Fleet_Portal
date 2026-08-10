@@ -160,8 +160,8 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
     employment_start_date: '',
     emergency_contact_name: driver.emergency_contact_name ?? '',
     emergency_contact_phone: driver.emergency_contact_phone ?? '',
-    is_contractor: (driver as any).is_contractor ?? false,
-    agency_name: (driver as any).agency_name ?? '',
+    is_contractor: driver.is_contractor ?? false,
+    agency_name: driver.agency_name ?? '',
   });
 
   const [compliance, setCompliance] = useState<ComplianceData>({
@@ -232,10 +232,11 @@ export function DriverOnboardingModal({ driver, onClose, onComplete }: Props) {
         cpc_dqc_expiry: compliance.cpc_dqc_expiry || null,
       };
 
-      const { error: profileErr } = await supabase
-        .from('profiles')
-        .update(profileUpdate)
-        .eq('id', driver.id);
+      const { error: profileErr } = await supabase.rpc('update_driver_profile', {
+        p_driver_id: driver.id,
+        p_patch: profileUpdate,
+        p_expected_updated_at: driver.updated_at ?? undefined,
+      });
       if (profileErr) throw profileErr;
 
       // 2. Upload documents if provided
