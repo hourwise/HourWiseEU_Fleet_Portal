@@ -64,7 +64,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [profile?.company_id, selectedCheck?.id]);
+  }, [profile?.company_id, selectedCheck]);
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -86,7 +86,7 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
       .eq('company_id', profile.company_id)
       .maybeSingle()
       .then(({ data }) => setFleetVehicle(data ?? null));
-  }, [selectedCheck?.id, profile?.company_id]);
+  }, [selectedCheck, profile?.company_id]);
 
   // Fetch defect photos when a defect check is selected
   useEffect(() => {
@@ -95,21 +95,32 @@ export function VehicleChecksModule({ onNavigateToFleet }: Props) {
       return;
     }
     setPhotosLoading(true);
-    supabase
-      .from('defect_photos')
-      .select('id, storage_path, uploaded_at')
-      .eq('vehicle_check_id', selectedCheck.id)
-      .order('uploaded_at')
-      .then(({ data }) => {
-        const photos: DefectPhoto[] = (data ?? []).map(row => ({
-          id: row.id,
-          storage_path: row.storage_path,
-          publicUrl: supabase.storage.from('defect-photos').getPublicUrl(row.storage_path).data.publicUrl,
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('defect_photos')
+          .select('id, storage_path, uploaded_at')
+          .eq('vehicle_check_id', selectedCheck.id)
+          .order('uploaded_at');
+        if (error) throw error;
+
+        const photos = await Promise.all((data ?? []).map(async row => {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('defect-photos')
+            .createSignedUrl(row.storage_path, 60);
+          if (signedError) throw signedError;
+          if (!signedData?.signedUrl) throw new Error('Private defect-photo access did not return a signed URL.');
+          return { id: row.id, storage_path: row.storage_path, publicUrl: signedData.signedUrl };
         }));
         setDefectPhotos(photos);
+      } catch (error) {
+        console.error('Error loading private defect photos:', error);
+        setDefectPhotos([]);
+      } finally {
         setPhotosLoading(false);
-      });
-  }, [selectedCheck?.id]);
+      }
+    })();
+  }, [selectedCheck]);
 
   const filteredChecks = checks.filter(check =>
     (check.profiles?.full_name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||

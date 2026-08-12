@@ -115,8 +115,9 @@ export function VehicleManagement({
       });
       setComplianceAlertsCount(counts);
 
-      // The live vehicle_documents contract has no verification column, so
-      // document presence is the only locally observable pending signal.
+      // The live vehicle_documents contract has no verification column. Keep
+      // this count as evidence presence only; it must not be presented as a
+      // verification state.
       const { data: docData } = await supabase
         .from('vehicle_documents')
         .select('vehicle_id');
@@ -241,7 +242,7 @@ export function VehicleManagement({
                       <AlertTriangle size={18} /> {t('fleet.status.vor')}
                     </span>
                   ) : (
-                    <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-black border border-green-200 uppercase">{t('fleet.status.active')}</span>
+                    <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-black border border-green-200 uppercase" title="Vehicle is not currently marked VOR; verify defects and due dates separately">Available</span>
                   )}
                 </div>
               </div>
@@ -521,12 +522,12 @@ export function VehicleManagement({
           </p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-green-100 bg-gradient-to-br from-white to-green-50/30">
-          <h4 className="text-green-800 text-xs font-black uppercase tracking-widest mb-1">{t('fleet.status.operational')}</h4>
+          <h4 className="text-green-800 text-xs font-black uppercase tracking-widest mb-1">Not marked VOR</h4>
           <p className="text-4xl font-black text-green-600">
             {vehicles.filter(v => !v.is_vor).length}
           </p>
           <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
-            <CheckCircle size={12} /> {t('fleet.status.ready')}
+            <CheckCircle size={12} /> Available status only
           </p>
         </div>
       </div>
@@ -585,7 +586,7 @@ export function VehicleManagement({
                             <AlertTriangle size={10} /> {t('fleet.status.vor')}
                           </span>
                         ) : (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black w-fit uppercase border border-green-200">{t('fleet.status.active')}</span>
+                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black w-fit uppercase border border-green-200" title="Vehicle is not currently marked VOR; verify defects and due dates separately">Available</span>
                         )}
                         {openDefectRegs.has(v.reg_number) && (
                           <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-orange-200" title="Walkaround check has open defect">
@@ -598,8 +599,8 @@ export function VehicleManagement({
                           </span>
                         )}
                         {pendingDocsCount[v.id] > 0 && (
-                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-blue-200" title="Pending document verification">
-                            <FileWarning size={10} /> Review
+                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1 w-fit uppercase border border-blue-200" title="Stored vehicle evidence">
+                            <FileWarning size={10} /> Evidence stored
                           </span>
                         )}
                       </div>

@@ -53,6 +53,8 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
   const [incidents, setIncidents] = useState<VehicleIncident[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [documentActionId, setDocumentActionId] = useState<string | null>(null);
+  const [documentActionError, setDocumentActionError] = useState<string | null>(null);
 
   const docState = useDocumentUpload();
 
@@ -77,6 +79,7 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
   const handleDocumentSubmit = async (type: string) => {
     if (!docState.file) return alert("Please select a file.");
     setIsUploading(true);
+    setDocumentActionError(null);
     const filePath = `${vehicle.company_id}/${vehicle.id}/${type}_${Date.now()}`;
     try {
       const { error: uploadError } = await supabase.storage.from('vehicle-documents').upload(filePath, docState.file);
@@ -91,13 +94,96 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
         expiry_date: docState.expiryDate || null,
         uploaded_by: user?.id
       });
-      if (dbError) throw dbError;
+      if (dbError) {
+        const { error: cleanupError } = await supabase.storage.from('vehicle-documents').remove([filePath]);
+        throw new Error(
+          cleanupError
+            ? `Document metadata could not be saved, and the uploaded file may remain in private storage: ${dbError.message}`
+            : `Document metadata could not be saved; the uploaded file was cleaned up: ${dbError.message}`
+        );
+      }
 
       docState.reset();
-      fetchData();
+      await fetchData();
     } catch (err: unknown) {
-      alert("Error: " + (err instanceof Error ? err.message : 'Unknown error'));
+      setDocumentActionError(err instanceof Error ? err.message : 'Unable to store the document.');
     } finally { setIsUploading(false); }
+  };
+
+  const getAuthoritativeDocument = async (documentId: string) => {
+    const companyId = vehicle.company_id;
+    if (!companyId) throw new Error('This vehicle is not linked to a company; private evidence access is unavailable.');
+    const { data, error } = await supabase
+      .from('vehicle_documents')
+      .select('id, vehicle_id, company_id, storage_path')
+      .eq('id', documentId)
+      .eq('vehicle_id', vehicle.id)
+      .eq('company_id', companyId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('The document is no longer available for this vehicle. Refresh and try again.');
+    if (!data.storage_path) throw new Error('The stored document has no authoritative storage path. Contact support before retrying.');
+    if (!data.company_id) throw new Error('The stored document has no authoritative company scope. Contact support before retrying.');
+    return { ...data, storage_path: data.storage_path, company_id: data.company_id };
+  };
+
+  const handleDocumentDownload = async (documentId: string) => {
+    setDocumentActionId(documentId);
+    setDocumentActionError(null);
+    try {
+      const document = await getAuthoritativeDocument(documentId);
+      const { data, error } = await supabase.storage
+        .from('vehicle-documents')
+        .createSignedUrl(document.storage_path, 60, { download: true });
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Private document access did not return a signed URL.');
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err: unknown) {
+      setDocumentActionError(err instanceof Error ? err.message : 'Unable to download the stored document.');
+    } finally {
+      setDocumentActionId(null);
+    }
+  };
+
+  const handleDocumentDelete = async (documentId: string) => {
+    if (!window.confirm('Remove this stored document from the vehicle file?')) return;
+    setDocumentActionId(documentId);
+    setDocumentActionError(null);
+    try {
+      const document = await getAuthoritativeDocument(documentId);
+      const { error: storageError } = await supabase.storage
+        .from('vehicle-documents')
+        .remove([document.storage_path]);
+      if (storageError) {
+        throw new Error(`The document record was kept because private storage cleanup failed: ${storageError.message}`);
+      }
+
+      const { error: metadataError } = await supabase
+        .from('vehicle_documents')
+        .delete()
+        .eq('id', document.id)
+        .eq('vehicle_id', vehicle.id)
+        .eq('company_id', document.company_id);
+      if (metadataError) {
+        const { error: retryError } = await supabase
+          .from('vehicle_documents')
+          .delete()
+          .eq('id', document.id)
+          .eq('vehicle_id', vehicle.id)
+          .eq('company_id', document.company_id);
+        if (retryError) {
+          throw new Error(`Private storage was removed, but document metadata cleanup failed. Refresh before retrying: ${retryError.message}`);
+        }
+      }
+
+      await fetchData();
+    } catch (err: unknown) {
+      setDocumentActionError(err instanceof Error ? err.message : 'Unable to remove the stored document.');
+      await fetchData();
+    } finally {
+      setDocumentActionId(null);
+    }
   };
 
   const handleSave = async () => {
@@ -217,6 +303,11 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
               </div>
 
               <div className="space-y-3">
+                {documentActionError && (
+                  <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+                    {documentActionError}
+                  </p>
+                )}
                 {documents.length === 0 ? (
                   <p className="text-xs text-slate-400 italic p-8 text-center bg-white rounded-xl border border-dashed">No documents stored for this asset.</p>
                 ) : (
@@ -227,16 +318,33 @@ export function VehicleDetailsModal({ vehicle, onClose, onSave }: VehicleDetails
                         <div>
                           <p className="text-xs font-black text-slate-900 uppercase">{doc.document_type}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {doc.expiry_date && <p className="text-[10px] font-bold text-slate-500 uppercase">Expires: {new Date(doc.expiry_date).toLocaleDateString()}</p>}
+                            {doc.expiry_date && <p className="text-[10px] font-bold text-slate-500 uppercase">Expiry recorded: {new Date(doc.expiry_date).toLocaleDateString()}</p>}
+                            {doc.uploaded_at && <p className="text-[10px] font-bold text-slate-400 uppercase">Uploaded: {new Date(doc.uploaded_at).toLocaleString()}</p>}
                             <span className="flex items-center gap-1 text-[9px] font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded uppercase">
-                              <Clock size={10}/> Stored
+                              <Clock size={10}/> Stored document
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button className="p-2 text-slate-300 hover:text-blue-600 transition"><Download size={16}/></button>
-                        <button className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
+                        <button
+                          onClick={() => handleDocumentDownload(doc.id)}
+                          disabled={documentActionId === doc.id}
+                          aria-label={`Download ${doc.document_type} document`}
+                          title="Download stored document"
+                          className="p-2 text-slate-300 hover:text-blue-600 transition disabled:opacity-50"
+                        >
+                          <Download size={16}/>
+                        </button>
+                        <button
+                          onClick={() => handleDocumentDelete(doc.id)}
+                          disabled={documentActionId === doc.id}
+                          aria-label={`Remove ${doc.document_type} document`}
+                          title="Remove stored document"
+                          className="p-2 text-slate-300 hover:text-red-500 transition disabled:opacity-50"
+                        >
+                          <Trash2 size={16}/>
+                        </button>
                       </div>
                     </div>
                   ))
