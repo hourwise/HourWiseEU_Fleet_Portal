@@ -6,6 +6,7 @@ import {
   CheckCheck, Clock, RefreshCw, PenSquare, X,
 } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
+import { OperationalEventHistory } from './OperationalEventHistory';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -246,7 +247,7 @@ export function MessagingHub() {
       .update({ read_at: new Date().toISOString() })
       .in('id', unread.map(m => m.id))
       .then(() => loadMessages());
-  }, [selectedThread, profile?.id]);
+  }, [selectedThread, profile?.id, messages, loadMessages]);
 
   // ── Build thread list ─────────────────────────────────────────────────────
 
@@ -354,7 +355,7 @@ export function MessagingHub() {
           </div>
           <div>
             <h2 className="text-2xl font-black text-white flex items-center gap-2">
-              Messages
+              Messages &amp; Broadcasts
               {totalUnread > 0 && (
                 <span className="text-sm bg-red-500 text-white px-2 py-0.5 rounded-full font-black">{totalUnread}</span>
               )}
@@ -514,6 +515,8 @@ export function MessagingHub() {
           )}
         </div>
       </div>
+
+      <OperationalEventHistory />
 
       {/* Compose modal */}
       {showCompose && (

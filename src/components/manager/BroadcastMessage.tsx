@@ -27,21 +27,17 @@ export function BroadcastMessage() {
     setSuccess(false);
 
     try {
-      const { error: insertError } = await supabase
-        .from('broadcasts')
-        .insert({
-          company_id: profile.company_id,
-          sent_by: profile.id,
-          content: content.trim(),
-        });
+      const { error: insertError } = await supabase.rpc('send_manager_message_with_event', {
+        p_body: content.trim(),
+      });
 
       if (insertError) throw insertError;
 
       setSuccess(true);
       setContent('');
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
-      setError(err.message || t('broadcast.errors.failed'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('broadcast.errors.failed'));
     } finally {
       setIsSending(false);
     }
