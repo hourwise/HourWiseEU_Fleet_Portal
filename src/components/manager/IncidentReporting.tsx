@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -33,12 +33,9 @@ export function IncidentReporting() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
-  useEffect(() => {
-    fetchIncidents();
-  }, [profile?.company_id]);
-
-  async function fetchIncidents() {
+  const fetchIncidents = useCallback(async () => {
     if (!profile?.company_id) return;
 
     try {
@@ -59,7 +56,11 @@ export function IncidentReporting() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [profile?.company_id]);
+
+  useEffect(() => {
+    fetchIncidents();
+  }, [fetchIncidents]);
 
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch =
@@ -165,7 +166,16 @@ export function IncidentReporting() {
         ) : (
           <div className="divide-y divide-brand-border">
             {filteredIncidents.map((incident) => (
-              <div key={incident.id} className="p-5 hover:bg-brand-dark/50 transition cursor-pointer group">
+              <div
+                key={incident.id}
+                className="p-5 hover:bg-brand-dark/50 transition cursor-pointer group"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedIncident(incident)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') setSelectedIncident(incident);
+                }}
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <div className={`mt-1 p-2 rounded-lg ${
@@ -216,10 +226,14 @@ export function IncidentReporting() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="p-2 text-slate-600 hover:text-white transition">
+                    <button
+                      onClick={(event) => { event.stopPropagation(); setSelectedIncident(incident); }}
+                      className="p-2 text-slate-600 hover:text-white transition"
+                      aria-label="Open incident details"
+                    >
                       <MoreVertical size={20} />
                     </button>
-                    <ChevronRight className="text-slate-700 group-hover:text-brand-accent transition" size={20} />
+                    <ChevronRight className="text-slate-700 group-hover:text-brand-accent transition" size={20} aria-hidden="true" />
                   </div>
                 </div>
               </div>
@@ -237,6 +251,144 @@ export function IncidentReporting() {
           }}
         />
       )}
+
+      {selectedIncident && (
+        <IncidentDetailDrawer
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
+          onSaved={async () => {
+            setSelectedIncident(null);
+            await fetchIncidents();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function IncidentDetailDrawer({
+  incident,
+  onClose,
+  onSaved,
+}: {
+  incident: Incident;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [status, setStatus] = useState(incident.status);
+  const [managerNotes, setManagerNotes] = useState(incident.manager_notes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const { error: updateError } = await supabase.rpc('update_incident_follow_up', {
+        p_incident_id: incident.id,
+        p_to_status: status,
+        p_manager_notes: managerNotes,
+        p_expected_updated_at: incident.updated_at,
+      });
+      if (updateError) throw updateError;
+      await onSaved();
+    } catch (saveError: unknown) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to update incident follow-up. Reload and try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] bg-slate-950/75 backdrop-blur-sm flex justify-end" onClick={onClose}>
+      <aside className="h-full w-full max-w-2xl overflow-y-auto bg-brand-card border-l border-brand-border shadow-2xl" onClick={event => event.stopPropagation()}>
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 p-6 bg-brand-card/95 backdrop-blur border-b border-brand-border">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Incident follow-up</p>
+            <h3 className="mt-1 text-xl font-black text-white uppercase">{incident.type}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition" aria-label="Close incident details">
+            <Plus className="rotate-45" size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-300">{error}</p>}
+
+          <div className="grid grid-cols-2 gap-4">
+            <DetailField label="Occurred" value={format(new Date(incident.occurred_at), 'PPP p')} />
+            <DetailField label="Updated" value={format(new Date(incident.updated_at), 'PPP p')} />
+            <DetailField label="Driver" value={incident.profiles?.full_name ?? 'Unknown driver'} />
+            <DetailField label="Vehicle" value={incident.vehicles?.reg_number ?? 'Not linked'} />
+            <DetailField label="Location" value={incident.location} />
+            <DetailField label="Police reference" value={incident.police_ref ?? 'Not recorded'} />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Description</p>
+            <p className="rounded-xl border border-brand-border bg-brand-dark/40 p-4 text-sm leading-relaxed text-slate-200">{incident.description}</p>
+          </div>
+
+          {incident.has_injury && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Injury details</p>
+              <p className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm leading-relaxed text-slate-200">{incident.injury_details || 'Injury recorded without additional detail.'}</p>
+            </div>
+          )}
+
+          {incident.is_third_party_involved && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Third-party involvement</p>
+              <pre className="overflow-x-auto rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs leading-relaxed text-slate-200">{JSON.stringify(incident.third_party_details ?? {}, null, 2)}</pre>
+            </div>
+          )}
+
+          {incident.photo_urls && incident.photo_urls.length > 0 && (
+            <p className="rounded-xl border border-slate-700 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">{incident.photo_urls.length} photo reference{incident.photo_urls.length === 1 ? '' : 's'} recorded. Attachment access is not established by the stored URL alone.</p>
+          )}
+
+          <div className="space-y-4 border-t border-brand-border pt-6">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Follow-up status</label>
+              <select
+                value={status}
+                onChange={event => setStatus(event.target.value)}
+                disabled={incident.status === 'closed'}
+                className="mt-2 w-full rounded-xl border border-brand-border bg-brand-dark px-4 py-3 text-sm font-bold text-slate-200 outline-none focus:border-brand-accent disabled:opacity-60"
+              >
+                <option value="reported">Reported</option>
+                <option value="investigating">Investigating</option>
+                <option value="closed">Closed</option>
+              </select>
+              {incident.status === 'closed' && <p className="mt-2 text-[11px] font-bold text-slate-500">Closed incidents are terminal in this bounded follow-up flow.</p>}
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Manager notes</label>
+              <textarea
+                value={managerNotes}
+                onChange={event => setManagerNotes(event.target.value)}
+                rows={5}
+                placeholder="Record the manager follow-up..."
+                className="mt-2 w-full rounded-xl border border-brand-border bg-brand-dark px-4 py-3 text-sm text-slate-200 outline-none focus:border-brand-accent resize-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 flex gap-3 border-t border-brand-border bg-brand-card p-6">
+          <button onClick={onClose} className="flex-1 rounded-xl border border-brand-border px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 rounded-xl bg-red-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-red-700 transition disabled:opacity-50">{saving ? 'Saving...' : 'Save follow-up'}</button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-brand-border bg-brand-dark/40 p-3">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-bold text-slate-200 break-words">{value}</p>
     </div>
   );
 }
@@ -267,7 +419,7 @@ function ReportModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: (
 
       const [vRes, dRes] = await Promise.all([
         supabase.from('vehicles').select('id, reg_number').eq('company_id', profile.company_id),
-        supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id)
+        supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver')
       ]);
 
       setVehicles(vRes.data || []);

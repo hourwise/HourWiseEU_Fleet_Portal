@@ -16,11 +16,12 @@ export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
   const { complianceSummary, loading } = useCompanyCompliance(profile?.company_id ?? undefined, 7);
 
   const stats = React.useMemo(() => {
-    if (complianceSummary.length === 0) return { avgScore: 100, totalViolations: 0 };
-    const totalScore = complianceSummary.reduce((sum, d) => sum + d.averageScore, 0);
+    const evidencedRows = complianceSummary.filter(d => d.combinedSummary.hasData);
+    if (evidencedRows.length === 0) return { avgScore: null, totalViolations: 0 };
+    const totalScore = evidencedRows.reduce((sum, d) => sum + d.averageScore, 0);
     const totalViolations = complianceSummary.reduce((sum, d) => sum + d.totalViolations, 0);
     return {
-      avgScore: Math.round(totalScore / complianceSummary.length),
+      avgScore: Math.round(totalScore / evidencedRows.length),
       totalViolations
     };
   }, [complianceSummary]);
@@ -43,8 +44,14 @@ export function ComplianceSnapshot({ onAction }: { onAction: () => void }) {
         <div className="space-y-1">
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('dashboard.manager.snapshots.avgScore')}</p>
           <div className="flex items-baseline gap-2">
-            <span className={`text-4xl font-black ${getScoreColor(stats.avgScore)}`}>{stats.avgScore}%</span>
-            <TrendingUp size={16} className="text-green-500" />
+            {stats.avgScore === null ? (
+              <span className="text-2xl font-black text-slate-300">Not assessed</span>
+            ) : (
+              <>
+                <span className={`text-4xl font-black ${getScoreColor(stats.avgScore)}`}>{stats.avgScore}%</span>
+                <TrendingUp size={16} className="text-green-500" />
+              </>
+            )}
           </div>
         </div>
 

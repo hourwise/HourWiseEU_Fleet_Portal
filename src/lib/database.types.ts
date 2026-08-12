@@ -5775,6 +5775,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_incident_follow_up: {
+        Args: {
+          p_expected_updated_at: string
+          p_incident_id: string
+          p_manager_notes: string
+          p_to_status: string
+        }
+        Returns: Json
+      }
       update_job_assignment_with_event: {
         Args: {
           p_address_text: string

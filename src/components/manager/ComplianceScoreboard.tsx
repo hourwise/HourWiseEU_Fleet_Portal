@@ -75,8 +75,8 @@ function RaiseInfringementModal({
       if (err) throw err;
       onRaised();
       onClose();
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to raise infringement.');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to raise infringement.');
       setSaving(false);
     }
   };
@@ -203,17 +203,18 @@ export function ComplianceScoreboard({ onViewSession, onOpenDriverAnalysis }: Co
         truthScore: truthSummary.averageScore,
         truthViolations: truthSummary.totalViolations,
         truthRecentViolations: truthSummary.recentViolations,
+        hasEvidence: driver.combinedSummary.hasData,
       };
     });
   }, [combinedSummary]);
 
   const overallStats = useMemo(() => {
-    const totalDrivers = driverRows.length;
-    if (totalDrivers === 0) return { avgScore: 100, totalViolations: 0, driversInViolation: 0 };
-    const totalScore = driverRows.reduce((sum, d) => sum + d.truthScore, 0);
-    const totalViolations = driverRows.reduce((sum, d) => sum + d.truthViolations, 0);
-    const driversInViolation = driverRows.filter(d => d.truthScore < 95).length;
-    return { avgScore: Math.round(totalScore / totalDrivers), totalViolations, driversInViolation };
+    const evidencedRows = driverRows.filter(driver => driver.hasEvidence);
+    if (evidencedRows.length === 0) return { avgScore: null, totalViolations: 0, driversInViolation: 0 };
+    const totalScore = evidencedRows.reduce((sum, d) => sum + d.truthScore, 0);
+    const totalViolations = evidencedRows.reduce((sum, d) => sum + d.truthViolations, 0);
+    const driversInViolation = evidencedRows.filter(d => d.truthScore < 95).length;
+    return { avgScore: Math.round(totalScore / evidencedRows.length), totalViolations, driversInViolation };
   }, [driverRows]);
 
   const sourceStats = useMemo(() => {
@@ -287,7 +288,11 @@ export function ComplianceScoreboard({ onViewSession, onOpenDriverAnalysis }: Co
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-50 rounded-lg"><TrendingUp className="w-6 h-6 text-blue-600" /></div>
-            <span className={`text-3xl font-black ${getScoreColor(overallStats.avgScore).text}`}>{overallStats.avgScore}%</span>
+            {overallStats.avgScore === null ? (
+              <span className="text-xl font-black text-slate-400">Not assessed</span>
+            ) : (
+              <span className={`text-3xl font-black ${getScoreColor(overallStats.avgScore).text}`}>{overallStats.avgScore}%</span>
+            )}
           </div>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Truth Score</p>
         </div>
@@ -347,7 +352,12 @@ export function ComplianceScoreboard({ onViewSession, onOpenDriverAnalysis }: Co
           <div className="divide-y divide-slate-100">
             {driverRows.map(driver => {
               const isExpanded = expandedDriver === driver.driverId;
-              const colors = getScoreColor(driver.truthScore);
+              const colors = driver.hasEvidence ? getScoreColor(driver.truthScore) : {
+                text: 'text-slate-500',
+                bg: 'bg-slate-300',
+                border: 'border-slate-200',
+                lightBg: 'bg-slate-50',
+              };
               const appDriver = appSummary.find((entry) => entry.driverId === driver.driverId);
               const tachoDriver = tachoSummary.find((entry) => entry.driverId === driver.driverId);
               const latestTachoReviewDate =
@@ -366,24 +376,26 @@ export function ComplianceScoreboard({ onViewSession, onOpenDriverAnalysis }: Co
                         <p className="font-bold text-slate-900 text-lg">{driver.driverName}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">
-                            {driver.truthRecentViolations.length > 0
+                            {!driver.hasEvidence
+                            ? 'No evidence'
+                            : driver.truthRecentViolations.length > 0
                             ? t('compliance.status.actionNeeded', 'Action Required')
                             : t('compliance.status.compliant', 'Compliant')}
                           </p>
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
                             driver.truthSource === 'tacho' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                           }`}>
-                            {driver.truthSource === 'tacho' ? 'Tacho Truth' : 'App Snapshot'}
+                            {!driver.hasEvidence ? 'No evidence' : driver.truthSource === 'tacho' ? 'Tacho Truth' : 'App Snapshot'}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex justify-between items-end mb-1">
-                            <span className={`text-sm font-black ${colors.text}`}>{driver.truthScore}%</span>
+                            <span className={`text-sm font-black ${colors.text}`}>{driver.hasEvidence ? `${driver.truthScore}%` : '—'}</span>
                           </div>
                           <div className="w-full bg-slate-100 rounded-full h-2">
-                            <div className={`${colors.bg} h-2 rounded-full transition-all duration-500`} style={{ width: `${driver.truthScore}%` }} />
+                            <div className={`${colors.bg} h-2 rounded-full transition-all duration-500`} style={{ width: driver.hasEvidence ? `${driver.truthScore}%` : '0%' }} />
                           </div>
                         </div>
                       </div>
