@@ -1883,6 +1883,137 @@ export type Database = {
           },
         ]
       }
+      job_stop_manager_notes: {
+        Row: {
+          company_id: string
+          note: string
+          stop_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          company_id: string
+          note: string
+          stop_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          company_id?: string
+          note?: string
+          stop_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_stop_manager_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_stop_manager_notes_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: true
+            referencedRelation: "job_stops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_stop_manager_notes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_stop_manager_notes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_stops: {
+        Row: {
+          activity: string | null
+          address_text: string
+          arrival_window_end: string | null
+          arrival_window_start: string | null
+          company_id: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          driver_notes: string | null
+          id: string
+          instructions: string | null
+          job_id: string
+          latitude: number | null
+          longitude: number | null
+          sequence: number
+          site_name: string | null
+          stop_type: string
+          updated_at: string
+        }
+        Insert: {
+          activity?: string | null
+          address_text: string
+          arrival_window_end?: string | null
+          arrival_window_start?: string | null
+          company_id: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          driver_notes?: string | null
+          id?: string
+          instructions?: string | null
+          job_id: string
+          latitude?: number | null
+          longitude?: number | null
+          sequence: number
+          site_name?: string | null
+          stop_type?: string
+          updated_at?: string
+        }
+        Update: {
+          activity?: string | null
+          address_text?: string
+          arrival_window_end?: string | null
+          arrival_window_start?: string | null
+          company_id?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          driver_notes?: string | null
+          id?: string
+          instructions?: string | null
+          job_id?: string
+          latitude?: number | null
+          longitude?: number | null
+          sequence?: number
+          site_name?: string | null
+          stop_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_stops_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_stops_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           address_text: string
@@ -2212,6 +2343,104 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "message_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_task_handlings: {
+        Row: {
+          action: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          owner_id: string | null
+          resolved_at: string | null
+          source_id: string
+          source_type: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          action?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          owner_id?: string | null
+          resolved_at?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          action?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          owner_id?: string | null
+          resolved_at?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_task_handlings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "operational_task_handlings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5787,6 +6016,14 @@ export type Database = {
           auth_code_expires_at: string
         }[]
       }
+      save_job_stops: {
+        Args: {
+          p_expected_job_updated_at: string
+          p_job_id: string
+          p_stops: Json
+        }
+        Returns: Json
+      }
       save_tachograph_finding_review: {
         Args: {
           p_company_id: string
@@ -5800,6 +6037,18 @@ export type Database = {
       }
       send_manager_message_with_event: {
         Args: { p_body: string; p_recipient_driver_id?: string }
+        Returns: Json
+      }
+      set_operational_task_handling: {
+        Args: {
+          p_action?: string
+          p_expected_updated_at?: string
+          p_note?: string
+          p_owner_id?: string
+          p_source_id: string
+          p_source_type: string
+          p_status: string
+        }
         Returns: Json
       }
       timeline_event_json: {

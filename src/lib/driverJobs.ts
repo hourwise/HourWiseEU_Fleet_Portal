@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 
 export type DriverJobAssignment = {
   id: string;
+  jobId: string;
   shiftId: string;
   sequence: number;
   status: DriverJobStatus;
@@ -15,6 +16,20 @@ export type DriverJobAssignment = {
   customerName: string | null;
   addressText: string;
   instructions: string | null;
+  stops: DriverJobStop[];
+};
+
+export type DriverJobStop = {
+  id: string;
+  sequence: number;
+  stopType: string;
+  siteName: string | null;
+  addressText: string;
+  instructions: string | null;
+  driverNotes: string | null;
+  arrivalWindowStart: string | null;
+  arrivalWindowEnd: string | null;
+  activity: string | null;
 };
 
 export type DriverJobStatus = 'published' | 'updated' | 'acknowledged' | 'started' | 'arrived' | 'completed' | 'delayed' | 'unable_to_complete' | 'vehicle_issue' | 'site_issue' | 'route_issue';
@@ -32,13 +47,26 @@ export async function fetchDriverJobAssignments(driverId: string, shiftIds: stri
   if (shiftIds.length === 0) return [];
   const { data, error } = await supabase
     .from('job_assignments')
-    .select('id, shift_id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, instructions)')
+    .select('id, shift_id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(id, reference, title, job_type, customer_name, address_text, instructions)')
     .eq('driver_id', driverId)
     .in('shift_id', shiftIds)
     .order('sequence', { ascending: true });
 
   if (error) throw new Error(error.message || 'Unable to load assigned jobs.');
-  return normaliseDriverJobRows(data);
+  const assignments = normaliseDriverJobRows(data);
+  const jobIds = assignments.map((assignment) => assignment.jobId).filter(Boolean);
+  if (jobIds.length === 0) return assignments;
+  const untyped = supabase as unknown as { from: (table: string) => { select: (fields: string) => { in: (field: string, values: string[]) => Promise<{ data: unknown[] | null; error: { message: string } | null }> } } };
+  const { data: stops, error: stopError } = await untyped.from('job_stops').select('id, job_id, sequence, stop_type, site_name, address_text, instructions, driver_notes, arrival_window_start, arrival_window_end, activity').in('job_id', jobIds);
+  if (stopError) throw new Error(stopError.message || 'Unable to load assigned stops.');
+  const stopsByJobId = new Map<string, DriverJobStop[]>();
+  for (const row of stops ?? []) {
+    const value = row as Record<string, unknown>;
+    if (typeof value.job_id !== 'string' || typeof value.id !== 'string' || typeof value.sequence !== 'number' || typeof value.address_text !== 'string') continue;
+    const stop: DriverJobStop = { id: value.id, sequence: value.sequence, stopType: typeof value.stop_type === 'string' ? value.stop_type : 'service', siteName: typeof value.site_name === 'string' ? value.site_name : null, addressText: value.address_text, instructions: typeof value.instructions === 'string' ? value.instructions : null, driverNotes: typeof value.driver_notes === 'string' ? value.driver_notes : null, arrivalWindowStart: typeof value.arrival_window_start === 'string' ? value.arrival_window_start : null, arrivalWindowEnd: typeof value.arrival_window_end === 'string' ? value.arrival_window_end : null, activity: typeof value.activity === 'string' ? value.activity : null };
+    stopsByJobId.set(value.job_id, [...(stopsByJobId.get(value.job_id) ?? []), stop]);
+  }
+  return assignments.map((assignment) => ({ ...assignment, stops: (stopsByJobId.get(assignment.jobId) ?? []).sort((left, right) => left.sequence - right.sequence) }));
 }
 
 export async function fetchDriverVehicleActions(driverId: string): Promise<DriverVehicleAction[]> {
@@ -72,6 +100,7 @@ export function normaliseDriverJobRows(rows: unknown): DriverJobAssignment[] {
     if (typeof job.reference !== 'string' || typeof job.title !== 'string' || typeof job.address_text !== 'string') return [];
     return [{
       id: row.id,
+      jobId: typeof job.id === 'string' ? job.id : '',
       shiftId: row.shift_id,
       sequence: row.sequence,
       status,
@@ -85,6 +114,7 @@ export function normaliseDriverJobRows(rows: unknown): DriverJobAssignment[] {
       customerName: nullableString(job.customer_name),
       addressText: job.address_text,
       instructions: nullableString(job.instructions),
+      stops: [],
     } satisfies DriverJobAssignment];
   });
 }

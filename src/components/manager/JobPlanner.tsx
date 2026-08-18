@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Ban, Briefcase, Building2, ClipboardList, Clock, FileText, Loader2, MapPin, Pencil, Phone, RefreshCw, Save, Send, User, X } from 'lucide-react';
+import { Ban, Briefcase, Building2, ClipboardList, Clock, FileText, Loader2, MapPin, Pencil, Phone, RefreshCw, Save, Send, User, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +23,7 @@ import {
 import { OperationalAcknowledgementBadge } from './OperationalAcknowledgementBadge';
 import { createAssetAssignmentOverride, fetchAssetReadinessSnapshot } from '../../lib/assetReadinessLoad';
 import type { AssetReadinessResult } from '../../lib/assetCompliance';
+import { buildRoutePlan, type PlannedStop, type VehicleRoutingProfile } from '../../lib/routePlanning';
 
 interface ShiftOption {
   id: string;
@@ -38,7 +39,7 @@ interface ShiftOption {
 // lives on the job row the driver read policy can expose, so capturing private notes
 // through it would leak them to the driver-facing read model. Collection stays deferred
 // until the backend provides a manager-only storage/read boundary.
-const ASSIGNMENT_SELECT = 'id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
+const ASSIGNMENT_SELECT = 'id, vehicle_id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(id, updated_at, reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
 
 interface JobPlannerProps {
   /** Shift preselected from the rota via the `shift` query parameter, if any. */
@@ -556,8 +557,48 @@ function AssignmentCard({ assignment, onEdit, onCancel, actionPending, acknowled
         {job?.contact_name || job?.contact_phone ? <p className="flex items-center gap-2"><User size={14} className="shrink-0 text-slate-500" />{job.contact_name ?? 'Contact'}{job.contact_phone ? <span className="flex items-center gap-1"><Phone size={12} className="text-slate-500" />{job.contact_phone}</span> : null}</p> : null}
         {job?.instructions ? <p className="flex items-start gap-2"><FileText size={14} className="mt-0.5 shrink-0 text-slate-500" />{job.instructions}</p> : null}
       </div>
+      {job && !isCancelled ? <AssignmentRouteEditor jobId={job.id} jobUpdatedAt={job.updated_at} fallbackAddress={job.address_text} vehicleProfile={assignment.vehicle_id ? { vehicleId: assignment.vehicle_id, profileVersion: assignment.updated_at, vehicleType: null } : null} /> : null}
     </li>
   );
+}
+
+function AssignmentRouteEditor({ jobId, jobUpdatedAt, fallbackAddress, vehicleProfile }: { jobId: string; jobUpdatedAt: string; fallbackAddress: string; vehicleProfile: VehicleRoutingProfile | null }) {
+  const [open, setOpen] = useState(false);
+  const [stops, setStops] = useState<PlannedStop[]>([]);
+  const [draft, setDraft] = useState<PlannedStop>({ id: 'draft', sequence: 1, stopType: 'service', siteName: null, addressText: fallbackAddress, latitude: null, longitude: null, instructions: null, driverNotes: null, arrivalWindowStart: null, arrivalWindowEnd: null, activity: null, managerNotes: null });
+  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState(jobUpdatedAt);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true); setMessage(null);
+    try {
+      const { data, error } = await supabase.from('job_stops').select('id, sequence, stop_type, site_name, address_text, latitude, longitude, instructions, driver_notes, arrival_window_start, arrival_window_end, activity').eq('job_id', jobId).order('sequence');
+      if (error) throw error;
+      setStops(((data ?? []) as Array<Record<string, unknown>>).map((row) => ({ id: String(row.id), sequence: Number(row.sequence), stopType: (row.stop_type as PlannedStop['stopType']) ?? 'service', siteName: typeof row.site_name === 'string' ? row.site_name : null, addressText: String(row.address_text ?? ''), latitude: typeof row.latitude === 'number' ? row.latitude : null, longitude: typeof row.longitude === 'number' ? row.longitude : null, instructions: typeof row.instructions === 'string' ? row.instructions : null, driverNotes: typeof row.driver_notes === 'string' ? row.driver_notes : null, arrivalWindowStart: typeof row.arrival_window_start === 'string' ? row.arrival_window_start : null, arrivalWindowEnd: typeof row.arrival_window_end === 'string' ? row.arrival_window_end : null, activity: typeof row.activity === 'string' ? row.activity : null })));
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to load stops.'); } finally { setLoading(false); }
+  };
+
+  // The loader is local to this editor instance and intentionally runs only when the panel opens.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) void load(); }, [open, jobId]);
+  const routePlan = buildRoutePlan(stops.length > 0 ? stops : [{ ...draft, id: 'legacy-location', sequence: 1 }], vehicleProfile);
+  const updateStop = (id: string, field: keyof PlannedStop, value: string) => setStops((current) => current.map((stop) => stop.id === id ? { ...stop, [field]: field === 'sequence' ? Number(value) : value || null } : stop));
+  const addStop = () => { const next = { ...draft, id: `draft-${Date.now()}`, sequence: stops.length + 1 }; setStops((current) => [...current, next]); setDraft({ ...draft, sequence: stops.length + 2, addressText: '' }); };
+  const moveStop = (index: number, direction: -1 | 1) => { const nextIndex = index + direction; if (nextIndex < 0 || nextIndex >= stops.length) return; const next = [...stops]; [next[index], next[nextIndex]] = [next[nextIndex], next[index]]; setStops(next.map((stop, position) => ({ ...stop, sequence: position + 1 }))); };
+  const removeStop = (id: string) => setStops((current) => current.filter((stop) => stop.id !== id).map((stop, index) => ({ ...stop, sequence: index + 1 })));
+  const save = async () => {
+    setSaving(true); setMessage(null);
+    try {
+      const { data, error } = await supabase.rpc('save_job_stops', { p_job_id: jobId, p_expected_job_updated_at: loadedUpdatedAt, p_stops: stops.map((stop) => ({ sequence: stop.sequence, stop_type: stop.stopType, site_name: stop.siteName, address_text: stop.addressText, latitude: stop.latitude, longitude: stop.longitude, instructions: stop.instructions, driver_notes: stop.driverNotes, arrival_window_start: stop.arrivalWindowStart, arrival_window_end: stop.arrivalWindowEnd, activity: stop.activity, manager_notes: stop.managerNotes })) });
+      if (error) throw error;
+      const result = data as { updated_at?: string } | null;
+      if (result?.updated_at) setLoadedUpdatedAt(result.updated_at);
+      setMessage('Ordered stops saved. Any route estimate is now stale until a configured provider recalculates it.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to save stops. Refresh and try again.'); } finally { setSaving(false); }
+  };
+  return <div className="mt-4 border-t border-white/5 pt-3"><button type="button" onClick={() => setOpen((value) => !value)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-accent">{open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}Route stops · {stops.length || 'not loaded'}<span className="ml-2 text-slate-500">{routePlan.state.replace('_', ' ')}</span></button>{open ? <div className="mt-3 space-y-3 rounded-xl bg-black/10 p-3"><p className="text-xs text-slate-400">Stops are ordered operational records. {routePlan.message}</p>{loading ? <p className="text-xs text-slate-400">Loading stops…</p> : stops.map((stop, index) => <div key={stop.id} className="rounded-lg border border-white/5 p-3"><div className="flex items-center gap-2"><span className="w-6 text-xs font-black text-brand-accent">{stop.sequence}</span><input value={stop.siteName ?? ''} onChange={(event) => updateStop(stop.id, 'siteName', event.target.value)} placeholder="Site name" className="min-w-0 flex-1 rounded bg-white/5 px-2 py-1 text-xs text-white" /><button type="button" onClick={() => moveStop(index, -1)} aria-label="Move stop up" className="text-slate-400 disabled:opacity-30" disabled={index === 0}><ChevronUp size={14} /></button><button type="button" onClick={() => moveStop(index, 1)} aria-label="Move stop down" className="text-slate-400 disabled:opacity-30" disabled={index === stops.length - 1}><ChevronDown size={14} /></button><button type="button" onClick={() => removeStop(stop.id)} aria-label="Remove stop" className="text-red-300"><X size={14} /></button></div><input value={stop.addressText} onChange={(event) => updateStop(stop.id, 'addressText', event.target.value)} placeholder="Address or clear location" className="mt-2 w-full rounded bg-white/5 px-2 py-1 text-xs text-white" /><input value={stop.instructions ?? ''} onChange={(event) => updateStop(stop.id, 'instructions', event.target.value)} placeholder="Driver instructions" className="mt-2 w-full rounded bg-white/5 px-2 py-1 text-xs text-white" /></div>)}<div className="flex flex-wrap gap-2"><input value={draft.siteName ?? ''} onChange={(event) => setDraft({ ...draft, siteName: event.target.value })} placeholder="New site" className="rounded bg-white/5 px-2 py-1 text-xs text-white" /><input value={draft.addressText} onChange={(event) => setDraft({ ...draft, addressText: event.target.value })} placeholder="New stop address" className="min-w-[220px] rounded bg-white/5 px-2 py-1 text-xs text-white" /><button type="button" onClick={addStop} disabled={!draft.addressText.trim()} className="rounded bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50">Add stop</button><button type="button" onClick={() => void save()} disabled={saving || loading || stops.length === 0} className="inline-flex items-center gap-2 rounded bg-brand-accent px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50"><Save size={12} />{saving ? 'Saving' : 'Save route'}</button></div>{message ? <p className="text-xs font-bold text-amber-200">{message}</p> : null}</div> : null}</div>;
 }
 
 function AssignmentStatusBadge({ status }: { status: string }) {

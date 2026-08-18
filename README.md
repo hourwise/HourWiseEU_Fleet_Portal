@@ -23,7 +23,8 @@ Implemented or in progress:
 - Source-of-truth planning docs and ADRs for rota, events, multi-site, RBAC, Atlas, reporting, and asset compliance
 - Driver operational home now reads assigned jobs and vehicle-check actions with explicit no-data states
 - Deterministic asset readiness summary and Atlas operations briefing on the manager dashboard
-- Batch 10 governed asset assignment, job execution transitions, deterministic manager task queue, and expanded Atlas operational signals (migration pending deployment; see `docs/batch10-governed-operations-2026-08-14.md`)
+- Batch 10 governed asset assignment, job execution transitions, deterministic manager task queue, and expanded Atlas operational signals (deployed; see `docs/batch10-governed-operations-2026-08-14.md`)
+- Batch 11 governed multi-stop job planning, event-backed task handling, and deterministic compliance forecasting (deployed; see `docs/batch11-route-resolution-compliance-2026-08-18.md`)
 
 ## Tech Stack
 

@@ -11,6 +11,7 @@
 
 export interface JobAssignmentRow {
   id: string;
+  vehicle_id?: string | null;
   sequence: number;
   status: string;
   updated_at: string;
@@ -18,6 +19,8 @@ export interface JobAssignmentRow {
   planned_departure_at: string | null;
   expected_duration_minutes: number | null;
   jobs: {
+    id: string;
+    updated_at: string;
     reference: string;
     title: string;
     job_type: string;

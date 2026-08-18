@@ -361,6 +361,10 @@ function DriverJobsPanel({
                     <h3 className="mt-2 text-base font-black text-slate-950">{job.reference} · {job.title}</h3>
                     <p className="mt-1 text-sm font-medium text-slate-700">{job.customerName ? `${job.customerName} · ` : ''}{job.addressText}</p>
                     {job.instructions ? <p className="mt-2 text-sm text-slate-600">{job.instructions}</p> : null}
+                    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ordered stops</p>
+                      {job.stops.length === 0 ? <p className="text-xs font-bold text-slate-500">No separate stop records are attached; the job address is the only confirmed location. No live next-stop or ETA claim is made.</p> : job.stops.map((stop) => <div key={stop.id} className="rounded-xl border border-slate-100 bg-slate-50 p-2.5"><div className="flex flex-wrap items-center gap-2"><Badge tone="neutral">Stop {stop.sequence}</Badge><Badge tone="neutral">{stop.stopType}</Badge>{stop.siteName ? <span className="text-xs font-black text-slate-700">{stop.siteName}</span> : null}</div><p className="mt-1 text-xs font-bold text-slate-700">{stop.addressText}</p>{stop.activity ? <p className="mt-1 text-xs text-slate-500">{stop.activity}</p> : null}{stop.instructions || stop.driverNotes ? <p className="mt-1 text-xs text-slate-600">{stop.instructions ?? stop.driverNotes}</p> : null}{stop.arrivalWindowStart || stop.arrivalWindowEnd ? <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Window: {formatPlannedWindow(stop.arrivalWindowStart, stop.arrivalWindowEnd)}</p> : null}</div>)}
+                    </div>
                   </div>
                   <div className="shrink-0 text-left md:text-right">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Planned window</p>
