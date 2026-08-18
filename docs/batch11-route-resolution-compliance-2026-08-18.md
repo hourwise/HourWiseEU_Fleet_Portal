@@ -41,7 +41,7 @@ Status: deployed to the linked Supabase project and verified on 2026-08-18.
 - `supabase db push --dry-run`: passed before deployment.
 - `supabase db push`: applied successfully.
 - Database types regenerated from the live schema.
-- Full test/build/lint validation remains part of the final handoff; the repository’s known full-lint baseline is 103 errors and 7 warnings outside the Batch 11 changed-file scope.
+- Full rule/regression suite: passed, 43 files / 295 tests. Production build: passed. Changed-file lint: passed. Full repository lint remains at the known baseline of 103 errors and 7 warnings in unrelated pre-existing files.
 
 ## Known limitations
 
