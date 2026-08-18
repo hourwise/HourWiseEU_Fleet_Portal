@@ -28,6 +28,78 @@ export type AtlasBriefingInput = {
   forecastActionItems?: number;
 };
 
+export type AtlasMorningSectionKey = 'yesterday' | 'today' | 'tomorrow' | 'next30';
+
+export type AtlasMorningSignal = {
+  signalKey: string;
+  fingerprint: string;
+  section: AtlasMorningSectionKey;
+  severity: AtlasBriefingItem['severity'];
+  title: string;
+  detail: string;
+  sourceLabel: string;
+  href: string;
+  sourceUpdatedAt?: string | null;
+};
+
+export type AtlasMorningObservation = {
+  isNew: boolean;
+  firstSeenAt?: string | null;
+  lastSeenAt?: string | null;
+};
+
+export type AtlasMorningItem = AtlasBriefingItem & {
+  signalKey: string;
+  section: AtlasMorningSectionKey;
+  isNew: boolean;
+  firstSeenAt: string | null;
+};
+
+export type AtlasMorningBriefing = {
+  generatedAt: string;
+  sections: Record<AtlasMorningSectionKey, AtlasMorningItem[]>;
+  totalItems: number;
+};
+
+const MORNING_SECTIONS: AtlasMorningSectionKey[] = ['yesterday', 'today', 'tomorrow', 'next30'];
+
+/**
+ * Builds the Atlas morning briefing from already-projected Portal state. The
+ * function only sorts, deduplicates, and applies persisted fingerprints; it
+ * performs no inference and has no provider/model dependency.
+ */
+export function buildAtlasMorningBriefing(
+  signals: readonly AtlasMorningSignal[],
+  observations: ReadonlyMap<string, AtlasMorningObservation> = new Map(),
+  generatedAt = new Date(),
+): AtlasMorningBriefing {
+  const bySignal = new Map<string, AtlasMorningSignal>();
+  for (const signal of signals) {
+    const existing = bySignal.get(signal.signalKey);
+    if (!existing || severityRank(signal.severity) < severityRank(existing.severity)) bySignal.set(signal.signalKey, signal);
+  }
+
+  const sections = Object.fromEntries(MORNING_SECTIONS.map((section) => [section, [] as AtlasMorningItem[]])) as Record<AtlasMorningSectionKey, AtlasMorningItem[]>;
+  for (const signal of bySignal.values()) {
+    const observation = observations.get(signal.signalKey);
+    sections[signal.section].push({
+      id: signal.signalKey,
+      signalKey: signal.signalKey,
+      section: signal.section,
+      severity: signal.severity,
+      title: signal.title,
+      detail: signal.detail,
+      sourceLabel: signal.sourceLabel,
+      href: signal.href,
+      isNew: observation?.isNew ?? true,
+      firstSeenAt: observation?.firstSeenAt ?? null,
+    });
+  }
+
+  for (const section of MORNING_SECTIONS) sections[section].sort(compareMorningItems);
+  return { generatedAt: generatedAt.toISOString(), sections, totalItems: bySignal.size };
+}
+
 export function buildAtlasBriefing(input: AtlasBriefingInput): AtlasBriefingItem[] {
   const items: AtlasBriefingItem[] = [];
   if (input.prohibitedAssets > 0) items.push(item('assets-prohibited', 'critical', `${input.prohibitedAssets} asset${plural(input.prohibitedAssets)} cannot be assigned`, 'Vehicle readiness has a prohibited result from VOR or an unresolved safety defect.', 'Asset readiness', '/dashboard?workspace=fleet&fleet=vehicles'));
@@ -55,4 +127,15 @@ function item(id: string, severity: AtlasBriefingItem['severity'], title: string
 
 function plural(value: number): string {
   return value === 1 ? '' : 's';
+}
+
+function severityRank(value: AtlasBriefingItem['severity']): number {
+  return value === 'critical' ? 0 : value === 'warning' ? 1 : 2;
+}
+
+function compareMorningItems(left: AtlasMorningItem, right: AtlasMorningItem): number {
+  return severityRank(left.severity) - severityRank(right.severity)
+    || Number(right.isNew) - Number(left.isNew)
+    || left.title.localeCompare(right.title)
+    || left.signalKey.localeCompare(right.signalKey);
 }

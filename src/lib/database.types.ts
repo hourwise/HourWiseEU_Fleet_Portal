@@ -204,6 +204,70 @@ export type Database = {
           },
         ]
       }
+      atlas_signal_observations: {
+        Row: {
+          company_id: string
+          created_by: string
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          last_source_updated_at: string | null
+          section: string
+          severity: string
+          signal_key: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_by: string
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          last_source_updated_at?: string | null
+          section: string
+          severity: string
+          signal_key: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_by?: string
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          last_source_updated_at?: string | null
+          section?: string
+          severity?: string
+          signal_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atlas_signal_observations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_signal_observations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "atlas_signal_observations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_rates: {
         Row: {
           base_rate: number
@@ -1769,6 +1833,7 @@ export type Database = {
           sequence: number
           shift_id: string
           status: Database["public"]["Enums"]["job_assignment_status"]
+          trailer_id: string | null
           updated_at: string
           vehicle_id: string | null
         }
@@ -1788,6 +1853,7 @@ export type Database = {
           sequence?: number
           shift_id: string
           status?: Database["public"]["Enums"]["job_assignment_status"]
+          trailer_id?: string | null
           updated_at?: string
           vehicle_id?: string | null
         }
@@ -1807,6 +1873,7 @@ export type Database = {
           sequence?: number
           shift_id?: string
           status?: Database["public"]["Enums"]["job_assignment_status"]
+          trailer_id?: string | null
           updated_at?: string
           vehicle_id?: string | null
         }
@@ -1875,10 +1942,130 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_assignments_trailer_id_fkey"
+            columns: ["trailer_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "job_assignments_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_evidence: {
+        Row: {
+          company_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          job_assignment_id: string
+          job_id: string
+          metadata: Json
+          outcome: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          evidence_type: string
+          id?: string
+          job_assignment_id: string
+          job_id: string
+          metadata?: Json
+          outcome: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          evidence_type?: string
+          id?: string
+          job_assignment_id?: string
+          job_id?: string
+          metadata?: Json
+          outcome?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_evidence_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_job_assignment_id_fkey"
+            columns: ["job_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "job_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_evidence_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_evidence_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5751,6 +5938,14 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_trailer_to_job_assignment: {
+        Args: {
+          p_assignment_id: string
+          p_expected_updated_at: string
+          p_trailer_id: string
+        }
+        Returns: Json
+      }
       can_access_defect_photo_object: {
         Args: { p_name: string }
         Returns: boolean
@@ -5842,6 +6037,42 @@ export type Database = {
           p_title: string
         }
         Returns: Json
+      }
+      create_job_evidence: {
+        Args: {
+          p_evidence_type: string
+          p_job_assignment_id: string
+          p_metadata?: Json
+          p_outcome: string
+          p_source?: string
+          p_storage_path: string
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          job_assignment_id: string
+          job_id: string
+          metadata: Json
+          outcome: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "job_evidence"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       current_actor_company_id: { Args: never; Returns: string }
       current_actor_legacy_role: { Args: never; Returns: string }
@@ -6009,6 +6240,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_job_evidence: {
+        Args: {
+          p_evidence_id: string
+          p_expected_updated_at?: string
+          p_review_notes?: string
+          p_review_status: string
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          job_assignment_id: string
+          job_id: string
+          metadata: Json
+          outcome: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "job_evidence"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       rotate_company_auth_code: {
         Args: never
         Returns: {
@@ -6050,6 +6315,15 @@ export type Database = {
           p_status: string
         }
         Returns: Json
+      }
+      sync_atlas_signal_observations: {
+        Args: { p_signals: Json }
+        Returns: {
+          first_seen_at: string
+          is_new: boolean
+          last_seen_at: string
+          signal_key: string
+        }[]
       }
       timeline_event_json: {
         Args: {

@@ -5,7 +5,8 @@ import { supabase } from '../../lib/supabase';
 import { fetchAssetReadinessSnapshot } from '../../lib/assetReadinessLoad';
 import { fetchAtlasOperationsBriefing } from '../../lib/atlasOperationalLoad';
 import type { AssetReadinessResult } from '../../lib/assetCompliance';
-import type { AtlasBriefingItem } from '../../lib/atlasBriefing';
+import type { AtlasBriefingItem, AtlasMorningBriefing, AtlasMorningSectionKey } from '../../lib/atlasBriefing';
+import { driverForecastNeedsAction, fetchDriverComplianceForecast, type DriverComplianceForecastItem } from '../../lib/driverComplianceForecast';
 import { buildComplianceForecast, forecastNeedsAction, type ComplianceForecastItem, type ForecastHorizon } from '../../lib/complianceForecast';
 
 export function AssetReadinessPanel() {
@@ -57,7 +58,7 @@ export function AssetReadinessPanel() {
 
 export function AtlasOperationsBriefing() {
   const { profile } = useAuth();
-  const [items, setItems] = useState<AtlasBriefingItem[]>([]);
+  const [briefing, setBriefing] = useState<AtlasMorningBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +68,7 @@ export function AtlasOperationsBriefing() {
     setLoading(true);
     setError(null);
     void fetchAtlasOperationsBriefing(profile.company_id).then((result) => {
-      if (!cancelled) setItems(result);
+      if (!cancelled) setBriefing(result);
     }).catch((loadError: unknown) => {
       if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'Unable to load the operations briefing.');
     }).finally(() => {
@@ -81,10 +82,37 @@ export function AtlasOperationsBriefing() {
       <div className="absolute right-0 top-0 p-5 opacity-10"><Sparkles size={96} /></div>
       <div className="relative"><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-hw-cyan-500" /><p className="text-[10px] font-black uppercase tracking-[0.22em] text-hw-cyan-500">Atlas operations briefing</p></div><h4 className="mt-1 text-lg font-bold text-hw-white">Deterministic attention queue</h4><p className="mt-1 max-w-xl text-xs leading-relaxed text-hw-slate-300">Structured Portal signals only. Each item links to its source workspace; no generated operational facts are used.</p>
         {error ? <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</div> : null}
-        {loading ? <div className="mt-5 flex items-center gap-2 text-xs font-bold text-hw-slate-300"><Loader2 className="h-4 w-4 animate-spin" /> Building briefing from Portal data...</div> : items.length === 0 ? <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-xs font-bold text-hw-slate-300"><HelpCircle className="h-4 w-4 text-hw-cyan-500" /> No attention item was returned from the current data set.</div> : <div className="relative mt-5 space-y-2">{items.map((item) => <a key={item.id} href={item.href} className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"><div className="flex gap-3"><BriefingIcon severity={item.severity} /><div><p className="text-sm font-bold text-hw-white">{item.title}</p><p className="mt-1 text-xs leading-relaxed text-hw-slate-300">{item.detail}</p><p className="mt-2 text-[9px] font-black uppercase tracking-widest text-hw-slate-500">Source: {item.sourceLabel}</p></div></div><ExternalLink className="mt-1 h-4 w-4 shrink-0 text-hw-slate-500" /></a>)}</div>}
+        {loading ? <div className="mt-5 flex items-center gap-2 text-xs font-bold text-hw-slate-300"><Loader2 className="h-4 w-4 animate-spin" /> Building briefing from Portal data...</div> : !briefing || briefing.totalItems === 0 ? <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-xs font-bold text-hw-slate-300"><HelpCircle className="h-4 w-4 text-hw-cyan-500" /> No attention item was returned from the current data set.</div> : <div className="relative mt-5 grid gap-3 xl:grid-cols-2">{morningSections.map((section) => <MorningSection key={section.key} label={section.label} items={briefing.sections[section.key]} />)}</div>}
       </div>
     </section>
   );
+}
+
+const morningSections: Array<{ key: AtlasMorningSectionKey; label: string }> = [
+  { key: 'yesterday', label: 'Yesterday · unresolved carry-over' },
+  { key: 'today', label: 'Today · work and exceptions' },
+  { key: 'tomorrow', label: 'Tomorrow · assignment conflicts' },
+  { key: 'next30', label: 'Next 30 days · new warnings' },
+];
+
+function MorningSection({ label, items }: { label: string; items: AtlasMorningBriefing['sections'][AtlasMorningSectionKey] }) {
+  return <div className="rounded-xl border border-white/10 bg-white/5 p-3"><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-widest text-hw-cyan-500">{label}</p><span className="text-[10px] font-bold text-hw-slate-500">{items.length}</span></div>{items.length === 0 ? <p className="mt-3 text-xs text-hw-slate-500">No current signal.</p> : <div className="mt-3 space-y-2">{items.slice(0, 8).map((item) => <a key={item.id} href={item.href} className="flex items-start justify-between gap-3 rounded-lg border border-white/10 bg-hw-navy-950/40 p-3 transition hover:bg-white/10"><div className="flex gap-3"><BriefingIcon severity={item.severity} /><div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-hw-white">{item.title}</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${item.isNew ? 'bg-hw-cyan-500/20 text-hw-cyan-300' : 'bg-white/10 text-hw-slate-400'}`}>{item.isNew ? 'new' : 'known'}</span></div><p className="mt-1 text-xs leading-relaxed text-hw-slate-300">{item.detail}</p><p className="mt-2 text-[9px] font-black uppercase tracking-widest text-hw-slate-500">Source: {item.sourceLabel}</p></div></div><ExternalLink className="mt-1 h-4 w-4 shrink-0 text-hw-slate-500" /></a>)}</div>}</div>;
+}
+
+export function DriverComplianceForecastPanel() {
+  const { profile } = useAuth();
+  const [items, setItems] = useState<DriverComplianceForecastItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    let cancelled = false;
+    setLoading(true); setError(null);
+    void fetchDriverComplianceForecast(profile.company_id).then((result) => { if (!cancelled) setItems(result); }).catch((loadError: unknown) => { if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'Unable to load driver compliance forecast.'); }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [profile?.company_id]);
+  const actionItems = items.filter(driverForecastNeedsAction);
+  return <section className="rounded-2xl border border-hw-blue-500/30 bg-hw-navy-900 p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.22em] text-hw-cyan-500">Driver compliance forecast</p><h4 className="mt-1 text-lg font-bold text-hw-white">Licence, CPC/DQC, and medical evidence</h4><p className="mt-1 text-xs leading-relaxed text-hw-slate-400">Profile licence/CPC dates and recorded medical documents only. Future assignment conflicts are planning warnings, not automatic illegality findings.</p></div><ShieldAlert className="h-6 w-6 shrink-0 text-hw-cyan-500" /></div>{error ? <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</p> : loading ? <p className="mt-5 text-xs text-hw-slate-400">Building driver evidence forecast…</p> : <><p className="mt-4 text-xs font-bold text-hw-slate-400">{actionItems.length} item(s) meet the action threshold; missing evidence is shown separately.</p><div className="mt-4 space-y-2">{actionItems.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-hw-navy-950/50 p-3"><div><p className="text-sm font-bold text-hw-white">{item.driverLabel} · {item.label}</p><p className="mt-1 text-xs text-hw-slate-400">{item.status === 'missing' ? 'Evidence missing' : item.status === 'expired' ? `Expired ${Math.abs(item.daysRemaining ?? 0)} day(s) ago` : `Due in ${item.daysRemaining ?? 'unknown'} day(s)`}{item.planningRisk !== 'none' ? ' · future planning risk flagged' : ''}</p></div><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-hw-slate-300">{item.status.replace('_', ' ')}</span></div>)}{actionItems.length === 0 ? <p className="text-xs text-hw-slate-400">No driver compliance action item is currently projected.</p> : null}</div></>}</section>;
 }
 
 export function FleetComplianceForecastPanel() {

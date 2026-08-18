@@ -17,6 +17,7 @@ export type ComplianceForecastItem = {
   severity: ForecastSeverity;
   missingEvidence: boolean;
   planningRisk: 'none' | 'planned_after_expiry';
+  planningConflictDates: string[];
 };
 
 export type ForecastAssignment = { id: string; vehicleId: string | null; plannedDate: string | null };
@@ -30,7 +31,7 @@ export function buildComplianceForecast(evidence: AssetComplianceEvidence, now =
     { type: 'mot', label: evidence.kind === 'trailer' ? 'Annual test' : 'MOT', value: evidence.motDueDate, required: true },
     { type: 'pmi', label: 'PMI/service', value: evidence.pmiDueDate, required: true },
     ...(evidence.kind === 'vehicle' ? [{ type: 'tacho_calibration' as const, label: 'Tachograph calibration', value: evidence.tachoCalibrationDue, required: true }] : []),
-    ...(evidence.kind === 'vehicle' ? [{ type: 'loler' as const, label: 'LOLER inspection', value: evidence.lolerDueDate, required: false }] : []),
+    ...(evidence.lolerDueDate ? [{ type: 'loler' as const, label: 'LOLER inspection', value: evidence.lolerDueDate, required: false }] : []),
     { type: 'insurance', label: 'Insurance', value: evidence.insuranceExpiry, required: true },
   ];
   return dateEvidence.map((item) => evaluateDate(evidence, item, now, assignments));
@@ -38,15 +39,16 @@ export function buildComplianceForecast(evidence: AssetComplianceEvidence, now =
 
 function evaluateDate(evidence: AssetComplianceEvidence, item: DateEvidence, now: Date, assignments: readonly ForecastAssignment[]): ComplianceForecastItem {
   const id = `${evidence.id}:${item.type}`;
-  if (!item.value) return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: null, daysRemaining: null, status: item.required ? 'missing' : 'unknown', horizon: 90, severity: item.required ? 'medium' : 'info', missingEvidence: item.required, planningRisk: 'none' };
+  if (!item.value) return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: null, daysRemaining: null, status: item.required ? 'missing' : 'unknown', horizon: 90, severity: item.required ? 'medium' : 'info', missingEvidence: item.required, planningRisk: 'none', planningConflictDates: [] };
   const due = new Date(item.value);
-  if (Number.isNaN(due.getTime())) return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: item.value, daysRemaining: null, status: 'unknown', horizon: 90, severity: 'info', missingEvidence: false, planningRisk: 'none' };
+  if (Number.isNaN(due.getTime())) return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: item.value, daysRemaining: null, status: 'unknown', horizon: 90, severity: 'info', missingEvidence: false, planningRisk: 'none', planningConflictDates: [] };
   const daysRemaining = calendarDaysBetween(startOfDay(now), startOfDay(due));
   const status: ForecastEvidenceStatus = daysRemaining < 0 ? 'expired' : daysRemaining <= 90 ? 'expiring' : 'known_valid';
   const horizon: ForecastHorizon = daysRemaining < 0 ? 'overdue' : HORIZONS.find((value) => typeof value === 'number' && daysRemaining <= value) ?? 90;
   const severity: ForecastSeverity = daysRemaining < 0 ? 'critical' : daysRemaining <= 14 ? 'high' : daysRemaining <= 60 ? 'medium' : 'info';
-  const planningRisk = assignments.some((assignment) => assignment.vehicleId === evidence.id && assignment.plannedDate && assignment.plannedDate > item.value!) ? 'planned_after_expiry' : 'none';
-  return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: item.value, daysRemaining, status, horizon, severity, missingEvidence: false, planningRisk };
+  const planningConflictDates = assignments.filter((assignment) => assignment.vehicleId === evidence.id).map((assignment) => assignment.plannedDate).filter((date): date is string => Boolean(date && date > item.value!));
+  const planningRisk = planningConflictDates.length > 0 ? 'planned_after_expiry' : 'none';
+  return { id, assetId: evidence.id, assetLabel: evidence.label, evidenceType: item.type, label: item.label, dueDate: item.value, daysRemaining, status, horizon, severity, missingEvidence: false, planningRisk, planningConflictDates };
 }
 
 export function forecastNeedsAction(item: ComplianceForecastItem): boolean {

@@ -49,6 +49,7 @@ const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre')
 const TachoComplianceWorkspace = lazy(() => import('./tachograph/TachoComplianceWorkspace').then(m => ({ default: m.TachoComplianceWorkspace })));
 const AssetReadinessPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AssetReadinessPanel })));
 const FleetComplianceForecastPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.FleetComplianceForecastPanel })));
+const DriverComplianceForecastPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.DriverComplianceForecastPanel })));
 const AtlasOperationsBriefing = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AtlasOperationsBriefing })));
 const ManagerOperationalTaskQueue = lazy(() => import('./ManagerOperationalTaskQueue').then(m => ({ default: m.ManagerOperationalTaskQueue })));
 
@@ -516,6 +517,7 @@ export function ManagerDashboard() {
                         <ManagerOperationalTaskQueue />
                         <AssetReadinessPanel />
                         <FleetComplianceForecastPanel />
+                        <DriverComplianceForecastPanel />
                         <BroadcastMessage />
 
                         <div className="relative group overflow-hidden">

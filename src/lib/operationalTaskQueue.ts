@@ -2,6 +2,7 @@ import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
 import type { AssetReadinessResult } from './assetCompliance';
 import { supabase } from './supabase';
 import { fetchOperationalTaskHandlings, type OperationalTaskHandling } from './operationalTaskHandling';
+import { driverForecastNeedsAction, type DriverComplianceForecastItem, fetchDriverComplianceForecast } from './driverComplianceForecast';
 
 export type OperationalTaskSeverity = 'critical' | 'high' | 'medium' | 'info';
 export type OperationalTaskCategory = 'jobs' | 'drivers' | 'fleet' | 'compliance';
@@ -29,16 +30,18 @@ export type OperationalTaskInput = {
   defects?: Array<{ id: string; reg_number: string; check_status: string | null; defect_lifecycle_status: string | null; defect_details: string | null; created_at: string | null }>;
   assignments?: Array<{ id: string; shift_id: string; status: string; driver_id: string; vehicle_id: string | null; planned_arrival_at: string | null; updated_at: string }>;
   shifts?: Array<{ id: string; date: string; status: string; vehicle_id: string | null; updated_at: string }>;
+  driverCompliance?: DriverComplianceForecastItem[];
 };
 
 export async function fetchOperationalTasks(companyId: string, now = new Date()): Promise<OperationalTask[]> {
-  const [{ data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: defects, error: defectError }, { data: assignments, error: assignmentError }, { data: shifts, error: shiftError }, assets] = await Promise.all([
+  const [{ data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: defects, error: defectError }, { data: assignments, error: assignmentError }, { data: shifts, error: shiftError }, assets, driverCompliance] = await Promise.all([
     supabase.from('fleet_events').select('id, priority, title, body, created_at, requires_ack').eq('company_id', companyId).eq('requires_ack', true),
     supabase.from('driver_acknowledgements').select('event_id').eq('company_id', companyId),
     supabase.from('vehicle_checks').select('id, reg_number, check_status, defect_lifecycle_status, defect_details, created_at').eq('company_id', companyId),
     supabase.from('job_assignments').select('id, shift_id, status, driver_id, vehicle_id, planned_arrival_at, updated_at').eq('company_id', companyId),
     supabase.from('shifts').select('id, date, status, vehicle_id, updated_at').eq('company_id', companyId),
     fetchAssetReadinessSnapshot(companyId, now),
+    fetchDriverComplianceForecast(companyId, now),
   ]);
 
   if (eventError) throw new Error(eventError.message || 'Unable to load acknowledgement tasks.');
@@ -55,6 +58,7 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
     defects: defects ?? [],
     assignments: assignments ?? [],
     shifts: shifts ?? [],
+    driverCompliance,
   });
   const handlings = await fetchOperationalTaskHandlings(companyId, projectedTasks.map((task) => task.sourceId));
   const handlingBySource = new Map(handlings.map((handling) => [`${handling.sourceType}:${handling.sourceId}`, handling]));
@@ -216,6 +220,32 @@ export function buildOperationalTasks(input: OperationalTaskInput): OperationalT
         actionable: true,
       });
     }
+  }
+
+  const driverItemsByDriver = new Map<string, DriverComplianceForecastItem[]>();
+  for (const item of input.driverCompliance ?? []) {
+    if (!driverForecastNeedsAction(item) && !(item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 30)) continue;
+    const current = driverItemsByDriver.get(item.driverId) ?? [];
+    current.push(item);
+    driverItemsByDriver.set(item.driverId, current);
+  }
+  for (const [driverId, items] of driverItemsByDriver) {
+    const severity = items.some((item) => item.status === 'expired') ? 'critical' : items.some((item) => driverForecastNeedsAction(item)) ? 'high' : 'medium';
+    const labels = items.map((item) => item.label).join(', ');
+    const dueDates = items.map((item) => item.dueDate).filter((value): value is string => Boolean(value)).sort();
+    tasks.push({
+      id: `driver-compliance:${driverId}`,
+      severity,
+      category: 'drivers',
+      title: `Driver compliance evidence needs review (${labels})`,
+      detail: items.some((item) => item.planningRisk !== 'none') ? 'Current personnel evidence conflicts with a future assignment date. Review the plan and evidence; this is not an automatic legal conclusion.' : 'Licence, CPC/DQC, or medical evidence is expired, near expiry, or missing in the current Portal records.',
+      sourceType: 'driver_compliance',
+      sourceId: driverId,
+      occurredAt: null,
+      dueAt: dueDates[0] ?? null,
+      navigationTarget: '/dashboard?workspace=people&people=drivers',
+      actionable: true,
+    });
   }
 
   return tasks.sort(compareTasks);
