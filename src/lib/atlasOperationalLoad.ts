@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { buildAtlasBriefing, type AtlasBriefingItem } from './atlasBriefing';
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
+import { buildComplianceForecast, forecastNeedsAction } from './complianceForecast';
 
 export async function fetchAtlasOperationsBriefing(companyId: string, now = new Date()): Promise<AtlasBriefingItem[]> {
   const today = formatDateOnly(now);
@@ -27,6 +28,7 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
   const unknownAssets = assets.filter((asset) => asset.status === 'unknown').length;
   const openSafetyDefects = assets.reduce((count, asset) => count + asset.reasons.filter((reason) => reason.code === 'unresolved_safety_defect').length, 0);
   const expiringComplianceItems = assets.reduce((count, asset) => count + asset.reasons.filter((reason) => reason.severity === 'warning' || reason.severity === 'action_required').length, 0);
+  const forecastActionItems = assets.flatMap((asset) => buildComplianceForecast(asset)).filter(forecastNeedsAction).length;
   const shiftsWithoutJobs = activeShiftsToday.filter((shift) => !activeAssignmentsToday.some((assignment) => assignment.shift_id === shift.id)).length;
   const updatedJobs = activeAssignmentsToday.filter((assignment) => assignment.status === 'updated').length;
   const delayedJobs = activeAssignmentsToday.filter((assignment) => String(assignment.status) === 'delayed').length;
@@ -55,6 +57,7 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
     routeIssueJobs,
     unacknowledgedJobs,
     plannedStartPassedWithoutStart,
+    forecastActionItems,
   });
 }
 

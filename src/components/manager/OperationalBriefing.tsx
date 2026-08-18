@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, HelpCircle, ExternalLink, Loader2, ShieldAlert, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { fetchAssetReadinessSnapshot } from '../../lib/assetReadinessLoad';
 import { fetchAtlasOperationsBriefing } from '../../lib/atlasOperationalLoad';
 import type { AssetReadinessResult } from '../../lib/assetCompliance';
 import type { AtlasBriefingItem } from '../../lib/atlasBriefing';
+import { buildComplianceForecast, forecastNeedsAction, type ComplianceForecastItem, type ForecastHorizon } from '../../lib/complianceForecast';
 
 export function AssetReadinessPanel() {
   const { profile } = useAuth();
@@ -85,6 +87,34 @@ export function AtlasOperationsBriefing() {
   );
 }
 
+export function FleetComplianceForecastPanel() {
+  const { profile } = useAuth();
+  const [items, setItems] = useState<ComplianceForecastItem[]>([]);
+  const [horizon, setHorizon] = useState<ForecastHorizon | 'all'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    let cancelled = false;
+    setLoading(true); setError(null);
+    void Promise.all([
+      fetchAssetReadinessSnapshot(profile.company_id),
+      supabase.from('shifts').select('id, date, vehicle_id').eq('company_id', profile.company_id).in('status', ['published', 'updated']),
+      supabase.from('job_assignments').select('id, shift_id, vehicle_id').eq('company_id', profile.company_id).neq('status', 'cancelled'),
+    ]).then(([assets, shiftResult, assignmentResult]) => {
+      if (shiftResult.error) throw shiftResult.error;
+      if (assignmentResult.error) throw assignmentResult.error;
+      const shiftDates = new Map((shiftResult.data ?? []).map((shift) => [shift.id, { date: shift.date, vehicleId: shift.vehicle_id }]));
+      const assignments = (assignmentResult.data ?? []).map((assignment) => ({ id: assignment.id, vehicleId: assignment.vehicle_id ?? shiftDates.get(assignment.shift_id)?.vehicleId ?? null, plannedDate: shiftDates.get(assignment.shift_id)?.date ?? null }));
+      if (!cancelled) setItems(assets.flatMap((asset) => buildComplianceForecast(asset, new Date(), assignments)));
+    }).catch((loadError: unknown) => { if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'Unable to load compliance forecast.'); }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [profile?.company_id]);
+  const visible = items.filter((item) => horizon === 'all' || item.horizon === horizon).sort((left, right) => severityRank(left.severity) - severityRank(right.severity) || (left.daysRemaining ?? 999) - (right.daysRemaining ?? 999));
+  const actionCount = items.filter(forecastNeedsAction).length;
+  return <section className="rounded-2xl border border-hw-blue-500/30 bg-hw-navy-900 p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.22em] text-hw-cyan-500">Compliance forecast</p><h4 className="mt-1 text-lg font-bold text-hw-white">Evidence horizon, not a legal certainty</h4><p className="mt-1 text-xs leading-relaxed text-hw-slate-400">Deterministic dates from current vehicle evidence. Missing and unknown evidence are kept distinct; future planning warnings do not hard-block assignment.</p></div><ShieldAlert className="h-6 w-6 text-hw-cyan-500" /></div><div className="mt-4 flex flex-wrap gap-2">{(['all', 'overdue', 7, 14, 30, 60, 90] as const).map((value) => <button key={String(value)} type="button" onClick={() => setHorizon(value)} className={`rounded-full px-3 py-1.5 text-[9px] font-black uppercase tracking-widest ${horizon === value ? 'bg-hw-cyan-500 text-hw-navy-950' : 'bg-white/5 text-hw-slate-300'}`}>{value === 'all' ? 'all' : value === 'overdue' ? 'overdue' : `≤${value}d`} {value === 'all' ? items.length : items.filter((item) => item.horizon === value).length}</button>)}</div>{error ? <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</p> : loading ? <p className="mt-5 text-xs text-hw-slate-400">Building evidence forecast…</p> : <><p className="mt-4 text-xs font-bold text-hw-slate-400">{actionCount} item(s) meet the task/Atlas action threshold (overdue, ≤14 days, or missing required evidence).</p><div className="mt-4 space-y-2">{visible.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-hw-navy-950/50 p-3"><div><p className="text-sm font-bold text-hw-white">{item.assetLabel} · {item.label}</p><p className="mt-1 text-xs text-hw-slate-400">{item.status === 'missing' ? 'Evidence missing' : item.status === 'expired' ? `Expired ${Math.abs(item.daysRemaining ?? 0)} day(s) ago` : item.daysRemaining === null ? 'Date is unknown' : `Due in ${item.daysRemaining} day(s)`}{item.planningRisk === 'planned_after_expiry' ? ' · future planning conflict flagged' : ''}</p></div><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-hw-slate-300">{item.status.replace('_', ' ')}</span></div>)}{visible.length === 0 ? <p className="text-xs text-hw-slate-400">No forecast item matches this horizon.</p> : null}</div></>}</section>;
+}
+
 function ReadinessCount({ label, value, tone }: { label: string; value: number; tone: 'ready' | 'warning' | 'action' | 'blocked' | 'unknown' }) {
   return <div className="rounded-xl border border-white/5 bg-hw-navy-950/50 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-hw-slate-500">{label}</p><p className={`mt-1 text-xl font-black ${statusClass(tone === 'action' ? 'action_required' : tone === 'blocked' ? 'prohibited' : tone)}`}>{value}</p></div>;
 }
@@ -100,3 +130,5 @@ function statusClass(status: string) {
   if (status === 'prohibited') return 'text-red-400';
   return 'text-slate-400';
 }
+
+function severityRank(value: ComplianceForecastItem['severity']) { return value === 'critical' ? 0 : value === 'high' ? 1 : value === 'medium' ? 2 : 3; }
