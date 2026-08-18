@@ -73,8 +73,9 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
       signals.push(signal(`asset:readiness:${asset.id}`, `${asset.status}:${asset.reasons.map((reason) => `${reason.code}:${reason.dueDate ?? ''}`).join('|')}`, 'today', severity, `${asset.label} readiness requires review`, asset.reasons.map((reason) => reason.label).join('; ') || 'The canonical asset policy returned incomplete readiness evidence.', 'Asset readiness', '/dashboard?workspace=fleet&fleet=vehicles', null));
     }
     for (const item of buildComplianceForecast(asset, now, assetForecastAssignments)) {
-      if (!forecastNeedsAction(item) || item.dueDate === null || asset.status === 'prohibited' || asset.status === 'action_required' || asset.status === 'unknown') continue;
       const days = item.daysRemaining ?? 31;
+      const isWithinThirtyDays = item.status === 'expiring' && days <= 30;
+      if ((!forecastNeedsAction(item) && !isWithinThirtyDays) || item.dueDate === null || asset.status === 'prohibited' || asset.status === 'action_required' || asset.status === 'unknown') continue;
       if (days > 30) continue;
       signals.push(signal(`compliance:asset:${item.id}`, `${item.status}:${item.dueDate}:${item.planningRisk}:${item.planningConflictDates.join(',')}`, item.planningConflictDates.includes(tomorrow) ? 'tomorrow' : days <= 0 ? 'today' : days <= 1 ? 'tomorrow' : 'next30', item.severity === 'critical' ? 'critical' : item.severity === 'high' ? 'warning' : 'advisory', `${item.assetLabel}: ${item.label} due ${item.dueDate}`, item.planningRisk === 'planned_after_expiry' ? 'A planned assignment falls after the recorded evidence date. Review the plan; this is not an automatic legal conclusion.' : 'The deterministic forecast found a near-term or overdue evidence date.', 'Compliance forecast', '/dashboard?workspace=fleet&fleet=vehicles', item.dueDate));
     }
