@@ -1,3 +1,7 @@
+// Generated from the live Supabase public schema.
+// Source project: lcvahjmoobmpifrexurb
+// Regenerate with: supabase gen types --lang=typescript --project-id lcvahjmoobmpifrexurb --schema public
+// Do not edit manually.
 export type Json =
   | string
   | number
@@ -114,6 +118,88 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_assignment_overrides: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          job_assignment_id: string | null
+          readiness_policy: Json
+          reason: string
+          revoked_at: string | null
+          shift_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          job_assignment_id?: string | null
+          readiness_policy?: Json
+          reason: string
+          revoked_at?: string | null
+          shift_id: string
+          vehicle_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_assignment_id?: string | null
+          readiness_policy?: Json
+          reason?: string
+          revoked_at?: string | null
+          shift_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_assignment_overrides_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_overrides_job_assignment_id_fkey"
+            columns: ["job_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "job_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_overrides_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_overrides_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -5478,6 +5564,36 @@ export type Database = {
         }
         Returns: Json
       }
+      create_asset_assignment_override: {
+        Args: {
+          p_expected_shift_updated_at?: string
+          p_job_assignment_id?: string
+          p_reason?: string
+          p_shift_id: string
+          p_vehicle_id: string
+        }
+        Returns: Json
+      }
+      create_job_assignment_with_asset_guard: {
+        Args: {
+          p_address_text: string
+          p_contact_name?: string
+          p_contact_phone?: string
+          p_customer_name?: string
+          p_expected_duration_minutes?: number
+          p_instructions?: string
+          p_job_type: string
+          p_manager_notes?: string
+          p_planned_arrival_at?: string
+          p_planned_departure_at?: string
+          p_reference: string
+          p_requires_ack?: boolean
+          p_sequence?: number
+          p_shift_id: string
+          p_title: string
+        }
+        Returns: Json
+      }
       create_job_assignment_with_event: {
         Args: {
           p_address_text: string
@@ -5507,6 +5623,10 @@ export type Database = {
         Returns: Json
       }
       generate_invoice_number: { Args: never; Returns: string }
+      get_asset_assignment_policy: {
+        Args: { p_company_id: string; p_vehicle_id: string }
+        Returns: Json
+      }
       get_auth_user_company: { Args: never; Returns: string }
       get_auth_user_company_id: { Args: never; Returns: string }
       get_auth_user_role: { Args: never; Returns: string }
@@ -5698,6 +5818,16 @@ export type Database = {
         }
         Returns: Json
       }
+      transition_job_assignment_with_event: {
+        Args: {
+          p_assignment_id: string
+          p_expected_updated_at: string
+          p_reason?: string
+          p_requires_ack?: boolean
+          p_to_status: string
+        }
+        Returns: Json
+      }
       update_company_name: {
         Args: { p_name: string }
         Returns: {
@@ -5804,6 +5934,18 @@ export type Database = {
         }
         Returns: Json
       }
+      update_shift_with_asset_guard: {
+        Args: {
+          p_date: string
+          p_end_time: string
+          p_notes?: string
+          p_requires_ack?: boolean
+          p_shift_id: string
+          p_start_time: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       update_shift_with_event: {
         Args: {
           p_date: string
@@ -5866,7 +6008,20 @@ export type Database = {
       validate_auth_code: { Args: { code: string }; Returns: string }
     }
     Enums: {
-      job_assignment_status: "draft" | "published" | "updated" | "cancelled"
+      job_assignment_status:
+        | "draft"
+        | "published"
+        | "updated"
+        | "cancelled"
+        | "acknowledged"
+        | "started"
+        | "arrived"
+        | "completed"
+        | "delayed"
+        | "unable_to_complete"
+        | "vehicle_issue"
+        | "site_issue"
+        | "route_issue"
       shift_status: "draft" | "published" | "updated" | "cancelled"
     }
     CompositeTypes: {
@@ -5995,7 +6150,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      job_assignment_status: ["draft", "published", "updated", "cancelled"],
+      job_assignment_status: [
+        "draft",
+        "published",
+        "updated",
+        "cancelled",
+        "acknowledged",
+        "started",
+        "arrived",
+        "completed",
+        "delayed",
+        "unable_to_complete",
+        "vehicle_issue",
+        "site_issue",
+        "route_issue",
+      ],
       shift_status: ["draft", "published", "updated", "cancelled"],
     },
   },

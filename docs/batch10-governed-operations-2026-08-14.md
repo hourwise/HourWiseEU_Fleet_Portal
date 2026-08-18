@@ -1,6 +1,6 @@
 # Batch 10 — Governed Operations Execution
 
-Status: implemented locally; Supabase migrations are pending deployment and verification.
+Status: implemented, deployed, and verified in Supabase project `lcvahjmoobmpifrexurb`.
 
 ## Scope
 
@@ -53,11 +53,14 @@ Atlas uses the same structured inputs and now summarizes delayed, unable-to-comp
 
 ## Deployment and verification boundary
 
-Apply these migrations in order after the existing migration history is available:
+The migrations are applied in this order:
 
 1. `20260814120000_batch10_governed_operations.sql`
 2. `20260814123000_batch10_job_execution_lifecycle.sql`
+3. `20260818205156_restrict_batch10_governed_operation_function_execution.sql`
 
-After deployment, verify the enum values, function signatures/grants, RLS policies, assignment triggers, and security audit rows in the target Supabase project. Regenerate `src/lib/database.types.ts` after the migration is applied; this local batch intentionally uses narrow runtime unions and untyped RPC adapters where generated types still describe the pre-deployment enum.
+The lifecycle migration was corrected before deployment to close the denied-transition `CASE` expression. The corrective migration revokes direct `PUBLIC`, `anon`, and trigger-function `authenticated` execution where frontend invocation is not required, while retaining authenticated execution for the guarded assignment and shift wrappers. The canonical asset policy and governed override functions remain authenticated-only.
 
-Local validation covers TypeScript, focused contracts, changed-file lint, the existing rules suite, the production build, and `git diff --check`. No migration push is implied by this document.
+Post-deployment verification confirmed the expanded job-assignment enum, lifecycle RPC controls, RLS policies, assignment triggers, server-side auth/company boundaries, stale-write checks, event-spine writes, and hard VOR/unresolved-defect blocks. The Supabase security advisor no longer reports the three Batch 10 anon-execution findings present before the grant correction. `src/lib/database.types.ts` was regenerated from the live public schema.
+
+Local validation covers TypeScript, focused contracts, changed-file lint, the existing rules suite, the production build, and `git diff --check`. Repository-wide lint retains the documented legacy baseline of 103 errors and 7 warnings.

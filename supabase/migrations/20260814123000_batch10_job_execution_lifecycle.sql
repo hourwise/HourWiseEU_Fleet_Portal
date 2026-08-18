@@ -83,7 +83,7 @@ begin
   driver_action := actor_role = 'driver' and target_assignment.driver_id = actor_id and target_shift.driver_id = actor_id and target_shift.status in ('published', 'updated');
   manager_action := actor_role = 'manager' and public.actor_has_permission('operations.job.transition', actor_company_id, null);
   if not driver_action and not manager_action then
-    perform public.record_security_event(actor_company_id, null, case when actor_role = 'manager' then 'operations.job.transition' else null, 'denied', 'job_transition_authority_mismatch', 'job_assignment', p_assignment_id, 'transition');
+    perform public.record_security_event(actor_company_id, null, case when actor_role = 'manager' then 'operations.job.transition' else null end, 'denied', 'job_transition_authority_mismatch', 'job_assignment', p_assignment_id, 'transition');
     raise exception 'Actor is not authorised for this job assignment' using errcode = '42501';
   end if;
   if manager_action then permission_key := 'operations.job.transition'; end if;
