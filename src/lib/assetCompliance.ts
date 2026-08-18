@@ -92,7 +92,7 @@ export function evaluateAssetReadiness(
     reasons.push({ code: 'insurance_unknown', label: 'Insurance expiry evidence is unavailable', severity: 'unknown' });
   }
 
-  if (evidence.kind === 'vehicle' && evidence.lolerDueDate) {
+  if (evidence.lolerDueDate) {
     const loler = new Date(evidence.lolerDueDate);
     if (!Number.isNaN(loler.getTime())) {
       const daysRemaining = Math.ceil((startOfDay(loler).getTime() - startOfDay(now).getTime()) / 86_400_000);

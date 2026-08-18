@@ -24,6 +24,7 @@ import { OperationalAcknowledgementBadge } from './OperationalAcknowledgementBad
 import { createAssetAssignmentOverride, fetchAssetReadinessSnapshot } from '../../lib/assetReadinessLoad';
 import type { AssetReadinessResult } from '../../lib/assetCompliance';
 import { buildRoutePlan, type PlannedStop, type VehicleRoutingProfile } from '../../lib/routePlanning';
+import { fetchJobEvidence, reviewJobEvidence, type JobEvidenceRecord, type JobEvidenceReviewStatus } from '../../lib/jobEvidence';
 
 interface ShiftOption {
   id: string;
@@ -39,7 +40,7 @@ interface ShiftOption {
 // lives on the job row the driver read policy can expose, so capturing private notes
 // through it would leak them to the driver-facing read model. Collection stays deferred
 // until the backend provides a manager-only storage/read boundary.
-const ASSIGNMENT_SELECT = 'id, vehicle_id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(id, updated_at, reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
+const ASSIGNMENT_SELECT = 'id, vehicle_id, trailer_id, sequence, status, updated_at, planned_arrival_at, planned_departure_at, expected_duration_minutes, jobs:job_id(id, updated_at, reference, title, job_type, customer_name, address_text, contact_name, contact_phone, instructions)';
 
 interface JobPlannerProps {
   /** Shift preselected from the rota via the `shift` query parameter, if any. */
@@ -516,7 +517,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
             assignmentLoad.assignments.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">No jobs assigned to this shift yet.</p>
             ) : (
-              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} onEdit={startEditing} onCancel={cancelAssignment} actionPending={submitting} acknowledgement={acknowledgementLoad.model.byAssignmentId[a.id]} acknowledgementLoading={acknowledgementLoad.loading} />)}</ul>
+              <ul className="space-y-3">{assignmentLoad.assignments.map(a => <AssignmentCard key={a.id} assignment={a} onEdit={startEditing} onCancel={cancelAssignment} onRefresh={() => beginAssignmentLoad(shiftId)} actionPending={submitting} acknowledgement={acknowledgementLoad.model.byAssignmentId[a.id]} acknowledgementLoading={acknowledgementLoad.loading} />)}</ul>
             )
           ) : (
             <p className="py-8 text-center text-sm text-slate-500">Choose a shift to review its assigned jobs.</p>
@@ -527,7 +528,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   </div>;
 }
 
-function AssignmentCard({ assignment, onEdit, onCancel, actionPending, acknowledgement, acknowledgementLoading }: { assignment: JobAssignmentRow; onEdit: (assignment: JobAssignmentRow) => void; onCancel: (assignment: JobAssignmentRow) => void; actionPending: boolean; acknowledgement?: ManagerAcknowledgementSummary; acknowledgementLoading: boolean }) {
+function AssignmentCard({ assignment, onEdit, onCancel, onRefresh, actionPending, acknowledgement, acknowledgementLoading }: { assignment: JobAssignmentRow; onEdit: (assignment: JobAssignmentRow) => void; onCancel: (assignment: JobAssignmentRow) => void; onRefresh: () => void; actionPending: boolean; acknowledgement?: ManagerAcknowledgementSummary; acknowledgementLoading: boolean }) {
   const job = assignment.jobs;
   const windowText = buildPlannedWindow(assignment.planned_arrival_at, assignment.planned_departure_at);
   const isCancelled = assignment.status === 'cancelled';
@@ -557,9 +558,55 @@ function AssignmentCard({ assignment, onEdit, onCancel, actionPending, acknowled
         {job?.contact_name || job?.contact_phone ? <p className="flex items-center gap-2"><User size={14} className="shrink-0 text-slate-500" />{job.contact_name ?? 'Contact'}{job.contact_phone ? <span className="flex items-center gap-1"><Phone size={12} className="text-slate-500" />{job.contact_phone}</span> : null}</p> : null}
         {job?.instructions ? <p className="flex items-start gap-2"><FileText size={14} className="mt-0.5 shrink-0 text-slate-500" />{job.instructions}</p> : null}
       </div>
+      {!isCancelled ? <TrailerAssignmentControl assignmentId={assignment.id} trailerId={assignment.trailer_id ?? null} expectedUpdatedAt={assignment.updated_at} onSaved={onRefresh} /> : null}
+      {!isCancelled ? <JobEvidenceReviewPanel assignmentId={assignment.id} /> : null}
       {job && !isCancelled ? <AssignmentRouteEditor jobId={job.id} jobUpdatedAt={job.updated_at} fallbackAddress={job.address_text} vehicleProfile={assignment.vehicle_id ? { vehicleId: assignment.vehicle_id, profileVersion: assignment.updated_at, vehicleType: null } : null} /> : null}
     </li>
   );
+}
+
+function TrailerAssignmentControl({ assignmentId, trailerId, expectedUpdatedAt, onSaved }: { assignmentId: string; trailerId: string | null; expectedUpdatedAt: string; onSaved: () => void }) {
+  const { profile } = useAuth();
+  const [trailers, setTrailers] = useState<Array<{ id: string; reg_number: string }>>([]);
+  const [value, setValue] = useState(trailerId ?? '');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    let cancelled = false;
+    void supabase.from('vehicles').select('id, reg_number, vehicle_class, vehicle_type').eq('company_id', profile.company_id).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) { setMessage(error.message); return; }
+      setTrailers((data ?? []).filter((vehicle) => String(vehicle.vehicle_class ?? '').toLowerCase() === 'trailer' || String(vehicle.vehicle_type ?? '').toLowerCase() === 'trailer').map((vehicle) => ({ id: vehicle.id, reg_number: vehicle.reg_number })));
+    });
+    return () => { cancelled = true; };
+  }, [profile?.company_id]);
+  useEffect(() => { setValue(trailerId ?? ''); }, [trailerId]);
+  const save = async (nextValue: string) => {
+    setSaving(true); setMessage(null);
+    try {
+      const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      const { error } = await rpc('assign_trailer_to_job_assignment', { p_assignment_id: assignmentId, p_trailer_id: nextValue || null, p_expected_updated_at: expectedUpdatedAt });
+      if (error) throw new Error(error.message);
+      setValue(nextValue); setMessage('Trailer assignment saved.'); onSaved();
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to save trailer assignment.'); } finally { setSaving(false); }
+  };
+  return <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3"><label className="text-[10px] font-black uppercase tracking-widest text-slate-500" htmlFor={`trailer-${assignmentId}`}>Trailer</label><select id={`trailer-${assignmentId}`} value={value} disabled={saving} onChange={(event) => void save(event.target.value)} className="rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs font-bold text-white"><option value="">No trailer assigned</option>{trailers.map((trailer) => <option key={trailer.id} value={trailer.id}>{trailer.reg_number}</option>)}</select>{message ? <span className="text-[10px] font-bold text-amber-200">{message}</span> : null}</div>;
+}
+
+function JobEvidenceReviewPanel({ assignmentId }: { assignmentId: string }) {
+  const [evidence, setEvidence] = useState<JobEvidenceRecord[]>([]);
+  const [message, setMessage] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    try { setEvidence(await fetchJobEvidence(assignmentId)); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to load job evidence.'); }
+  }, [assignmentId]);
+  useEffect(() => { void load(); }, [load]);
+  const review = async (item: JobEvidenceRecord, status: Exclude<JobEvidenceReviewStatus, 'pending'>) => {
+    setSavingId(item.id); setMessage(null);
+    try { await reviewJobEvidence({ evidenceId: item.id, reviewStatus: status, expectedUpdatedAt: item.updated_at }); await load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to review evidence.'); } finally { setSavingId(null); }
+  };
+  return <div className="mt-4 border-t border-white/5 pt-3"><p className="text-[10px] font-black uppercase tracking-widest text-slate-500">POD / evidence review</p>{evidence.length === 0 ? <p className="mt-2 text-xs text-slate-500">No evidence has been recorded for this assignment.</p> : <div className="mt-2 space-y-2">{evidence.map((item) => <div key={item.id} className="rounded-lg border border-white/5 bg-black/10 p-2.5"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold text-slate-200">{item.evidence_type.replace('_', ' ')} · {item.outcome.replace('_', ' ')}</p><span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.review_status.replace('_', ' ')}</span></div><p className="mt-1 text-[10px] text-slate-500">Uploaded {new Date(item.uploaded_at).toLocaleString()} · {item.source.replace('_', ' ')}</p>{item.review_status === 'pending' ? <div className="mt-2 flex flex-wrap gap-2">{(['accepted', 'needs_follow_up', 'rejected'] as const).map((status) => <button key={status} type="button" disabled={savingId === item.id} onClick={() => void review(item, status)} className="rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/5 disabled:opacity-50">{status.replace('_', ' ')}</button>)}</div> : null}</div>)}</div>}{message ? <p className="mt-2 text-xs font-bold text-amber-200">{message}</p> : null}</div>;
 }
 
 function AssignmentRouteEditor({ jobId, jobUpdatedAt, fallbackAddress, vehicleProfile }: { jobId: string; jobUpdatedAt: string; fallbackAddress: string; vehicleProfile: VehicleRoutingProfile | null }) {

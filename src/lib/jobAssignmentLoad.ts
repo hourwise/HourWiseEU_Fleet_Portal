@@ -12,6 +12,7 @@
 export interface JobAssignmentRow {
   id: string;
   vehicle_id?: string | null;
+  trailer_id?: string | null;
   sequence: number;
   status: string;
   updated_at: string;

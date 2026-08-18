@@ -10,6 +10,7 @@ import {
 import { fetchDriverUpcomingShifts, type DriverUpcomingShift } from '../../lib/rota';
 import { acknowledgeDriverOperationalEvent, fetchDriverOperationalEvents, type DriverOperationalEvent } from '../../lib/driverEvents';
 import { fetchDriverJobAssignments, fetchDriverVehicleActions, transitionDriverJobAssignment, type DriverJobAssignment, type DriverJobStatus, type DriverVehicleAction } from '../../lib/driverJobs';
+import { fetchJobEvidence, uploadJobEvidence, type JobEvidenceOutcome, type JobEvidenceRecord } from '../../lib/jobEvidence';
 import type { TachoFindingReview } from '../../lib/tacho/rules/types';
 
 type PendingNoteByReviewId = Record<string, string>;
@@ -395,6 +396,7 @@ function DriverJobsPanel({
                     })}
                   </div>
                 ) : null}
+                {['completed', 'unable_to_complete', 'vehicle_issue', 'site_issue', 'route_issue', 'delayed'].includes(job.status) ? <DriverJobEvidence assignmentId={job.id} /> : null}
               </article>
             );
           })}
@@ -402,6 +404,28 @@ function DriverJobsPanel({
       )}
     </section>
   );
+}
+
+function DriverJobEvidence({ assignmentId }: { assignmentId: string }) {
+  const [outcome, setOutcome] = useState<JobEvidenceOutcome>('delivered');
+  const [evidence, setEvidence] = useState<JobEvidenceRecord[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchJobEvidence(assignmentId).then((rows) => { if (!cancelled) setEvidence(rows); }).catch((error: unknown) => { if (!cancelled) setMessage(error instanceof Error ? error.message : 'Unable to load evidence.'); });
+    return () => { cancelled = true; };
+  }, [assignmentId]);
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    setSaving(true); setMessage(null);
+    try {
+      await uploadJobEvidence({ assignmentId, file, evidenceType: outcome === 'delivered' ? 'pod' : outcome === 'failed_delivery' ? 'failed_delivery' : 'unable_to_complete', outcome });
+      setEvidence(await fetchJobEvidence(assignmentId));
+      setMessage('Evidence recorded for manager review. Job lifecycle status was not changed.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to record evidence.'); } finally { setSaving(false); }
+  };
+  return <div className="mt-4 border-t border-slate-100 pt-4"><div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Job evidence</p><select value={outcome} onChange={(event) => setOutcome(event.target.value as JobEvidenceOutcome)} disabled={saving} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700"><option value="delivered">Delivered / POD</option><option value="failed_delivery">Failed delivery</option><option value="unable_to_complete">Unable to complete</option></select><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:opacity-50"><input type="file" accept="image/*,application/pdf" className="sr-only" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ''; }} />{saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}{saving ? 'Uploading' : 'Upload proof'}</label><span className="text-xs font-bold text-slate-500">{evidence.length} recorded</span></div>{message ? <p className="mt-2 text-xs font-bold text-emerald-700">{message}</p> : null}{evidence.slice(0, 3).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-500">{item.evidence_type.replace('_', ' ')} · {item.review_status.replace('_', ' ')} · {new Date(item.uploaded_at).toLocaleString()}</p>)}</div>;
 }
 
 type DriverJobAction = { status: DriverJobStatus; label: string; requiresReason?: boolean; emphasis?: boolean };
