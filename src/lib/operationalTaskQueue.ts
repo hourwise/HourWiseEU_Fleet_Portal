@@ -1,6 +1,7 @@
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
 import type { AssetReadinessResult } from './assetCompliance';
 import { supabase } from './supabase';
+import { fetchOperationalTaskHandlings, type OperationalTaskHandling } from './operationalTaskHandling';
 
 export type OperationalTaskSeverity = 'critical' | 'high' | 'medium' | 'info';
 export type OperationalTaskCategory = 'jobs' | 'drivers' | 'fleet' | 'compliance';
@@ -17,6 +18,7 @@ export type OperationalTask = {
   dueAt: string | null;
   navigationTarget: string;
   actionable: boolean;
+  handling?: OperationalTaskHandling;
 };
 
 export type OperationalTaskInput = {
@@ -45,7 +47,7 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
   if (assignmentError) throw new Error(assignmentError.message || 'Unable to load job execution tasks.');
   if (shiftError) throw new Error(shiftError.message || 'Unable to load rota tasks.');
 
-  return buildOperationalTasks({
+  const projectedTasks = buildOperationalTasks({
     now,
     assets,
     events: events ?? [],
@@ -54,6 +56,9 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
     assignments: assignments ?? [],
     shifts: shifts ?? [],
   });
+  const handlings = await fetchOperationalTaskHandlings(companyId, projectedTasks.map((task) => task.sourceId));
+  const handlingBySource = new Map(handlings.map((handling) => [`${handling.sourceType}:${handling.sourceId}`, handling]));
+  return projectedTasks.map((task) => ({ ...task, handling: handlingBySource.get(`${task.sourceType}:${task.sourceId}`) }));
 }
 
 export function buildOperationalTasks(input: OperationalTaskInput): OperationalTask[] {
