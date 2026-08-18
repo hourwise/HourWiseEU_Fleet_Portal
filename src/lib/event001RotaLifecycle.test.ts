@@ -20,7 +20,7 @@ describe('EVENT-001 rota update and cancellation producers', () => {
     expect(migration).toContain('FOR UPDATE');
   });
   it('routes Portal edits and cancellations through atomic RPCs', () => {
-    expect(planner).toContain("supabase.rpc('update_shift_with_event'");
+    expect(planner).toContain("guardedRpc('update_shift_with_asset_guard'");
     expect(planner).toContain("supabase.rpc('cancel_shift_with_event'");
   });
 });

@@ -21,6 +21,9 @@ Implemented or in progress:
 - Additive security permission foundation and shadow permission checks
 - Supabase migration drift repair documentation
 - Source-of-truth planning docs and ADRs for rota, events, multi-site, RBAC, Atlas, reporting, and asset compliance
+- Driver operational home now reads assigned jobs and vehicle-check actions with explicit no-data states
+- Deterministic asset readiness summary and Atlas operations briefing on the manager dashboard
+- Batch 10 governed asset assignment, job execution transitions, deterministic manager task queue, and expanded Atlas operational signals (migration pending deployment; see `docs/batch10-governed-operations-2026-08-14.md`)
 
 ## Tech Stack
 
@@ -188,6 +191,9 @@ Current recommended implementation sequence:
 4. Add job and route planning on top of the rota/event spine.
 5. Add asset compliance rule engine.
 6. Add deterministic Atlas operations briefing before conversational/voice Atlas.
+
+The 2026-08-14 Batch 9 implementation note records the current driver-home, asset-readiness, and deterministic Atlas slices:
+`docs/batch9-operational-home-readiness-atlas-2026-08-14.md`.
 
 ## Security Notes
 

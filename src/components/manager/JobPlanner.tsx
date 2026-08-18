@@ -21,12 +21,16 @@ import {
   operationalAcknowledgementLoadReducer,
 } from '../../lib/operationalAcknowledgementLoad';
 import { OperationalAcknowledgementBadge } from './OperationalAcknowledgementBadge';
+import { createAssetAssignmentOverride, fetchAssetReadinessSnapshot } from '../../lib/assetReadinessLoad';
+import type { AssetReadinessResult } from '../../lib/assetCompliance';
 
 interface ShiftOption {
   id: string;
   date: string;
   start_time: string;
   end_time: string;
+  vehicle_id: string | null;
+  updated_at: string;
   profiles?: { full_name: string | null } | null;
 }
 
@@ -50,6 +54,10 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   const [shiftsError, setShiftsError] = useState<string | null>(null);
   const [shiftId, setShiftId] = useState('');
   const [focusMessage, setFocusMessage] = useState<string | null>(null);
+  const [assetReadiness, setAssetReadiness] = useState<AssetReadinessResult[]>([]);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overridePending, setOverridePending] = useState(false);
+  const [overrideRecordedFor, setOverrideRecordedFor] = useState<string | null>(null);
 
   const [reference, setReference] = useState('');
   const [title, setTitle] = useState('');
@@ -84,7 +92,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     let cancelled = false;
     setShiftsLoading(true);
     setShiftsError(null);
-    supabase.from('shifts').select('id, date, start_time, end_time, driver_id')
+    supabase.from('shifts').select('id, date, start_time, end_time, driver_id, vehicle_id, updated_at')
       .eq('company_id', profile.company_id).in('status', ['published', 'updated'])
       .gte('date', format(new Date(), 'yyyy-MM-dd'))
       .order('date').order('start_time').then(async ({ data, error }) => {
@@ -103,9 +111,12 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
           date: shift.date,
           start_time: shift.start_time,
           end_time: shift.end_time,
+          vehicle_id: shift.vehicle_id,
+          updated_at: shift.updated_at,
           profiles: driverMap.get(shift.driver_id) ?? null,
         })));
       });
+    void fetchAssetReadinessSnapshot(profile.company_id).then(setAssetReadiness).catch(() => setAssetReadiness([]));
     return () => { cancelled = true; };
   }, [profile?.company_id]);
 
@@ -236,6 +247,35 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   }, [duration]);
 
   const formBlocked = Boolean(sequenceError || plannedWindowError || durationError);
+  const selectedShift = shifts.find((shift) => shift.id === shiftId) ?? null;
+  const selectedAsset = selectedShift?.vehicle_id ? assetReadiness.find((asset) => asset.id === selectedShift.vehicle_id) ?? null : null;
+  const overrideKey = selectedAsset && selectedShift ? `${selectedShift.id}:${selectedAsset.id}` : null;
+  const assetNeedsOverride = Boolean(selectedAsset && (selectedAsset.status === 'unknown' || selectedAsset.status === 'action_required') && overrideRecordedFor !== overrideKey);
+  const assetHardBlocked = selectedAsset?.status === 'prohibited';
+
+  const recordOverride = async () => {
+    if (!selectedShift?.vehicle_id || !selectedShift.updated_at || !selectedAsset || !assetNeedsOverride) return;
+    if (overrideReason.trim().length < 20) {
+      setMessage({ kind: 'error', text: 'Enter a meaningful override reason of at least 20 characters.' });
+      return;
+    }
+    setOverridePending(true);
+    setMessage(null);
+    try {
+      await createAssetAssignmentOverride({
+        shiftId: selectedShift.id,
+        vehicleId: selectedShift.vehicle_id,
+        expectedShiftUpdatedAt: selectedShift.updated_at,
+        reason: overrideReason,
+      });
+      setOverrideRecordedFor(`${selectedShift.id}:${selectedAsset.id}`);
+      setMessage({ kind: 'success', text: 'Readiness override recorded and audited for this shift/vehicle. Review the reason before publishing.' });
+    } catch (error) {
+      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to record the readiness override.' });
+    } finally {
+      setOverridePending(false);
+    }
+  };
 
   const handleShiftChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value;
@@ -289,6 +329,10 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
       setMessage({ kind: 'error', text: sequenceError ?? plannedWindowError ?? durationError ?? 'Please fix the highlighted fields before publishing.' });
       return;
     }
+    if (!editingAssignment && (assetHardBlocked || assetNeedsOverride)) {
+      setMessage({ kind: 'error', text: assetHardBlocked ? 'This vehicle is prohibited and cannot be assigned.' : 'This vehicle has incomplete or action-required readiness evidence. Record a governed override before publishing.' });
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     try {
@@ -313,16 +357,17 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
         ...(plannedArrivalAt ? { p_planned_arrival_at: plannedArrivalAt } : {}),
         ...(plannedDepartureAt ? { p_planned_departure_at: plannedDepartureAt } : {}),
       };
+      const guardedRpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string; code?: string } | null }>;
       const { error } = editingAssignment
         ? await supabase.rpc('update_job_assignment_with_event', {
             ...typedRpcArgs,
             p_assignment_id: editingAssignment.id,
             p_expected_updated_at: editingAssignment.updated_at ?? undefined,
           })
-        : await supabase.rpc('create_job_assignment_with_event', {
+        : await guardedRpc('create_job_assignment_with_asset_guard', {
             ...typedRpcArgs,
-            p_shift_id: shiftId,
-          });
+          p_shift_id: shiftId,
+        });
       if (error) throw error;
       const wasEditing = Boolean(editingAssignment);
       resetJobForm();
@@ -410,6 +455,17 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
               {shifts.map(s => <option key={s.id} value={s.id}>{s.date} {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)} · {s.profiles?.full_name ?? 'Driver'}</option>)}
             </select>
           </Field>
+          {!selectedShift?.vehicle_id ? (
+            <div className="rounded-xl border border-slate-600/40 bg-slate-900/40 p-3 text-xs text-slate-300">No vehicle is attached to this shift. Asset readiness is not applicable to this assignment.</div>
+          ) : !selectedAsset ? (
+            <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-100">Vehicle readiness evidence is still loading or unavailable. The server will independently enforce the assignment policy.</div>
+          ) : (
+            <div className={`rounded-xl border p-4 ${assetHardBlocked ? 'border-red-500/40 bg-red-500/10' : assetNeedsOverride ? 'border-amber-400/40 bg-amber-400/10' : 'border-emerald-400/30 bg-emerald-400/10'}`}>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned vehicle</p><p className="mt-1 text-base font-black text-white">{selectedAsset.label}</p></div><span className="rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white">{selectedAsset.status.replace('_', ' ')}</span></div>
+              {selectedAsset.reasons.length > 0 ? <ul className="mt-2 space-y-1 text-xs text-slate-200">{selectedAsset.reasons.slice(0, 3).map((reason) => <li key={reason.code}>• {reason.label}</li>)}</ul> : <p className="mt-2 text-xs text-emerald-100">No readiness warning was returned by the current evidence model.</p>}
+              {assetHardBlocked ? <p className="mt-3 text-xs font-black text-red-200">Prohibited assets cannot be overridden or published.</p> : assetNeedsOverride ? <div className="mt-3 space-y-2"><p className="text-xs font-bold text-amber-100">A governed manager override is required before this vehicle can be used.</p><textarea value={overrideReason} onChange={(event) => setOverrideReason(event.target.value)} rows={2} className="input min-h-16" placeholder="Explain the controlled operational reason and mitigation (20–1000 characters)." /><button type="button" onClick={() => void recordOverride()} disabled={overridePending || overrideReason.trim().length < 20} className="rounded-lg border border-amber-300/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-100 disabled:opacity-50">{overridePending ? 'Recording override…' : 'Record governed override'}</button></div> : null}
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Job reference" required><input required value={reference} onChange={e => setReference(e.target.value)} className="input" placeholder="JOB-123" /></Field>
             <Field label="Sequence" required hint={assignmentsReady ? `Route order on the shift. Next available: ${nextAvailable}.` : 'Existing jobs for this shift are still loading; the next safe sequence is calculated once they are confirmed.'}>
@@ -436,7 +492,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
           <Field label="Contact name" hint="Optional."><input value={contactName} onChange={e => setContactName(e.target.value)} className="input" placeholder="Site contact name" /></Field>
           <Field label="Driver / site instructions" hint="Optional."><textarea value={instructions} onChange={e => setInstructions(e.target.value)} className="input min-h-20" placeholder="Site access / load notes" /></Field>
           {message ? <p className={message.kind === 'success' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>{message.text}</p> : null}
-          <button disabled={submitting || !assignmentsReady || formBlocked || shifts.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{editingAssignment ? <Save size={16} /> : <Send size={16} />}{submitting ? editingAssignment ? 'Saving…' : 'Publishing…' : editingAssignment ? 'Save job changes' : 'Publish job to driver'}</button>
+          <button disabled={submitting || !assignmentsReady || formBlocked || shifts.length === 0 || (!editingAssignment && (assetHardBlocked || assetNeedsOverride))} className="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{editingAssignment ? <Save size={16} /> : <Send size={16} />}{submitting ? editingAssignment ? 'Saving…' : 'Publishing…' : editingAssignment ? 'Save job changes' : 'Publish job to driver'}</button>
         </form>
 
         <section className="rounded-2xl border border-brand-border bg-brand-card p-6">

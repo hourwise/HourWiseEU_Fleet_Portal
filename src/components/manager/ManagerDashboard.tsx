@@ -47,6 +47,9 @@ const JobPlanner = lazy(() => import('./JobPlanner').then(m => ({ default: m.Job
 const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
 const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
 const TachoComplianceWorkspace = lazy(() => import('./tachograph/TachoComplianceWorkspace').then(m => ({ default: m.TachoComplianceWorkspace })));
+const AssetReadinessPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AssetReadinessPanel })));
+const AtlasOperationsBriefing = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AtlasOperationsBriefing })));
+const ManagerOperationalTaskQueue = lazy(() => import('./ManagerOperationalTaskQueue').then(m => ({ default: m.ManagerOperationalTaskQueue })));
 
 function TabLoading() {
   return (
@@ -508,6 +511,9 @@ export function ManagerDashboard() {
                     </div>
                     <div className="lg:col-span-1 space-y-8">
                       <div className="flex flex-col gap-6">
+                        <AtlasOperationsBriefing />
+                        <ManagerOperationalTaskQueue />
+                        <AssetReadinessPanel />
                         <BroadcastMessage />
 
                         <div className="relative group overflow-hidden">

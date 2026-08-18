@@ -287,7 +287,10 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       };
 
       if (selectedShift.id) {
-        const { error } = await supabase.rpc('update_shift_with_event', {
+        // Legacy update_shift_with_event remains an internal implementation
+        // behind the asset-readiness guard; browser writes use the guarded RPC.
+        const guardedRpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+        const { error } = await guardedRpc('update_shift_with_asset_guard', {
           p_shift_id: selectedShift.id,
           p_date: shiftData.date,
           p_start_time: shiftData.start_time,

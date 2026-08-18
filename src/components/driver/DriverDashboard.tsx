@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { BellRing, CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Loader2, LogOut, RefreshCw, Truck } from 'lucide-react';
+import { BellRing, CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Loader2, LogOut, MapPin, RefreshCw, Truck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   acknowledgeTachoFindingReview,
@@ -9,6 +9,7 @@ import {
 } from '../../lib/tacho/api';
 import { fetchDriverUpcomingShifts, type DriverUpcomingShift } from '../../lib/rota';
 import { acknowledgeDriverOperationalEvent, fetchDriverOperationalEvents, type DriverOperationalEvent } from '../../lib/driverEvents';
+import { fetchDriverJobAssignments, fetchDriverVehicleActions, transitionDriverJobAssignment, type DriverJobAssignment, type DriverJobStatus, type DriverVehicleAction } from '../../lib/driverJobs';
 import type { TachoFindingReview } from '../../lib/tacho/rules/types';
 
 type PendingNoteByReviewId = Record<string, string>;
@@ -18,6 +19,8 @@ export function DriverDashboard() {
   const [reviews, setReviews] = useState<TachoFindingReview[]>([]);
   const [events, setEvents] = useState<Record<string, TachoFindingReviewEvent[]>>({});
   const [upcomingShifts, setUpcomingShifts] = useState<DriverUpcomingShift[]>([]);
+  const [jobs, setJobs] = useState<DriverJobAssignment[]>([]);
+  const [vehicleActions, setVehicleActions] = useState<DriverVehicleAction[]>([]);
   const [operationalEvents, setOperationalEvents] = useState<DriverOperationalEvent[]>([]);
   const [notes, setNotes] = useState<PendingNoteByReviewId>({});
   const [loading, setLoading] = useState(true);
@@ -26,9 +29,12 @@ export function DriverDashboard() {
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rotaError, setRotaError] = useState<string | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [vehicleActionsError, setVehicleActionsError] = useState<string | null>(null);
   const [operationalEventsError, setOperationalEventsError] = useState<string | null>(null);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [acknowledgingEventId, setAcknowledgingEventId] = useState<string | null>(null);
+  const [transitioningJobId, setTransitioningJobId] = useState<string | null>(null);
 
   const loadReviews = async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'initial') setLoading(true);
@@ -65,11 +71,32 @@ export function DriverDashboard() {
     setRotaError(null);
 
     try {
-      setUpcomingShifts(await fetchDriverUpcomingShifts(profile.id));
+      const shifts = await fetchDriverUpcomingShifts(profile.id);
+      setUpcomingShifts(shifts);
+      try {
+        setJobs(await fetchDriverJobAssignments(profile.id, shifts.map((shift) => shift.id)));
+        setJobsError(null);
+      } catch (jobError) {
+        setJobsError(jobError instanceof Error ? jobError.message : 'Unable to load assigned jobs.');
+      }
     } catch (loadError) {
       setRotaError(loadError instanceof Error ? loadError.message : 'Unable to load upcoming shifts.');
     } finally {
       setRotaLoading(false);
+    }
+  };
+
+  const loadVehicleActions = async () => {
+    if (!profile?.id) {
+      setVehicleActions([]);
+      setVehicleActionsError(null);
+      return;
+    }
+    setVehicleActionsError(null);
+    try {
+      setVehicleActions(await fetchDriverVehicleActions(profile.id));
+    } catch (loadError) {
+      setVehicleActionsError(loadError instanceof Error ? loadError.message : 'Unable to load vehicle check actions.');
     }
   };
 
@@ -92,7 +119,7 @@ export function DriverDashboard() {
 
   const refreshDashboard = async () => {
     setRefreshing(true);
-    await Promise.all([loadReviews('refresh'), loadRota(), loadOperationalEvents()]);
+    await Promise.all([loadReviews('refresh'), loadRota(), loadOperationalEvents(), loadVehicleActions()]);
     setRefreshing(false);
   };
 
@@ -100,6 +127,7 @@ export function DriverDashboard() {
     void loadReviews();
     void loadRota();
     void loadOperationalEvents();
+    void loadVehicleActions();
     // Driver dashboard is profile-scoped; reload when the signed-in driver changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
@@ -124,6 +152,7 @@ export function DriverDashboard() {
     () => operationalEvents.filter((event) => event.requiresAck && !event.acknowledgedAt),
     [operationalEvents]
   );
+  const todayJobs = useMemo(() => jobs.filter((job) => todayShifts.some((shift) => shift.id === job.shiftId)), [jobs, todayShifts]);
 
   const handleAcknowledge = async (review: TachoFindingReview) => {
     setAcknowledgingId(review.id);
@@ -154,6 +183,24 @@ export function DriverDashboard() {
       setOperationalEventsError(ackError instanceof Error ? ackError.message : 'Unable to acknowledge operational event.');
     } finally {
       setAcknowledgingEventId(null);
+    }
+  };
+
+  const handleJobTransition = async (job: DriverJobAssignment, toStatus: DriverJobStatus, reason?: string) => {
+    setTransitioningJobId(job.id);
+    setJobsError(null);
+    try {
+      await transitionDriverJobAssignment({
+        assignmentId: job.id,
+        toStatus,
+        expectedUpdatedAt: job.updatedAt,
+        reason: reason ?? null,
+      });
+      await loadRota();
+    } catch (transitionError) {
+      setJobsError(transitionError instanceof Error ? transitionError.message : 'Unable to update this job status.');
+    } finally {
+      setTransitioningJobId(null);
     }
   };
 
@@ -191,14 +238,26 @@ export function DriverDashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
           <MetricCard label="Today's Shifts" value={String(todayShifts.length)} tone={todayShifts.length > 0 ? 'neutral' : 'good'} />
+          <MetricCard label="Today's Jobs" value={String(todayJobs.length)} tone={todayJobs.length > 0 ? 'neutral' : 'good'} />
           <MetricCard label="Rota Events To Read" value={String(outstandingOperationalEvents.length)} tone={outstandingOperationalEvents.length > 0 ? 'warning' : 'good'} />
           <MetricCard label="Open With Manager" value={String(openReviews.length)} tone={openReviews.length > 0 ? 'neutral' : 'good'} />
-          <MetricCard label="Acknowledged" value={String(acknowledgedReviews.length)} tone="good" />
+          <MetricCard label="Vehicle Actions" value={String(vehicleActions.length)} tone={vehicleActions.length > 0 ? 'warning' : 'good'} />
         </div>
 
         <DriverRotaPanel shifts={upcomingShifts} loading={rotaLoading} error={rotaError} />
+
+        <DriverJobsPanel
+          jobs={jobs}
+          shifts={upcomingShifts}
+          loading={rotaLoading}
+          error={jobsError}
+          transitioningJobId={transitioningJobId}
+          onTransition={(job, status, reason) => void handleJobTransition(job, status, reason)}
+        />
+
+        <DriverVehicleActionsPanel actions={vehicleActions} loading={loading && vehicleActions.length === 0} error={vehicleActionsError} />
 
         <DriverOperationalEventsPanel
           events={operationalEvents}
@@ -257,6 +316,149 @@ export function DriverDashboard() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+function DriverJobsPanel({
+  jobs,
+  shifts,
+  loading,
+  error,
+  transitioningJobId,
+  onTransition,
+}: {
+  jobs: DriverJobAssignment[];
+  shifts: DriverUpcomingShift[];
+  loading: boolean;
+  error: string | null;
+  transitioningJobId: string | null;
+  onTransition: (job: DriverJobAssignment, status: DriverJobStatus, reason?: string) => void;
+}) {
+  const shiftById = new Map(shifts.map((shift) => [shift.id, shift]));
+  return (
+    <section className="overflow-hidden rounded-3xl border border-emerald-200 bg-white/90 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-emerald-100 bg-emerald-50/80 p-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">Assigned Work</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Jobs attached to your rota</h2>
+          <p className="mt-1 text-sm font-medium text-slate-600">Assignments are shown in sequence. Use the governed actions to acknowledge, start, report an issue, or complete a job.</p>
+        </div>
+        <MapPin className="h-9 w-9 text-emerald-600" />
+      </div>
+      {error ? <div className="m-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{error}</div> : null}
+      {loading ? <div className="p-5"><StateCard title="Loading assigned jobs..." /></div> : jobs.length === 0 ? (
+        <div className="p-5"><StateCard icon={<ClipboardCheck className="mx-auto h-10 w-10 text-emerald-600" />} title={shifts.length === 0 ? 'No rota assignment is available' : 'No jobs are attached to these shifts'} text={shifts.length === 0 ? 'A published shift will appear here when your manager assigns one.' : 'Your published shifts currently have no job assignments. This is not a completion or zero-work claim.'} tone="neutral" /></div>
+      ) : (
+        <div className="space-y-3 p-5">
+          {jobs.slice(0, 20).map((job) => {
+            const shift = shiftById.get(job.shiftId);
+            const actions = driverJobActions(job.status);
+            return (
+              <article key={job.id} className="rounded-2xl border border-emerald-100 bg-white p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2"><Badge tone="neutral">Stop {job.sequence}</Badge><Badge tone={jobStatusTone(job.status)}>{jobStatusLabel(job.status)}</Badge><Badge tone="neutral">{job.jobType}</Badge></div>
+                    <h3 className="mt-2 text-base font-black text-slate-950">{job.reference} · {job.title}</h3>
+                    <p className="mt-1 text-sm font-medium text-slate-700">{job.customerName ? `${job.customerName} · ` : ''}{job.addressText}</p>
+                    {job.instructions ? <p className="mt-2 text-sm text-slate-600">{job.instructions}</p> : null}
+                  </div>
+                  <div className="shrink-0 text-left md:text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Planned window</p>
+                    <p className="mt-1 text-sm font-black text-slate-800">{formatPlannedWindow(job.plannedArrivalAt, job.plannedDepartureAt)}</p>
+                    {shift ? <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{shift.date} · {shift.startTime}–{shift.endTime}</p> : null}
+                  </div>
+                </div>
+                {actions.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                    {actions.map((action) => {
+                      const pending = transitioningJobId === job.id;
+                      return (
+                        <button
+                          key={action.status}
+                          type="button"
+                          disabled={pending}
+                          onClick={() => {
+                            const reason = action.requiresReason ? window.prompt(`Reason for ${action.label.toLowerCase()} (minimum 5 characters):`) ?? undefined : undefined;
+                            if (action.requiresReason && (!reason || reason.trim().length < 5)) return;
+                            onTransition(job, action.status, reason?.trim());
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition disabled:cursor-not-allowed disabled:opacity-50 ${action.emphasis ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                        >
+                          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                          {pending ? 'Saving' : action.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+type DriverJobAction = { status: DriverJobStatus; label: string; requiresReason?: boolean; emphasis?: boolean };
+
+function driverJobActions(status: DriverJobStatus): DriverJobAction[] {
+  if (status === 'published' || status === 'updated') return [{ status: 'acknowledged', label: 'Acknowledge', emphasis: true }];
+  if (status === 'acknowledged' || status === 'delayed') return [{ status: 'started', label: 'Start / resume', emphasis: true }];
+  if (status === 'started') return [
+    { status: 'arrived', label: 'Mark arrived', emphasis: true },
+    { status: 'delayed', label: 'Report delay', requiresReason: true },
+    { status: 'vehicle_issue', label: 'Vehicle issue', requiresReason: true },
+    { status: 'site_issue', label: 'Site issue', requiresReason: true },
+    { status: 'route_issue', label: 'Route issue', requiresReason: true },
+  ];
+  if (status === 'arrived') return [
+    { status: 'completed', label: 'Complete job', emphasis: true },
+    { status: 'delayed', label: 'Report delay', requiresReason: true },
+    { status: 'vehicle_issue', label: 'Vehicle issue', requiresReason: true },
+    { status: 'site_issue', label: 'Site issue', requiresReason: true },
+    { status: 'route_issue', label: 'Route issue', requiresReason: true },
+  ];
+  return [];
+}
+
+function jobStatusTone(status: DriverJobStatus): 'neutral' | 'success' | 'warning' {
+  if (status === 'completed' || status === 'arrived') return 'success';
+  if (status === 'delayed' || status === 'unable_to_complete' || status === 'vehicle_issue' || status === 'site_issue' || status === 'route_issue') return 'warning';
+  return 'neutral';
+}
+
+function jobStatusLabel(status: DriverJobStatus) {
+  return status.replace(/_/g, ' ');
+}
+
+function DriverVehicleActionsPanel({
+  actions,
+  loading,
+  error,
+}: {
+  actions: DriverVehicleAction[];
+  loading: boolean;
+  error: string | null;
+}) {
+  return (
+    <section className="overflow-hidden rounded-3xl border border-amber-200 bg-white/90 shadow-sm">
+      <div className="flex items-center justify-between border-b border-amber-100 bg-amber-50/80 p-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Vehicle Actions</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Recent check findings</h2>
+        </div>
+        <Truck className="h-9 w-9 text-amber-600" />
+      </div>
+      {error ? <div className="m-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{error}</div> : null}
+      {loading ? <div className="p-5"><StateCard title="Loading vehicle check actions..." /></div> : actions.length === 0 ? (
+        <div className="p-5"><StateCard icon={<CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />} title="No vehicle check action is recorded" text="This means no action row was returned for your recent checks; it does not certify vehicle readiness." tone="neutral" /></div>
+      ) : (
+        <div className="space-y-3 p-5">
+          {actions.map((action) => <article key={action.id} className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap gap-2"><Badge tone="warning">{action.checkStatus}</Badge>{action.defectLifecycleStatus ? <Badge tone="neutral">{action.defectLifecycleStatus.replace('_', ' ')}</Badge> : null}</div><h3 className="mt-2 text-base font-black text-slate-950">{action.regNumber}</h3>{action.defectDetails ? <p className="mt-1 text-sm font-medium text-slate-700">{action.defectDetails}</p> : null}</div>{action.createdAt ? <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{formatDateTime(action.createdAt)}</p> : null}</div></article>)}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -518,7 +720,7 @@ function StateCard({
   title: string;
   text?: string;
   icon?: ReactNode;
-  tone?: 'loading' | 'success';
+  tone?: 'loading' | 'success' | 'neutral';
 }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white/85 p-8 text-center shadow-sm">
@@ -558,6 +760,14 @@ function groupEventsByReviewId(events: TachoFindingReviewEvent[]) {
 function formatDateTime(value?: string | null) {
   if (!value) return 'Not recorded';
   return new Date(value).toLocaleString();
+}
+
+function formatPlannedWindow(arrival: string | null, departure: string | null) {
+  const format = (value: string | null) => value ? new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : null;
+  const start = format(arrival);
+  const end = format(departure);
+  if (start && end) return `${start}–${end}`;
+  return start ?? end ?? 'Not scheduled';
 }
 
 function formatDateOnly(date: Date) {
