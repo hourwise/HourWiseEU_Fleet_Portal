@@ -31,7 +31,7 @@ The morning briefing performs no LLM/API/model inference. It reads Portal rows, 
 - `npm.cmd run build` — passed
 - Changed-file ESLint — passed
 - `npm.cmd run lint` — unchanged repository baseline: 103 errors / 7 warnings outside the Batch 12 changed-file scope
-- `git diff --check` — pending final handoff run
+- `git diff --check` — passed
 
 ## Remaining blockers
 
