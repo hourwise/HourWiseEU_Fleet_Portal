@@ -2070,6 +2070,106 @@ export type Database = {
           },
         ]
       }
+      job_evidence_upload_intents: {
+        Row: {
+          cleaned_at: string | null
+          cleanup_reason: string | null
+          company_id: string
+          created_at: string
+          evidence_id: string | null
+          finalized_at: string | null
+          id: string
+          job_assignment_id: string
+          job_id: string
+          original_file_name: string
+          status: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          cleaned_at?: string | null
+          cleanup_reason?: string | null
+          company_id: string
+          created_at?: string
+          evidence_id?: string | null
+          finalized_at?: string | null
+          id?: string
+          job_assignment_id: string
+          job_id: string
+          original_file_name: string
+          status?: string
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_at?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          cleaned_at?: string | null
+          cleanup_reason?: string | null
+          company_id?: string
+          created_at?: string
+          evidence_id?: string | null
+          finalized_at?: string | null
+          id?: string
+          job_assignment_id?: string
+          job_id?: string
+          original_file_name?: string
+          status?: string
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_at?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_evidence_upload_intents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_upload_intents_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "job_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_upload_intents_job_assignment_id_fkey"
+            columns: ["job_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "job_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_upload_intents_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_evidence_upload_intents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_evidence_upload_intents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_stop_manager_notes: {
         Row: {
           company_id: string
@@ -5946,6 +6046,10 @@ export type Database = {
         }
         Returns: Json
       }
+      begin_job_evidence_upload: {
+        Args: { p_job_assignment_id: string; p_original_file_name: string }
+        Returns: Json
+      }
       can_access_defect_photo_object: {
         Args: { p_name: string }
         Returns: boolean
@@ -5971,6 +6075,10 @@ export type Database = {
         Returns: Json
       }
       check_is_manager: { Args: never; Returns: boolean }
+      cleanup_failed_job_evidence_upload: {
+        Args: { p_reason?: string; p_upload_intent_id: string }
+        Returns: Json
+      }
       configure_tacho_processing_runtime: {
         Args: { p_patch?: Json }
         Returns: {
@@ -6081,6 +6189,41 @@ export type Database = {
           p_summary: Database["public"]["Tables"]["daily_timeline_summaries"]["Row"]
         }
         Returns: Json
+      }
+      finalize_job_evidence_upload: {
+        Args: {
+          p_evidence_type: string
+          p_metadata?: Json
+          p_outcome: string
+          p_source?: string
+          p_upload_intent_id: string
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          job_assignment_id: string
+          job_id: string
+          metadata: Json
+          outcome: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "job_evidence"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       generate_invoice_number: { Args: never; Returns: string }
       get_asset_assignment_policy: {

@@ -23,6 +23,16 @@ export type JobEvidenceRecord = {
   updated_at: string;
 };
 
+export type JobEvidenceUploadIntent = {
+  id: string;
+  company_id: string;
+  job_id: string;
+  job_assignment_id: string;
+  storage_bucket: 'pod-evidence';
+  storage_path: string;
+  status: 'pending';
+};
+
 export async function fetchJobEvidence(jobAssignmentId: string): Promise<JobEvidenceRecord[]> {
   const { data, error } = await supabase.from('job_evidence').select('*').eq('job_assignment_id', jobAssignmentId).order('uploaded_at', { ascending: false });
   if (error) throw new Error(error.message || 'Unable to load job evidence.');
@@ -30,18 +40,30 @@ export async function fetchJobEvidence(jobAssignmentId: string): Promise<JobEvid
 }
 
 export async function uploadJobEvidence(input: { assignmentId: string; file: File; evidenceType: JobEvidenceType; outcome: JobEvidenceOutcome; source?: 'portal_upload' | 'mobile_camera' | 'mobile_file' }) {
-  const { data: userResult, error: userError } = await supabase.auth.getUser();
-  if (userError || !userResult.user) throw new Error('You must be signed in to upload evidence.');
-  const companyId = (await supabase.from('profiles').select('company_id').eq('id', userResult.user.id).maybeSingle()).data?.company_id;
-  if (!companyId) throw new Error('Company context is unavailable.');
-  const safeName = input.file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').slice(-120) || 'evidence';
-  const path = `${companyId}/${input.assignmentId}/${crypto.randomUUID()}-${safeName}`;
-  const { error: uploadError } = await supabase.storage.from('pod-evidence').upload(path, input.file, { upsert: false, contentType: input.file.type || undefined });
-  if (uploadError) throw new Error(uploadError.message || 'Unable to upload evidence file.');
   const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: JobEvidenceRecord | null; error: { message: string } | null }>;
-  const { data, error } = await rpc('create_job_evidence', { p_job_assignment_id: input.assignmentId, p_evidence_type: input.evidenceType, p_outcome: input.outcome, p_storage_path: path, p_source: input.source ?? 'portal_upload', p_metadata: { file_name: input.file.name, content_type: input.file.type || null, size_bytes: input.file.size } });
-  if (error) throw new Error(error.message || 'Unable to record job evidence.');
-  return data;
+  const { data: intentData, error: intentError } = await rpc('begin_job_evidence_upload', { p_job_assignment_id: input.assignmentId, p_original_file_name: input.file.name });
+  if (intentError || !intentData) throw new Error(intentError?.message || 'Unable to create a governed evidence upload intent.');
+  const intent = intentData as unknown as JobEvidenceUploadIntent;
+  const cleanup = async (reason: string) => {
+    const { error } = await rpc('cleanup_failed_job_evidence_upload', { p_upload_intent_id: intent.id, p_reason: reason });
+    if (error) throw new Error(error.message || 'Upload cleanup was not confirmed.');
+  };
+  try {
+    const { error: uploadError } = await supabase.storage.from('pod-evidence').upload(intent.storage_path, input.file, { upsert: false, contentType: input.file.type || undefined });
+    if (uploadError) {
+      await cleanup(`storage upload failed: ${uploadError.message}`);
+      throw new Error(uploadError.message || 'Unable to upload evidence file.');
+    }
+    const { data, error } = await rpc('finalize_job_evidence_upload', { p_upload_intent_id: intent.id, p_evidence_type: input.evidenceType, p_outcome: input.outcome, p_source: input.source ?? 'portal_upload', p_metadata: { file_name: input.file.name, content_type: input.file.type || null, size_bytes: input.file.size } });
+    if (error || !data) {
+      await cleanup(`evidence registration failed: ${error?.message ?? 'empty registration response'}`);
+      throw new Error(error?.message || 'Unable to record job evidence.');
+    }
+    return data;
+  } catch (error) {
+    if (error instanceof Error && /cleanup was not confirmed/i.test(error.message)) throw error;
+    throw error;
+  }
 }
 
 export async function reviewJobEvidence(input: { evidenceId: string; reviewStatus: Exclude<JobEvidenceReviewStatus, 'pending'>; reviewNotes?: string | null; expectedUpdatedAt?: string | null }) {
