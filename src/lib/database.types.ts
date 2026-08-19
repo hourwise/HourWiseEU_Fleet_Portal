@@ -204,6 +204,134 @@ export type Database = {
           },
         ]
       }
+      atlas_proposals: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          evidence_facts: Json
+          id: string
+          operation_result: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change: Json
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_snapshot: Json
+          source_snapshot_version: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+          validated_at: string | null
+          validation_reasons: Json
+          validation_status: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          evidence_facts?: Json
+          id?: string
+          operation_result?: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change?: Json
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_snapshot?: Json
+          source_snapshot_version: string
+          status?: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at?: string
+          validated_at?: string | null
+          validation_reasons?: Json
+          validation_status?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          evidence_facts?: Json
+          id?: string
+          operation_result?: Json | null
+          origin?: string
+          proposal_type?: string
+          proposed_change?: Json
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_snapshot?: Json
+          source_snapshot_version?: string
+          status?: string
+          target_entity_id?: string
+          target_entity_type?: string
+          updated_at?: string
+          validated_at?: string | null
+          validation_reasons?: Json
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atlas_proposals_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atlas_signal_observations: {
         Row: {
           company_id: string
@@ -6106,6 +6234,49 @@ export type Database = {
         }
         Returns: Json
       }
+      create_atlas_proposal: {
+        Args: {
+          p_evidence_facts: Json
+          p_origin?: string
+          p_proposal_type: string
+          p_proposed_change: Json
+          p_source_snapshot: Json
+          p_source_snapshot_version: string
+          p_target_entity_id: string
+          p_target_entity_type: string
+        }
+        Returns: {
+          applied_at: string | null
+          applied_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          evidence_facts: Json
+          id: string
+          operation_result: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change: Json
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_snapshot: Json
+          source_snapshot_version: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+          validated_at: string | null
+          validation_reasons: Json
+          validation_status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "atlas_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_job_assignment_with_asset_guard: {
         Args: {
           p_address_text: string
@@ -6342,6 +6513,48 @@ export type Database = {
         }
         Returns: Json
       }
+      reconcile_expired_job_evidence_uploads: {
+        Args: { p_max_rows?: number }
+        Returns: Json
+      }
+      record_atlas_proposal_outcome: {
+        Args: {
+          p_operation_result?: Json
+          p_outcome: string
+          p_proposal_id: string
+        }
+        Returns: {
+          applied_at: string | null
+          applied_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          evidence_facts: Json
+          id: string
+          operation_result: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change: Json
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_snapshot: Json
+          source_snapshot_version: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+          validated_at: string | null
+          validation_reasons: Json
+          validation_status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "atlas_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_security_event: {
         Args: {
           p_actor_kind?: string
@@ -6359,6 +6572,48 @@ export type Database = {
         Returns: string
       }
       resolve_tacho_range_start: { Args: { p_range: string }; Returns: string }
+      revalidate_atlas_proposal: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
+      revalidate_atlas_proposal_asset_checks: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
+      review_atlas_proposal: {
+        Args: { p_decision: string; p_notes?: string; p_proposal_id: string }
+        Returns: {
+          applied_at: string | null
+          applied_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          evidence_facts: Json
+          id: string
+          operation_result: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change: Json
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_snapshot: Json
+          source_snapshot_version: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+          validated_at: string | null
+          validation_reasons: Json
+          validation_status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "atlas_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_expense: {
         Args: {
           p_decision: string
