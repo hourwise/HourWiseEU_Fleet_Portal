@@ -14,21 +14,30 @@ const managerEmail = required('SMOKE_MANAGER_EMAIL');
 const managerPassword = required('SMOKE_MANAGER_PASSWORD');
 const driverEmail = required('SMOKE_DRIVER_EMAIL');
 const driverPassword = required('SMOKE_DRIVER_PASSWORD');
+const wrongDriverEmail = required('SMOKE_WRONG_DRIVER_EMAIL');
+const wrongDriverPassword = required('SMOKE_WRONG_DRIVER_PASSWORD');
 const shiftId = required('SMOKE_SHIFT_ID');
 const readyTrailerId = required('SMOKE_TRAILER_ID');
 const prohibitedTrailerId = required('SMOKE_PROHIBITED_TRAILER_ID');
+const crossCompanyAssignmentId = required('SMOKE_CROSS_COMPANY_ASSIGNMENT_ID');
+const crossCompanyAssignmentUpdatedAt = required('SMOKE_CROSS_COMPANY_ASSIGNMENT_UPDATED_AT');
+const forbiddenPodPath = required('SMOKE_FORBIDDEN_POD_PATH');
 
 const manager = createSmokeClient();
 const driver = createSmokeClient();
+const wrongDriver = createSmokeClient();
 const results = [];
 
 await signIn(manager, managerEmail, managerPassword, 'manager');
 await signIn(driver, driverEmail, driverPassword, 'driver');
+await signIn(wrongDriver, wrongDriverEmail, wrongDriverPassword, 'wrong-driver');
 const managerProfile = await profile(manager);
 const driverProfile = await profile(driver);
+const wrongDriverProfile = await profile(wrongDriver);
 assert(managerProfile.company_id && managerProfile.company_id === driverProfile.company_id, 'Manager and driver must be in the same disposable company.');
 assert(managerProfile.role === 'manager', 'Configured manager identity is not a manager profile.');
 assert(driverProfile.role === 'driver', 'Configured driver identity is not a driver profile.');
+assert(wrongDriverProfile.role === 'driver' && wrongDriverProfile.company_id === managerProfile.company_id && wrongDriverProfile.id !== driverProfile.id, 'Configured wrong-driver identity must be a different driver in the same company.');
 results.push('authenticated manager and driver');
 
 const shift = await one(manager, 'shifts', 'id, company_id, driver_id, status, date', { id: shiftId });
@@ -47,13 +56,22 @@ const prohibitedAttempt = await rpcResult(manager, 'assign_trailer_to_job_assign
 assert(prohibitedAttempt.error, 'A prohibited trailer assignment unexpectedly succeeded.');
 results.push('prohibited trailer assignment rejected');
 
+await assertReadDenied(manager, 'job_assignments', crossCompanyAssignmentId);
+await assertRpcDenied(manager, 'assign_trailer_to_job_assignment', { p_assignment_id: crossCompanyAssignmentId, p_trailer_id: readyTrailerId, p_expected_updated_at: crossCompanyAssignmentUpdatedAt });
+const wrongDriverAssignment = await assignment(manager, firstAssignment.job_assignment_id);
+await assertRpcDenied(wrongDriver, 'transition_job_assignment_with_event', { p_assignment_id: firstAssignment.job_assignment_id, p_to_status: 'acknowledged', p_expected_updated_at: wrongDriverAssignment.updated_at, p_reason: null, p_requires_ack: false });
+results.push('cross-company read/mutation and wrong-driver lifecycle were denied');
+
 await assertDriverCanReadPublishedWork(firstAssignment);
 await transitionLifecycle(driver, firstAssignment.job_assignment_id, ['acknowledged', 'started', 'arrived', 'completed']);
 results.push('driver saw jobs/stops and completed governed lifecycle');
 
 const evidence = await uploadAndReviewPod(driver, manager, firstAssignment.job_assignment_id);
 assert(evidence.review_status === 'accepted', 'Manager POD review did not reach accepted state.');
+await assertStorageDownloadDenied(wrongDriver, forbiddenPodPath);
+await assertRpcDenied(driver, 'cleanup_failed_job_evidence_upload', { p_upload_intent_id: evidence.upload_intent_id, p_reason: 'Batch 14 finalized evidence must be retained' });
 results.push('POD upload, registration, and manager review completed');
+results.push('arbitrary POD access and finalized-evidence cleanup were denied');
 
 const exceptionAssignment = await createAssignment(manager, shiftId, 'B13-E2E-EXCEPTION');
 await transitionLifecycle(driver, exceptionAssignment.job_assignment_id, ['acknowledged', 'started', 'delayed', 'unable_to_complete']);
@@ -131,7 +149,24 @@ async function uploadAndReviewPod(driverClient, managerClient, assignmentId) {
   }
   const evidence = await rpc(driverClient, 'finalize_job_evidence_upload', { p_upload_intent_id: intent.id, p_evidence_type: 'pod', p_outcome: 'delivered', p_source: 'mobile_file', p_metadata: { smoke: true } });
   const loaded = await one(managerClient, 'job_evidence', 'id, updated_at, review_status', { id: evidence.id });
-  return rpc(managerClient, 'review_job_evidence', { p_evidence_id: loaded.id, p_review_status: 'accepted', p_review_notes: 'Batch 13 disposable smoke verification', p_expected_updated_at: loaded.updated_at });
+  const reviewed = await rpc(managerClient, 'review_job_evidence', { p_evidence_id: loaded.id, p_review_status: 'accepted', p_review_notes: 'Batch 14 disposable smoke verification', p_expected_updated_at: loaded.updated_at });
+  return { ...reviewed, upload_intent_id: intent.id };
+}
+
+async function assertReadDenied(client, table, id) {
+  const { data, error } = await client.from(table).select('id').eq('id', id).maybeSingle();
+  if (error) throw new Error(`Cross-company read returned an unexpected error: ${error.message}`);
+  assert(!data, `Cross-company read unexpectedly returned ${table} row ${id}.`);
+}
+
+async function assertRpcDenied(client, name, args) {
+  const result = await rpcResult(client, name, args);
+  assert(result.error, `${name} unexpectedly succeeded across the governed security boundary.`);
+}
+
+async function assertStorageDownloadDenied(client, path) {
+  const { data, error } = await client.storage.from('pod-evidence').download(path);
+  assert(error || !data, 'Arbitrary cross-company POD object download unexpectedly succeeded.');
 }
 
 async function rpc(client, name, args) {
