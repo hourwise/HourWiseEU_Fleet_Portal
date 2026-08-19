@@ -28,6 +28,12 @@ export type AtlasProposalRecord = {
   applied_at: string | null;
   operation_result: Record<string, unknown> | null;
   updated_at: string;
+  apply_attempt_count: number;
+  apply_started_at: string | null;
+  apply_finished_at: string | null;
+  apply_outcome: 'applied' | 'already_applied' | 'stale' | 'validation_failed' | 'permission_denied' | 'conflict' | 'governed_operation_failed' | null;
+  apply_error_code: string | null;
+  resulting_event_id: string | null;
 };
 
 export type AtlasProposalCandidate = AtlasProposalDraft & {
@@ -40,6 +46,45 @@ export type AtlasProposalRevalidation = {
   status: AtlasProposalRecord['validation_status'];
   reasons: readonly { code: string; message: string; sourceId?: string }[];
   currentVersion: string | null;
+};
+
+export type AtlasProposalTimeline = {
+  proposalId: string;
+  proposalType: AtlasProposalType;
+  targetEntityType: AtlasProposalRecord['target_entity_type'];
+  targetEntityId: string;
+  status: AtlasProposalRecord['status'];
+  validationStatus: AtlasProposalRecord['validation_status'];
+  validationReasons: AtlasProposalRecord['validation_reasons'];
+  events: readonly {
+    id: string;
+    timestamp: string;
+    action: string;
+    actorId: string | null;
+    actorKind: string;
+    decision: string;
+    operation: string | null;
+    resourceType: string | null;
+    resourceId: string | null;
+    metadata: Record<string, unknown>;
+  }[];
+};
+
+export type AtlasProposalListFilters = {
+  status?: AtlasProposalRecord['status'] | '';
+  proposalType?: AtlasProposalType | '';
+  createdFrom?: string;
+  createdTo?: string;
+  targetEntityId?: string;
+};
+
+export type AtlasApplyResult = {
+  proposalId: string;
+  outcomeCode: NonNullable<AtlasProposalRecord['apply_outcome']>;
+  idempotentReplay: boolean;
+  proposal: AtlasProposalRecord | null;
+  operationResult: Record<string, unknown> | null;
+  resultingEventId: string | null;
 };
 
 export function buildEligibleTrailerProposals(input: {
@@ -121,10 +166,64 @@ export function validateAtlasProposalCandidate(input: { candidate: AtlasProposal
   }, input.candidate);
 }
 
-export async function fetchAtlasProposals(companyId: string): Promise<AtlasProposalRecord[]> {
-  const { data, error } = await supabase.from('atlas_proposals').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+export async function fetchAtlasProposals(filters: AtlasProposalListFilters = {}): Promise<AtlasProposalRecord[]> {
+  const { data, error } = await supabase.rpc('list_atlas_proposals', {
+    p_status: filters.status || undefined,
+    p_proposal_type: filters.proposalType || undefined,
+    p_created_from: filters.createdFrom ? new Date(`${filters.createdFrom}T00:00:00`).toISOString() : undefined,
+    p_created_to: filters.createdTo ? new Date(`${filters.createdTo}T00:00:00`).toISOString() : undefined,
+    p_target_entity_id: filters.targetEntityId || undefined,
+    p_limit: 100,
+  });
   if (error) throw new Error(error.message || 'Unable to load Atlas proposals.');
   return (data ?? []) as unknown as AtlasProposalRecord[];
+}
+
+export async function fetchAtlasProposalTimeline(proposalId: string): Promise<AtlasProposalTimeline> {
+  const { data, error } = await supabase.rpc('get_atlas_proposal_timeline', { p_proposal_id: proposalId });
+  if (error || !data) throw new Error(error?.message || 'Unable to load Atlas proposal history.');
+  const result = data as unknown as {
+    proposal_id: string;
+    proposal_type: AtlasProposalType;
+    target_entity_type: AtlasProposalRecord['target_entity_type'];
+    target_entity_id: string;
+    status: AtlasProposalRecord['status'];
+    validation_status: AtlasProposalRecord['validation_status'];
+    validation_reasons: AtlasProposalRecord['validation_reasons'];
+    events?: readonly {
+      id: string;
+      timestamp: string;
+      action: string;
+      actor_id: string | null;
+      actor_kind: string;
+      decision: string;
+      operation: string | null;
+      resource_type: string | null;
+      resource_id: string | null;
+      metadata: Record<string, unknown>;
+    }[];
+  };
+  return {
+    proposalId: result.proposal_id,
+    proposalType: result.proposal_type,
+    targetEntityType: result.target_entity_type,
+    targetEntityId: result.target_entity_id,
+    status: result.status,
+    validationStatus: result.validation_status,
+    validationReasons: result.validation_reasons,
+    events: (result.events ?? []).map((event) => ({
+      id: event.id,
+      timestamp: event.timestamp,
+      action: event.action,
+      actorId: event.actor_id,
+      actorKind: event.actor_kind,
+      decision: event.decision,
+      operation: event.operation,
+      resourceType: event.resource_type,
+      resourceId: event.resource_id,
+      metadata: event.metadata,
+    })),
+  };
 }
 
 export async function createAtlasProposal(candidate: AtlasProposalCandidate): Promise<AtlasProposalRecord> {
@@ -155,46 +254,31 @@ export async function reviewAtlasProposal(proposalId: string, decision: 'approve
   return data as unknown as AtlasProposalRecord;
 }
 
-export async function applyAtlasProposal(proposal: AtlasProposalRecord, expectedVersion: string): Promise<AtlasProposalRecord> {
+export async function applyAtlasProposal(proposal: AtlasProposalRecord): Promise<AtlasApplyResult> {
   if (proposal.status !== 'approved') throw new Error('A manager must approve an Atlas proposal before apply.');
-  let result: unknown;
-  try {
-    if (proposal.proposal_type === 'change_trailer') {
-      const { data, error } = await supabase.rpc('assign_trailer_to_job_assignment', { p_assignment_id: proposal.target_entity_id, p_trailer_id: String(proposal.proposed_change.trailer_id), p_expected_updated_at: expectedVersion });
-      if (error) throw new Error(error.message);
-      result = data;
-    } else if (proposal.proposal_type === 'change_shift_vehicle') {
-      const { data, error } = await supabase.rpc('update_shift_with_asset_guard', {
-        p_shift_id: proposal.target_entity_id,
-        p_date: String(proposal.proposed_change.date),
-        p_start_time: String(proposal.proposed_change.start_time),
-        p_end_time: String(proposal.proposed_change.end_time),
-        p_vehicle_id: String(proposal.proposed_change.vehicle_id),
-        p_notes: typeof proposal.proposed_change.notes === 'string' ? proposal.proposed_change.notes : undefined,
-        p_requires_ack: true,
-      });
-      if (error) throw new Error(error.message);
-      result = data;
-    } else {
-      const { data, error } = await supabase.rpc('set_operational_task_handling', {
-        p_source_type: String(proposal.proposed_change.source_type),
-        p_source_id: String(proposal.proposed_change.source_id),
-        p_status: 'acknowledged',
-        p_owner_id: undefined,
-        p_action: String(proposal.proposed_change.action ?? 'atlas_manager_review'),
-        p_note: typeof proposal.proposed_change.note === 'string' ? proposal.proposed_change.note : undefined,
-        p_expected_updated_at: expectedVersion,
-      });
-      if (error) throw new Error(error.message);
-      result = data;
-    }
-  } catch (error) {
-    await supabase.rpc('record_atlas_proposal_outcome', { p_proposal_id: proposal.id, p_outcome: 'failed', p_operation_result: { error: error instanceof Error ? error.message : 'Governed operation failed.' } as unknown as Json });
-    throw error;
-  }
-  const { data, error } = await supabase.rpc('record_atlas_proposal_outcome', { p_proposal_id: proposal.id, p_outcome: 'applied', p_operation_result: (result ?? {}) as Json });
-  if (error || !data) throw new Error(error?.message || 'Governed operation succeeded but proposal outcome was not recorded.');
-  return data as unknown as AtlasProposalRecord;
+  const response = proposal.proposal_type === 'change_trailer'
+    ? await supabase.rpc('atlas_apply_trailer_proposal', { p_proposal_id: proposal.id })
+    : proposal.proposal_type === 'change_shift_vehicle'
+      ? await supabase.rpc('atlas_apply_shift_vehicle_proposal', { p_proposal_id: proposal.id })
+      : await supabase.rpc('atlas_apply_task_proposal', { p_proposal_id: proposal.id });
+  const { data, error } = response;
+  if (error || !data) throw new Error(error?.message || 'Unable to apply Atlas proposal.');
+  const result = data as unknown as {
+    proposal_id: string;
+    outcome_code: NonNullable<AtlasProposalRecord['apply_outcome']>;
+    idempotent_replay?: boolean;
+    proposal?: AtlasProposalRecord;
+    operation_result?: Record<string, unknown> | null;
+    resulting_event_id?: string | null;
+  };
+  return {
+    proposalId: result.proposal_id,
+    outcomeCode: result.outcome_code,
+    idempotentReplay: result.idempotent_replay ?? false,
+    proposal: result.proposal ?? null,
+    operationResult: result.operation_result ?? null,
+    resultingEventId: result.resulting_event_id ?? null,
+  };
 }
 
 export function proposalTypeLabel(value: AtlasProposalType): string {

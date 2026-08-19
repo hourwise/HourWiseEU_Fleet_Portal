@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const atlasMigration = readFileSync('supabase/migrations/20260819211839_batch14_atlas_proposals.sql', 'utf8');
 const podMigration = readFileSync('supabase/migrations/20260819211850_batch14_pod_reconciliation.sql', 'utf8');
 const securityMigration = readFileSync('supabase/migrations/20260819211858_batch14_security_hardening.sql', 'utf8');
+const atlasConcurrencyMigration = readFileSync('supabase/migrations/20260819222159_batch15_atlas_apply_concurrency.sql', 'utf8');
 const proposal = readFileSync('src/lib/atlasProposal.ts', 'utf8');
 const modelGateway = readFileSync('src/lib/atlasModelGateway.ts', 'utf8');
 const smoke = readFileSync('tools/operational-smoke.mjs', 'utf8');
@@ -21,9 +22,12 @@ describe('Batch 14 workflow and security contracts', () => {
     expect(atlasMigration).toContain("p_decision not in ('approved', 'rejected')");
     expect(atlasMigration).toContain("proposal.validation_status <> 'valid'");
     expect(atlasMigration).toContain('record_security_event');
-    expect(proposal).toContain("assign_trailer_to_job_assignment");
-    expect(proposal).toContain("update_shift_with_asset_guard");
-    expect(proposal).toContain("set_operational_task_handling");
+    for (const functionName of ['atlas_apply_trailer_proposal', 'atlas_apply_shift_vehicle_proposal', 'atlas_apply_task_proposal']) {
+      expect(atlasConcurrencyMigration).toContain(`create or replace function public.${functionName}`);
+    }
+    expect(proposal).toContain("atlas_apply_trailer_proposal");
+    expect(proposal).toContain("atlas_apply_shift_vehicle_proposal");
+    expect(proposal).toContain("atlas_apply_task_proposal");
     expect(proposal).not.toContain('AtlasModelGateway');
     expect(proposal).not.toContain('openai');
     expect(proposal).not.toContain('anthropic');

@@ -208,6 +208,11 @@ export type Database = {
         Row: {
           applied_at: string | null
           applied_by: string | null
+          apply_attempt_count: number
+          apply_error_code: string | null
+          apply_finished_at: string | null
+          apply_outcome: string | null
+          apply_started_at: string | null
           company_id: string
           created_at: string
           created_by: string
@@ -217,6 +222,7 @@ export type Database = {
           origin: string
           proposal_type: string
           proposed_change: Json
+          resulting_event_id: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -233,6 +239,11 @@ export type Database = {
         Insert: {
           applied_at?: string | null
           applied_by?: string | null
+          apply_attempt_count?: number
+          apply_error_code?: string | null
+          apply_finished_at?: string | null
+          apply_outcome?: string | null
+          apply_started_at?: string | null
           company_id: string
           created_at?: string
           created_by: string
@@ -242,6 +253,7 @@ export type Database = {
           origin: string
           proposal_type: string
           proposed_change?: Json
+          resulting_event_id?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -258,6 +270,11 @@ export type Database = {
         Update: {
           applied_at?: string | null
           applied_by?: string | null
+          apply_attempt_count?: number
+          apply_error_code?: string | null
+          apply_finished_at?: string | null
+          apply_outcome?: string | null
+          apply_started_at?: string | null
           company_id?: string
           created_at?: string
           created_by?: string
@@ -267,6 +284,7 @@ export type Database = {
           origin?: string
           proposal_type?: string
           proposed_change?: Json
+          resulting_event_id?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -314,6 +332,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_resulting_event_id_fkey"
+            columns: ["resulting_event_id"]
+            isOneToOne: false
+            referencedRelation: "driver_visible_fleet_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atlas_proposals_resulting_event_id_fkey"
+            columns: ["resulting_event_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_events"
             referencedColumns: ["id"]
           },
           {
@@ -2902,6 +2934,57 @@ export type Database = {
           unpaid_break_minutes?: number
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      pod_reconciliation_runs: {
+        Row: {
+          batch_limit: number
+          consecutive_failures: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          failure_count: number
+          finished_at: string | null
+          id: string
+          intents_expired: number
+          intents_scanned: number
+          mismatch_count: number
+          started_at: string
+          status: string
+          storage_objects_removed: number
+        }
+        Insert: {
+          batch_limit: number
+          consecutive_failures?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          failure_count?: number
+          finished_at?: string | null
+          id?: string
+          intents_expired?: number
+          intents_scanned?: number
+          mismatch_count?: number
+          started_at?: string
+          status?: string
+          storage_objects_removed?: number
+        }
+        Update: {
+          batch_limit?: number
+          consecutive_failures?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          failure_count?: number
+          finished_at?: string | null
+          id?: string
+          intents_expired?: number
+          intents_scanned?: number
+          mismatch_count?: number
+          started_at?: string
+          status?: string
+          storage_objects_removed?: number
         }
         Relationships: []
       }
@@ -6174,6 +6257,18 @@ export type Database = {
         }
         Returns: Json
       }
+      atlas_apply_shift_vehicle_proposal: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
+      atlas_apply_task_proposal: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
+      atlas_apply_trailer_proposal: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
       begin_job_evidence_upload: {
         Args: { p_job_assignment_id: string; p_original_file_name: string }
         Returns: Json
@@ -6248,6 +6343,11 @@ export type Database = {
         Returns: {
           applied_at: string | null
           applied_by: string | null
+          apply_attempt_count: number
+          apply_error_code: string | null
+          apply_finished_at: string | null
+          apply_outcome: string | null
+          apply_started_at: string | null
           company_id: string
           created_at: string
           created_by: string
@@ -6257,6 +6357,7 @@ export type Database = {
           origin: string
           proposal_type: string
           proposed_change: Json
+          resulting_event_id: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -6401,6 +6502,10 @@ export type Database = {
         Args: { p_company_id: string; p_vehicle_id: string }
         Returns: Json
       }
+      get_atlas_proposal_timeline: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
       get_auth_user_company: { Args: never; Returns: string }
       get_auth_user_company_id: { Args: never; Returns: string }
       get_auth_user_role: { Args: never; Returns: string }
@@ -6427,6 +6532,7 @@ export type Database = {
       }
       get_my_company_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
+      get_pod_reconciliation_health: { Args: never; Returns: Json }
       get_tacho_import_bundle: {
         Args: { p_company_id: string; p_import_id: string }
         Returns: Json
@@ -6455,6 +6561,53 @@ export type Database = {
         Returns: boolean
       }
       is_uuid: { Args: { p_value: string }; Returns: boolean }
+      list_atlas_proposals: {
+        Args: {
+          p_created_from?: string
+          p_created_to?: string
+          p_limit?: number
+          p_proposal_type?: string
+          p_status?: string
+          p_target_entity_id?: string
+        }
+        Returns: {
+          applied_at: string | null
+          applied_by: string | null
+          apply_attempt_count: number
+          apply_error_code: string | null
+          apply_finished_at: string | null
+          apply_outcome: string | null
+          apply_started_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          evidence_facts: Json
+          id: string
+          operation_result: Json | null
+          origin: string
+          proposal_type: string
+          proposed_change: Json
+          resulting_event_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_snapshot: Json
+          source_snapshot_version: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+          validated_at: string | null
+          validation_reasons: Json
+          validation_status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "atlas_proposals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       lookup_pending_driver_invite: {
         Args: { p_invite_code: string }
         Returns: {
@@ -6526,6 +6679,11 @@ export type Database = {
         Returns: {
           applied_at: string | null
           applied_by: string | null
+          apply_attempt_count: number
+          apply_error_code: string | null
+          apply_finished_at: string | null
+          apply_outcome: string | null
+          apply_started_at: string | null
           company_id: string
           created_at: string
           created_by: string
@@ -6535,6 +6693,7 @@ export type Database = {
           origin: string
           proposal_type: string
           proposed_change: Json
+          resulting_event_id: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -6585,6 +6744,11 @@ export type Database = {
         Returns: {
           applied_at: string | null
           applied_by: string | null
+          apply_attempt_count: number
+          apply_error_code: string | null
+          apply_finished_at: string | null
+          apply_outcome: string | null
+          apply_started_at: string | null
           company_id: string
           created_at: string
           created_by: string
@@ -6594,6 +6758,7 @@ export type Database = {
           origin: string
           proposal_type: string
           proposed_change: Json
+          resulting_event_id: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
