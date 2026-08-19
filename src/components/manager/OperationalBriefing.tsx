@@ -10,6 +10,7 @@ import { driverForecastNeedsAction, fetchDriverComplianceForecast, type DriverCo
 import { buildComplianceForecast, forecastNeedsAction, type ComplianceForecastItem, type ForecastHorizon } from '../../lib/complianceForecast';
 import { answerAtlasQuestion, fetchAtlasQuerySnapshot, type AtlasAnswer, type AtlasQuerySnapshot } from '../../lib/atlasQueryRouter';
 import { AtlasProposalWorkbench } from './AtlasProposalWorkbench';
+import { PodReconciliationHealth } from './PodReconciliationHealth';
 
 export function AssetReadinessPanel() {
   const { profile } = useAuth();
@@ -87,6 +88,7 @@ export function AtlasOperationsBriefing() {
         {loading ? <div className="mt-5 flex items-center gap-2 text-xs font-bold text-hw-slate-300"><Loader2 className="h-4 w-4 animate-spin" /> Building briefing from Portal data...</div> : !briefing || briefing.totalItems === 0 ? <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-xs font-bold text-hw-slate-300"><HelpCircle className="h-4 w-4 text-hw-cyan-500" /> No attention item was returned from the current data set.</div> : <div className="relative mt-5 grid gap-3 xl:grid-cols-2">{morningSections.map((section) => <MorningSection key={section.key} label={section.label} items={briefing.sections[section.key]} />)}</div>}
         <AtlasQuerySurface />
         <AtlasProposalWorkbench />
+        <PodReconciliationHealth />
       </div>
     </section>
   );
