@@ -9,18 +9,20 @@ import {
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
 import { buildComplianceForecast, forecastNeedsAction } from './complianceForecast';
 import { driverForecastNeedsAction, fetchDriverComplianceForecast } from './driverComplianceForecast';
+import { fetchPodReconciliationHealth } from './podReconciliationHealth';
 
 export async function fetchAtlasOperationsBriefing(companyId: string, now = new Date()): Promise<AtlasMorningBriefing> {
   const today = formatDateOnly(now);
   const yesterday = formatDateOnly(addDays(now, -1));
   const tomorrow = formatDateOnly(addDays(now, 1));
-  const [{ data: shifts, error: shiftError }, { data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: assignments, error: assignmentError }, assets, driverForecast] = await Promise.all([
+  const [{ data: shifts, error: shiftError }, { data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: assignments, error: assignmentError }, assets, driverForecast, podHealth] = await Promise.all([
     supabase.from('shifts').select('id, status, date, driver_id, vehicle_id, updated_at').eq('company_id', companyId).in('date', [yesterday, today, tomorrow]),
     supabase.from('fleet_events').select('id, requires_ack, created_at, title, body, priority, related_shift_id, payload').eq('company_id', companyId).eq('requires_ack', true),
     supabase.from('driver_acknowledgements').select('event_id').eq('company_id', companyId),
     supabase.from('job_assignments').select('id, job_id, shift_id, status, driver_id, vehicle_id, trailer_id, planned_arrival_at, updated_at').eq('company_id', companyId),
     fetchAssetReadinessSnapshot(companyId, now),
     fetchDriverComplianceForecast(companyId, now),
+    fetchPodReconciliationHealth({ syncSignals: false }),
   ]);
 
   if (shiftError) throw new Error(shiftError.message || 'Unable to load rota dates for Atlas.');
@@ -87,6 +89,10 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
     if (days > 30 && item.planningRisk === 'none') continue;
     const section: AtlasMorningSectionKey = item.planningConflictDates.includes(tomorrow) ? 'tomorrow' : days <= 0 ? 'today' : 'next30';
     signals.push(signal(`compliance:driver:${item.id}`, `${item.status}:${item.dueDate ?? 'missing'}:${item.planningRisk}`, section, item.status === 'expired' ? 'critical' : item.status === 'missing' ? 'warning' : item.severity === 'high' ? 'warning' : 'advisory', `${item.driverLabel}: ${item.label} ${item.status === 'missing' ? 'is missing' : item.dueDate ? `due ${item.dueDate}` : 'needs review'}`, item.planningRisk === 'planned_after_expiry' || item.planningRisk === 'planned_with_missing_evidence' ? 'A future assignment needs a compliance evidence review. This flags planning risk without claiming future illegality.' : 'The deterministic forecast uses the current profile and personnel-document evidence.', 'Driver compliance', '/dashboard?workspace=people&people=drivers', item.dueDate));
+  }
+
+  for (const alert of podHealth.alerts) {
+    signals.push(signal(alert.signalKey, alert.fingerprint, 'today', alert.severity, alert.title, alert.detail, alert.sourceLabel, '/dashboard?workspace=people&people=atlas', alert.sourceUpdatedAt));
   }
 
   const { data: observationRows, error: observationError } = await supabase.rpc('sync_atlas_signal_observations', {

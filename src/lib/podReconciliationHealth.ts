@@ -17,25 +17,106 @@ export type PodReconciliationHealth = {
   lastAttemptedRun: PodReconciliationRun | null;
   lastSuccessfulRun: PodReconciliationRun | null;
   consecutiveFailures: number;
+  consecutiveUnhealthyRuns: number;
+  consecutivePartialRuns: number;
+  mismatchBacklogCount: number;
+  oldestMismatchAgeHours: number | null;
+  lastRunAgeMinutes: number | null;
+  thresholds: PodReconciliationThresholds;
+  alerts: PodReconciliationAlert[];
   maintenanceWarning: boolean;
   recentRuns: readonly PodReconciliationRun[];
 };
 
-export async function fetchPodReconciliationHealth(): Promise<PodReconciliationHealth> {
+export type PodReconciliationThresholds = {
+  warningConsecutiveRuns: number;
+  criticalConsecutiveRuns: number;
+  warningStaleHours: number;
+  criticalStaleHours: number;
+  warningOverdueMinutes: number;
+  criticalOverdueMinutes: number;
+};
+
+export type PodReconciliationAlert = {
+  signalKey: string;
+  fingerprint: string;
+  section: 'today';
+  severity: 'critical' | 'warning' | 'advisory';
+  title: string;
+  detail: string;
+  sourceLabel: string;
+  sourceUpdatedAt: string | null;
+  isNew: boolean;
+  firstSeenAt: string | null;
+};
+
+type PodHealthOptions = { syncSignals?: boolean };
+type PodHealthRpc = (functionName: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+export async function fetchPodReconciliationHealth(options: PodHealthOptions = {}): Promise<PodReconciliationHealth> {
   const { data, error } = await supabase.rpc('get_pod_reconciliation_health');
   if (error || !data) throw new Error(error?.message || 'Unable to load POD reconciliation health.');
   const result = data as unknown as {
     last_attempted_run?: PodReconciliationRun | null;
     last_successful_run?: PodReconciliationRun | null;
     consecutive_failures?: number;
+    consecutive_unhealthy_runs?: number;
+    consecutive_partial_runs?: number;
+    mismatch_backlog_count?: number;
+    oldest_mismatch_age_hours?: number | null;
+    last_run_age_minutes?: number | null;
+    thresholds?: Partial<PodReconciliationThresholds>;
+    alerts?: Array<Record<string, unknown>>;
     maintenance_warning?: boolean;
     recent_runs?: readonly PodReconciliationRun[];
   };
+  const thresholds: PodReconciliationThresholds = {
+    warningConsecutiveRuns: result.thresholds?.warningConsecutiveRuns ?? (result.thresholds as { warning_failures?: number } | undefined)?.warning_failures ?? 3,
+    criticalConsecutiveRuns: result.thresholds?.criticalConsecutiveRuns ?? (result.thresholds as { critical_failures?: number } | undefined)?.critical_failures ?? 6,
+    warningStaleHours: result.thresholds?.warningStaleHours ?? (result.thresholds as { warning_stale_hours?: number } | undefined)?.warning_stale_hours ?? 24,
+    criticalStaleHours: result.thresholds?.criticalStaleHours ?? (result.thresholds as { critical_stale_hours?: number } | undefined)?.critical_stale_hours ?? 72,
+    warningOverdueMinutes: result.thresholds?.warningOverdueMinutes ?? (result.thresholds as { warning_overdue_minutes?: number } | undefined)?.warning_overdue_minutes ?? 45,
+    criticalOverdueMinutes: result.thresholds?.criticalOverdueMinutes ?? (result.thresholds as { critical_overdue_minutes?: number } | undefined)?.critical_overdue_minutes ?? 90,
+  };
+  const baseAlerts = (result.alerts ?? []).map(parseAlert).filter((alert): alert is Omit<PodReconciliationAlert, 'isNew' | 'firstSeenAt'> => alert !== null);
+  const alerts = options.syncSignals === false ? baseAlerts.map((alert) => ({ ...alert, isNew: false, firstSeenAt: null })) : await syncPodAlerts(baseAlerts);
   return {
     lastAttemptedRun: result.last_attempted_run ?? null,
     lastSuccessfulRun: result.last_successful_run ?? null,
     consecutiveFailures: result.consecutive_failures ?? 0,
+    consecutiveUnhealthyRuns: result.consecutive_unhealthy_runs ?? result.consecutive_failures ?? 0,
+    consecutivePartialRuns: result.consecutive_partial_runs ?? 0,
+    mismatchBacklogCount: result.mismatch_backlog_count ?? 0,
+    oldestMismatchAgeHours: result.oldest_mismatch_age_hours ?? null,
+    lastRunAgeMinutes: result.last_run_age_minutes ?? null,
+    thresholds,
+    alerts,
     maintenanceWarning: result.maintenance_warning ?? false,
     recentRuns: result.recent_runs ?? [],
   };
+}
+
+async function syncPodAlerts(alerts: Array<Omit<PodReconciliationAlert, 'isNew' | 'firstSeenAt'>>): Promise<PodReconciliationAlert[]> {
+  if (alerts.length === 0) return [];
+  const rpc = supabase.rpc as unknown as PodHealthRpc;
+  const { data, error } = await rpc('sync_atlas_signal_observations', {
+    p_signals: alerts.map((alert) => ({ signal_key: alert.signalKey, fingerprint: alert.fingerprint, section: alert.section, severity: alert.severity, source_updated_at: alert.sourceUpdatedAt })),
+  });
+  if (error) throw new Error(error.message || 'Unable to persist POD reconciliation observations.');
+  const observations = new Map((Array.isArray(data) ? data : []).filter(isRecord).map((row) => [String(row.signal_key), row]));
+  return alerts.map((alert) => {
+    const observation = observations.get(alert.signalKey);
+    return { ...alert, isNew: observation?.is_new === true, firstSeenAt: typeof observation?.first_seen_at === 'string' ? observation.first_seen_at : null };
+  });
+}
+
+function parseAlert(value: Record<string, unknown>): Omit<PodReconciliationAlert, 'isNew' | 'firstSeenAt'> | null {
+  if (typeof value.signal_key !== 'string' || typeof value.fingerprint !== 'string' || typeof value.title !== 'string' || typeof value.detail !== 'string' || typeof value.source_label !== 'string') return null;
+  const severity = value.severity;
+  if (severity !== 'critical' && severity !== 'warning' && severity !== 'advisory') return null;
+  return { signalKey: value.signal_key, fingerprint: value.fingerprint, section: 'today', severity, title: value.title, detail: value.detail, sourceLabel: value.source_label, sourceUpdatedAt: typeof value.source_updated_at === 'string' ? value.source_updated_at : null };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
