@@ -6627,6 +6627,10 @@ export type Database = {
         }
         Returns: Json[]
       }
+      list_pod_reconciliation_drilldown: {
+        Args: { p_limit?: number; p_signal_key: string }
+        Returns: Json[]
+      }
       lookup_pending_driver_invite: {
         Args: { p_invite_code: string }
         Returns: {

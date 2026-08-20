@@ -50,6 +50,21 @@ export type PodReconciliationAlert = {
   firstSeenAt: string | null;
 };
 
+export type PodReconciliationDrilldownItem = {
+  id: string;
+  itemType: 'job_evidence_upload_intent';
+  occurredAt: string;
+  jobAssignmentId: string;
+  jobReference: string;
+  jobTitle: string;
+  entityLabel: string;
+  reconciliationCategory: 'stale_pending_upload' | 'evidence_reference_mismatch' | 'storage_object_mismatch' | 'reconciliation_item_failure';
+  severity: 'critical' | 'warning' | 'advisory';
+  title: string;
+  recommendedAction: string;
+  navigationKey: 'job_assignment';
+};
+
 type PodHealthOptions = { syncSignals?: boolean };
 type PodHealthRpc = (functionName: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
@@ -96,6 +111,13 @@ export async function fetchPodReconciliationHealth(options: PodHealthOptions = {
   };
 }
 
+export async function fetchPodReconciliationDrilldown(signalKey: string, limit = 50): Promise<PodReconciliationDrilldownItem[]> {
+  const rpc = supabase.rpc as unknown as PodHealthRpc;
+  const { data, error } = await rpc('list_pod_reconciliation_drilldown', { p_signal_key: signalKey, p_limit: Math.min(Math.max(limit, 1), 100) });
+  if (error) throw new Error(error.message || 'Unable to load POD reconciliation drill-down.');
+  return (Array.isArray(data) ? data : []).map(parseDrilldownItem).filter((item): item is PodReconciliationDrilldownItem => item !== null);
+}
+
 async function syncPodAlerts(alerts: Array<Omit<PodReconciliationAlert, 'isNew' | 'firstSeenAt'>>): Promise<PodReconciliationAlert[]> {
   if (alerts.length === 0) return [];
   const rpc = supabase.rpc as unknown as PodHealthRpc;
@@ -119,4 +141,25 @@ function parseAlert(value: Record<string, unknown>): Omit<PodReconciliationAlert
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function parseDrilldownItem(value: unknown): PodReconciliationDrilldownItem | null {
+  if (!isRecord(value) || typeof value.id !== 'string' || value.itemType !== 'job_evidence_upload_intent' || typeof value.occurredAt !== 'string' || typeof value.jobAssignmentId !== 'string' || typeof value.jobReference !== 'string' || typeof value.jobTitle !== 'string' || typeof value.entityLabel !== 'string' || typeof value.title !== 'string' || typeof value.recommendedAction !== 'string' || value.navigationKey !== 'job_assignment') return null;
+  const categories = ['stale_pending_upload', 'evidence_reference_mismatch', 'storage_object_mismatch', 'reconciliation_item_failure'] as const;
+  const severities = ['critical', 'warning', 'advisory'] as const;
+  if (!categories.includes(value.reconciliationCategory as typeof categories[number]) || !severities.includes(value.severity as typeof severities[number])) return null;
+  return {
+    id: value.id,
+    itemType: 'job_evidence_upload_intent',
+    occurredAt: value.occurredAt,
+    jobAssignmentId: value.jobAssignmentId,
+    jobReference: value.jobReference,
+    jobTitle: value.jobTitle,
+    entityLabel: value.entityLabel,
+    reconciliationCategory: value.reconciliationCategory as PodReconciliationDrilldownItem['reconciliationCategory'],
+    severity: value.severity as PodReconciliationDrilldownItem['severity'],
+    title: value.title,
+    recommendedAction: value.recommendedAction,
+    navigationKey: 'job_assignment',
+  };
 }
