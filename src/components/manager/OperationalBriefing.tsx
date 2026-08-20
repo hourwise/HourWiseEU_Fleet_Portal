@@ -12,6 +12,7 @@ import { answerAtlasQuestion, fetchAtlasQuerySnapshot, type AtlasAnswer, type At
 import { AtlasProposalWorkbench } from './AtlasProposalWorkbench';
 import { PodReconciliationHealth } from './PodReconciliationHealth';
 import { OperationalTimeline } from './OperationalTimeline';
+import { PodReviewQueue } from './PodReviewQueue';
 
 export function AssetReadinessPanel() {
   const { profile } = useAuth();
@@ -90,6 +91,7 @@ export function AtlasOperationsBriefing() {
         <AtlasQuerySurface />
         <AtlasProposalWorkbench />
         <PodReconciliationHealth />
+        <PodReviewQueue />
         <OperationalTimeline />
       </div>
     </section>

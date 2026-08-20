@@ -25,4 +25,10 @@ describe('operational task queue', () => {
     });
     expect(tasks).toHaveLength(0);
   });
+
+  it('projects one stable task per pending or follow-up evidence record', () => {
+    const tasks = buildOperationalTasks({ podEvidence: [{ id: 'evidence-1', evidence_type: 'pod', outcome: 'delivered', review_status: 'needs_follow_up', uploaded_at: '2026-08-14T08:00:00Z', job_id: 'job-1', job_assignment_id: 'assignment-1' }] });
+    expect(tasks).toMatchObject([{ id: 'pod-review:evidence-1', severity: 'high', sourceType: 'job_evidence', sourceId: 'evidence-1' }]);
+    expect(tasks[0].navigationTarget).toContain('panel=pod-review');
+  });
 });

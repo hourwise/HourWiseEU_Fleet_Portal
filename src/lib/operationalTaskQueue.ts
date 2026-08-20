@@ -31,15 +31,18 @@ export type OperationalTaskInput = {
   assignments?: Array<{ id: string; shift_id: string; status: string; driver_id: string; vehicle_id: string | null; planned_arrival_at: string | null; updated_at: string }>;
   shifts?: Array<{ id: string; date: string; status: string; vehicle_id: string | null; updated_at: string }>;
   driverCompliance?: DriverComplianceForecastItem[];
+  podEvidence?: Array<{ id: string; evidence_type: string; outcome: string; review_status: 'pending' | 'needs_follow_up'; uploaded_at: string; job_id: string; job_assignment_id: string }>;
 };
+type PodEvidenceTaskInput = NonNullable<OperationalTaskInput['podEvidence']>[number];
 
 export async function fetchOperationalTasks(companyId: string, now = new Date()): Promise<OperationalTask[]> {
-  const [{ data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: defects, error: defectError }, { data: assignments, error: assignmentError }, { data: shifts, error: shiftError }, assets, driverCompliance] = await Promise.all([
+  const [{ data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: defects, error: defectError }, { data: assignments, error: assignmentError }, { data: shifts, error: shiftError }, { data: podEvidence, error: podEvidenceError }, assets, driverCompliance] = await Promise.all([
     supabase.from('fleet_events').select('id, priority, title, body, created_at, requires_ack').eq('company_id', companyId).eq('requires_ack', true),
     supabase.from('driver_acknowledgements').select('event_id').eq('company_id', companyId),
     supabase.from('vehicle_checks').select('id, reg_number, check_status, defect_lifecycle_status, defect_details, created_at').eq('company_id', companyId),
     supabase.from('job_assignments').select('id, shift_id, status, driver_id, vehicle_id, planned_arrival_at, updated_at').eq('company_id', companyId),
     supabase.from('shifts').select('id, date, status, vehicle_id, updated_at').eq('company_id', companyId),
+    supabase.from('job_evidence').select('id, evidence_type, outcome, review_status, uploaded_at, job_id, job_assignment_id').eq('company_id', companyId).in('review_status', ['pending', 'needs_follow_up']),
     fetchAssetReadinessSnapshot(companyId, now),
     fetchDriverComplianceForecast(companyId, now),
   ]);
@@ -49,6 +52,7 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
   if (defectError) throw new Error(defectError.message || 'Unable to load vehicle check tasks.');
   if (assignmentError) throw new Error(assignmentError.message || 'Unable to load job execution tasks.');
   if (shiftError) throw new Error(shiftError.message || 'Unable to load rota tasks.');
+  if (podEvidenceError) throw new Error(podEvidenceError.message || 'Unable to load POD review tasks.');
 
   const projectedTasks = buildOperationalTasks({
     now,
@@ -59,6 +63,7 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
     assignments: assignments ?? [],
     shifts: shifts ?? [],
     driverCompliance,
+    podEvidence: (podEvidence ?? []).filter((row): row is PodEvidenceTaskInput => row.review_status === 'pending' || row.review_status === 'needs_follow_up'),
   });
   const handlings = await fetchOperationalTaskHandlings(companyId, projectedTasks.map((task) => task.sourceId));
   const handlingBySource = new Map(handlings.map((handling) => [`${handling.sourceType}:${handling.sourceId}`, handling]));
@@ -66,13 +71,13 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
 }
 
 export function reconcileSourceDrivenHandling(task: OperationalTask, handling?: OperationalTaskHandling): OperationalTaskHandling | undefined {
-  if (!handling || task.sourceType !== 'driver_compliance' || handling.status !== 'resolved') return handling;
+  if (!handling || !['driver_compliance', 'job_evidence'].includes(task.sourceType) || handling.status !== 'resolved') return handling;
   return {
     ...handling,
     status: 'new',
     action: null,
     resolvedAt: null,
-    note: 'Source evidence still projects an active compliance task; handling remains open until the authoritative record changes.',
+    note: task.sourceType === 'job_evidence' ? 'Evidence still has a pending manager review outcome; handling remains open until the authoritative review state changes.' : 'Source evidence still projects an active compliance task; handling remains open until the authoritative record changes.',
   };
 }
 
@@ -83,6 +88,23 @@ export function buildOperationalTasks(input: OperationalTaskInput): OperationalT
   const shifts = input.shifts ?? [];
   const assignments = input.assignments ?? [];
   const assets = input.assets ?? [];
+
+  for (const evidence of input.podEvidence ?? []) {
+    const followUp = evidence.review_status === 'needs_follow_up';
+    tasks.push({
+      id: `pod-review:${evidence.id}`,
+      severity: followUp ? 'high' : 'medium',
+      category: 'jobs',
+      title: followUp ? 'POD evidence needs follow-up' : 'POD evidence awaits manager review',
+      detail: followUp ? 'The manager requested follow-up on job evidence. Resolve the evidence review before closing the operational exception.' : `A ${evidence.evidence_type.replace(/_/g, ' ')} record for ${evidence.outcome.replace(/_/g, ' ')} is awaiting a manager decision.`,
+      sourceType: 'job_evidence',
+      sourceId: evidence.id,
+      occurredAt: evidence.uploaded_at,
+      dueAt: null,
+      navigationTarget: '/dashboard?workspace=people&people=jobs&panel=pod-review',
+      actionable: true,
+    });
+  }
 
   for (const event of input.events ?? []) {
     if (!event.requires_ack || acknowledgedEventIds.has(event.id)) continue;

@@ -15,11 +15,12 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
   const today = formatDateOnly(now);
   const yesterday = formatDateOnly(addDays(now, -1));
   const tomorrow = formatDateOnly(addDays(now, 1));
-  const [{ data: shifts, error: shiftError }, { data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: assignments, error: assignmentError }, assets, driverForecast, podHealth] = await Promise.all([
+  const [{ data: shifts, error: shiftError }, { data: events, error: eventError }, { data: acknowledgements, error: acknowledgementError }, { data: assignments, error: assignmentError }, { data: podEvidence, error: podEvidenceError }, assets, driverForecast, podHealth] = await Promise.all([
     supabase.from('shifts').select('id, status, date, driver_id, vehicle_id, updated_at').eq('company_id', companyId).in('date', [yesterday, today, tomorrow]),
     supabase.from('fleet_events').select('id, requires_ack, created_at, title, body, priority, related_shift_id, payload').eq('company_id', companyId).eq('requires_ack', true),
     supabase.from('driver_acknowledgements').select('event_id').eq('company_id', companyId),
     supabase.from('job_assignments').select('id, job_id, shift_id, status, driver_id, vehicle_id, trailer_id, planned_arrival_at, updated_at').eq('company_id', companyId),
+    supabase.from('job_evidence').select('id, evidence_type, outcome, review_status, uploaded_at, updated_at').eq('company_id', companyId).in('review_status', ['pending', 'needs_follow_up']),
     fetchAssetReadinessSnapshot(companyId, now),
     fetchDriverComplianceForecast(companyId, now),
     fetchPodReconciliationHealth({ syncSignals: false }),
@@ -29,6 +30,7 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
   if (eventError) throw new Error(eventError.message || 'Unable to load operational events for Atlas.');
   if (acknowledgementError) throw new Error(acknowledgementError.message || 'Unable to load acknowledgement state for Atlas.');
   if (assignmentError) throw new Error(assignmentError.message || 'Unable to load job assignments for Atlas.');
+  if (podEvidenceError) throw new Error(podEvidenceError.message || 'Unable to load POD review signals for Atlas.');
 
   const activeShifts = (shifts ?? []).filter((shift) => shift.status === 'published' || shift.status === 'updated');
   const activeAssignments = (assignments ?? []).filter((assignment) => assignment.status !== 'cancelled' && assignment.status !== 'draft');
@@ -93,6 +95,21 @@ export async function fetchAtlasOperationsBriefing(companyId: string, now = new 
 
   for (const alert of podHealth.alerts) {
     signals.push(signal(alert.signalKey, alert.fingerprint, 'today', alert.severity, alert.title, alert.detail, alert.sourceLabel, '/dashboard?workspace=people&people=atlas', alert.sourceUpdatedAt));
+  }
+
+  for (const evidence of podEvidence ?? []) {
+    const followUp = evidence.review_status === 'needs_follow_up';
+    signals.push(signal(
+      `pod-review:${evidence.id}`,
+      `${evidence.review_status}:${evidence.updated_at}`,
+      'today',
+      followUp ? 'warning' : 'advisory',
+      followUp ? 'POD evidence needs follow-up' : 'POD evidence awaits manager review',
+      followUp ? 'A manager requested follow-up on the evidence attached to a real job assignment.' : 'Evidence attached to a real job assignment is awaiting a manager decision.',
+      'POD review',
+      '/dashboard?workspace=people&people=jobs&panel=pod-review',
+      evidence.updated_at ?? evidence.uploaded_at,
+    ));
   }
 
   const { data: observationRows, error: observationError } = await supabase.rpc('sync_atlas_signal_observations', {

@@ -23,6 +23,32 @@ export type JobEvidenceRecord = {
   updated_at: string;
 };
 
+export type PodReviewQueueItem = {
+  id: string;
+  job_id: string;
+  job_reference: string;
+  job_title: string;
+  job_assignment_id: string;
+  assignment_status: string;
+  evidence_type: JobEvidenceType;
+  outcome: JobEvidenceOutcome;
+  source: JobEvidenceRecord['source'];
+  uploaded_at: string;
+  uploader_role: string | null;
+  uploader_label: string;
+  review_status: JobEvidenceReviewStatus;
+  reviewed_at: string | null;
+  reviewed_by_label: string | null;
+  review_notes: string | null;
+  updated_at: string;
+};
+
+export type GovernedPodReviewResult = {
+  outcome: 'reviewed' | 'already_reviewed' | 'stale' | 'permission_denied' | 'invalid_state';
+  reason?: string;
+  evidence?: Pick<JobEvidenceRecord, 'id' | 'review_status' | 'reviewed_at' | 'review_notes' | 'updated_at'>;
+};
+
 export type JobEvidenceUploadIntent = {
   id: string;
   company_id: string;
@@ -67,8 +93,29 @@ export async function uploadJobEvidence(input: { assignmentId: string; file: Fil
 }
 
 export async function reviewJobEvidence(input: { evidenceId: string; reviewStatus: Exclude<JobEvidenceReviewStatus, 'pending'>; reviewNotes?: string | null; expectedUpdatedAt?: string | null }) {
-  const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: JobEvidenceRecord | null; error: { message: string } | null }>;
-  const { data, error } = await rpc('review_job_evidence', { p_evidence_id: input.evidenceId, p_review_status: input.reviewStatus, p_review_notes: input.reviewNotes ?? null, p_expected_updated_at: input.expectedUpdatedAt ?? null });
+  const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: GovernedPodReviewResult | null; error: { message: string } | null }>;
+  const { data, error } = await rpc('review_job_evidence_governed', { p_evidence_id: input.evidenceId, p_review_status: input.reviewStatus, p_review_notes: input.reviewNotes ?? null, p_expected_updated_at: input.expectedUpdatedAt ?? null });
   if (error) throw new Error(error.message || 'Unable to review job evidence.');
   return data;
+}
+
+export async function fetchManagerPodReviewQueue(input: { reviewStatus?: JobEvidenceReviewStatus | 'all'; jobId?: string; from?: string; to?: string; limit?: number } = {}): Promise<PodReviewQueueItem[]> {
+  const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: PodReviewQueueItem[] | null; error: { message: string } | null }>;
+  const { data, error } = await rpc('list_manager_pod_review_queue', {
+    p_review_status: input.reviewStatus && input.reviewStatus !== 'all' ? input.reviewStatus : null,
+    p_job_id: input.jobId || null,
+    p_from: input.from || null,
+    p_to: input.to || null,
+    p_limit: input.limit ?? 100,
+  });
+  if (error) throw new Error(error.message || 'Unable to load the manager POD review queue.');
+  return data ?? [];
+}
+
+export async function openJobEvidenceView(evidenceId: string): Promise<string> {
+  const { data, error } = await supabase.from('job_evidence').select('storage_bucket, storage_path').eq('id', evidenceId).maybeSingle();
+  if (error || !data || data.storage_bucket !== 'pod-evidence') throw new Error(error?.message || 'Evidence view is unavailable.');
+  const { data: signed, error: signedError } = await supabase.storage.from('pod-evidence').createSignedUrl(data.storage_path, 60);
+  if (signedError || !signed?.signedUrl) throw new Error(signedError?.message || 'Unable to create a protected evidence view.');
+  return signed.signedUrl;
 }
