@@ -7,6 +7,7 @@ import { fetchAtlasOperationsBriefing } from './atlasOperationalLoad';
 import type { AtlasMorningBriefing, AtlasMorningSectionKey } from './atlasBriefing';
 import { fetchOperationalTasks, type OperationalTask } from './operationalTaskQueue';
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
+import { atlasLogicalTierForComplexity, evaluateAtlasInferenceAdmission, type AtlasInferenceDecision } from './atlasModelGateway';
 
 export type AtlasIntent =
   | 'morning_briefing'
@@ -57,7 +58,7 @@ export type AtlasFact = {
 
 export type AtlasReasoningPacket = {
   tier: 2 | 3;
-  question: string;
+  intent: AtlasIntent;
   objective: string;
   constraints: readonly string[];
   drivers: readonly {
@@ -86,6 +87,7 @@ export type AtlasAnswer = {
   facts: AtlasFact[];
   sources: AtlasSource[];
   navigationTargets: string[];
+  inferenceDecision: AtlasInferenceDecision;
   reasoningPacket?: AtlasReasoningPacket;
 };
 
@@ -108,7 +110,7 @@ export type AtlasQuerySnapshot = {
 
 export async function fetchAtlasQuerySnapshot(companyId: string, now = new Date()): Promise<AtlasQuerySnapshot> {
   const [{ data: evidence, error: evidenceError }, morningBriefing, tasks, assets, driverCompliance] = await Promise.all([
-    supabase.from('job_evidence').select('id, job_id, job_assignment_id, evidence_type, outcome, uploaded_at').eq('company_id', companyId).eq('review_status', 'pending').order('uploaded_at', { ascending: false }),
+    supabase.from('job_evidence').select('id, job_id, job_assignment_id, evidence_type, outcome, uploaded_at').eq('company_id', companyId).in('review_status', ['pending', 'needs_follow_up']).order('uploaded_at', { ascending: false }),
     fetchAtlasOperationsBriefing(companyId, now),
     fetchOperationalTasks(companyId, now),
     fetchAssetReadinessSnapshot(companyId, now),
@@ -139,8 +141,9 @@ export function answerAtlasQuestion(question: string, snapshot: AtlasQuerySnapsh
   const facts = factsForIntent(classification.intent, classification.normalizedQuestion, snapshot);
   const sources = sourcesForFacts(facts);
   const navigationTargets = [...new Set(facts.map((fact) => fact.navigationTarget))];
+  const inferenceDecision = evaluateAtlasInferenceAdmission({ tier: atlasLogicalTierForComplexity(classification.tier) });
   if (classification.tier === 0) {
-    return { mode: 'deterministic', intent: classification.intent, answer: deterministicAnswer(classification.intent, facts, snapshot), facts, sources, navigationTargets };
+    return { mode: 'deterministic', intent: classification.intent, answer: deterministicAnswer(classification.intent, facts, snapshot), facts, sources, navigationTargets, inferenceDecision };
   }
   const packet = classification.tier === 2 || classification.tier === 3 ? buildAtlasReasoningPacket(question, classification.tier, snapshot) : undefined;
   return {
@@ -150,6 +153,7 @@ export function answerAtlasQuestion(question: string, snapshot: AtlasQuerySnapsh
     facts,
     sources,
     navigationTargets,
+    inferenceDecision,
     reasoningPacket: packet,
   };
 }
@@ -160,9 +164,9 @@ export function buildAtlasReasoningPacket(question: string, tier: 2 | 3, snapsho
   for (const task of snapshot.tasks) if (task.category === 'jobs') for (const driverId of driverIds) assignedWorkCounts.set(driverId, (assignedWorkCounts.get(driverId) ?? 0) + Number(task.sourceType === 'job_assignment'));
   return {
     tier,
-    question,
+    intent: classifyIntent(normalizeQuestion(question)),
     objective: tier === 3 ? 'Produce a bounded operational planning candidate for manager review.' : 'Compare deterministic candidates against the stated operational question.',
-    constraints: ['Use only the supplied company-scoped Portal facts.', 'Do not infer live location, ETA, legality, or unavailable driver capacity.', 'Any accepted action must pass deterministic validation and existing governed RPCs.', 'This packet is not sent to an external provider in Batch 13.'],
+    constraints: ['Use only the supplied company-scoped Portal facts.', 'Do not infer live location, ETA, legality, or unavailable driver capacity.', 'Any accepted action must pass deterministic validation and existing governed RPCs.', 'This bounded packet contains pseudonymous references and status codes only; it is not sent to an external provider in Batch 18.'],
     drivers: [...driverIds].map((driverId) => ({
       driverRef: pseudonymousRef('driver', driverId),
       availability: 'not_asserted' as const,
@@ -186,7 +190,7 @@ function factsForIntent(intent: AtlasIntent, question: string, snapshot: AtlasQu
   if (intent === 'jobs_awaiting_acknowledgement') return snapshot.tasks.filter((task) => /acknowledge/i.test(task.title) || task.id.includes(':ack')).map(taskFact);
   if (intent === 'delayed_or_exception_jobs' || intent === 'incomplete_jobs') return snapshot.tasks.filter((task) => task.category === 'jobs' && (intent === 'delayed_or_exception_jobs' ? /delayed|exception|unable|issue/i.test(`${task.title} ${task.detail}`) : /incomplete|unable|delayed|exception/i.test(`${task.title} ${task.detail}`))).map(taskFact);
   if (intent === 'operational_task_queue') return snapshot.tasks.map(taskFact);
-  if (intent === 'pod_evidence_review') return snapshot.pendingEvidence.map((item) => fact(item.id, `${item.evidenceType} / ${item.outcome}`, `Awaiting manager review; uploaded ${item.uploadedAt}`, 'job_evidence', item.id, 'POD review', '/dashboard?workspace=people&people=jobs'));
+  if (intent === 'pod_evidence_review') return snapshot.pendingEvidence.map((item) => fact(item.id, `${item.evidenceType} / ${item.outcome}`, `Pending manager review or follow-up; uploaded ${item.uploadedAt}`, 'job_evidence', item.id, 'POD review', '/dashboard?workspace=people&people=jobs&panel=pod-review'));
   if (intent === 'driver_compliance') return snapshot.driverCompliance.filter((item) => driverForecastNeedsAction(item) || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 30)).map((item) => fact(item.id, `${item.driverLabel}: ${item.label}`, complianceValue(item.status, item.dueDate, item.planningRisk), 'driver_compliance', item.driverId, 'Driver compliance', '/dashboard?workspace=people&people=drivers'));
   if (intent === 'asset_compliance' || intent === 'upcoming_expiry' || intent === 'missing_evidence') return snapshot.assets.flatMap((asset) => buildComplianceForecast(asset).filter((item) => intent === 'missing_evidence' ? item.missingEvidence || item.status === 'unknown' : intent === 'upcoming_expiry' ? item.dueDate !== null && item.daysRemaining !== null && item.daysRemaining >= 0 && item.daysRemaining <= 30 : forecastNeedsAction(item) || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 30)).map((item) => fact(item.id, `${item.assetLabel}: ${item.label}`, complianceValue(item.status, item.dueDate, item.planningRisk), 'asset_compliance', item.assetId, 'Asset compliance', '/dashboard?workspace=fleet&fleet=vehicles')));
   return [];
