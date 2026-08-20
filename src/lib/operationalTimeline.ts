@@ -15,6 +15,53 @@ export type OperationalTimelineEntity = {
   label: string;
 };
 
+export type OperationalTimelineNavigationKey = 'messages' | 'jobs' | 'atlas' | 'drivers' | 'vehicles' | 'security';
+
+export type OperationalTimelineRelationships = {
+  jobAssignmentId: string | null;
+  proposalId: string | null;
+  eventId: string | null;
+  driverId: string | null;
+  vehicleId: string | null;
+  trailerId: string | null;
+};
+
+type TimelineSourceLinkRule = {
+  sourceSystem: string;
+  category: OperationalTimelineCategory;
+  entityType?: string;
+  target: OperationalTimelineNavigationKey;
+};
+
+const TIMELINE_NAVIGATION_TARGETS: Record<OperationalTimelineNavigationKey, string> = {
+  messages: '/dashboard?workspace=people&people=messages',
+  jobs: '/dashboard?workspace=people&people=jobs',
+  atlas: '/dashboard?workspace=people&people=atlas',
+  drivers: '/dashboard?workspace=people&people=drivers',
+  vehicles: '/dashboard?workspace=fleet&fleet=vehicles',
+  security: '/dashboard?workspace=settings&settings=security',
+};
+
+export const TIMELINE_SOURCE_LINK_REGISTRY: readonly TimelineSourceLinkRule[] = [
+  { sourceSystem: 'fleet_events', category: 'job', target: 'messages' },
+  { sourceSystem: 'fleet_events', category: 'assignment', target: 'messages' },
+  { sourceSystem: 'fleet_events', category: 'security', target: 'security' },
+  { sourceSystem: 'atlas_proposals', category: 'proposal', target: 'atlas' },
+  { sourceSystem: 'security_permission_audit_events', category: 'proposal', target: 'atlas' },
+  { sourceSystem: 'security_permission_audit_events', category: 'security', target: 'security' },
+  { sourceSystem: 'operational_task_handlings', category: 'task', entityType: 'driver_compliance', target: 'drivers' },
+  { sourceSystem: 'operational_task_handlings', category: 'task', entityType: 'job_assignment', target: 'jobs' },
+  { sourceSystem: 'operational_task_handlings', category: 'task', target: 'vehicles' },
+  { sourceSystem: 'job_evidence', category: 'pod', target: 'jobs' },
+  { sourceSystem: 'driver_documents', category: 'compliance', target: 'drivers' },
+];
+
+export function resolveOperationalTimelineLink(input: { sourceSystem: string; category: OperationalTimelineCategory; entityType?: string }): string | null {
+  const rule = TIMELINE_SOURCE_LINK_REGISTRY.find((candidate) => candidate.sourceSystem === input.sourceSystem && candidate.category === input.category && candidate.entityType === input.entityType)
+    ?? TIMELINE_SOURCE_LINK_REGISTRY.find((candidate) => candidate.sourceSystem === input.sourceSystem && candidate.category === input.category && !candidate.entityType);
+  return rule ? TIMELINE_NAVIGATION_TARGETS[rule.target] : null;
+}
+
 export type OperationalTimelineItem = {
   id: string;
   occurredAt: string;
@@ -28,7 +75,8 @@ export type OperationalTimelineItem = {
   sourceId: string;
   relatedEventId: string | null;
   relatedProposalId: string | null;
-  navigationTarget: string;
+  relationships: OperationalTimelineRelationships;
+  navigationTarget: string | null;
 };
 
 export type OperationalTimelineFilters = {
@@ -94,7 +142,7 @@ export async function fetchOperationalTimeline(
 }
 
 function parseTimelineItem(value: unknown): OperationalTimelineItem | null {
-  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.occurredAt !== 'string' || typeof value.category !== 'string' || typeof value.eventType !== 'string' || typeof value.severity !== 'string' || typeof value.summary !== 'string' || typeof value.sourceSystem !== 'string' || typeof value.sourceId !== 'string' || typeof value.navigationTarget !== 'string') return null;
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.occurredAt !== 'string' || typeof value.category !== 'string' || typeof value.eventType !== 'string' || typeof value.severity !== 'string' || typeof value.summary !== 'string' || typeof value.sourceSystem !== 'string' || typeof value.sourceId !== 'string') return null;
   const actor = isRecord(value.actor) && typeof value.actor.id === 'string' && typeof value.actor.label === 'string'
     ? { id: value.actor.id, label: value.actor.label, role: typeof value.actor.role === 'string' ? value.actor.role : null }
     : null;
@@ -102,6 +150,7 @@ function parseTimelineItem(value: unknown): OperationalTimelineItem | null {
     ? { type: value.entity.type, id: typeof value.entity.id === 'string' ? value.entity.id : null, label: value.entity.label }
     : { type: 'unknown', id: null, label: 'Unknown entity' };
   if (!isTimelineCategory(value.category) || !isTimelineSeverity(value.severity)) return null;
+  const relationships = parseRelationships(value.relationships, value);
   return {
     id: value.id,
     occurredAt: value.occurredAt,
@@ -115,8 +164,25 @@ function parseTimelineItem(value: unknown): OperationalTimelineItem | null {
     sourceId: value.sourceId,
     relatedEventId: typeof value.relatedEventId === 'string' ? value.relatedEventId : null,
     relatedProposalId: typeof value.relatedProposalId === 'string' ? value.relatedProposalId : null,
-    navigationTarget: value.navigationTarget,
+    relationships,
+    navigationTarget: resolveOperationalTimelineLink({ sourceSystem: value.sourceSystem, category: value.category, entityType: entity.type }),
   };
+}
+
+function parseRelationships(value: unknown, fallback: Record<string, unknown>): OperationalTimelineRelationships {
+  const source = isRecord(value) ? value : fallback;
+  return {
+    jobAssignmentId: asUuid(source.jobAssignmentId ?? fallback.jobAssignmentId),
+    proposalId: asUuid(source.proposalId ?? fallback.relatedProposalId),
+    eventId: asUuid(source.eventId ?? fallback.relatedEventId),
+    driverId: asUuid(source.driverId),
+    vehicleId: asUuid(source.vehicleId),
+    trailerId: asUuid(source.trailerId),
+  };
+}
+
+function asUuid(value: unknown): string | null {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
