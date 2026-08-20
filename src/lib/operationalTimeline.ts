@@ -26,6 +26,15 @@ export type OperationalTimelineRelationships = {
   trailerId: string | null;
 };
 
+export type TimelineSourceDefinition = {
+  sourceType: string;
+  categories: readonly OperationalTimelineCategory[];
+  labelBuilder: (input: { entityType: string; entityLabel: string; summary: string }) => string;
+  navigationBuilder: (input: { category: OperationalTimelineCategory; entityType: string }) => string | null;
+  privacyRules: readonly string[];
+  supportedRelationships: readonly (keyof OperationalTimelineRelationships)[];
+};
+
 type TimelineSourceLinkRule = {
   sourceSystem: string;
   category: OperationalTimelineCategory;
@@ -55,6 +64,26 @@ export const TIMELINE_SOURCE_LINK_REGISTRY: readonly TimelineSourceLinkRule[] = 
   { sourceSystem: 'job_evidence', category: 'pod', target: 'jobs' },
   { sourceSystem: 'driver_documents', category: 'compliance', target: 'drivers' },
 ];
+
+const allRelationships: readonly (keyof OperationalTimelineRelationships)[] = ['jobAssignmentId', 'proposalId', 'eventId', 'driverId', 'vehicleId', 'trailerId'];
+const noPrivateFields: readonly string[] = ['storage_bucket', 'storage_path', 'metadata', 'review_notes', 'raw_notes', 'email', 'phone', 'date_of_birth', 'licence_number'];
+const registeredNavigation = (input: { category: OperationalTimelineCategory; entityType: string }, sourceType: string) => resolveOperationalTimelineLink({ sourceSystem: sourceType, ...input });
+
+/** Every database projection source has one privacy and navigation contract. */
+export const TIMELINE_SOURCE_DEFINITIONS: readonly TimelineSourceDefinition[] = [
+  'fleet_events', 'atlas_proposals', 'security_permission_audit_events', 'operational_task_handlings', 'job_evidence', 'driver_documents',
+].map((sourceType) => ({
+  sourceType,
+  categories: [...new Set(TIMELINE_SOURCE_LINK_REGISTRY.filter((rule) => rule.sourceSystem === sourceType).map((rule) => rule.category))],
+  labelBuilder: ({ entityLabel, summary }) => entityLabel || summary,
+  navigationBuilder: (input) => registeredNavigation(input, sourceType),
+  privacyRules: noPrivateFields,
+  supportedRelationships: allRelationships,
+}));
+
+export function getTimelineSourceDefinition(sourceType: string): TimelineSourceDefinition | null {
+  return TIMELINE_SOURCE_DEFINITIONS.find((definition) => definition.sourceType === sourceType) ?? null;
+}
 
 export function resolveOperationalTimelineLink(input: { sourceSystem: string; category: OperationalTimelineCategory; entityType?: string }): string | null {
   const rule = TIMELINE_SOURCE_LINK_REGISTRY.find((candidate) => candidate.sourceSystem === input.sourceSystem && candidate.category === input.category && candidate.entityType === input.entityType)

@@ -55,6 +55,17 @@ export type VehicleRoutingProfile = {
   hazmat?: boolean | null;
 };
 
+export type TrailerRoutingProfile = {
+  trailerId: string;
+  profileVersion: string;
+  trailerType: string | null;
+  heightMetres?: number | null;
+  widthMetres?: number | null;
+  lengthMetres?: number | null;
+  weightTonnes?: number | null;
+  hazmat?: boolean | null;
+};
+
 export type PlannedStop = {
   id: string;
   sequence: number;
@@ -73,9 +84,10 @@ export type PlannedStop = {
 
 export type RouteRequest = {
   provider: RouteProviderId;
-  providerVersion: null;
+  providerVersion: string | null;
   stops: PlannedStop[];
   vehicleProfile: VehicleRoutingProfile | null;
+  trailerProfile: TrailerRoutingProfile | null;
   options: RouteOptions;
   providerCapabilities: RouteProviderCapabilities;
   routeVersion: string;
@@ -105,17 +117,17 @@ export function validateStopOrder(stops: readonly PlannedStop[]): string | null 
   return null;
 }
 
-export function buildRoutePlan(stops: readonly PlannedStop[], vehicleProfile: VehicleRoutingProfile | null, options: RouteOptions = {}): RoutePlan {
+export function buildRoutePlan(stops: readonly PlannedStop[], vehicleProfile: VehicleRoutingProfile | null, options: RouteOptions = {}, trailerProfile: TrailerRoutingProfile | null = null): RoutePlan {
   const orderedStops = orderStops(stops);
   const validationError = validateStopOrder(orderedStops);
   if (validationError || orderedStops.length === 0) return { state: 'missing_address', orderedStops, request: null, message: validationError ?? 'Add at least one stop before requesting a route.' };
   if (orderedStops.some((stop) => !stop.addressText.trim())) return { state: 'missing_address', orderedStops, request: null, message: 'A route cannot be requested until every stop has a location.' };
   if (!vehicleProfile) return { state: 'restriction_incomplete', orderedStops, request: null, message: 'Vehicle routing restrictions are incomplete because no vehicle profile is attached.' };
-  const routeVersion = createRouteVersion(orderedStops, vehicleProfile, options);
+  const routeVersion = createRouteVersion(orderedStops, vehicleProfile, options, trailerProfile);
   return {
     state: 'provider_unavailable',
     orderedStops,
-    request: { provider: 'unconfigured', providerVersion: null, stops: orderedStops, vehicleProfile, options, providerCapabilities: UNCONFIGURED_ROUTE_CAPABILITIES, routeVersion },
+    request: { provider: 'unconfigured', providerVersion: null, stops: orderedStops, vehicleProfile, trailerProfile, options, providerCapabilities: UNCONFIGURED_ROUTE_CAPABILITIES, routeVersion },
     message: 'No road-routing provider is configured. Distance, duration, and ETA are unavailable.'
   };
 }
@@ -124,14 +136,34 @@ export function isRouteEstimateStale(currentVersion: string, estimateVersion: st
   return !estimateVersion || currentVersion !== estimateVersion;
 }
 
-export function createRouteVersion(stops: readonly PlannedStop[], vehicleProfile: VehicleRoutingProfile | null, options: RouteOptions = {}): string {
-  const payload = JSON.stringify({ stops: orderStops(stops).map((stop) => { const copy = { ...stop }; delete copy.managerNotes; return copy; }), vehicleProfile, options });
+export function createRouteVersion(stops: readonly PlannedStop[], vehicleProfile: VehicleRoutingProfile | null, options: RouteOptions = {}, trailerProfile: TrailerRoutingProfile | null = null): string {
+  const payload = JSON.stringify({ stops: orderStops(stops).map((stop) => { const copy = { ...stop }; delete copy.managerNotes; return copy; }), vehicleProfile, trailerProfile, options });
   let hash = 2166136261;
   for (let index = 0; index < payload.length; index += 1) {
     hash ^= payload.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
   return `route-${(hash >>> 0).toString(16)}`;
+}
+
+/** Fingerprint all provider-relevant route inputs. Rendering a cached route never calls a provider. */
+export function buildRouteRequestFingerprint(request: Pick<RouteRequest, 'provider' | 'providerVersion' | 'stops' | 'vehicleProfile' | 'trailerProfile' | 'options' | 'providerCapabilities'>): string {
+  const payload = JSON.stringify({
+    provider: request.provider,
+    providerVersion: request.providerVersion,
+    stops: orderStops(request.stops).map((stop) => { const copy = { ...stop }; delete copy.managerNotes; return copy; }),
+    vehicleProfile: request.vehicleProfile,
+    trailerProfile: request.trailerProfile,
+    options: request.options,
+    providerCapabilities: request.providerCapabilities,
+  });
+  let hash = 2166136261;
+  for (let index = 0; index < payload.length; index += 1) { hash ^= payload.charCodeAt(index); hash = Math.imul(hash, 16777619); }
+  return `route-input-${(hash >>> 0).toString(16)}`;
+}
+
+export function isRouteEstimateFingerprintStale(currentFingerprint: string, estimateFingerprint: string | null): boolean {
+  return !estimateFingerprint || currentFingerprint !== estimateFingerprint;
 }
 
 export function validateProviderCapabilities(request: Pick<RouteRequest, 'stops' | 'vehicleProfile' | 'options'>, capabilities: RouteProviderCapabilities): string[] {
