@@ -149,7 +149,10 @@ async function uploadAndReviewPod(driverClient, managerClient, assignmentId) {
   }
   const evidence = await rpc(driverClient, 'finalize_job_evidence_upload', { p_upload_intent_id: intent.id, p_evidence_type: 'pod', p_outcome: 'delivered', p_source: 'mobile_file', p_metadata: { smoke: true } });
   const loaded = await one(managerClient, 'job_evidence', 'id, updated_at, review_status', { id: evidence.id });
-  const reviewed = await rpc(managerClient, 'review_job_evidence', { p_evidence_id: loaded.id, p_review_status: 'accepted', p_review_notes: 'Batch 14 disposable smoke verification', p_expected_updated_at: loaded.updated_at });
+  // The legacy review_job_evidence RPC remains documented for compatibility;
+  // disposable smoke exercises the idempotent governed Batch 18 contract.
+  const reviewed = await rpc(managerClient, 'review_job_evidence_governed', { p_evidence_id: loaded.id, p_review_status: 'accepted', p_review_notes: 'Batch 18 disposable smoke verification', p_expected_updated_at: loaded.updated_at });
+  assert(reviewed.outcome === 'reviewed' || reviewed.outcome === 'already_reviewed', `Governed POD review returned ${reviewed.outcome}.`);
   return { ...reviewed, upload_intent_id: intent.id };
 }
 

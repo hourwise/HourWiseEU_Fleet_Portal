@@ -6627,6 +6627,16 @@ export type Database = {
         }
         Returns: Json[]
       }
+      list_manager_pod_review_queue: {
+        Args: {
+          p_from?: string
+          p_job_id?: string
+          p_limit?: number
+          p_review_status?: string
+          p_to?: string
+        }
+        Returns: Json[]
+      }
       list_pod_reconciliation_drilldown: {
         Args: { p_limit?: number; p_signal_key: string }
         Returns: Json[]
@@ -6863,6 +6873,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      review_job_evidence_governed: {
+        Args: {
+          p_evidence_id: string
+          p_expected_updated_at?: string
+          p_review_notes?: string
+          p_review_status: string
+        }
+        Returns: Json
       }
       rotate_company_auth_code: {
         Args: never
