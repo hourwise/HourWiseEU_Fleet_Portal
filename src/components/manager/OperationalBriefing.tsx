@@ -11,6 +11,7 @@ import { buildComplianceForecast, forecastNeedsAction, type ComplianceForecastIt
 import { answerAtlasQuestion, fetchAtlasQuerySnapshot, type AtlasAnswer, type AtlasQuerySnapshot } from '../../lib/atlasQueryRouter';
 import { AtlasProposalWorkbench } from './AtlasProposalWorkbench';
 import { PodReconciliationHealth } from './PodReconciliationHealth';
+import { OperationalTimeline } from './OperationalTimeline';
 
 export function AssetReadinessPanel() {
   const { profile } = useAuth();
@@ -89,6 +90,7 @@ export function AtlasOperationsBriefing() {
         <AtlasQuerySurface />
         <AtlasProposalWorkbench />
         <PodReconciliationHealth />
+        <OperationalTimeline />
       </div>
     </section>
   );
