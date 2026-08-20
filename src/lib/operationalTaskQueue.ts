@@ -62,7 +62,18 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
   });
   const handlings = await fetchOperationalTaskHandlings(companyId, projectedTasks.map((task) => task.sourceId));
   const handlingBySource = new Map(handlings.map((handling) => [`${handling.sourceType}:${handling.sourceId}`, handling]));
-  return projectedTasks.map((task) => ({ ...task, handling: handlingBySource.get(`${task.sourceType}:${task.sourceId}`) }));
+  return projectedTasks.map((task) => ({ ...task, handling: reconcileSourceDrivenHandling(task, handlingBySource.get(`${task.sourceType}:${task.sourceId}`)) }));
+}
+
+export function reconcileSourceDrivenHandling(task: OperationalTask, handling?: OperationalTaskHandling): OperationalTaskHandling | undefined {
+  if (!handling || task.sourceType !== 'driver_compliance' || handling.status !== 'resolved') return handling;
+  return {
+    ...handling,
+    status: 'new',
+    action: null,
+    resolvedAt: null,
+    note: 'Source evidence still projects an active compliance task; handling remains open until the authoritative record changes.',
+  };
 }
 
 export function buildOperationalTasks(input: OperationalTaskInput): OperationalTask[] {

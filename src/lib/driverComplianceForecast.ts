@@ -51,21 +51,28 @@ export function buildDriverComplianceForecast(
 ): DriverComplianceForecastItem[] {
   const medical = [...evidence.medicalDocuments]
     .filter((document) => /medical|d4/i.test(document.documentType))
-    .sort((left, right) => String(right.expiryDate ?? '').localeCompare(String(left.expiryDate ?? '')))[0] ?? null;
+    .sort((left, right) => {
+      const leftHasDate = left.expiryDate ? 1 : 0;
+      const rightHasDate = right.expiryDate ? 1 : 0;
+      return rightHasDate - leftHasDate
+        || String(right.expiryDate ?? '').localeCompare(String(left.expiryDate ?? ''))
+        || Number(Boolean(right.verifiedAt)) - Number(Boolean(left.verifiedAt))
+        || left.id.localeCompare(right.id);
+    })[0] ?? null;
 
   return [
     evaluate(evidence, 'driving_licence', 'Driving licence', evidence.drivingLicenceExpiry, evidence.drivingLicenceNumber ? 'profile' : 'none', now, assignments),
     evaluate(evidence, 'cpc_dqc', 'CPC/DQC', evidence.cpcDqcExpiry, evidence.cpcDqcNumber ? 'profile' : 'none', now, assignments),
-    evaluate(evidence, 'medical', 'Medical evidence', medical?.expiryDate ?? null, medical ? 'driver_document' : 'none', now, assignments),
+    evaluate(evidence, 'medical', 'Medical evidence', medical?.expiryDate ?? null, medical ? 'driver_document' : 'none', now, assignments, medical ? 'unknown' : 'missing'),
   ];
 }
 
 export function driverForecastNeedsAction(item: DriverComplianceForecastItem): boolean {
-  return item.status === 'missing' || item.status === 'expired' || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 14);
+  return item.missingEvidence || item.status === 'expired' || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 14);
 }
 
 export function driverForecastIsNewWarning(item: DriverComplianceForecastItem): boolean {
-  return item.status === 'missing' || item.status === 'expired' || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 30);
+  return item.missingEvidence || item.status === 'expired' || (item.status === 'expiring' && item.daysRemaining !== null && item.daysRemaining <= 30);
 }
 
 export async function fetchDriverComplianceForecast(companyId: string, now = new Date()): Promise<DriverComplianceForecastItem[]> {
@@ -112,12 +119,13 @@ function evaluate(
   evidenceSource: DriverComplianceForecastItem['evidenceSource'],
   now: Date,
   assignments: readonly DriverComplianceAssignment[],
+  missingStatus: 'missing' | 'unknown' = 'missing',
 ): DriverComplianceForecastItem {
   const id = `${evidence.driverId}:${evidenceType}`;
   if (!dueDate) {
     return {
       id, driverId: evidence.driverId, driverLabel: evidence.driverLabel, evidenceType, label,
-      dueDate: null, daysRemaining: null, status: 'missing', horizon: 90, severity: 'medium',
+      dueDate: null, daysRemaining: null, status: missingStatus, horizon: 90, severity: missingStatus === 'missing' ? 'medium' : 'info',
       missingEvidence: true, evidenceSource, planningRisk: assignments.some((assignment) => assignment.plannedDate) ? 'planned_with_missing_evidence' : 'none', planningConflictDates: assignments.map((assignment) => assignment.plannedDate).filter((date): date is string => Boolean(date)),
     };
   }
