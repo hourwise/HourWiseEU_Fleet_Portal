@@ -6608,6 +6608,25 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_manager_operational_timeline: {
+        Args: {
+          p_category?: string
+          p_cursor_at?: string
+          p_cursor_id?: string
+          p_driver_id?: string
+          p_event_type?: string
+          p_from?: string
+          p_job_assignment_id?: string
+          p_limit?: number
+          p_proposal_id?: string
+          p_task_id?: string
+          p_to?: string
+          p_trailer_id?: string
+          p_unresolved_only?: boolean
+          p_vehicle_id?: string
+        }
+        Returns: Json[]
+      }
       lookup_pending_driver_invite: {
         Args: { p_invite_code: string }
         Returns: {
@@ -6652,6 +6671,10 @@ export type Database = {
       prepare_tacho_import_reprocess: {
         Args: { p_company_id: string; p_import_id: string; p_reason?: string }
         Returns: Json
+      }
+      prune_pod_reconciliation_runs: {
+        Args: { p_keep_latest?: number; p_retention_days?: number }
+        Returns: number
       }
       publish_shift_with_event: {
         Args: { p_requires_ack?: boolean; p_shift_id: string }
