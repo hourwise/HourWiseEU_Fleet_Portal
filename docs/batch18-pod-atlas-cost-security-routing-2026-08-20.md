@@ -94,18 +94,28 @@ Post-deploy linked database lint reports no issue for the Batch 18 functions aft
 ## Validation
 
 - `npm.cmd run typecheck` — passed.
-- Focused Batch 18/related Vitest contracts — passed: 5 files / 20 tests.
-- `npm.cmd run test:rules` — pending final full run after documentation and generated-types changes.
-- `npm.cmd test` — pending final full run.
-- `npm.cmd run build` — pending final run.
-- Changed-file ESLint and full `npm.cmd run lint` — pending final run; the known baseline remains 103 errors / 7 warnings outside changed-file scope.
-- `git diff --check` — pending final run.
+- `npm.cmd run test:rules` — passed: 50 files / 327 tests.
+- `npm.cmd test` — passed: 54 files / 347 tests.
+- `npm.cmd run build` — passed.
+- Changed-file ESLint — passed with no Batch 18 changed-file findings.
+- `npm.cmd run lint` — known baseline: 103 errors / 7 warnings, with no Batch 18 changed-file findings.
+- `git diff --check` — passed.
+- `src/lib/database.types.ts` was regenerated from the deployed schema.
 
 Authenticated disposable smoke/race was checked once. Required environment variables were not available, so the exact disposition is: `SMOKE BLOCKED — ENVIRONMENT ONLY`. No service-role credential or production mutation was attempted.
 
 ## Commits, push, and blockers
 
-Logical commit slices will be created after the final validation gates pass and pushed to `main` only if those gates remain green. No Batch 19 work is included.
+The final logical commits were pushed to `main`:
+
+- `bdd2afe` — `feat(pod): complete governed evidence review workflow`
+- `591a828` — `feat(atlas): add inference policy and cost router foundation`
+- `10cc45d` — `test(operations): enforce timeline source contracts`
+- `dbe1828` — `fix(security): apply owner-reviewed function disposition`
+
+Final pushed HEAD: `dbe1828a956e9764d7f2f113f9fa6508515a1ccc`.
+
+No Batch 19 work is included.
 
 Remaining blockers:
 
@@ -115,7 +125,7 @@ Remaining blockers:
 4. The account-level leaked-password-protection setting remains outside migration scope.
 5. Full-repository lint retains the known unrelated baseline until those files are separately owned.
 
-## Top five Batch 13 recommendations
+## Top five Batch 19 recommendations
 
 1. Run the disposable authenticated POD review race matrix: same decision, conflicting decision, stale update, cross-company access, signed-view expiry, and follow-up resolution.
 2. Add an owner-approved policy administration surface for the private Atlas gateway, still default-disabled and without enabling a provider.
