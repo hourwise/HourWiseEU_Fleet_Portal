@@ -3,6 +3,7 @@ import type { AssetReadinessResult } from './assetCompliance';
 import { supabase } from './supabase';
 import { fetchOperationalTaskHandlings, type OperationalTaskHandling } from './operationalTaskHandling';
 import { driverForecastNeedsAction, type DriverComplianceForecastItem, fetchDriverComplianceForecast } from './driverComplianceForecast';
+import { canonicalSignalKey } from './atlasSignalTaskContract';
 
 export type OperationalTaskSeverity = 'critical' | 'high' | 'medium' | 'info';
 export type OperationalTaskCategory = 'jobs' | 'drivers' | 'fleet' | 'compliance';
@@ -15,6 +16,7 @@ export type OperationalTask = {
   detail: string;
   sourceType: string;
   sourceId: string;
+  sourceSignalKey?: string;
   occurredAt: string | null;
   dueAt: string | null;
   navigationTarget: string;
@@ -67,7 +69,7 @@ export async function fetchOperationalTasks(companyId: string, now = new Date())
   });
   const handlings = await fetchOperationalTaskHandlings(companyId, projectedTasks.map((task) => task.sourceId));
   const handlingBySource = new Map(handlings.map((handling) => [`${handling.sourceType}:${handling.sourceId}`, handling]));
-  return projectedTasks.map((task) => ({ ...task, handling: reconcileSourceDrivenHandling(task, handlingBySource.get(`${task.sourceType}:${task.sourceId}`)) }));
+  return projectedTasks.map((task) => ({ ...task, sourceSignalKey: canonicalSignalKey(task.sourceType as Parameters<typeof canonicalSignalKey>[0], task.sourceId), handling: reconcileSourceDrivenHandling(task, handlingBySource.get(`${task.sourceType}:${task.sourceId}`)) }));
 }
 
 export function reconcileSourceDrivenHandling(task: OperationalTask, handling?: OperationalTaskHandling): OperationalTaskHandling | undefined {
