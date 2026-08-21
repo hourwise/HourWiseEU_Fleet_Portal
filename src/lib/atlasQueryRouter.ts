@@ -8,6 +8,7 @@ import type { AtlasMorningBriefing, AtlasMorningSectionKey } from './atlasBriefi
 import { fetchOperationalTasks, type OperationalTask } from './operationalTaskQueue';
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
 import { atlasLogicalTierForComplexity, evaluateAtlasInferenceAdmission, type AtlasInferenceDecision } from './atlasModelGateway';
+import { normalizeAtlasQuestion, resolveAtlasQuestion, type AtlasCanonicalIntent, type AtlasEntity } from './atlasKnowledge';
 
 export type AtlasIntent =
   | 'morning_briefing'
@@ -34,9 +35,14 @@ export type AtlasAnswerMode = 'deterministic' | 'synthesis_required' | 'reasonin
 
 export type AtlasRouteClassification = {
   intent: AtlasIntent;
+  canonicalIntent: AtlasCanonicalIntent;
   tier: AtlasComplexityTier;
   mode: AtlasAnswerMode;
   normalizedQuestion: string;
+  confidence: number;
+  confidenceBand: 'high' | 'medium' | 'low';
+  entities: AtlasEntity[];
+  clarification: string | null;
 };
 
 export type AtlasSource = {
@@ -83,6 +89,7 @@ export type AtlasReasoningPacket = {
 export type AtlasAnswer = {
   mode: AtlasAnswerMode;
   intent: AtlasIntent;
+  canonicalIntent?: AtlasCanonicalIntent;
   answer?: string;
   facts: AtlasFact[];
   sources: AtlasSource[];
@@ -127,28 +134,31 @@ export async function fetchAtlasQuerySnapshot(companyId: string, now = new Date(
 }
 
 export function classifyAtlasQuestion(question: string): AtlasRouteClassification {
-  const normalizedQuestion = normalizeQuestion(question);
-  const intent = classifyIntent(normalizedQuestion);
-  if (isDeepPlanning(normalizedQuestion)) return { intent: intent === 'unknown' ? 'unknown' : intent, tier: 3, mode: 'reasoning_required', normalizedQuestion };
-  if (isReasoningCandidate(normalizedQuestion)) return { intent: intent === 'unknown' ? 'unknown' : intent, tier: 2, mode: 'reasoning_required', normalizedQuestion };
-  if (isSynthesisCandidate(normalizedQuestion)) return { intent, tier: 1, mode: 'synthesis_required', normalizedQuestion };
-  if (intent !== 'unknown') return { intent, tier: 0, mode: 'deterministic', normalizedQuestion };
-  return { intent: 'unknown', tier: 1, mode: 'synthesis_required', normalizedQuestion };
+  const resolution = resolveAtlasQuestion(question);
+  const normalizedQuestion = resolution.normalizedQuestion;
+  const intent = resolution.legacyIntent;
+  if (isDeepPlanning(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 3, mode: 'reasoning_required', normalizedQuestion };
+  if (isReasoningCandidate(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 2, mode: 'reasoning_required', normalizedQuestion };
+  if (isSynthesisCandidate(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 1, mode: 'synthesis_required', normalizedQuestion };
+  if (intent !== 'unknown' && resolution.confidenceBand !== 'low') return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 0, mode: 'deterministic', normalizedQuestion };
+  return { ...resolution, intent: 'unknown', canonicalIntent: 'unknown', tier: 1, mode: 'synthesis_required', normalizedQuestion };
 }
 
 export function answerAtlasQuestion(question: string, snapshot: AtlasQuerySnapshot): AtlasAnswer {
-  const classification = classifyAtlasQuestion(question);
+  const resolution = resolveAtlasQuestion(question, snapshot);
+  const classification = { ...classifyAtlasQuestion(question), ...resolution, canonicalIntent: resolution.canonicalIntents[0] };
   const facts = factsForIntent(classification.intent, classification.normalizedQuestion, snapshot);
   const sources = sourcesForFacts(facts);
   const navigationTargets = [...new Set(facts.map((fact) => fact.navigationTarget))];
   const inferenceDecision = evaluateAtlasInferenceAdmission({ tier: atlasLogicalTierForComplexity(classification.tier) });
   if (classification.tier === 0) {
-    return { mode: 'deterministic', intent: classification.intent, answer: deterministicAnswer(classification.intent, facts, snapshot), facts, sources, navigationTargets, inferenceDecision };
+    return { mode: 'deterministic', intent: classification.intent, canonicalIntent: classification.canonicalIntent, answer: resolution.faqAnswer ?? (resolution.clarification ?? deterministicAnswer(classification.intent, facts, snapshot)), facts, sources, navigationTargets: resolution.navigationTarget ? [...new Set([...navigationTargets, resolution.navigationTarget])] : navigationTargets, inferenceDecision };
   }
   const packet = classification.tier === 2 || classification.tier === 3 ? buildAtlasReasoningPacket(question, classification.tier, snapshot) : undefined;
   return {
     mode: classification.mode,
     intent: classification.intent,
+    canonicalIntent: classification.canonicalIntent,
     answer: classification.tier === 1 ? 'Advanced synthesis is not configured yet. I can show the structured Portal facts and source links available for this question.' : 'Advanced planning is not configured yet. No model was called and no operational action was proposed.',
     facts,
     sources,
@@ -241,5 +251,5 @@ function taskFact(task: OperationalTask): AtlasFact { return fact(task.id, task.
 function fact(id: string, label: string, value: string, sourceType: string, sourceId: string, sourceLabel: string, navigationTarget: string): AtlasFact { return { id, label, value, sourceType, sourceId, sourceLabel, navigationTarget }; }
 function sourcesForFacts(facts: readonly AtlasFact[]): AtlasSource[] { return [...new Map(facts.map((item) => [`${item.sourceType}:${item.sourceId}`, { id: item.sourceId, type: item.sourceType, label: item.sourceLabel, navigationTarget: item.navigationTarget }])).values()]; }
 function complianceValue(status: string, dueDate: string | null, planningRisk: string): string { return `${status}${dueDate ? `; due ${dueDate}` : ''}${planningRisk !== 'none' ? '; future planning risk flagged' : ''}`; }
-function normalizeQuestion(question: string): string { return question.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' '); }
+function normalizeQuestion(question: string): string { return normalizeAtlasQuestion(question); }
 function pseudonymousRef(prefix: string, id: string): string { return `${prefix}-${id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`; }

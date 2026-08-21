@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluateAssetReadiness } from './assetCompliance';
 import { answerAtlasQuestion, buildAtlasReasoningPacket, classifyAtlasQuestion, type AtlasQuerySnapshot } from './atlasQueryRouter';
 import { validateAtlasOperationalProposal } from './atlasProposalValidation';
+import { normalizeAtlasQuestion, resolveAtlasQuestion } from './atlasKnowledge';
 
 const asset = evaluateAssetReadiness({
   id: 'vehicle-1', label: 'AB12 CDE', kind: 'vehicle', isVor: true,
@@ -55,5 +56,10 @@ describe('Atlas deterministic query router', () => {
     const result = validateAtlasOperationalProposal({ companyId: 'company-1', driverIds: new Set(['driver-1']), shiftIds: new Set(['shift-1']), assignmentIds: new Set(['assignment-1']), assets: [asset] }, { companyId: 'company-1', assignments: [{ driverId: 'driver-1', shiftId: 'shift-1', jobAssignmentId: 'assignment-1', vehicleId: 'vehicle-1' }] });
     expect(result.valid).toBe(false);
     expect(result.violations.map((violation) => violation.code)).toContain('asset_prohibited');
+  });
+
+  it('uses the Batch19 glossary and canonical compound contract', () => {
+    expect(normalizeAtlasQuestion('show lorries off-road')).toBe('show vehicle vor');
+    expect(resolveAtlasQuestion('What needs attention today and tomorrow?').canonicalIntents).toEqual(['today_attention', 'tomorrow_conflicts']);
   });
 });
