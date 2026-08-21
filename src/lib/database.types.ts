@@ -6502,6 +6502,21 @@ export type Database = {
         Args: { p_company_id: string; p_vehicle_id: string }
         Returns: Json
       }
+      get_atlas_inference_policy: {
+        Args: never
+        Returns: {
+          allowed_tiers: string[]
+          company_id: string
+          daily_request_limit: number
+          enabled: boolean
+          monthly_budget_minor_units: number
+          monthly_request_limit: number
+          per_request_budget_minor_units: number
+          provider_slot: string
+          updated_at: string
+          updated_by: string
+        }[]
+      }
       get_atlas_proposal_timeline: {
         Args: { p_proposal_id: string }
         Returns: Json
@@ -6706,6 +6721,14 @@ export type Database = {
       reconcile_expired_job_evidence_uploads: {
         Args: { p_max_rows?: number }
         Returns: Json
+      }
+      record_atlas_containment_outcome: {
+        Args: {
+          p_entity_count?: number
+          p_outcome: string
+          p_question_fingerprint: string
+        }
+        Returns: undefined
       }
       record_atlas_proposal_outcome: {
         Args: {
@@ -6959,6 +6982,28 @@ export type Database = {
           p_to_status: string
         }
         Returns: Json
+      }
+      update_atlas_inference_policy: {
+        Args: {
+          p_allowed_tiers: string[]
+          p_daily_request_limit?: number
+          p_enabled: boolean
+          p_monthly_budget_minor_units?: number
+          p_monthly_request_limit?: number
+          p_per_request_budget_minor_units?: number
+        }
+        Returns: {
+          allowed_tiers: string[]
+          company_id: string
+          daily_request_limit: number
+          enabled: boolean
+          monthly_budget_minor_units: number
+          monthly_request_limit: number
+          per_request_budget_minor_units: number
+          provider_slot: string
+          updated_at: string
+          updated_by: string
+        }[]
       }
       update_company_name: {
         Args: { p_name: string }
