@@ -109,7 +109,39 @@ export async function fetchManagerPodReviewQueue(input: { reviewStatus?: JobEvid
     p_limit: input.limit ?? 100,
   });
   if (error) throw new Error(error.message || 'Unable to load the manager POD review queue.');
-  return data ?? [];
+  return parsePodReviewQueueResponse(data);
+}
+
+export function parsePodReviewQueueResponse(data: unknown): PodReviewQueueItem[] {
+  if (!Array.isArray(data)) return [];
+  const items = data.filter(isPodReviewQueueItem);
+  if (items.length !== data.length) throw new Error('POD review queue response was incomplete.');
+  return items;
+}
+
+function isPodReviewQueueItem(value: unknown): value is PodReviewQueueItem {
+  if (!isRecord(value)) return false;
+  return typeof value.id === 'string'
+    && typeof value.job_id === 'string'
+    && typeof value.job_reference === 'string'
+    && typeof value.job_title === 'string'
+    && typeof value.job_assignment_id === 'string'
+    && typeof value.assignment_status === 'string'
+    && typeof value.evidence_type === 'string'
+    && typeof value.outcome === 'string'
+    && typeof value.source === 'string'
+    && typeof value.uploaded_at === 'string'
+    && (value.uploader_role === null || typeof value.uploader_role === 'string')
+    && typeof value.uploader_label === 'string'
+    && typeof value.review_status === 'string'
+    && (value.reviewed_at === null || typeof value.reviewed_at === 'string')
+    && (value.reviewed_by_label === null || typeof value.reviewed_by_label === 'string')
+    && (value.review_notes === null || typeof value.review_notes === 'string')
+    && typeof value.updated_at === 'string';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 export async function openJobEvidenceView(evidenceId: string): Promise<string> {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Filter, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchOperationalTimeline, type OperationalTimelineCategory, type OperationalTimelineFilters, type OperationalTimelineItem, type OperationalTimelinePage } from '../../lib/operationalTimeline';
+import { toProductError } from '../../lib/productError';
 
 const categories: Array<OperationalTimelineCategory | ''> = ['', 'job', 'assignment', 'proposal', 'task', 'pod', 'compliance', 'security'];
 
@@ -20,7 +21,7 @@ export function OperationalTimeline() {
       const nextPage = await fetchOperationalTimeline(nextFilters, cursor);
       setPage((current) => cursor ? { ...nextPage, items: [...current.items, ...nextPage.items] } : nextPage);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load the operational timeline.');
+      setError(toProductError(loadError, 'The operational history is temporarily unavailable. Try again.').message);
     } finally {
       setLoading(false);
     }

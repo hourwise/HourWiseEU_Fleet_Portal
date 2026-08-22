@@ -176,7 +176,51 @@ export async function fetchAtlasProposals(filters: AtlasProposalListFilters = {}
     p_limit: 100,
   });
   if (error) throw new Error(error.message || 'Unable to load Atlas proposals.');
-  return (data ?? []) as unknown as AtlasProposalRecord[];
+  return parseAtlasProposalListResponse(data);
+}
+
+export function parseAtlasProposalListResponse(data: unknown): AtlasProposalRecord[] {
+  if (!Array.isArray(data)) return [];
+  const proposals = data.filter(isAtlasProposalRecord);
+  if (proposals.length !== data.length) throw new Error('Atlas proposal response was incomplete.');
+  return proposals;
+}
+
+function isAtlasProposalRecord(value: unknown): value is AtlasProposalRecord {
+  if (!isRecord(value)) return false;
+  return typeof value.id === 'string'
+    && typeof value.company_id === 'string'
+    && typeof value.proposal_type === 'string'
+    && typeof value.target_entity_type === 'string'
+    && typeof value.target_entity_id === 'string'
+    && isRecord(value.proposed_change)
+    && Array.isArray(value.evidence_facts)
+    && isRecord(value.source_snapshot)
+    && typeof value.source_snapshot_version === 'string'
+    && typeof value.validation_status === 'string'
+    && Array.isArray(value.validation_reasons)
+    && typeof value.origin === 'string'
+    && typeof value.status === 'string'
+    && typeof value.created_by === 'string'
+    && typeof value.created_at === 'string'
+    && (value.validated_at === null || typeof value.validated_at === 'string')
+    && (value.reviewed_by === null || typeof value.reviewed_by === 'string')
+    && (value.reviewed_at === null || typeof value.reviewed_at === 'string')
+    && (value.review_notes === null || typeof value.review_notes === 'string')
+    && (value.applied_by === null || typeof value.applied_by === 'string')
+    && (value.applied_at === null || typeof value.applied_at === 'string')
+    && (value.operation_result === null || isRecord(value.operation_result))
+    && typeof value.updated_at === 'string'
+    && typeof value.apply_attempt_count === 'number'
+    && (value.apply_started_at === null || typeof value.apply_started_at === 'string')
+    && (value.apply_finished_at === null || typeof value.apply_finished_at === 'string')
+    && (value.apply_outcome === null || typeof value.apply_outcome === 'string')
+    && (value.apply_error_code === null || typeof value.apply_error_code === 'string')
+    && (value.resulting_event_id === null || typeof value.resulting_event_id === 'string');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 export async function fetchAtlasProposalTimeline(proposalId: string): Promise<AtlasProposalTimeline> {

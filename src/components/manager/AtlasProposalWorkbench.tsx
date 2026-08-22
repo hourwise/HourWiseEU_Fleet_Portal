@@ -20,6 +20,7 @@ import {
 } from '../../lib/atlasProposal';
 import { supabase } from '../../lib/supabase';
 import type { AssetReadinessResult } from '../../lib/assetCompliance';
+import { toProductError } from '../../lib/productError';
 
 type AssignmentOption = { id: string; shift_id: string; driver_id: string; trailer_id: string | null; status: string; updated_at: string };
 type ShiftOption = { id: string; driver_id: string; date: string; start_time: string; end_time: string; notes: string | null; vehicle_id: string | null; status: string; updated_at: string };
@@ -63,7 +64,7 @@ export function AtlasProposalWorkbench() {
       setActiveDriverIds(new Set((driverRows ?? []).map((row) => row.id)));
       setAssets(readiness); setTasks(taskRows); setProposals(proposalRows);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to load Atlas proposal context.');
+      setMessage(toProductError(error, 'Atlas proposal context is temporarily unavailable. Try again.').message);
     } finally { setLoading(false); }
   }, [filters, profile?.company_id, profile?.role]);
 
@@ -110,12 +111,12 @@ export function AtlasProposalWorkbench() {
       setMessage(validation.status === 'valid' ? 'Proposal submitted for manager review.' : `Proposal saved but requires attention: ${validation.reasons.map((reason) => reason.message).join(' ')}`);
       setCandidates((current) => current.filter((item) => item !== candidate));
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to submit Atlas proposal.'); } finally { setWorking(false); }
+    } catch (error) { setMessage(toProductError(error, 'The proposal could not be submitted. Refresh and try again.').message); } finally { setWorking(false); }
   };
 
   const revalidate = async (proposal: AtlasProposalRecord) => {
     setWorking(true); setMessage(null);
-    try { const result = await revalidateAtlasProposal(proposal.id); setMessage(`Revalidation: ${result.status}${result.reasons.length ? ` · ${result.reasons.map((reason) => reason.message).join(' ')}` : ''}`); await load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to revalidate proposal.'); } finally { setWorking(false); }
+    try { const result = await revalidateAtlasProposal(proposal.id); setMessage(`Revalidation: ${result.status}${result.reasons.length ? ` · ${result.reasons.map((reason) => reason.message).join(' ')}` : ''}`); await load(); } catch (error) { setMessage(toProductError(error, 'The proposal could not be revalidated. Refresh and try again.').message); } finally { setWorking(false); }
   };
 
   const decide = async (proposal: AtlasProposalRecord, decision: 'approved' | 'rejected') => {
@@ -125,7 +126,7 @@ export function AtlasProposalWorkbench() {
       if (decision === 'approved' && validation.status !== 'valid') throw new Error(`Proposal is ${validation.status}; refresh before approval.`);
       await reviewAtlasProposal(proposal.id, decision, decision === 'approved' ? 'Manager approved after deterministic revalidation.' : 'Manager dismissed proposal.');
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to record manager decision.'); } finally { setWorking(false); }
+    } catch (error) { setMessage(toProductError(error, 'The manager decision could not be recorded. Refresh and try again.').message); } finally { setWorking(false); }
   };
 
   const apply = async (proposal: AtlasProposalRecord) => {
@@ -135,12 +136,12 @@ export function AtlasProposalWorkbench() {
       const suffix = result.idempotentReplay ? ' Existing authoritative outcome returned; no duplicate operation was run.' : '';
       setMessage(result.outcomeCode === 'applied' || result.outcomeCode === 'already_applied' ? `Governed operation ${result.outcomeCode}.${suffix}` : `Proposal was not applied: ${result.outcomeCode}. Refresh and review the recorded reason before retrying.`);
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to apply governed proposal.'); await load(); } finally { setWorking(false); }
+    } catch (error) { setMessage(toProductError(error, 'The governed operation could not be applied. Refresh and review the proposal.').message); await load(); } finally { setWorking(false); }
   };
 
   const showTimeline = async (proposal: AtlasProposalRecord) => {
     setTimelineLoading(true); setMessage(null);
-    try { setTimeline(await fetchAtlasProposalTimeline(proposal.id)); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to load proposal history.'); } finally { setTimelineLoading(false); }
+    try { setTimeline(await fetchAtlasProposalTimeline(proposal.id)); } catch (error) { setMessage(toProductError(error, 'Proposal history is temporarily unavailable. Try again.').message); } finally { setTimelineLoading(false); }
   };
 
   const downloadAuditExport = () => {

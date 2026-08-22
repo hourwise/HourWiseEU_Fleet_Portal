@@ -170,7 +170,7 @@ export async function fetchOperationalTimeline(
   };
 }
 
-function parseTimelineItem(value: unknown): OperationalTimelineItem | null {
+export function parseTimelineItem(value: unknown): OperationalTimelineItem | null {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.occurredAt !== 'string' || typeof value.category !== 'string' || typeof value.eventType !== 'string' || typeof value.severity !== 'string' || typeof value.summary !== 'string' || typeof value.sourceSystem !== 'string' || typeof value.sourceId !== 'string') return null;
   const actor = isRecord(value.actor) && typeof value.actor.id === 'string' && typeof value.actor.label === 'string'
     ? { id: value.actor.id, label: value.actor.label, role: typeof value.actor.role === 'string' ? value.actor.role : null }

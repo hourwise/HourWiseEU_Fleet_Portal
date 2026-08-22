@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Eye, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchManagerPodReviewQueue, openJobEvidenceView, reviewJobEvidence, type JobEvidenceReviewStatus, type PodReviewQueueItem } from '../../lib/jobEvidence';
+import { toProductError } from '../../lib/productError';
 
 type QueueFilter = JobEvidenceReviewStatus | 'all';
 
@@ -23,7 +24,7 @@ export function PodReviewQueue() {
     try {
       setItems(await fetchManagerPodReviewQueue({ reviewStatus: status, from: from ? `${from}T00:00:00.000Z` : undefined, to: to ? `${to}T00:00:00.000Z` : undefined }));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to load the POD review queue.');
+      setMessage(toProductError(error, 'The POD review queue is temporarily unavailable. Try again.').message);
     } finally {
       setLoading(false);
     }
@@ -40,14 +41,14 @@ export function PodReviewQueue() {
       setMessage(result.outcome === 'already_reviewed' ? 'This evidence was already reviewed; the latest decision is shown below.' : result.outcome === 'stale' ? 'This evidence changed while you were reviewing it. The queue has been refreshed.' : 'POD review saved.');
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to save the POD review.');
+      setMessage(toProductError(error, 'The POD review decision could not be saved. Refresh and try again.').message);
     } finally {
       setSavingId(null);
     }
   };
 
   const viewEvidence = async (id: string) => {
-    try { window.open(await openJobEvidenceView(id), '_blank', 'noopener,noreferrer'); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to open evidence.'); }
+    try { window.open(await openJobEvidenceView(id), '_blank', 'noopener,noreferrer'); } catch (error) { setMessage(toProductError(error, 'The protected evidence view is temporarily unavailable.').message); }
   };
 
   return <section className="rounded-2xl border border-hw-blue-500/30 bg-hw-navy-900 p-6 shadow-xl">
