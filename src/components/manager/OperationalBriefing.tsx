@@ -89,7 +89,7 @@ export function AtlasOperationsBriefing() {
         {error ? <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</div> : null}
         {loading ? <div className="mt-5 flex items-center gap-2 text-xs font-bold text-hw-slate-300"><Loader2 className="h-4 w-4 animate-spin" /> Building briefing from Portal data...</div> : !briefing || briefing.totalItems === 0 ? <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-xs font-bold text-hw-slate-300"><HelpCircle className="h-4 w-4 text-hw-cyan-500" /> No attention item was returned from the current data set.</div> : <div className="relative mt-5 grid gap-3 xl:grid-cols-2">{morningSections.map((section) => <MorningSection key={section.key} label={section.label} items={briefing.sections[section.key]} />)}</div>}
         <AtlasQuerySurface />
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-hw-slate-500" aria-label="Atlas suggested questions"><span className="font-black uppercase tracking-widest">Try:</span><span className="rounded-full border border-white/10 px-2 py-1">What needs attention today?</span><span className="rounded-full border border-white/10 px-2 py-1">Which jobs are not acknowledged?</span><span className="rounded-full border border-white/10 px-2 py-1">Which compliance warnings are new?</span></div>
+        <AtlasSuggestionButtons />
       </div>
     </section>
   );
@@ -102,6 +102,14 @@ export function AtlasQuerySurface() {
   const [answer, setAnswer] = useState<AtlasAnswer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const handleSuggestion = (event: Event) => {
+      const suggestion = (event as CustomEvent<string>).detail;
+      if (typeof suggestion === 'string') setQuestion(suggestion);
+    };
+    window.addEventListener('atlas-suggestion', handleSuggestion);
+    return () => window.removeEventListener('atlas-suggestion', handleSuggestion);
+  }, []);
   useEffect(() => {
     if (!profile?.company_id) return;
     let cancelled = false;
@@ -119,6 +127,11 @@ export function AtlasQuerySurface() {
     void recordAtlasContainment(outcome, fingerprintAtlasQuestion(classification.normalizedQuestion), classification.entities.length, resolveAtlasQuestion(question).canonicalIntents.length > 1).catch(() => undefined);
   };
   return <div className="mt-5 rounded-xl border border-hw-cyan-500/20 bg-hw-navy-950/50 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-hw-cyan-500">Ask Atlas · deterministic query layer</p><p className="mt-1 text-xs text-hw-slate-400">Ask about current Portal facts. No model call is made in this batch.</p></div><Sparkles className="h-5 w-5 text-hw-cyan-500" /></div><form onSubmit={submit} className="mt-3 flex gap-2"><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="What needs attention today?" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-hw-slate-500" disabled={loading || Boolean(error)} /><button type="submit" disabled={!snapshot || !question.trim()} className="inline-flex items-center gap-2 rounded-lg bg-hw-cyan-500 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-hw-navy-950 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-3.5 w-3.5" />Ask</button></form>{error ? <p className="mt-3 text-xs font-bold text-red-300">{error}</p> : null}{answer ? <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-hw-cyan-500/20 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-hw-cyan-300">{answer.mode.replace('_', ' ')}</span><span className="text-[10px] font-bold uppercase tracking-widest text-hw-slate-500">{answer.intent}</span></div><p className="mt-2 text-sm leading-relaxed text-hw-slate-200">{answer.answer}</p>{answer.facts.length > 0 ? <div className="mt-3 space-y-2">{answer.facts.slice(0, 12).map((fact) => <a key={fact.id} href={fact.navigationTarget} className="block rounded-lg border border-white/5 bg-black/10 p-2 transition hover:bg-white/10"><p className="text-xs font-bold text-white">{fact.label}</p><p className="mt-1 text-xs text-hw-slate-400">{fact.value} · Source: {fact.sourceLabel}</p></a>)}</div> : null}{answer.reasoningPacket ? <p className="mt-3 text-xs font-bold text-amber-200">Advanced planning is not configured yet. A bounded reasoning packet was prepared locally; it was not sent externally.</p> : null}</div> : null}</div>;
+}
+
+function AtlasSuggestionButtons() {
+  const suggestions = ['What needs attention today?', 'Which jobs are not acknowledged?', 'Which compliance warnings are new?'];
+  return <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-hw-slate-500" aria-label="Atlas suggested questions"><span className="font-black uppercase tracking-widest">Try:</span>{suggestions.map(suggestion => <button key={suggestion} type="button" onClick={() => window.dispatchEvent(new CustomEvent('atlas-suggestion', { detail: suggestion }))} className="rounded-full border border-white/10 px-2 py-1 transition hover:border-hw-cyan-500/50 hover:text-hw-cyan-300">{suggestion}</button>)}</div>;
 }
 
 const morningSections: Array<{ key: AtlasMorningSectionKey; label: string }> = [
