@@ -1,8 +1,4 @@
-// Generated from the live Supabase public schema.
-// Source project: lcvahjmoobmpifrexurb
-// Regenerate with: supabase gen types --lang=typescript --project-id lcvahjmoobmpifrexurb --schema public
-// Do not edit manually.
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -15,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -3152,6 +3173,379 @@ export type Database = {
         }
         Relationships: []
       }
+      rota_plans: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          date_end: string
+          date_start: string
+          id: string
+          name: string
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          date_end: string
+          date_start: string
+          id?: string
+          name: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          date_end?: string
+          date_start?: string
+          id?: string
+          name?: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rota_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_plans_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "rota_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_slot_assignments: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          driver_id: string
+          id: string
+          shift_id: string | null
+          slot_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          driver_id: string
+          id?: string
+          shift_id?: string | null
+          slot_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          driver_id?: string
+          id?: string
+          shift_id?: string | null
+          slot_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_slot_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "rota_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_slots: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          end_time: string
+          id: string
+          plan_id: string
+          required_headcount: number
+          required_skill: string | null
+          role_label: string
+          run_group: string | null
+          slot_date: string
+          start_time: string
+          status: string
+          template_slot_id: string | null
+          trailer_id: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          end_time: string
+          id?: string
+          plan_id: string
+          required_headcount?: number
+          required_skill?: string | null
+          role_label: string
+          run_group?: string | null
+          slot_date: string
+          start_time: string
+          status?: string
+          template_slot_id?: string | null
+          trailer_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          id?: string
+          plan_id?: string
+          required_headcount?: number
+          required_skill?: string | null
+          role_label?: string
+          run_group?: string | null
+          slot_date?: string
+          start_time?: string
+          status?: string
+          template_slot_id?: string | null
+          trailer_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_slots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rota_slots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slots_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "rota_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slots_template_slot_id_fkey"
+            columns: ["template_slot_id"]
+            isOneToOne: false
+            referencedRelation: "rota_template_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slots_trailer_id_fkey"
+            columns: ["trailer_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slots_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_template_slots: {
+        Row: {
+          company_id: string
+          created_at: string
+          end_time: string
+          id: string
+          required_headcount: number
+          required_skill: string | null
+          role_label: string
+          sort_order: number
+          start_time: string
+          template_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          end_time: string
+          id?: string
+          required_headcount?: number
+          required_skill?: string | null
+          role_label: string
+          sort_order?: number
+          start_time: string
+          template_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          required_headcount?: number
+          required_skill?: string | null
+          role_label?: string
+          sort_order?: number
+          start_time?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_template_slots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_template_slots_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "rota_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_templates: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rota_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_permission_audit_events: {
         Row: {
           actor_kind: string
@@ -3687,6 +4081,81 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_availability: {
+        Row: {
+          availability_type: string
+          company_id: string
+          created_at: string
+          created_by: string
+          driver_id: string
+          ends_on: string
+          id: string
+          note: string | null
+          starts_on: string
+          updated_at: string
+        }
+        Insert: {
+          availability_type: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          driver_id: string
+          ends_on: string
+          id?: string
+          note?: string | null
+          starts_on: string
+          updated_at?: string
+        }
+        Update: {
+          availability_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          driver_id?: string
+          ends_on?: string
+          id?: string
+          note?: string | null
+          starts_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_availability_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_availability_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6230,12 +6699,34 @@ export type Database = {
         }
         Returns: boolean
       }
+      apply_rota_template: {
+        Args: {
+          p_from: string
+          p_name: string
+          p_template_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
       archive_tacho_candidate_import: {
         Args: {
           p_company_id: string
           p_delete_storage_file?: boolean
           p_import_id: string
           p_reason?: string
+        }
+        Returns: Json
+      }
+      assign_job_to_draft_shift: {
+        Args: { p_job_id: string; p_sequence?: number; p_shift_id: string }
+        Returns: Json
+      }
+      assign_rota_slot_driver: {
+        Args: {
+          p_driver_id: string
+          p_slot_id: string
+          p_trailer_id?: string
+          p_vehicle_id?: string
         }
         Returns: Json
       }
@@ -6454,6 +6945,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_planned_job: {
+        Args: {
+          p_address_text: string
+          p_customer_name?: string
+          p_instructions?: string
+          p_job_type: string
+          p_manager_notes?: string
+          p_reference: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      create_rota_template_with_slots: {
+        Args: { p_description: string; p_name: string; p_slots: Json }
+        Returns: Json
+      }
+      create_shift_draft: {
+        Args: {
+          p_date: string
+          p_driver_id: string
+          p_end_time: string
+          p_notes?: string
+          p_start_time: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       current_actor_company_id: { Args: never; Returns: string }
       current_actor_legacy_role: { Args: never; Returns: string }
       daily_timeline_summary_json: {
@@ -6564,6 +7082,10 @@ export type Database = {
       get_my_company_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_pod_reconciliation_health: { Args: never; Returns: Json }
+      get_shift_publication_assessment: {
+        Args: { p_shift_id: string }
+        Returns: Json
+      }
       get_tacho_import_bundle: {
         Args: { p_company_id: string; p_import_id: string }
         Returns: Json
@@ -7352,6 +7874,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       job_assignment_status: [
