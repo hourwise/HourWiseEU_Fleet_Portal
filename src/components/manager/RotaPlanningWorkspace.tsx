@@ -4,6 +4,7 @@ import { format, addDays } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShiftPlanner } from './ShiftPlanner';
+import { DriverHoursPlanningPanel } from './DriverHoursPlanningPanel';
 
 type RotaTemplate = { id: string; name: string; description: string | null };
 type RotaSlot = { id: string; slot_date: string; role_label: string; start_time: string; end_time: string; required_headcount: number; status: string; required_skill: string | null };
@@ -127,5 +128,6 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
     <section className="rounded-2xl border border-brand-border bg-brand-card p-6"><h2 className="text-xl font-black text-white">Unassigned job pool</h2><p className="mt-1 text-sm text-slate-400">These jobs have no shift assignment yet. Use the job planner to place them on a draft duty.</p>{unassignedJobs.length === 0 ? <p className="mt-4 text-sm text-slate-400">No unassigned jobs are recorded.</p> : <div className="mt-4 grid gap-3 md:grid-cols-2">{unassignedJobs.map(job => <div key={job.id} className="rounded-xl border border-brand-border bg-brand-dark/30 p-4"><p className="font-bold text-white">{job.reference} · {job.title}</p><p className="mt-1 text-xs text-slate-400">{job.customer_name ?? 'Customer not named'} · {job.address_text}</p><button type="button" onClick={() => onOpenJobPlanner?.('')} className="mt-3 text-xs font-black text-brand-accent">Open job planner</button></div>)}</div>}</section>
 
     <ShiftPlanner onOpenJobPlanner={onOpenJobPlanner} />
+    <DriverHoursPlanningPanel fromDate={fromDate} toDate={toDate} />
   </div>;
 }
