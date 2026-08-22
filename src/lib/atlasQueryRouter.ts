@@ -8,7 +8,7 @@ import type { AtlasMorningBriefing, AtlasMorningSectionKey } from './atlasBriefi
 import { fetchOperationalTasks, type OperationalTask } from './operationalTaskQueue';
 import { fetchAssetReadinessSnapshot } from './assetReadinessLoad';
 import { atlasLogicalTierForComplexity, evaluateAtlasInferenceAdmission, type AtlasInferenceDecision } from './atlasModelGateway';
-import { normalizeAtlasQuestion, resolveAtlasQuestion, type AtlasCanonicalIntent, type AtlasEntity } from './atlasKnowledge';
+import { isReviewedAtlasPhrase, normalizeAtlasQuestion, resolveAtlasQuestion, type AtlasCanonicalIntent, type AtlasEntity } from './atlasKnowledge';
 
 export type AtlasIntent =
   | 'morning_briefing'
@@ -107,29 +107,39 @@ export type AtlasPendingEvidence = {
   uploadedAt: string;
 };
 
+export type AtlasDriverWork = { assignmentId: string; jobId: string | null; driverId: string; driverLabel: string; plannedDate: string | null; status: string };
+
 export type AtlasQuerySnapshot = {
   morningBriefing: AtlasMorningBriefing;
   tasks: OperationalTask[];
   assets: AssetReadinessResult[];
   driverCompliance: DriverComplianceForecastItem[];
   pendingEvidence: AtlasPendingEvidence[];
+  driverWork?: AtlasDriverWork[];
 };
 
 export async function fetchAtlasQuerySnapshot(companyId: string, now = new Date()): Promise<AtlasQuerySnapshot> {
-  const [{ data: evidence, error: evidenceError }, morningBriefing, tasks, assets, driverCompliance] = await Promise.all([
+  const [{ data: evidence, error: evidenceError }, morningBriefing, tasks, assets, driverCompliance, { data: assignments, error: assignmentError }, { data: shifts, error: shiftError }] = await Promise.all([
     supabase.from('job_evidence').select('id, job_id, job_assignment_id, evidence_type, outcome, uploaded_at').eq('company_id', companyId).in('review_status', ['pending', 'needs_follow_up']).order('uploaded_at', { ascending: false }),
     fetchAtlasOperationsBriefing(companyId, now),
     fetchOperationalTasks(companyId, now),
     fetchAssetReadinessSnapshot(companyId, now),
     import('./driverComplianceForecast').then(({ fetchDriverComplianceForecast }) => fetchDriverComplianceForecast(companyId, now)),
+    supabase.from('job_assignments').select('id, job_id, driver_id, shift_id, status').eq('company_id', companyId),
+    supabase.from('shifts').select('id, date').eq('company_id', companyId),
   ]);
   if (evidenceError) throw new Error(evidenceError.message || 'Unable to load POD review signals for Atlas.');
+  if (assignmentError) throw new Error(assignmentError.message || 'Unable to load assignment entities for Atlas.');
+  if (shiftError) throw new Error(shiftError.message || 'Unable to load shift dates for Atlas.');
+  const driverLabels = new Map(driverCompliance.map((item) => [item.driverId, item.driverLabel]));
+  const shiftDates = new Map((shifts ?? []).map((shift) => [shift.id, shift.date]));
   return {
     morningBriefing,
     tasks,
     assets,
     driverCompliance,
     pendingEvidence: (evidence ?? []).map((row) => ({ id: row.id, jobId: row.job_id, assignmentId: row.job_assignment_id, evidenceType: row.evidence_type, outcome: row.outcome, uploadedAt: row.uploaded_at })),
+    driverWork: (assignments ?? []).map((assignment) => ({ assignmentId: assignment.id, jobId: assignment.job_id, driverId: assignment.driver_id, driverLabel: driverLabels.get(assignment.driver_id) ?? 'Unknown driver', plannedDate: shiftDates.get(assignment.shift_id) ?? null, status: assignment.status })),
   };
 }
 
@@ -137,6 +147,7 @@ export function classifyAtlasQuestion(question: string): AtlasRouteClassificatio
   const resolution = resolveAtlasQuestion(question);
   const normalizedQuestion = resolution.normalizedQuestion;
   const intent = resolution.legacyIntent;
+  if (isReviewedAtlasPhrase(question) && intent !== 'unknown' && !resolution.clarification) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 0, mode: 'deterministic', normalizedQuestion };
   if (isDeepPlanning(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 3, mode: 'reasoning_required', normalizedQuestion };
   if (isReasoningCandidate(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 2, mode: 'reasoning_required', normalizedQuestion };
   if (isSynthesisCandidate(normalizedQuestion)) return { ...resolution, intent, canonicalIntent: resolution.canonicalIntents[0], tier: 1, mode: 'synthesis_required', normalizedQuestion };
@@ -147,9 +158,13 @@ export function classifyAtlasQuestion(question: string): AtlasRouteClassificatio
 export function answerAtlasQuestion(question: string, snapshot: AtlasQuerySnapshot): AtlasAnswer {
   const resolution = resolveAtlasQuestion(question, snapshot);
   const classification = { ...classifyAtlasQuestion(question), ...resolution, canonicalIntent: resolution.canonicalIntents[0] };
-  const facts = factsForIntent(classification.intent, classification.normalizedQuestion, snapshot);
+  const facts = factsForIntent(classification.intent, classification.normalizedQuestion, snapshot, classification.canonicalIntent);
   const sources = sourcesForFacts(facts);
   const navigationTargets = [...new Set(facts.map((fact) => fact.navigationTarget))];
+  if (resolution.clarification && classification.tier < 2) {
+    const inferenceDecision = evaluateAtlasInferenceAdmission({ tier: 'NONE' });
+    return { mode: 'deterministic', intent: classification.intent, canonicalIntent: classification.canonicalIntent, answer: resolution.clarification, facts: [], sources: [], navigationTargets: [], inferenceDecision };
+  }
   const inferenceDecision = evaluateAtlasInferenceAdmission({ tier: atlasLogicalTierForComplexity(classification.tier) });
   if (classification.tier === 0) {
     return { mode: 'deterministic', intent: classification.intent, canonicalIntent: classification.canonicalIntent, answer: resolution.faqAnswer ?? (resolution.clarification ?? deterministicAnswer(classification.intent, facts, snapshot)), facts, sources, navigationTargets: resolution.navigationTarget ? [...new Set([...navigationTargets, resolution.navigationTarget])] : navigationTargets, inferenceDecision };
@@ -188,7 +203,21 @@ export function buildAtlasReasoningPacket(question: string, tier: 2 | 3, snapsho
   };
 }
 
-function factsForIntent(intent: AtlasIntent, question: string, snapshot: AtlasQuerySnapshot): AtlasFact[] {
+function factsForIntent(intent: AtlasIntent, question: string, snapshot: AtlasQuerySnapshot, canonicalIntent?: AtlasCanonicalIntent): AtlasFact[] {
+  if (canonicalIntent === 'jobs_for_driver') {
+    const matches = (snapshot.driverWork ?? []).filter((work) => question.toLowerCase().includes(work.driverLabel.toLowerCase()));
+    return matches.map((work) => fact(work.assignmentId, `${work.driverLabel}: ${work.plannedDate ?? 'undated assignment'}`, `Job ${work.jobId ?? work.assignmentId} is ${work.status}.`, 'job_assignment', work.assignmentId, 'Job assignments', '/dashboard?workspace=people&people=jobs'));
+  }
+  if (canonicalIntent === 'jobs_for_date') {
+    const targetDate = question.includes('tomorrow') ? formatDateOnly(addDays(new Date(snapshot.morningBriefing.generatedAt), 1)) : question.includes('today') ? formatDateOnly(new Date(snapshot.morningBriefing.generatedAt)) : null;
+    const matches = (snapshot.driverWork ?? []).filter((work) => targetDate === null || work.plannedDate === targetDate);
+    return matches.map((work) => fact(work.assignmentId, `${work.driverLabel}: ${work.plannedDate ?? 'undated assignment'}`, `Job ${work.jobId ?? work.assignmentId} is ${work.status}.`, 'job_assignment', work.assignmentId, 'Job assignments', '/dashboard?workspace=people&people=jobs'));
+  }
+  if (canonicalIntent === 'job_status') {
+    const jobReference = question.match(/\b(?:job|assignment)[:\s#-]*([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+    const matches = (snapshot.driverWork ?? []).filter((work) => !jobReference || work.jobId?.toLowerCase() === jobReference || work.assignmentId.toLowerCase() === jobReference);
+    return matches.map((work) => fact(work.assignmentId, `Job ${work.jobId ?? work.assignmentId}`, `${work.status}; assigned to ${work.driverLabel}.`, 'job_assignment', work.assignmentId, 'Job assignments', '/dashboard?workspace=people&people=jobs'));
+  }
   if (intent === 'morning_briefing') return morningFacts(snapshot.morningBriefing);
   if (intent === 'yesterday_carry_over' || intent === 'today' || intent === 'tomorrow' || intent === 'next30') return morningFacts(snapshot.morningBriefing, intent === 'yesterday_carry_over' ? 'yesterday' : intent);
   if (intent === 'asset_readiness_reason') {
@@ -238,8 +267,8 @@ function classifyIntent(question: string): AtlasIntent {
 }
 
 function isSynthesisCandidate(question: string): boolean { return /summari[sz]e|morning meeting|explain these|briefly explain/.test(question); }
-function isReasoningCandidate(question: string): boolean { return /compare|most suitable|best (driver|vehicle|combination)|which .* combination/.test(question); }
-function isDeepPlanning(question: string): boolean { return /reorgani[sz]e|cover the day|cover .* sick|driver .* sick|plan the day|reorganise/.test(question); }
+function isReasoningCandidate(question: string): boolean { return /compare|most suitable|best (driver|vehicle|combination)|which .* best|which .* combination|which .* should (i|we) (use|choose|assign|buy)|optimi[sz]e|cheapest|write .*email|draft .*message/.test(question); }
+function isDeepPlanning(question: string): boolean { return /reorgani[sz]e|replan .*tomorrow|cover the day|cover .* sick|driver .* sick|calls? in sick|plan the day|reorganise/.test(question); }
 
 function deterministicAnswer(intent: AtlasIntent, facts: readonly AtlasFact[], snapshot: AtlasQuerySnapshot): string {
   if (intent === 'morning_briefing') return `The deterministic briefing has ${snapshot.morningBriefing.sections.yesterday.length} unresolved item(s) from yesterday, ${snapshot.morningBriefing.sections.today.length} today item(s), ${snapshot.morningBriefing.sections.tomorrow.length} tomorrow conflict(s), and ${snapshot.morningBriefing.sections.next30.length} next-30-day warning(s).`;
@@ -253,3 +282,5 @@ function sourcesForFacts(facts: readonly AtlasFact[]): AtlasSource[] { return [.
 function complianceValue(status: string, dueDate: string | null, planningRisk: string): string { return `${status}${dueDate ? `; due ${dueDate}` : ''}${planningRisk !== 'none' ? '; future planning risk flagged' : ''}`; }
 function normalizeQuestion(question: string): string { return normalizeAtlasQuestion(question); }
 function pseudonymousRef(prefix: string, id: string): string { return `${prefix}-${id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`; }
+function addDays(value: Date, amount: number): Date { const result = new Date(value); result.setDate(result.getDate() + amount); return result; }
+function formatDateOnly(value: Date): string { const year = value.getFullYear(); const month = String(value.getMonth() + 1).padStart(2, '0'); const day = String(value.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
