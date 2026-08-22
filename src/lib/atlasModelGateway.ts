@@ -14,6 +14,7 @@ export type AtlasInferencePolicy = {
   perRequestBudgetMinorUnits: number | null;
   dailyRequestLimit: number | null;
   monthlyRequestLimit: number | null;
+  paidInferenceActivationAuthority: 'unavailable' | 'owner' | 'billing';
 };
 
 export type AtlasUsageSummary = {
@@ -36,6 +37,8 @@ export type AtlasInferenceOutcome =
   | 'daily_limit_reached'
   | 'monthly_limit_reached'
   | 'provider_not_configured'
+  | 'activation_authority_missing'
+  | 'privacy_redaction_required'
   | 'reasoning_required';
 
 export type AtlasInferenceDecision = {
@@ -52,6 +55,7 @@ export const DEFAULT_ATLAS_INFERENCE_POLICY: AtlasInferencePolicy = {
   perRequestBudgetMinorUnits: null,
   dailyRequestLimit: null,
   monthlyRequestLimit: null,
+  paidInferenceActivationAuthority: 'unavailable',
 };
 
 export function atlasLogicalTierForComplexity(tier: 0 | 1 | 2 | 3): AtlasLogicalTier {
@@ -71,6 +75,9 @@ export function evaluateAtlasInferenceAdmission(input: {
   policy?: AtlasInferencePolicy;
   usage?: AtlasUsageSummary;
   cost?: AtlasCostEstimate;
+  paidInferenceActivationAuthorized?: boolean;
+  privacyRedactionPassed?: boolean;
+  costCapMinorUnits?: number | null;
 }): AtlasInferenceDecision {
   const policy = input.policy ?? DEFAULT_ATLAS_INFERENCE_POLICY;
   const usage = input.usage ?? { dailyRequests: 0, monthlyRequests: 0, monthlySpendMinorUnits: 0 };
@@ -81,6 +88,9 @@ export function evaluateAtlasInferenceAdmission(input: {
   if (policy.dailyRequestLimit !== null && usage.dailyRequests >= policy.dailyRequestLimit) return { outcome: 'daily_limit_reached', tier: input.tier, cost, reason: 'The company daily inference request limit has been reached.' };
   if (policy.monthlyRequestLimit !== null && usage.monthlyRequests >= policy.monthlyRequestLimit) return { outcome: 'monthly_limit_reached', tier: input.tier, cost, reason: 'The company monthly inference request limit has been reached.' };
   if (cost.estimatedMinorUnits === null || !cost.providerConfigured) return { outcome: 'provider_not_configured', tier: input.tier, cost, reason: 'No approved provider or price table is configured.' };
+  if (input.paidInferenceActivationAuthorized !== true || policy.paidInferenceActivationAuthority === 'unavailable') return { outcome: 'activation_authority_missing', tier: input.tier, cost, reason: 'Paid inference activation requires separate owner or billing authority.' };
+  if (input.privacyRedactionPassed !== true) return { outcome: 'privacy_redaction_required', tier: input.tier, cost, reason: 'A server-side privacy redaction check must pass before any provider call.' };
+  if (input.costCapMinorUnits !== null && input.costCapMinorUnits !== undefined && cost.estimatedMinorUnits > input.costCapMinorUnits) return { outcome: 'budget_exceeded', tier: input.tier, cost, reason: 'The estimated request cost exceeds the request cost cap.' };
   if (policy.perRequestBudgetMinorUnits !== null && cost.estimatedMinorUnits > policy.perRequestBudgetMinorUnits) return { outcome: 'budget_exceeded', tier: input.tier, cost, reason: 'The estimated request cost exceeds the per-request budget.' };
   if (policy.monthlyBudgetMinorUnits !== null && usage.monthlySpendMinorUnits + cost.estimatedMinorUnits > policy.monthlyBudgetMinorUnits) return { outcome: 'budget_exceeded', tier: input.tier, cost, reason: 'The estimated request cost exceeds the monthly budget.' };
   return { outcome: 'reasoning_required', tier: input.tier, cost, reason: 'Admission is possible under policy; a future server gateway must still perform the approved provider call.' };

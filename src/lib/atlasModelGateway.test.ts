@@ -15,11 +15,20 @@ describe('Batch 18 Atlas inference boundary', () => {
   });
 
   it('enforces policy, limits, and provider admission in deterministic order', () => {
-    const policy = { enabled: true, allowedTiers: ['SYNTHESIS'] as const, monthlyBudgetMinorUnits: 100, perRequestBudgetMinorUnits: 50, dailyRequestLimit: 1, monthlyRequestLimit: 10 };
+    const policy = { enabled: true, allowedTiers: ['SYNTHESIS'] as const, monthlyBudgetMinorUnits: 100, perRequestBudgetMinorUnits: 50, dailyRequestLimit: 1, monthlyRequestLimit: 10, paidInferenceActivationAuthority: 'owner' as const };
     expect(evaluateAtlasInferenceAdmission({ tier: 'STANDARD', policy }).outcome).toBe('tier_not_allowed');
-    expect(evaluateAtlasInferenceAdmission({ tier: 'SYNTHESIS', policy, usage: { dailyRequests: 1, monthlyRequests: 0, monthlySpendMinorUnits: 0 }, cost: { costClass: 'low', estimatedMinorUnits: 1, providerConfigured: true } }).outcome).toBe('daily_limit_reached');
-    expect(evaluateAtlasInferenceAdmission({ tier: 'SYNTHESIS', policy, cost: { costClass: 'low', estimatedMinorUnits: 51, providerConfigured: true } }).outcome).toBe('budget_exceeded');
+    const admitted = { paidInferenceActivationAuthorized: true, privacyRedactionPassed: true };
+    expect(evaluateAtlasInferenceAdmission({ tier: 'SYNTHESIS', policy, ...admitted, usage: { dailyRequests: 1, monthlyRequests: 0, monthlySpendMinorUnits: 0 }, cost: { costClass: 'low', estimatedMinorUnits: 1, providerConfigured: true } }).outcome).toBe('daily_limit_reached');
+    expect(evaluateAtlasInferenceAdmission({ tier: 'SYNTHESIS', policy, ...admitted, cost: { costClass: 'low', estimatedMinorUnits: 51, providerConfigured: true } }).outcome).toBe('budget_exceeded');
     expect(evaluateAtlasInferenceAdmission({ tier: 'SYNTHESIS', policy, cost: { costClass: 'low', estimatedMinorUnits: null, providerConfigured: false } }).outcome).toBe('provider_not_configured');
+  });
+
+  it('requires separate activation authority and server-side privacy redaction', () => {
+    const policy = { enabled: true, allowedTiers: ['STANDARD'] as const, monthlyBudgetMinorUnits: 100, perRequestBudgetMinorUnits: 50, dailyRequestLimit: 10, monthlyRequestLimit: 100, paidInferenceActivationAuthority: 'owner' as const };
+    const cost = { costClass: 'low' as const, estimatedMinorUnits: 10, providerConfigured: true };
+    expect(evaluateAtlasInferenceAdmission({ tier: 'STANDARD', policy, cost }).outcome).toBe('activation_authority_missing');
+    expect(evaluateAtlasInferenceAdmission({ tier: 'STANDARD', policy, cost, paidInferenceActivationAuthorized: true }).outcome).toBe('privacy_redaction_required');
+    expect(evaluateAtlasInferenceAdmission({ tier: 'STANDARD', policy, cost, paidInferenceActivationAuthorized: true, privacyRedactionPassed: true }).outcome).toBe('reasoning_required');
   });
 
   it('provides a disabled provider-neutral gateway with no network seam', async () => {

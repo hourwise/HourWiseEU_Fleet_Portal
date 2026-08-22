@@ -6502,6 +6502,21 @@ export type Database = {
         Args: { p_company_id: string; p_vehicle_id: string }
         Returns: Json
       }
+      get_atlas_containment_analytics: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: {
+          clarifications: number
+          compound_query_count: number
+          containment_rate: number
+          day: string
+          deterministic_answers: number
+          entity_resolution_count: number
+          faq_answers: number
+          reasoning_candidates: number
+          total_questions: number
+          unknown_questions: number
+        }[]
+      }
       get_atlas_inference_policy: {
         Args: never
         Returns: {
@@ -6511,6 +6526,7 @@ export type Database = {
           enabled: boolean
           monthly_budget_minor_units: number
           monthly_request_limit: number
+          paid_inference_activation_authority: string
           per_request_budget_minor_units: number
           provider_slot: string
           updated_at: string
@@ -6722,14 +6738,24 @@ export type Database = {
         Args: { p_max_rows?: number }
         Returns: Json
       }
-      record_atlas_containment_outcome: {
-        Args: {
-          p_entity_count?: number
-          p_outcome: string
-          p_question_fingerprint: string
-        }
-        Returns: undefined
-      }
+      record_atlas_containment_outcome:
+        | {
+            Args: {
+              p_entity_count?: number
+              p_outcome: string
+              p_question_fingerprint: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_compound_query?: boolean
+              p_entity_count?: number
+              p_outcome: string
+              p_question_fingerprint: string
+            }
+            Returns: undefined
+          }
       record_atlas_proposal_outcome: {
         Args: {
           p_operation_result?: Json
@@ -6999,6 +7025,7 @@ export type Database = {
           enabled: boolean
           monthly_budget_minor_units: number
           monthly_request_limit: number
+          paid_inference_activation_authority: string
           per_request_budget_minor_units: number
           provider_slot: string
           updated_at: string
