@@ -9,11 +9,6 @@ import type { AtlasBriefingItem, AtlasMorningBriefing, AtlasMorningSectionKey } 
 import { driverForecastNeedsAction, fetchDriverComplianceForecast, type DriverComplianceForecastItem } from '../../lib/driverComplianceForecast';
 import { buildComplianceForecast, forecastNeedsAction, type ComplianceForecastItem, type ForecastHorizon } from '../../lib/complianceForecast';
 import { answerAtlasQuestion, fetchAtlasQuerySnapshot, type AtlasAnswer, type AtlasQuerySnapshot } from '../../lib/atlasQueryRouter';
-import { AtlasProposalWorkbench } from './AtlasProposalWorkbench';
-import { PodReconciliationHealth } from './PodReconciliationHealth';
-import { OperationalTimeline } from './OperationalTimeline';
-import { PodReviewQueue } from './PodReviewQueue';
-import { AtlasPolicyAdministration } from './AtlasPolicyAdministration';
 import { classifyContainmentOutcome, fingerprintAtlasQuestion } from '../../lib/atlasContainment';
 import { recordAtlasContainment } from '../../lib/atlasPolicyAdministration';
 import { classifyAtlasQuestion } from '../../lib/atlasQueryRouter';
@@ -94,17 +89,12 @@ export function AtlasOperationsBriefing() {
         {error ? <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</div> : null}
         {loading ? <div className="mt-5 flex items-center gap-2 text-xs font-bold text-hw-slate-300"><Loader2 className="h-4 w-4 animate-spin" /> Building briefing from Portal data...</div> : !briefing || briefing.totalItems === 0 ? <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-xs font-bold text-hw-slate-300"><HelpCircle className="h-4 w-4 text-hw-cyan-500" /> No attention item was returned from the current data set.</div> : <div className="relative mt-5 grid gap-3 xl:grid-cols-2">{morningSections.map((section) => <MorningSection key={section.key} label={section.label} items={briefing.sections[section.key]} />)}</div>}
         <AtlasQuerySurface />
-        <AtlasPolicyAdministration />
-        <AtlasProposalWorkbench />
-        <PodReconciliationHealth />
-        <PodReviewQueue />
-        <OperationalTimeline />
       </div>
     </section>
   );
 }
 
-function AtlasQuerySurface() {
+export function AtlasQuerySurface() {
   const { profile } = useAuth();
   const [question, setQuestion] = useState('');
   const [snapshot, setSnapshot] = useState<AtlasQuerySnapshot | null>(null);

@@ -7,7 +7,7 @@
  * be unit tested without a browser.
  */
 
-export type Workspace = 'dashboard' | 'people' | 'fleet' | 'compliance' | 'reports' | 'finance' | 'settings';
+export type Workspace = 'dashboard' | 'atlas' | 'people' | 'fleet' | 'compliance' | 'reports' | 'finance' | 'settings';
 export type PeopleSection = 'drivers' | 'training' | 'shifts' | 'jobs' | 'supervisors' | 'messages';
 export type FleetSection = 'vehicles' | 'vehicle_checks' | 'fuel' | 'olicence' | 'incidents';
 export type SettingsSection = 'account' | 'company';
@@ -27,7 +27,7 @@ export interface DashboardRouteState {
   reportDate?: string;
 }
 
-export const WORKSPACES: Workspace[] = ['dashboard', 'people', 'fleet', 'compliance', 'reports', 'finance', 'settings'];
+export const WORKSPACES: Workspace[] = ['dashboard', 'atlas', 'people', 'fleet', 'compliance', 'reports', 'finance', 'settings'];
 export const PEOPLE_SECTIONS: PeopleSection[] = ['drivers', 'training', 'shifts', 'jobs', 'supervisors', 'messages'];
 export const FLEET_SECTIONS: FleetSection[] = ['vehicles', 'vehicle_checks', 'fuel', 'olicence', 'incidents'];
 export const SETTINGS_SECTIONS: SettingsSection[] = ['account', 'company'];

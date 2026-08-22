@@ -47,11 +47,8 @@ const JobPlanner = lazy(() => import('./JobPlanner').then(m => ({ default: m.Job
 const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
 const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
 const TachoComplianceWorkspace = lazy(() => import('./tachograph/TachoComplianceWorkspace').then(m => ({ default: m.TachoComplianceWorkspace })));
-const AssetReadinessPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AssetReadinessPanel })));
-const FleetComplianceForecastPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.FleetComplianceForecastPanel })));
-const DriverComplianceForecastPanel = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.DriverComplianceForecastPanel })));
-const AtlasOperationsBriefing = lazy(() => import('./OperationalBriefing').then(m => ({ default: m.AtlasOperationsBriefing })));
-const ManagerOperationalTaskQueue = lazy(() => import('./ManagerOperationalTaskQueue').then(m => ({ default: m.ManagerOperationalTaskQueue })));
+const AtlasWorkspace = lazy(() => import('./AtlasWorkspace').then(m => ({ default: m.AtlasWorkspace })));
+const AtlasDashboardSummary = lazy(() => import('./AtlasWorkspace').then(m => ({ default: m.AtlasDashboardSummary })));
 
 function TabLoading() {
   return (
@@ -203,6 +200,7 @@ export function ManagerDashboard() {
 
   const workspaces = [
     { id: 'dashboard' as Workspace, label: t('navigation.dashboard'), icon: LayoutDashboard },
+    { id: 'atlas' as Workspace, label: 'Atlas', icon: Sparkles },
     { id: 'people' as Workspace, label: 'People', icon: Users },
     { id: 'fleet' as Workspace, label: t('navigation.fleet'), icon: Truck },
     { id: 'compliance' as Workspace, label: t('navigation.compliance'), icon: Gauge },
@@ -417,7 +415,7 @@ export function ManagerDashboard() {
         {/* Workspace Body */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           {/* Section Navigation (Sub-tabs) */}
-          {activeWorkspace !== 'dashboard' && activeWorkspace !== 'reports' && activeWorkspace !== 'compliance' && (
+          {activeWorkspace !== 'dashboard' && activeWorkspace !== 'atlas' && activeWorkspace !== 'reports' && activeWorkspace !== 'compliance' && (
             <div className="flex items-center gap-1 bg-hw-navy-900 p-1 rounded-2xl border border-white/5 mb-8 w-fit">
               {(activeWorkspace === 'people' ? peopleSections : activeWorkspace === 'fleet' ? fleetSections : activeWorkspace === 'settings' ? settingsSections : []).map((section) => {
                 const Icon = section.icon;
@@ -513,59 +511,8 @@ export function ManagerDashboard() {
                     </div>
                     <div className="lg:col-span-1 space-y-8">
                       <div className="flex flex-col gap-6">
-                        <AtlasOperationsBriefing />
-                        <ManagerOperationalTaskQueue />
-                        <AssetReadinessPanel />
-                        <FleetComplianceForecastPanel />
-                        <DriverComplianceForecastPanel />
+                        <AtlasDashboardSummary onOpenAtlas={() => applyDashboardRoute({ workspace: 'atlas' })} />
                         <BroadcastMessage />
-
-                        <div className="relative group overflow-hidden">
-                           <div className="absolute inset-0 bg-gradient-to-br from-hw-blue-700 to-hw-blue-900 opacity-90 group-hover:scale-105 transition-transform duration-500"></div>
-                           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                              <Sparkles size={120} />
-                           </div>
-                           <div className="relative p-6 text-white h-full flex flex-col">
-                              <div className="flex items-center gap-2 mb-4">
-                                <Sparkles className="text-hw-cyan-500 animate-pulse" size={20} />
-                                <h4 className="font-bold uppercase tracking-[0.2em] text-[10px] text-hw-cyan-500">AI Assistant / Beta</h4>
-                              </div>
-                              <h5 className="text-lg font-bold mb-2">Ask Atlas about your fleet</h5>
-                              <p className="text-xs text-hw-slate-200 leading-relaxed mb-6">
-                                "Identify missing checks" or "Summarise tachograph issues for David Smith."
-                              </p>
-                              <div className="mt-auto">
-                                <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                                   Open Atlas Console
-                                </button>
-                              </div>
-                           </div>
-                        </div>
-
-                        <div className="bg-hw-navy-900 border border-white/5 rounded-2xl p-6 shadow-xl">
-                          <div className="flex items-center gap-2 mb-4">
-                            <GraduationCap className="text-hw-blue-600" size={18} />
-                            <h4 className="font-bold uppercase tracking-[0.2em] text-[10px] text-hw-slate-500">{t('dashboard.manager.alerts.trainingMode')}</h4>
-                          </div>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-bold text-hw-white">{t('dashboard.manager.alerts.discrepancy')}</span>
-                              <span className="text-xs font-bold text-hw-amber-500 bg-hw-amber-500/10 px-2 py-0.5 rounded">2 Alerts</span>
-                            </div>
-                            <div className="w-full bg-hw-navy-950 rounded-full h-1.5 overflow-hidden">
-                              <div className="bg-hw-amber-500 h-1.5 rounded-full" style={{ width: '60%' }}></div>
-                            </div>
-                            <p className="text-[10px] leading-relaxed text-hw-slate-400">
-                              Historical tacho imports show mode-switch errors for 2 drivers. Assign refresher training modules to clear these alerts.
-                            </p>
-                            <button
-                              onClick={() => applyDashboardRoute({ workspace: 'people', people: 'training', focusedDriverId: undefined })}
-                              className="w-full py-2.5 bg-hw-navy-950 hover:bg-hw-blue-600/10 border border-white/5 hover:border-hw-blue-600/50 rounded-xl text-[10px] font-bold text-hw-slate-400 hover:text-hw-blue-600 uppercase tracking-widest transition-all"
-                            >
-                              Open Training Center
-                            </button>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -641,6 +588,8 @@ export function ManagerDashboard() {
                   }
                 />
               )}
+
+              {activeWorkspace === 'atlas' && <AtlasWorkspace />}
               {activeWorkspace === 'finance' && <ExpenseApproval />}
               {activeWorkspace === 'settings' && activeSettingsSection === 'account' && (
                 <div className="space-y-6 pb-12">
