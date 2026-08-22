@@ -1,4 +1,8 @@
-﻿export type Json =
+// Generated from the live Supabase public schema.
+// Source project: lcvahjmoobmpifrexurb
+// Regenerate with: supabase gen types --lang=typescript --project-id lcvahjmoobmpifrexurb --schema public
+// Do not edit manually.
+export type Json =
   | string
   | number
   | boolean
@@ -11,31 +15,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -1264,6 +1243,66 @@ export type Database = {
             columns: ["tacho_source_import_id"]
             isOneToOne: false
             referencedRelation: "tachograph_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_planning_profiles: {
+        Row: {
+          company_id: string
+          driver_id: string
+          regulatory_regime: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          company_id: string
+          driver_id: string
+          regulatory_regime?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          company_id?: string
+          driver_id?: string
+          regulatory_regime?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_planning_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_planning_profiles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "driver_planning_profiles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_planning_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "driver_planning_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2555,6 +2594,67 @@ export type Database = {
           },
         ]
       }
+      leave_capacity_policies: {
+        Row: {
+          active: boolean
+          availability_type: string
+          company_id: string
+          created_at: string
+          created_by: string
+          handling: string
+          id: string
+          maximum_simultaneous: number
+          role_label: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          availability_type?: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          handling?: string
+          id?: string
+          maximum_simultaneous: number
+          role_label: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          availability_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          handling?: string
+          id?: string
+          maximum_simultaneous?: number
+          role_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_capacity_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_capacity_policies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "leave_capacity_policies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_logs: {
         Row: {
           company_id: string | null
@@ -2958,6 +3058,169 @@ export type Database = {
         }
         Relationships: []
       }
+      planned_run_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          job_id: string
+          planned_run_id: string
+          projected_job_assignment_id: string | null
+          sequence: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          job_id: string
+          planned_run_id: string
+          projected_job_assignment_id?: string | null
+          sequence: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_id?: string
+          planned_run_id?: string
+          projected_job_assignment_id?: string | null
+          sequence?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planned_run_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_run_jobs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "planned_run_jobs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_run_jobs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_run_jobs_planned_run_id_fkey"
+            columns: ["planned_run_id"]
+            isOneToOne: false
+            referencedRelation: "planned_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_run_jobs_projected_job_assignment_id_fkey"
+            columns: ["projected_job_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "job_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planned_runs: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          end_time: string
+          id: string
+          rota_slot_assignment_id: string | null
+          rota_slot_id: string | null
+          run_date: string
+          run_label: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          end_time: string
+          id?: string
+          rota_slot_assignment_id?: string | null
+          rota_slot_id?: string | null
+          run_date: string
+          run_label: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          id?: string
+          rota_slot_assignment_id?: string | null
+          rota_slot_id?: string | null
+          run_date?: string
+          run_label?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planned_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "planned_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_runs_rota_slot_assignment_id_fkey"
+            columns: ["rota_slot_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "rota_slot_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planned_runs_rota_slot_id_fkey"
+            columns: ["rota_slot_id"]
+            isOneToOne: false
+            referencedRelation: "rota_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_reconciliation_runs: {
         Row: {
           batch_limit: number
@@ -3248,10 +3511,13 @@ export type Database = {
           created_by: string
           driver_id: string
           id: string
+          planning_version: number
           shift_id: string | null
           slot_id: string
           status: string
+          trailer_id: string | null
           updated_at: string
+          vehicle_id: string | null
         }
         Insert: {
           company_id: string
@@ -3259,10 +3525,13 @@ export type Database = {
           created_by: string
           driver_id: string
           id?: string
+          planning_version?: number
           shift_id?: string | null
           slot_id: string
           status?: string
+          trailer_id?: string | null
           updated_at?: string
+          vehicle_id?: string | null
         }
         Update: {
           company_id?: string
@@ -3270,10 +3539,13 @@ export type Database = {
           created_by?: string
           driver_id?: string
           id?: string
+          planning_version?: number
           shift_id?: string | null
           slot_id?: string
           status?: string
+          trailer_id?: string | null
           updated_at?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -3323,6 +3595,20 @@ export type Database = {
             columns: ["slot_id"]
             isOneToOne: false
             referencedRelation: "rota_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_trailer_id_fkey"
+            columns: ["trailer_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_slot_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -3441,6 +3727,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          cycle_day: number
           end_time: string
           id: string
           required_headcount: number
@@ -3453,6 +3740,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          cycle_day?: number
           end_time: string
           id?: string
           required_headcount?: number
@@ -3465,6 +3753,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          cycle_day?: number
           end_time?: string
           id?: string
           required_headcount?: number
@@ -3497,6 +3786,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string
+          cycle_length_days: number
           description: string | null
           id: string
           name: string
@@ -3507,6 +3797,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by: string
+          cycle_length_days?: number
           description?: string | null
           id?: string
           name: string
@@ -3517,6 +3808,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string
+          cycle_length_days?: number
           description?: string | null
           id?: string
           name?: string
@@ -6699,6 +6991,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      apply_cyclic_rota_template: {
+        Args: {
+          p_from: string
+          p_name: string
+          p_request_key: string
+          p_template_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
       apply_rota_template: {
         Args: {
           p_from: string
@@ -6719,6 +7021,16 @@ export type Database = {
       }
       assign_job_to_draft_shift: {
         Args: { p_job_id: string; p_sequence?: number; p_shift_id: string }
+        Returns: Json
+      }
+      assign_rota_position: {
+        Args: {
+          p_driver_id: string
+          p_expected_slot_updated_at?: string
+          p_slot_id: string
+          p_trailer_id?: string
+          p_vehicle_id?: string
+        }
         Returns: Json
       }
       assign_rota_slot_driver: {
@@ -6869,6 +7181,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_cyclic_rota_template: {
+        Args: {
+          p_cycle_length_days: number
+          p_description: string
+          p_name: string
+          p_slots: Json
+        }
+        Returns: Json
+      }
       create_job_assignment_with_asset_guard: {
         Args: {
           p_address_text: string
@@ -6954,6 +7275,16 @@ export type Database = {
           p_manager_notes?: string
           p_reference: string
           p_title: string
+        }
+        Returns: Json
+      }
+      create_planned_run: {
+        Args: {
+          p_end_time: string
+          p_rota_slot_id?: string
+          p_run_date: string
+          p_run_label: string
+          p_start_time: string
         }
         Returns: Json
       }
@@ -7081,6 +7412,10 @@ export type Database = {
       }
       get_my_company_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
+      get_planning_workspace_snapshot: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       get_pod_reconciliation_health: { Args: never; Returns: Json }
       get_shift_publication_assessment: {
         Args: { p_shift_id: string }
@@ -7235,8 +7570,20 @@ export type Database = {
         Args: { p_import_id: string; p_metadata_patch: Json }
         Returns: Json
       }
+      place_job_on_planned_run: {
+        Args: {
+          p_job_id: string
+          p_planned_run_id: string
+          p_sequence?: number
+        }
+        Returns: Json
+      }
       prepare_tacho_import_reprocess: {
         Args: { p_company_id: string; p_import_id: string; p_reason?: string }
+        Returns: Json
+      }
+      preview_rota_template: {
+        Args: { p_from: string; p_template_id: string; p_to: string }
         Returns: Json
       }
       prune_pod_reconciliation_runs: {
@@ -7337,6 +7684,17 @@ export type Database = {
           p_site_id?: string
         }
         Returns: string
+      }
+      record_staff_availability: {
+        Args: {
+          p_availability_type: string
+          p_driver_id: string
+          p_ends_on: string
+          p_note?: string
+          p_role_label?: string
+          p_starts_on: string
+        }
+        Returns: Json
       }
       resolve_tacho_range_start: { Args: { p_range: string }; Returns: string }
       revalidate_atlas_proposal: {
@@ -7874,9 +8232,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       job_assignment_status: [
