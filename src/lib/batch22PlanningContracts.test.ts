@@ -26,8 +26,8 @@ describe('Batch 22 planning contracts', () => {
   it('supports jobs before shifts without invented route estimates', () => {
     expect(migration).toContain('create or replace function public.create_planned_job');
     expect(migration).toContain('create or replace function public.assign_job_to_draft_shift');
-    expect(planner).toContain('Unassigned job pool');
-    expect(planner).toContain('no arrival time is invented here');
+    expect(planner).toContain('Jobs waiting to be allocated');
+    expect(planner).toContain('Driving-time check pending');
   });
 
   it('uses real buttons for deterministic Atlas suggestions', () => {
