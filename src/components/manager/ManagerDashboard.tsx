@@ -42,7 +42,7 @@ const ComplianceSnapshot = lazy(() => import('./ComplianceSnapshot').then(m => (
 const TachoTrainingModule = lazy(() => import('./TachoTrainingModule').then(m => ({ default: m.TachoTrainingModule })));
 const UserProfileSettings = lazy(() => import('./UserProfileSettings').then(m => ({ default: m.UserProfileSettings })));
 const DriverRiskSnapshot = lazy(() => import('./DriverRiskSnapshot').then(m => ({ default: m.DriverRiskSnapshot })));
-const ShiftPlanner = lazy(() => import('./ShiftPlanner').then(m => ({ default: m.ShiftPlanner })));
+const RotaPlanningWorkspace = lazy(() => import('./RotaPlanningWorkspace').then(m => ({ default: m.RotaPlanningWorkspace })));
 const JobPlanner = lazy(() => import('./JobPlanner').then(m => ({ default: m.JobPlanner })));
 const IncidentReporting = lazy(() => import('./IncidentReporting').then(m => ({ default: m.IncidentReporting })));
 const OLicenceComplianceCentre = lazy(() => import('./OLicenceComplianceCentre').then(m => ({ default: m.OLicenceComplianceCentre })));
@@ -528,7 +528,7 @@ export function ManagerDashboard() {
                 />
               )}
               {activeWorkspace === 'people' && activePeopleSection === 'training' && <TachoTrainingModule />}
-              {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <ShiftPlanner onOpenJobPlanner={openJobPlannerForShift} />}
+              {activeWorkspace === 'people' && activePeopleSection === 'shifts' && <RotaPlanningWorkspace onOpenJobPlanner={openJobPlannerForShift} />}
               {activeWorkspace === 'people' && activePeopleSection === 'jobs' && <JobPlanner focusedShiftId={focusedShiftRecordId} onFocusedShiftChange={handleJobPlannerShiftChange} />}
               {activeWorkspace === 'people' && activePeopleSection === 'supervisors' && <SupervisorManagement />}
               {activeWorkspace === 'people' && activePeopleSection === 'messages' && <MessagingHub />}

@@ -26,6 +26,8 @@ import type { AssetReadinessResult } from '../../lib/assetCompliance';
 import { buildRoutePlan, type PlannedStop, type VehicleRoutingProfile } from '../../lib/routePlanning';
 import { fetchJobEvidence, reviewJobEvidence, type JobEvidenceRecord, type JobEvidenceReviewStatus } from '../../lib/jobEvidence';
 
+const planningRpc = supabase.rpc as unknown as (name: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+
 interface ShiftOption {
   id: string;
   date: string;
@@ -33,6 +35,7 @@ interface ShiftOption {
   end_time: string;
   vehicle_id: string | null;
   updated_at: string;
+  status: 'draft' | 'published' | 'updated' | 'cancelled';
   profiles?: { full_name: string | null } | null;
 }
 
@@ -86,7 +89,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
   const requestTokenRef = useRef(0);
   const acknowledgementRequestTokenRef = useRef(0);
 
-  // Load the manager's future published/updated shifts once per company. This
+  // Load the manager's future planned and published shifts once per company. This
   // effect does not depend on the focused shift, so manual dropdown changes do
   // not trigger a redundant reload; focus application lives in the next effect.
   useEffect(() => {
@@ -94,8 +97,8 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
     let cancelled = false;
     setShiftsLoading(true);
     setShiftsError(null);
-    supabase.from('shifts').select('id, date, start_time, end_time, driver_id, vehicle_id, updated_at')
-      .eq('company_id', profile.company_id).in('status', ['published', 'updated'])
+    supabase.from('shifts').select('id, date, start_time, end_time, driver_id, vehicle_id, updated_at, status')
+      .eq('company_id', profile.company_id).in('status', ['draft', 'published', 'updated'])
       .gte('date', format(new Date(), 'yyyy-MM-dd'))
       .order('date').order('start_time').then(async ({ data, error }) => {
         if (cancelled) return;
@@ -115,6 +118,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
           end_time: shift.end_time,
           vehicle_id: shift.vehicle_id,
           updated_at: shift.updated_at,
+          status: shift.status,
           profiles: driverMap.get(shift.driver_id) ?? null,
         })));
       });
@@ -331,7 +335,7 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
       setMessage({ kind: 'error', text: sequenceError ?? plannedWindowError ?? durationError ?? 'Please fix the highlighted fields before publishing.' });
       return;
     }
-    if (!editingAssignment && (assetHardBlocked || assetNeedsOverride)) {
+    if (!editingAssignment && selectedShift?.status !== 'draft' && (assetHardBlocked || assetNeedsOverride)) {
       setMessage({ kind: 'error', text: assetHardBlocked ? 'This vehicle is prohibited and cannot be assigned.' : 'This vehicle has incomplete or action-required readiness evidence. Record a governed override before publishing.' });
       return;
     }
@@ -360,20 +364,41 @@ export function JobPlanner({ focusedShiftId, onFocusedShiftChange }: JobPlannerP
         ...(plannedDepartureAt ? { p_planned_departure_at: plannedDepartureAt } : {}),
       };
       const guardedRpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string; code?: string } | null }>;
-      const { error } = editingAssignment
-        ? await supabase.rpc('update_job_assignment_with_event', {
+      let error: { message: string; code?: string } | null = null;
+      if (editingAssignment) {
+        ({ error } = await supabase.rpc('update_job_assignment_with_event', {
             ...typedRpcArgs,
             p_assignment_id: editingAssignment.id,
             p_expected_updated_at: editingAssignment.updated_at ?? undefined,
-          })
-        : await guardedRpc('create_job_assignment_with_asset_guard', {
-            ...typedRpcArgs,
-          p_shift_id: shiftId,
+          }));
+      } else if (selectedShift?.status === 'draft') {
+        const plannedJob = await planningRpc('create_planned_job', {
+          p_reference: reference,
+          p_title: title,
+          p_job_type: jobType,
+          p_address_text: address,
+          p_customer_name: customerName || null,
+          p_instructions: instructions || null,
+          p_manager_notes: null,
         });
+        if (plannedJob.error) throw plannedJob.error;
+        const jobId = (plannedJob.data as { id?: string } | null)?.id;
+        if (!jobId) throw new Error('The planned job could not be created.');
+        ({ error } = await planningRpc('assign_job_to_draft_shift', {
+          p_job_id: jobId,
+          p_shift_id: shiftId,
+          p_sequence: Number(sequence),
+        }));
+      } else {
+        ({ error } = await guardedRpc('create_job_assignment_with_asset_guard', {
+            ...typedRpcArgs,
+            p_shift_id: shiftId,
+          }));
+      }
       if (error) throw error;
       const wasEditing = Boolean(editingAssignment);
       resetJobForm();
-      setMessage({ kind: 'success', text: wasEditing ? 'Job assignment updated for the driver.' : 'Job published to the assigned driver.' });
+      setMessage({ kind: 'success', text: wasEditing ? 'Job assignment updated for the driver.' : selectedShift?.status === 'draft' ? 'Job added to the planned duty. It will stay private until the duty is published.' : 'Job published to the assigned driver.' });
       // Reload assignments before the sequence state is treated as ready again.
       beginAssignmentLoad(shiftId);
     } catch (error) {

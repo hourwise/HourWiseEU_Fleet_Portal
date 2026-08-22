@@ -252,7 +252,9 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       date: format(date, 'yyyy-MM-dd'),
       start_time: '08:00',
       end_time: '17:00',
-      vehicle_id: vehicles[0]?.id || null,
+      // A new shift is a planning record. Vehicle choice is explicit and may
+      // remain empty until the manager is ready to publish the duty.
+      vehicle_id: null,
       status: 'draft',
       published_at: null,
       published_by: null,
@@ -301,9 +303,14 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('shifts')
-          .insert(shiftData);
+        const { error } = await supabase.rpc('create_shift_draft', {
+          p_driver_id: shiftData.driver_id,
+          p_date: shiftData.date,
+          p_start_time: shiftData.start_time,
+          p_end_time: shiftData.end_time,
+          p_vehicle_id: shiftData.vehicle_id ?? undefined,
+          p_notes: shiftData.notes ?? undefined,
+        });
         if (error) throw error;
       }
 
@@ -312,7 +319,7 @@ export function ShiftPlanner({ onOpenJobPlanner }: ShiftPlannerProps = {}) {
       void loadData();
     } catch (err) {
       console.error('Error saving shift:', err);
-      setModalError(err instanceof Error ? `Failed to save shift: ${err.message}` : 'Failed to save shift.');
+      setModalError(err instanceof Error ? err.message : 'We could not save this shift. Check the details and try again.');
     } finally {
       setSavingShift(false);
     }
