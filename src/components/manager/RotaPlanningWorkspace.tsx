@@ -8,6 +8,10 @@ import {
   plannedMinutesForDriver, planningDates, type PlanningAssignment, type PlanningAvailability,
   type PlanningRegime, type PlanningSlot,
 } from '../../lib/planningWorkspace';
+import {
+  buildRotaTemplateCreateArgs, ROTA_TEMPLATE_SAVE_TIMEOUT_MS, submitRotaTemplate,
+  type RotaTemplateRequirementDraft,
+} from '../../lib/rotaTemplateSave';
 import { ShiftPlanner } from './ShiftPlanner';
 
 type PlannerView = 'coverage' | 'people' | 'dispatch' | 'leave' | 'templates' | 'duties';
@@ -22,9 +26,10 @@ type LeavePolicy = { id: string; role_label: string; availability_type: string; 
 type DriverPlanningProfile = { driver_id: string; regulatory_regime: PlanningRegime };
 type WorkSession = { user_id: string; total_work_minutes: number | null; start_time: string; end_time: string | null };
 type Snapshot = { templates: RotaTemplate[]; template_slots: TemplateSlot[]; slots: PlanningSlot[]; assignments: PlanningAssignment[]; availability: PlanningAvailability[]; runs: PlannedRun[]; run_jobs: PlannedRunJob[]; leave_policies: LeavePolicy[]; driver_planning_profiles: DriverPlanningProfile[] };
-type RequirementDraft = { id: string; cycleDay: number; roleLabel: string; startTime: string; endTime: string; headcount: number };
+type RequirementDraft = RotaTemplateRequirementDraft;
 
-const planningRpc = supabase.rpc as unknown as (name: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+const planningRpc: typeof supabase.rpc = supabase.rpc.bind(supabase);
+const PLANNING_REQUEST_TIMEOUT_MS = ROTA_TEMPLATE_SAVE_TIMEOUT_MS;
 const emptySnapshot: Snapshot = { templates: [], template_slots: [], slots: [], assignments: [], availability: [], runs: [], run_jobs: [], leave_policies: [], driver_planning_profiles: [] };
 const views: Array<{ id: PlannerView; label: string }> = [
   { id: 'coverage', label: 'Coverage' }, { id: 'people', label: 'People' }, { id: 'dispatch', label: 'Dispatch' },
@@ -58,23 +63,37 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
   const loadPlanning = useCallback(async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id) return null;
     setLoading(true);
-    const [snapshotResult, driversResult, vehiclesResult, jobsResult, sessionsResult] = await Promise.all([
-      planningRpc('get_planning_workspace_snapshot', { p_from: fromDate, p_to: toDate }),
-      supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver').order('full_name'),
-      supabase.from('vehicles').select('id, reg_number, vehicle_class, vehicle_type').eq('company_id', profile.company_id).order('reg_number'),
-      supabase.from('jobs').select('id, reference, title, job_type, address_text, customer_name').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(250),
-      supabase.from('work_sessions').select('user_id, total_work_minutes, start_time, end_time').eq('company_id', profile.company_id).gte('date', fromDate).lte('date', toDate),
-    ]);
-    const error = snapshotResult.error ?? driversResult.error ?? vehiclesResult.error ?? jobsResult.error ?? sessionsResult.error;
-    if (error) setMessage({ kind: 'error', text: error.message });
-    setSnapshot((snapshotResult.data as Snapshot | null) ?? emptySnapshot);
-    setDrivers((driversResult.data ?? []) as Driver[]);
-    setVehicles((vehiclesResult.data ?? []) as Vehicle[]);
-    setJobs((jobsResult.data ?? []) as Job[]);
-    setWorkSessions((sessionsResult.data ?? []) as WorkSession[]);
-    setLoading(false);
+    try {
+      const signal = AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS);
+      const [snapshotResult, driversResult, vehiclesResult, jobsResult, sessionsResult] = await Promise.all([
+        planningRpc('get_planning_workspace_snapshot', { p_from: fromDate, p_to: toDate }).abortSignal(signal),
+        supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver').order('full_name').abortSignal(signal),
+        supabase.from('vehicles').select('id, reg_number, vehicle_class, vehicle_type').eq('company_id', profile.company_id).order('reg_number').abortSignal(signal),
+        supabase.from('jobs').select('id, reference, title, job_type, address_text, customer_name').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(250).abortSignal(signal),
+        supabase.from('work_sessions').select('user_id, total_work_minutes, start_time, end_time').eq('company_id', profile.company_id).gte('date', fromDate).lte('date', toDate).abortSignal(signal),
+      ]);
+      const error = snapshotResult.error ?? driversResult.error ?? vehiclesResult.error ?? jobsResult.error ?? sessionsResult.error;
+      if (error) {
+        console.error('Planning workspace refresh failed', error);
+        setMessage({ kind: 'error', text: "We couldn't refresh planning. Try again." });
+        return null;
+      }
+      const refreshedSnapshot = (snapshotResult.data as Snapshot | null) ?? emptySnapshot;
+      setSnapshot(refreshedSnapshot);
+      setDrivers((driversResult.data ?? []) as Driver[]);
+      setVehicles((vehiclesResult.data ?? []) as Vehicle[]);
+      setJobs((jobsResult.data ?? []) as Job[]);
+      setWorkSessions((sessionsResult.data ?? []) as WorkSession[]);
+      return refreshedSnapshot;
+    } catch (error) {
+      console.error('Planning workspace transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't refresh planning. Check your connection and try again." });
+      return null;
+    } finally {
+      setLoading(false);
+    }
   }, [fromDate, profile?.company_id, toDate]);
 
   useEffect(() => { void loadPlanning(); }, [loadPlanning]);
@@ -92,37 +111,62 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
   const previewTemplate = async () => {
     if (!selectedTemplateId) return;
     setBusy(true);
-    const { data, error } = await planningRpc('preview_rota_template', { p_template_id: selectedTemplateId, p_from: fromDate, p_to: toDate });
-    setBusy(false);
-    if (error) return setMessage({ kind: 'error', text: error.message });
-    setApplyPreview((data as Record<string, number>) ?? null);
-    setShowApplyPreview(true);
+    try {
+      const { data, error } = await planningRpc('preview_rota_template', { p_template_id: selectedTemplateId, p_from: fromDate, p_to: toDate }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) {
+        console.error('Rota template preview failed', error);
+        return setMessage({ kind: 'error', text: "We couldn't preview this pattern. Try again." });
+      }
+      setApplyPreview((data as Record<string, number>) ?? null);
+      setShowApplyPreview(true);
+    } catch (error) {
+      console.error('Rota template preview transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't preview this pattern. Check your connection and try again." });
+    } finally {
+      setBusy(false);
+    }
   };
   const applyTemplate = async () => {
     if (!selectedTemplateId) return;
     setBusy(true);
-    const { data, error } = await planningRpc('apply_cyclic_rota_template', { p_template_id: selectedTemplateId, p_name: '', p_from: fromDate, p_to: toDate, p_request_key: crypto.randomUUID() });
-    setBusy(false);
-    if (error) return setMessage({ kind: 'error', text: error.message });
-    const result = data as { created?: number; skipped?: number } | null;
-    setShowApplyPreview(false);
-    setMessage({ kind: 'success', text: `Cover created: ${result?.created ?? 0} requirements added, ${result?.skipped ?? 0} already present.` });
-    void loadPlanning();
+    try {
+      const { data, error } = await planningRpc('apply_cyclic_rota_template', { p_template_id: selectedTemplateId, p_name: '', p_from: fromDate, p_to: toDate, p_request_key: crypto.randomUUID() }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) {
+        console.error('Rota template apply failed', error);
+        return setMessage({ kind: 'error', text: "We couldn't apply this pattern. Nothing was changed. Try again." });
+      }
+      const result = data as { created?: number; skipped?: number } | null;
+      setShowApplyPreview(false);
+      setMessage({ kind: 'success', text: `Cover created: ${result?.created ?? 0} requirements added, ${result?.skipped ?? 0} already present.` });
+      void loadPlanning();
+    } catch (error) {
+      console.error('Rota template apply transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm whether the pattern was applied. Refresh planning before trying again." });
+    } finally {
+      setBusy(false);
+    }
   };
   const publishReady = async () => {
     const shiftIds = snapshot.assignments.map((assignment) => assignment.shift_id).filter((id): id is string => Boolean(id));
     if (shiftIds.length === 0) return;
     setBusy(true);
-    let published = 0; let skipped = 0;
-    for (const shiftId of shiftIds) {
-      const assessment = await planningRpc('get_shift_publication_assessment', { p_shift_id: shiftId });
-      if (assessment.error || (assessment.data as { status?: string } | null)?.status !== 'ready') { skipped += 1; continue; }
-      const result = await planningRpc('publish_shift_with_event', { p_shift_id: shiftId, p_requires_ack: true });
-      if (result.error) skipped += 1; else published += 1;
+    try {
+      let published = 0; let skipped = 0;
+      for (const shiftId of shiftIds) {
+        const assessment = await planningRpc('get_shift_publication_assessment', { p_shift_id: shiftId }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+        if (assessment.error || (assessment.data as { status?: string } | null)?.status !== 'ready') { skipped += 1; continue; }
+        const result = await planningRpc('publish_shift_with_event', { p_shift_id: shiftId, p_requires_ack: true }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+        if (result.error) skipped += 1; else published += 1;
+      }
+      setShowReview(false);
+      setMessage({ kind: 'success', text: `${published} duties published after fresh checks. ${skipped} need attention.` });
+      void loadPlanning();
+    } catch (error) {
+      console.error('Duty publication transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't complete publication. Refresh planning to confirm the latest duty status." });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false); setShowReview(false);
-    setMessage({ kind: 'success', text: `${published} duties published after fresh checks. ${skipped} need attention.` });
-    void loadPlanning();
   };
 
   return <div className="min-w-0 space-y-4">
@@ -150,7 +194,7 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
     {showLeaveEditor ? <LeaveDrawer drivers={drivers} selectedDriverId={selectedDriverId ?? ''} fromDate={fromDate} policies={snapshot.leave_policies} onClose={() => { setShowLeaveEditor(false); setSelectedDriverId(null); }} onChanged={loadPlanning} setMessage={setMessage} /> : null}
     {showJobEditor ? <JobDrawer onClose={() => setShowJobEditor(false)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
     {showRunEditor ? <RunDrawer fromDate={fromDate} slots={snapshot.slots} onClose={() => setShowRunEditor(false)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
-    {showTemplateEditor ? <TemplateDrawer onClose={() => setShowTemplateEditor(false)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
+    {showTemplateEditor ? <TemplateDrawer onClose={() => setShowTemplateEditor(false)} refreshAndSelect={async (templateId) => { const refreshed = await loadPlanning(); const persisted = refreshed?.templates.some((template) => template.id === templateId) ?? false; if (persisted) setSelectedTemplateId(templateId); return persisted; }} setMessage={setMessage} /> : null}
     {showApplyPreview ? <ApplyPreviewDialog preview={applyPreview} busy={busy} onCancel={() => setShowApplyPreview(false)} onConfirm={() => void applyTemplate()} /> : null}
     {showReview ? <ReviewDialog review={review} busy={busy} onCancel={() => setShowReview(false)} onPublish={() => void publishReady()} onInspectDuties={() => { setShowReview(false); setActiveView('duties'); }} /> : null}
   </div>;
@@ -168,7 +212,20 @@ function PeopleView({ drivers, dates, slots, assignments, availability, onSelect
 function DispatchView({ jobs, unallocatedJobs, runs, runJobs, onNewJob, onNewRun, onChanged, setMessage }: { jobs: Job[]; unallocatedJobs: Job[]; runs: PlannedRun[]; runJobs: PlannedRunJob[]; onNewJob: () => void; onNewRun: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
   const [search, setSearch] = useState(''); const [placing, setPlacing] = useState<string | null>(null);
   const visible = unallocatedJobs.filter((job) => `${job.reference} ${job.title} ${job.customer_name ?? ''}`.toLowerCase().includes(search.toLowerCase()));
-  const place = async (runId: string, jobId: string) => { if (!jobId) return; setPlacing(runId); const { error } = await planningRpc('place_job_on_planned_run', { p_job_id: jobId, p_planned_run_id: runId, p_sequence: null }); setPlacing(null); if (error) setMessage({ kind: 'error', text: error.message }); else { setMessage({ kind: 'success', text: 'Job added to the run.' }); onChanged(); } };
+  const place = async (runId: string, jobId: string) => {
+    if (!jobId) return;
+    setPlacing(runId);
+    try {
+      const { error } = await planningRpc('place_job_on_planned_run', { p_job_id: jobId, p_planned_run_id: runId, p_sequence: undefined }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Job placement failed', error); setMessage({ kind: 'error', text: "We couldn't add this job to the run. Try again." }); }
+      else { setMessage({ kind: 'success', text: 'Job added to the run.' }); onChanged(); }
+    } catch (error) {
+      console.error('Job placement transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm whether the job was added. Refresh planning before trying again." });
+    } finally {
+      setPlacing(null);
+    }
+  };
   return <section className="grid min-h-[560px] gap-4 xl:grid-cols-[340px_1fr]"><div className="rounded-2xl border border-brand-border bg-brand-card p-4"><div className="flex items-center justify-between"><div><h2 className="font-black text-white">Jobs waiting to be allocated</h2><p className="text-xs text-slate-500">{unallocatedJobs.length} unallocated</p></div><button type="button" onClick={onNewJob} className="rounded-lg bg-brand-accent p-2 text-white" aria-label="Add job"><Plus size={16} /></button></div><label className="mt-3 flex items-center gap-2 rounded-lg border border-brand-border bg-brand-dark px-3"><Search size={14} className="text-slate-500" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search jobs" className="min-w-0 flex-1 bg-transparent py-2 text-xs text-white outline-none" /></label><div className="mt-3 max-h-[480px] space-y-2 overflow-auto">{visible.map((job) => <div key={job.id} className="rounded-xl border border-brand-border bg-brand-dark/40 p-3"><p className="text-xs font-black text-white">{job.reference} · {job.title}</p><p className="mt-1 line-clamp-2 text-[10px] text-slate-500">{job.customer_name ?? 'Customer not named'} · {job.address_text}</p><span className="mt-2 inline-block rounded bg-white/5 px-2 py-1 text-[9px] font-bold text-slate-400">{job.job_type}</span></div>)}{visible.length === 0 ? <p className="py-8 text-center text-xs text-slate-500">No matching unallocated jobs.</p> : null}</div></div><div className="rounded-2xl border border-brand-border bg-brand-card p-4"><div className="flex items-center justify-between"><div><h2 className="font-black text-white">Runs</h2><p className="text-xs text-slate-500">Order work before choosing a driver.</p></div><button type="button" onClick={onNewRun} className="inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-2 text-xs font-black text-white"><Plus size={14} />New run</button></div><div className="mt-4 grid gap-3 lg:grid-cols-2">{runs.map((run) => { const relations = runJobs.filter((entry) => entry.planned_run_id === run.id).sort((a, b) => a.sequence - b.sequence); return <article key={run.id} className="rounded-xl border border-brand-border bg-brand-dark/35 p-4"><div className="flex items-start justify-between"><div><p className="font-black text-white">{run.run_label}</p><p className="text-[10px] text-slate-500">{format(parseISO(run.run_date), 'EEE d MMM')} · {run.start_time.slice(0, 5)}–{run.end_time.slice(0, 5)}</p></div><span className={`rounded-full px-2 py-1 text-[9px] font-black ${run.rota_slot_assignment_id ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'}`}>{run.rota_slot_assignment_id ? 'Staffed' : 'Driver unassigned'}</span></div><ol className="mt-3 space-y-2">{relations.map((relation) => { const job = jobs.find((entry) => entry.id === relation.job_id); return <li key={relation.id} className="flex gap-2 rounded-lg bg-white/[0.03] p-2 text-xs"><span className="font-black text-brand-accent">{relation.sequence}</span><span className="text-slate-300">{job ? `${job.reference} · ${job.title}` : 'Job unavailable'}</span></li>; })}</ol><select disabled={placing === run.id || visible.length === 0} defaultValue="" onChange={(event) => { void place(run.id, event.target.value); event.currentTarget.value = ''; }} className="input mt-3 w-full"><option value="">Add an unallocated job…</option>{visible.map((job) => <option key={job.id} value={job.id}>{job.reference} · {job.title}</option>)}</select><p className="mt-2 text-[9px] text-slate-500">Driving-time check pending · Road driving duration is not available yet.</p></article>; })}{runs.length === 0 ? <div className="col-span-full rounded-xl border border-dashed border-brand-border p-10 text-center text-sm text-slate-500">No runs in this week. Create one without selecting a driver.</div> : null}</div></div></section>;
 }
 
@@ -184,7 +241,20 @@ function VacancyDrawer({ slot, drivers, vehicles, trailers, slots, assignments, 
   const [assetChoice, setAssetChoice] = useState<Record<string, { vehicle: string; trailer: string }>>({}); const [busyDriver, setBusyDriver] = useState<string | null>(null);
   const assigned = assignments.filter((entry) => entry.slot_id === slot.id && entry.status !== 'cancelled');
   const candidates = drivers.map((driver) => ({ driver, assessment: assessCandidate({ driverId: driver.id, slot, allSlots: slots, assignments, availability, regime: regimes.find((entry) => entry.driver_id === driver.id)?.regulatory_regime ?? 'unknown' }) })).sort((left, right) => groupOrder(left.assessment.group) - groupOrder(right.assessment.group) || (left.driver.full_name ?? '').localeCompare(right.driver.full_name ?? ''));
-  const assign = async (driverId: string) => { const assets = assetChoice[driverId] ?? { vehicle: '', trailer: '' }; setBusyDriver(driverId); const { error } = await planningRpc('assign_rota_position', { p_slot_id: slot.id, p_driver_id: driverId, p_vehicle_id: assets.vehicle || null, p_trailer_id: assets.trailer || null, p_expected_slot_updated_at: slot.updated_at }); setBusyDriver(null); if (error) setMessage({ kind: 'error', text: error.message }); else { setMessage({ kind: 'success', text: 'Driver and individual fleet allocation added as a draft duty.' }); onChanged(); } };
+  const assign = async (driverId: string) => {
+    const assets = assetChoice[driverId] ?? { vehicle: '', trailer: '' };
+    setBusyDriver(driverId);
+    try {
+      const { error } = await planningRpc('assign_rota_position', { p_slot_id: slot.id, p_driver_id: driverId, p_vehicle_id: assets.vehicle || undefined, p_trailer_id: assets.trailer || undefined, p_expected_slot_updated_at: slot.updated_at }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Rota position assignment failed', error); setMessage({ kind: 'error', text: "We couldn't assign this driver. Refresh the vacancy and try again." }); }
+      else { setMessage({ kind: 'success', text: 'Driver and individual fleet allocation added as a draft duty.' }); onChanged(); }
+    } catch (error) {
+      console.error('Rota position assignment transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm the assignment. Refresh planning before trying again." });
+    } finally {
+      setBusyDriver(null);
+    }
+  };
   return <Drawer title={`${format(parseISO(slot.slot_date), 'EEEE d MMMM')} · ${slot.role_label}`} subtitle={`${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)} · ${assigned.length}/${slot.required_headcount} assigned`} onClose={onClose}><h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assigned</h3><div className="mt-2 space-y-2">{assigned.map((entry) => <div key={entry.id} className="rounded-lg border border-brand-border bg-white/[0.03] p-3 text-xs"><p className="font-bold text-white">{drivers.find((driver) => driver.id === entry.driver_id)?.full_name ?? 'Unnamed driver'}</p><p className="mt-1 text-slate-500">{vehicles.find((vehicle) => vehicle.id === entry.vehicle_id)?.reg_number ?? 'Vehicle unassigned'} · {trailers.find((trailer) => trailer.id === entry.trailer_id)?.reg_number ?? 'No trailer'}</p></div>)}</div><h3 className="mt-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Available drivers</h3><div className="mt-2 space-y-3">{candidates.map(({ driver, assessment }) => { const already = assigned.some((entry) => entry.driver_id === driver.id); return <article key={driver.id} className={`rounded-xl border p-3 ${assessment.group === 'available' ? 'border-emerald-500/25 bg-emerald-500/5' : assessment.group === 'needs_review' ? 'border-amber-500/25 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5 opacity-75'}`}><div className="flex items-start justify-between gap-3"><div><p className="font-bold text-white">{driver.full_name ?? 'Unnamed driver'}</p><p className={`text-[10px] font-black ${assessment.group === 'available' ? 'text-emerald-200' : assessment.group === 'needs_review' ? 'text-amber-200' : 'text-red-200'}`}>{assessment.label}</p><p className="mt-1 text-[10px] text-slate-500">{assessment.reason} · {formatDuration(plannedMinutesForDriver(driver.id, slots, assignments))} planned</p></div>{assessment.group !== 'unavailable' && !already ? <button type="button" onClick={() => void assign(driver.id)} disabled={busyDriver !== null || assigned.length >= slot.required_headcount} className="inline-flex items-center gap-1 rounded-lg bg-brand-accent px-2 py-1.5 text-[10px] font-black text-white disabled:opacity-40"><UserPlus size={12} />{busyDriver === driver.id ? 'Adding…' : 'Assign'}</button> : <span className="text-[9px] font-black text-slate-500">{already ? 'Assigned' : 'Unavailable'}</span>}</div>{assessment.group !== 'unavailable' && !already ? <div className="mt-3 grid grid-cols-2 gap-2"><select aria-label={`Vehicle for ${driver.full_name ?? 'driver'}`} value={assetChoice[driver.id]?.vehicle ?? ''} onChange={(event) => setAssetChoice((current) => ({ ...current, [driver.id]: { vehicle: event.target.value, trailer: current[driver.id]?.trailer ?? '' } }))} className="input"><option value="">Vehicle later</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.reg_number}</option>)}</select><select aria-label={`Trailer for ${driver.full_name ?? 'driver'}`} value={assetChoice[driver.id]?.trailer ?? ''} onChange={(event) => setAssetChoice((current) => ({ ...current, [driver.id]: { vehicle: current[driver.id]?.vehicle ?? '', trailer: event.target.value } }))} className="input"><option value="">No trailer</option>{trailers.map((trailer) => <option key={trailer.id} value={trailer.id}>{trailer.reg_number}</option>)}</select></div> : null}</article>; })}</div></Drawer>;
 }
 
@@ -198,27 +268,78 @@ function DriverDrawer({ driver, slots, assignments, availability, workSessions, 
 function LeaveDrawer({ drivers, selectedDriverId, fromDate, policies, onClose, onChanged, setMessage }: { drivers: Driver[]; selectedDriverId: string; fromDate: string; policies: LeavePolicy[]; onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
   const [driverId, setDriverId] = useState(selectedDriverId); const [type, setType] = useState<PlanningAvailability['availability_type']>('annual_leave'); const [start, setStart] = useState(fromDate); const [end, setEnd] = useState(fromDate); const [note, setNote] = useState(''); const [busy, setBusy] = useState(false);
   const policy = policies.find((entry) => entry.availability_type === type);
-  const save = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); const { data, error } = await planningRpc('record_staff_availability', { p_driver_id: driverId, p_availability_type: type, p_starts_on: start, p_ends_on: end, p_note: note || null, p_role_label: policy?.role_label ?? 'Driver' }); setBusy(false); if (error) return setMessage({ kind: 'error', text: error.message }); const result = data as { capacity_status?: string; booked?: number; maximum?: number } | null; setMessage({ kind: 'success', text: result?.capacity_status === 'reached' ? `Availability saved. Holiday capacity reached (${result.booked}/${result.maximum}).` : 'Availability saved.' }); onClose(); onChanged(); };
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault(); setBusy(true);
+    try {
+      const { data, error } = await planningRpc('record_staff_availability', { p_driver_id: driverId, p_availability_type: type, p_starts_on: start, p_ends_on: end, p_note: note || undefined, p_role_label: policy?.role_label ?? 'Driver' }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Availability save failed', error); return setMessage({ kind: 'error', text: "We couldn't save this availability. Nothing was saved. Try again." }); }
+      const result = data as { capacity_status?: string; booked?: number; maximum?: number } | null;
+      setMessage({ kind: 'success', text: result?.capacity_status === 'reached' ? `Availability saved. Holiday capacity reached (${result.booked}/${result.maximum}).` : 'Availability saved.' }); onClose(); onChanged();
+    } catch (error) {
+      console.error('Availability save transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm whether availability was saved. Refresh planning before trying again." });
+    } finally { setBusy(false); }
+  };
   return <Drawer title="Record leave or availability" subtitle="The selected period appears across People and Leave." onClose={onClose}><form onSubmit={save} className="space-y-3"><label><span className="hw-field-label">Driver</span><select required value={driverId} onChange={(event) => setDriverId(event.target.value)} className="input"><option value="">Choose driver</option>{drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name ?? 'Unnamed driver'}</option>)}</select></label><label><span className="hw-field-label">Availability type</span><select value={type} onChange={(event) => setType(event.target.value as PlanningAvailability['availability_type'])} className="input"><option value="annual_leave">Annual leave</option><option value="sickness">Sickness</option><option value="training">Training</option><option value="unavailable">Unavailable</option><option value="other">Other</option></select></label><div className="grid grid-cols-2 gap-2"><label><span className="hw-field-label">Starts</span><input type="date" required value={start} onChange={(event) => setStart(event.target.value)} className="input" /></label><label><span className="hw-field-label">Ends</span><input type="date" required min={start} value={end} onChange={(event) => setEnd(event.target.value)} className="input" /></label></div><label><span className="hw-field-label">Note</span><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional context" className="input min-h-24" /></label>{policy ? <p className="rounded-lg border border-brand-border p-3 text-xs text-slate-400">{policy.role_label}: maximum {policy.maximum_simultaneous} simultaneous · {policy.handling === 'block' ? 'block when full' : 'warn when full'}</p> : <p className="text-xs text-amber-200">No company capacity rule is configured for this leave type.</p>}<button disabled={busy || !driverId} className="w-full rounded-lg bg-brand-accent px-4 py-3 text-xs font-black text-white disabled:opacity-40">{busy ? 'Saving…' : 'Save availability'}</button></form></Drawer>;
 }
 
 function JobDrawer({ onClose, onChanged, setMessage }: { onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
   const [form, setForm] = useState({ reference: '', title: '', type: 'delivery', address: '', customer: '' }); const [busy, setBusy] = useState(false);
-  const save = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); const { error } = await planningRpc('create_planned_job', { p_reference: form.reference, p_title: form.title, p_job_type: form.type, p_address_text: form.address, p_customer_name: form.customer || null, p_instructions: null, p_manager_notes: null }); setBusy(false); if (error) return setMessage({ kind: 'error', text: error.message }); setMessage({ kind: 'success', text: 'Job added to the allocation pool.' }); onClose(); onChanged(); };
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault(); setBusy(true);
+    try {
+      const { error } = await planningRpc('create_planned_job', { p_reference: form.reference, p_title: form.title, p_job_type: form.type, p_address_text: form.address, p_customer_name: form.customer || undefined, p_instructions: undefined, p_manager_notes: undefined }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Planned job creation failed', error); return setMessage({ kind: 'error', text: "We couldn't create this job. Nothing was saved. Try again." }); }
+      setMessage({ kind: 'success', text: 'Job added to the allocation pool.' }); onClose(); onChanged();
+    } catch (error) {
+      console.error('Planned job creation transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm whether the job was created. Refresh planning before trying again." });
+    } finally { setBusy(false); }
+  };
   return <Drawer title="Add job" subtitle="Jobs can exist before a run, driver or shift." onClose={onClose}><form onSubmit={save} className="space-y-3"><label><span className="hw-field-label">Job reference</span><input required value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} className="input" /></label><label><span className="hw-field-label">Job title</span><input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="input" /></label><label><span className="hw-field-label">Customer</span><input value={form.customer} onChange={(event) => setForm({ ...form, customer: event.target.value })} placeholder="Optional" className="input" /></label><label><span className="hw-field-label">Address or location</span><input required value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} className="input" /></label><label><span className="hw-field-label">Job type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="input"><option value="delivery">Delivery</option><option value="collection">Collection</option><option value="service">Service</option><option value="other">Other</option></select></label><button disabled={busy} className="w-full rounded-lg bg-brand-accent px-4 py-3 text-xs font-black text-white">{busy ? 'Adding…' : 'Add to job pool'}</button></form></Drawer>;
 }
 
 function RunDrawer({ fromDate, slots, onClose, onChanged, setMessage }: { fromDate: string; slots: PlanningSlot[]; onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
   const [form, setForm] = useState({ date: fromDate, label: 'Run 01', start: '06:00', end: '15:00', slotId: '' }); const [busy, setBusy] = useState(false);
-  const save = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); const { error } = await planningRpc('create_planned_run', { p_run_date: form.date, p_run_label: form.label, p_start_time: form.start, p_end_time: form.end, p_rota_slot_id: form.slotId || null }); setBusy(false); if (error) return setMessage({ kind: 'error', text: error.message }); setMessage({ kind: 'success', text: 'Unstaffed run created.' }); onClose(); onChanged(); };
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault(); setBusy(true);
+    try {
+      const { error } = await planningRpc('create_planned_run', { p_run_date: form.date, p_run_label: form.label, p_start_time: form.start, p_end_time: form.end, p_rota_slot_id: form.slotId || undefined }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Planned run creation failed', error); return setMessage({ kind: 'error', text: "We couldn't create this run. Nothing was saved. Try again." }); }
+      setMessage({ kind: 'success', text: 'Unstaffed run created.' }); onClose(); onChanged();
+    } catch (error) {
+      console.error('Planned run creation transport failed', error);
+      setMessage({ kind: 'error', text: "We couldn't confirm whether the run was created. Refresh planning before trying again." });
+    } finally { setBusy(false); }
+  };
   return <Drawer title="New run" subtitle="A run can be ordered before a driver is selected." onClose={onClose}><form onSubmit={save} className="space-y-3"><label><span className="hw-field-label">Run date</span><input type="date" required value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} className="input" /></label><label><span className="hw-field-label">Run name</span><input required value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} className="input" /></label><div className="grid grid-cols-2 gap-2"><label><span className="hw-field-label">Starts</span><input type="time" required value={form.start} onChange={(event) => setForm({ ...form, start: event.target.value })} className="input" /></label><label><span className="hw-field-label">Ends</span><input type="time" required value={form.end} onChange={(event) => setForm({ ...form, end: event.target.value })} className="input" /></label></div><label><span className="hw-field-label">Staffing requirement</span><select value={form.slotId} onChange={(event) => setForm({ ...form, slotId: event.target.value })} className="input"><option value="">Assign later</option>{slots.filter((slot) => slot.slot_date === form.date).map((slot) => <option key={slot.id} value={slot.id}>{slot.role_label} · {slot.start_time.slice(0, 5)}</option>)}</select></label><button disabled={busy} className="w-full rounded-lg bg-brand-accent px-4 py-3 text-xs font-black text-white">{busy ? 'Creating…' : 'Create run'}</button></form></Drawer>;
 }
 
-function TemplateDrawer({ onClose, onChanged, setMessage }: { onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
+function TemplateDrawer({ onClose, refreshAndSelect, setMessage }: { onClose: () => void; refreshAndSelect: (templateId: string) => Promise<boolean>; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
   const [name, setName] = useState('Regular Week'); const [cycleLength, setCycleLength] = useState(7); const [requirements, setRequirements] = useState<RequirementDraft[]>([{ id: crypto.randomUUID(), cycleDay: 1, roleLabel: 'Day Driver', startTime: '06:00', endTime: '15:00', headcount: 12 }]); const [busy, setBusy] = useState(false);
+  const [requestKey] = useState(() => crypto.randomUUID());
   const update = (id: string, change: Partial<RequirementDraft>) => setRequirements((current) => current.map((entry) => entry.id === id ? { ...entry, ...change } : entry));
   const copyDay = () => { const source = requirements.filter((entry) => entry.cycleDay === 1); const copies = Array.from({ length: Math.min(cycleLength, 5) - 1 }, (_, index) => source.map((entry) => ({ ...entry, id: crypto.randomUUID(), cycleDay: index + 2 }))).flat(); setRequirements((current) => [...current.filter((entry) => entry.cycleDay === 1 || entry.cycleDay > 5), ...copies]); };
-  const save = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); const { error } = await planningRpc('create_cyclic_rota_template', { p_name: name, p_description: 'Staffing demand pattern', p_cycle_length_days: cycleLength, p_slots: requirements.map((entry, index) => ({ cycle_day: entry.cycleDay, role_label: entry.roleLabel, start_time: entry.startTime, end_time: entry.endTime, required_headcount: entry.headcount, sort_order: index })) }); setBusy(false); if (error) return setMessage({ kind: 'error', text: error.message }); setMessage({ kind: 'success', text: 'Cyclic staffing pattern saved.' }); onClose(); onChanged(); };
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    let args: ReturnType<typeof buildRotaTemplateCreateArgs>;
+    try {
+      args = buildRotaTemplateCreateArgs({ name, cycleLength, requirements, requestKey });
+    } catch (error) {
+      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Check the staffing pattern and try again.' });
+      return;
+    }
+    const result = await submitRotaTemplate(args, {
+      rpc: (payload, signal) => supabase.rpc('create_cyclic_rota_template', payload).abortSignal(signal),
+      refreshAndSelect,
+      setBusy,
+      onConfirmed: onClose,
+      reportTechnicalError: (error) => console.error('Rota template save failed', error),
+    });
+    setMessage(result.status === 'confirmed'
+      ? { kind: 'success', text: `${result.name} saved.` }
+      : { kind: 'error', text: result.message });
+  };
   return <Drawer wide title="New staffing pattern" subtitle="Add many requirements across a repeating staffing-demand cycle." onClose={onClose}><form onSubmit={save}><div className="grid gap-3 sm:grid-cols-[1fr_170px]"><label><span className="hw-field-label">Pattern name</span><input required value={name} onChange={(event) => setName(event.target.value)} className="input" /></label><label><span className="hw-field-label">Cycle length</span><select value={cycleLength} onChange={(event) => setCycleLength(Number(event.target.value))} className="input"><option value={7}>7 days</option><option value={14}>14 days</option><option value={28}>28 days</option><option value={8}>8 days (custom)</option></select></label></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => setRequirements((current) => [...current, { id: crypto.randomUUID(), cycleDay: 1, roleLabel: 'Driver', startTime: '06:00', endTime: '15:00', headcount: 1 }])} className="inline-flex items-center gap-1 rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-white"><Plus size={13} />Requirement</button><button type="button" onClick={copyDay} className="inline-flex items-center gap-1 rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-white"><Copy size={13} />Copy day 1 to days 2–5</button></div><div className="mt-3 hidden grid-cols-[90px_1fr_105px_105px_90px_34px] gap-2 px-3 sm:grid" aria-hidden="true"><span className="hw-field-label mb-0">Cycle day</span><span className="hw-field-label mb-0">Role</span><span className="hw-field-label mb-0">Start</span><span className="hw-field-label mb-0">Finish</span><span className="hw-field-label mb-0">People</span><span /></div><div className="mt-2 max-h-[55vh] space-y-2 overflow-auto">{requirements.map((entry) => <div key={entry.id} className="grid gap-2 rounded-xl border border-brand-border bg-white/[0.02] p-3 sm:grid-cols-[90px_1fr_105px_105px_90px_34px]"><select aria-label="Cycle day" value={entry.cycleDay} onChange={(event) => update(entry.id, { cycleDay: Number(event.target.value) })} className="input">{Array.from({ length: cycleLength }, (_, index) => <option key={index + 1} value={index + 1}>{cycleDayLabel(index + 1, cycleLength)}</option>)}</select><input aria-label="Role" required value={entry.roleLabel} onChange={(event) => update(entry.id, { roleLabel: event.target.value })} className="input" /><input aria-label="Start time" type="time" required value={entry.startTime} onChange={(event) => update(entry.id, { startTime: event.target.value })} className="input" /><input aria-label="Finish time" type="time" required value={entry.endTime} onChange={(event) => update(entry.id, { endTime: event.target.value })} className="input" /><input aria-label="People required" type="number" min="1" max="50" required value={entry.headcount} onChange={(event) => update(entry.id, { headcount: Number(event.target.value) })} className="input" /><button type="button" onClick={() => setRequirements((current) => current.filter((item) => item.id !== entry.id))} aria-label="Delete requirement" className="text-red-300"><X size={16} /></button></div>)}</div><button disabled={busy || requirements.length === 0} className="mt-4 w-full rounded-lg bg-brand-accent px-4 py-3 text-xs font-black text-white disabled:opacity-40">{busy ? 'Saving…' : `Save ${requirements.length} requirements`}</button></form></Drawer>;
 }
 
