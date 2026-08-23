@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays, format, parseISO, startOfWeek } from 'date-fns';
-import { AlertTriangle, ChevronLeft, ChevronRight, ClipboardCheck, Copy, Plus, RefreshCw, Search, UserPlus, X } from 'lucide-react';
+import { AlertTriangle, Briefcase, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, Copy, LayoutGrid, Plus, RefreshCw, Route, Search, UserPlus, Users, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -12,9 +12,10 @@ import {
   buildRotaTemplateCreateArgs, ROTA_TEMPLATE_SAVE_TIMEOUT_MS, submitRotaTemplate,
   type RotaTemplateRequirementDraft,
 } from '../../lib/rotaTemplateSave';
+import { buildBulkAssignmentPreview, loadPlanningDomains, type BulkCandidate } from '../../lib/planningBoard';
 import { ShiftPlanner } from './ShiftPlanner';
 
-type PlannerView = 'coverage' | 'people' | 'dispatch' | 'leave' | 'templates' | 'duties';
+type PlannerView = 'coverage' | 'drivers' | 'runs';
 type Driver = { id: string; full_name: string | null };
 type Vehicle = { id: string; reg_number: string; vehicle_class: string | null; vehicle_type: string | null };
 type Job = { id: string; reference: string; title: string; job_type: string; address_text: string; customer_name: string | null };
@@ -24,7 +25,7 @@ type PlannedRun = { id: string; rota_slot_id: string | null; rota_slot_assignmen
 type PlannedRunJob = { id: string; planned_run_id: string; job_id: string; sequence: number; status: string; projected_job_assignment_id: string | null };
 type LeavePolicy = { id: string; role_label: string; availability_type: string; maximum_simultaneous: number; handling: 'warn' | 'block' };
 type DriverPlanningProfile = { driver_id: string; regulatory_regime: PlanningRegime };
-type WorkSession = { user_id: string; total_work_minutes: number | null; start_time: string; end_time: string | null };
+type WorkSession = { user_id: string; date: string; total_work_minutes: number | null; start_time: string; end_time: string | null };
 type Snapshot = { templates: RotaTemplate[]; template_slots: TemplateSlot[]; slots: PlanningSlot[]; assignments: PlanningAssignment[]; availability: PlanningAvailability[]; runs: PlannedRun[]; run_jobs: PlannedRunJob[]; leave_policies: LeavePolicy[]; driver_planning_profiles: DriverPlanningProfile[] };
 type RequirementDraft = RotaTemplateRequirementDraft;
 
@@ -32,8 +33,7 @@ const planningRpc: typeof supabase.rpc = supabase.rpc.bind(supabase);
 const PLANNING_REQUEST_TIMEOUT_MS = ROTA_TEMPLATE_SAVE_TIMEOUT_MS;
 const emptySnapshot: Snapshot = { templates: [], template_slots: [], slots: [], assignments: [], availability: [], runs: [], run_jobs: [], leave_policies: [], driver_planning_profiles: [] };
 const views: Array<{ id: PlannerView; label: string }> = [
-  { id: 'coverage', label: 'Coverage' }, { id: 'people', label: 'People' }, { id: 'dispatch', label: 'Dispatch' },
-  { id: 'leave', label: 'Leave' }, { id: 'templates', label: 'Templates' }, { id: 'duties', label: 'Assigned duties' },
+  { id: 'coverage', label: 'Coverage' }, { id: 'drivers', label: 'Drivers' }, { id: 'runs', label: 'Runs' },
 ];
 
 export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?: (shiftId: string) => void }) {
@@ -55,41 +55,50 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
   const [showApplyPreview, setShowApplyPreview] = useState(false);
   const [applyPreview, setApplyPreview] = useState<Record<string, number> | null>(null);
   const [showLeaveEditor, setShowLeaveEditor] = useState(false);
+  const [showLeaveOverview, setShowLeaveOverview] = useState(false);
   const [showJobEditor, setShowJobEditor] = useState(false);
   const [showRunEditor, setShowRunEditor] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showPatternManager, setShowPatternManager] = useState(false);
+  const [showJobTray, setShowJobTray] = useState(true);
+  const [showDutyRegister, setShowDutyRegister] = useState(false);
+  const [bulkSlots, setBulkSlots] = useState<PlanningSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const [coreError, setCoreError] = useState<string | null>(null);
+  const [driversError, setDriversError] = useState<string | null>(null);
+  const [vehiclesError, setVehiclesError] = useState<string | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [hoursError, setHoursError] = useState<string | null>(null);
 
   const loadPlanning = useCallback(async () => {
     if (!profile?.company_id) return null;
+    const companyId = profile.company_id;
     setLoading(true);
     try {
-      const signal = AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS);
-      const [snapshotResult, driversResult, vehiclesResult, jobsResult, sessionsResult] = await Promise.all([
-        planningRpc('get_planning_workspace_snapshot', { p_from: fromDate, p_to: toDate }).abortSignal(signal),
-        supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id).eq('role', 'driver').order('full_name').abortSignal(signal),
-        supabase.from('vehicles').select('id, reg_number, vehicle_class, vehicle_type').eq('company_id', profile.company_id).order('reg_number').abortSignal(signal),
-        supabase.from('jobs').select('id, reference, title, job_type, address_text, customer_name').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(250).abortSignal(signal),
-        supabase.from('work_sessions').select('user_id, total_work_minutes, start_time, end_time').eq('company_id', profile.company_id).gte('date', fromDate).lte('date', toDate).abortSignal(signal),
-      ]);
-      const error = snapshotResult.error ?? driversResult.error ?? vehiclesResult.error ?? jobsResult.error ?? sessionsResult.error;
-      if (error) {
-        console.error('Planning workspace refresh failed', error);
-        setMessage({ kind: 'error', text: "We couldn't refresh planning. Try again." });
+      const result = await loadPlanningDomains({
+        core: async () => { const response = await planningRpc('get_planning_workspace_snapshot', { p_from: fromDate, p_to: toDate }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS)); return { data: (response.data as Snapshot | null) ?? emptySnapshot, error: response.error ? new Error(response.error.message) : null }; },
+        drivers: async () => { const response = await supabase.from('profiles').select('id, full_name').eq('company_id', companyId).eq('role', 'driver').order('full_name').abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS)); return { data: (response.data ?? []) as Driver[], error: response.error ? new Error(response.error.message) : null }; },
+        vehicles: async () => { const response = await supabase.from('vehicles').select('id, reg_number, vehicle_class, vehicle_type').eq('company_id', companyId).order('reg_number').abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS)); return { data: (response.data ?? []) as Vehicle[], error: response.error ? new Error(response.error.message) : null }; },
+        jobs: async () => { const response = await supabase.from('jobs').select('id, reference, title, job_type, address_text, customer_name').eq('company_id', companyId).order('created_at', { ascending: false }).limit(250).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS)); return { data: (response.data ?? []) as Job[], error: response.error ? new Error(response.error.message) : null }; },
+        recordedHours: async () => { const response = await planningRpc('get_planning_recorded_work_summary', { p_from: fromDate, p_to: toDate }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS)); return { data: (response.data ?? []) as WorkSession[], error: response.error ? new Error(response.error.message) : null }; },
+      });
+      if (result.core.error) {
+        console.error('Core planning refresh failed', result.core.error);
+        setCoreError("We couldn't load this week's plan.");
         return null;
       }
-      const refreshedSnapshot = (snapshotResult.data as Snapshot | null) ?? emptySnapshot;
-      setSnapshot(refreshedSnapshot);
-      setDrivers((driversResult.data ?? []) as Driver[]);
-      setVehicles((vehiclesResult.data ?? []) as Vehicle[]);
-      setJobs((jobsResult.data ?? []) as Job[]);
-      setWorkSessions((sessionsResult.data ?? []) as WorkSession[]);
+      const refreshedSnapshot = result.core.data;
+      setSnapshot(refreshedSnapshot); setCoreError(null); setMessage((current) => current?.kind === 'error' ? null : current);
+      if (result.drivers.error) { console.error('Planning drivers refresh failed', result.drivers.error); setDriversError("Drivers couldn't be loaded."); } else { setDrivers(result.drivers.data); setDriversError(null); }
+      if (result.vehicles.error) { console.error('Planning vehicles refresh failed', result.vehicles.error); setVehiclesError("Vehicle availability couldn't be loaded."); } else { setVehicles(result.vehicles.data); setVehiclesError(null); }
+      if (result.jobs.error) { console.error('Planning jobs refresh failed', result.jobs.error); setJobsError("Jobs couldn't be loaded."); } else { setJobs(result.jobs.data); setJobsError(null); }
+      if (result.recordedHours.error) { console.error('Planning recorded hours refresh failed', result.recordedHours.error); setHoursError('Recorded hours are temporarily unavailable. Rest and working-time checks may be incomplete.'); } else { setWorkSessions(result.recordedHours.data); setHoursError(null); }
       return refreshedSnapshot;
     } catch (error) {
       console.error('Planning workspace transport failed', error);
-      setMessage({ kind: 'error', text: "We couldn't refresh planning. Check your connection and try again." });
+      setCoreError("We couldn't load this week's plan. Check your connection and try again.");
       return null;
     } finally {
       setLoading(false);
@@ -169,34 +178,48 @@ export function RotaPlanningWorkspace({ onOpenJobPlanner }: { onOpenJobPlanner?:
     }
   };
 
-  return <div className="min-w-0 space-y-4">
-    <header className="sticky top-0 z-30 rounded-2xl border border-brand-border bg-brand-card/95 shadow-xl backdrop-blur">
+  return <div className="min-w-0 space-y-4 pb-20">
+    <header className="sticky top-0 z-30 overflow-hidden rounded-2xl border border-brand-border bg-brand-card/95 shadow-xl backdrop-blur">
       <div className="flex flex-wrap items-center gap-3 border-b border-brand-border px-4 py-3">
-        <div className="mr-auto min-w-[220px]"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">Planning</p><h1 className="text-xl font-black text-white">Workforce & dispatch</h1></div>
-        <div className="flex items-center rounded-xl border border-brand-border bg-brand-dark/60 p-1"><button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week" className="rounded-lg p-2 text-slate-300 hover:bg-white/5"><ChevronLeft size={17} /></button><div className="min-w-[150px] px-2 text-center text-xs font-black text-white">{format(parseISO(fromDate), 'd MMM')}–{format(parseISO(toDate), 'd MMM yyyy')}</div><button type="button" onClick={() => moveWeek(1)} aria-label="Next week" className="rounded-lg p-2 text-slate-300 hover:bg-white/5"><ChevronRight size={17} /></button></div>
+        <div className="mr-auto min-w-[210px]"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">Weekly planning board</p><h1 className="text-xl font-black text-white">Workforce & dispatch</h1></div>
+        <div className="flex items-center rounded-xl border border-brand-border bg-brand-dark/60 p-1"><button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week" className="rounded-lg p-2 text-slate-300 hover:bg-white/5"><ChevronLeft size={17} /></button><div className="min-w-[160px] px-2 text-center text-xs font-black text-white">{format(parseISO(fromDate), 'd MMM')}–{format(parseISO(toDate), 'd MMM yyyy')}</div><button type="button" onClick={() => moveWeek(1)} aria-label="Next week" className="rounded-lg p-2 text-slate-300 hover:bg-white/5"><ChevronRight size={17} /></button></div>
         <button type="button" onClick={today} className="rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-slate-200">Today</button>
-        <select aria-label="Rota pattern" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)} className="input max-w-[210px]"><option value="">Choose pattern</option>{snapshot.templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select>
-        <button type="button" onClick={() => void previewTemplate()} disabled={!selectedTemplateId || busy} className="rounded-lg border border-brand-accent/50 px-3 py-2 text-xs font-black text-brand-accent disabled:opacity-40">Apply pattern</button>
+        <button type="button" onClick={() => { setSelectedDriverId(null); setSelectedSlotId(null); setShowLeaveOverview(true); }} className="rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-slate-200">Leave</button>
+        <button type="button" onClick={() => setShowLeaveEditor(true)} className="rounded-lg border border-brand-border px-3 py-2 text-xs font-bold text-slate-200">Add leave</button>
         <button type="button" onClick={() => setShowReview(true)} className="inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-2 text-xs font-black text-white"><ClipboardCheck size={15} />Review & publish</button>
         <button type="button" onClick={() => void loadPlanning()} aria-label="Refresh planning" className="rounded-lg border border-brand-border p-2 text-slate-300"><RefreshCw size={16} /></button>
       </div>
-      <nav aria-label="Planning views" className="flex gap-1 overflow-x-auto px-3 pt-2">{views.map((view) => <button key={view.id} type="button" onClick={() => setActiveView(view.id)} className={`whitespace-nowrap border-b-2 px-3 py-2 text-xs font-black ${activeView === view.id ? 'border-brand-accent text-white' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>{view.label}</button>)}</nav>
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Pattern</span>
+        <select aria-label="Rota pattern" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)} className="input max-w-[220px]"><option value="">Choose pattern</option>{snapshot.templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select>
+        <button type="button" onClick={() => void previewTemplate()} disabled={!selectedTemplateId || busy} className="rounded-lg border border-brand-accent/50 px-3 py-2 text-xs font-black text-brand-accent disabled:opacity-40">Apply</button>
+        <button type="button" onClick={() => { setSelectedDriverId(null); setSelectedSlotId(null); setShowPatternManager(true); }} className="rounded-lg px-2 py-2 text-xs font-bold text-slate-300 hover:text-white">Manage patterns</button>
+        <div className="ml-auto flex items-center gap-2"><span className="text-[10px] font-black uppercase tracking-widest text-slate-500">View by</span><nav aria-label="Board view" className="flex rounded-xl border border-brand-border bg-brand-dark/60 p-1">{views.map((view) => { const Icon = view.id === 'coverage' ? LayoutGrid : view.id === 'drivers' ? Users : Route; return <button key={view.id} type="button" onClick={() => setActiveView(view.id)} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-black ${activeView === view.id ? 'bg-white/10 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}><Icon size={14} />{view.label}</button>; })}</nav></div>
+      </div>
     </header>
     {message ? <div role={message.kind === 'error' ? 'alert' : 'status'} className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-bold ${message.kind === 'error' ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'}`}><span>{message.text}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss"><X size={15} /></button></div> : null}
-    {activeView === 'coverage' ? <CoverageView rows={coverageRows} dates={dates} loading={loading} availability={snapshot.availability} onSelectSlot={setSelectedSlotId} /> : null}
-    {activeView === 'people' ? <PeopleView drivers={drivers} dates={dates} slots={snapshot.slots} assignments={snapshot.assignments} availability={snapshot.availability} onSelectDriver={setSelectedDriverId} /> : null}
-    {activeView === 'dispatch' ? <DispatchView jobs={jobs} unallocatedJobs={unallocatedJobs} runs={snapshot.runs} runJobs={snapshot.run_jobs} onNewJob={() => setShowJobEditor(true)} onNewRun={() => setShowRunEditor(true)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
-    {activeView === 'leave' ? <LeaveView drivers={drivers} dates={dates} availability={snapshot.availability} policies={snapshot.leave_policies} onAdd={(driverId) => { setSelectedDriverId(driverId); setShowLeaveEditor(true); }} /> : null}
-    {activeView === 'templates' ? <TemplatesView templates={snapshot.templates} slots={snapshot.template_slots} onNew={() => setShowTemplateEditor(true)} /> : null}
-    {activeView === 'duties' ? <div><div className="mb-3 rounded-xl border border-brand-border bg-brand-card px-4 py-3 text-sm text-slate-300"><span className="font-bold text-white">Assigned duties</span> retains the established published-duty lifecycle. New cover and vacancy work belongs in Coverage and People.</div><ShiftPlanner onOpenJobPlanner={onOpenJobPlanner} /></div> : null}
+    {hoursError ? <LocalWarning text={hoursError} /> : null}
+    {driversError && activeView === 'drivers' ? <LocalWarning text={driversError} /> : null}
+    {vehiclesError && (selectedSlot || activeView === 'runs') ? <LocalWarning text={vehiclesError} /> : null}
+    {coreError ? <BoardFailure text={coreError} onRetry={() => void loadPlanning()} /> : <>
+      {activeView === 'coverage' ? <div className="space-y-3"><div className="flex justify-end"><button type="button" onClick={() => setBulkSlots(snapshot.slots.filter((slot) => slot.status !== 'cancelled'))} disabled={snapshot.slots.length === 0} className="inline-flex items-center gap-2 rounded-lg border border-brand-accent/50 px-3 py-2 text-xs font-black text-brand-accent disabled:opacity-40"><UserPlus size={14} />Fill vacancies across week</button></div><CoverageView rows={coverageRows} dates={dates} loading={loading} availability={snapshot.availability} onSelectSlot={setSelectedSlotId} /></div> : null}
+      {activeView === 'drivers' ? <PeopleView drivers={drivers} dates={dates} slots={snapshot.slots} assignments={snapshot.assignments} availability={snapshot.availability} onSelectDriver={setSelectedDriverId} /> : null}
+      {activeView === 'runs' ? <DispatchView jobs={jobs} unallocatedJobs={unallocatedJobs} runs={snapshot.runs} runJobs={snapshot.run_jobs} onNewJob={() => setShowJobEditor(true)} onNewRun={() => setShowRunEditor(true)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
+    </>}
+    <JobTray open={showJobTray} jobs={jobs} unallocatedJobs={unallocatedJobs} runs={snapshot.runs} jobsError={jobsError} onToggle={() => setShowJobTray((value) => !value)} onNewJob={() => setShowJobEditor(true)} onChanged={loadPlanning} setMessage={setMessage} />
     {selectedSlot ? <VacancyDrawer slot={selectedSlot} drivers={drivers} vehicles={poweredVehicles} trailers={trailers} slots={snapshot.slots} assignments={snapshot.assignments} availability={snapshot.availability} regimes={snapshot.driver_planning_profiles} onClose={() => setSelectedSlotId(null)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
     {selectedDriverId && !showLeaveEditor ? <DriverDrawer driver={drivers.find((entry) => entry.id === selectedDriverId) ?? null} slots={snapshot.slots} assignments={snapshot.assignments} availability={snapshot.availability} workSessions={workSessions} regime={snapshot.driver_planning_profiles.find((entry) => entry.driver_id === selectedDriverId)?.regulatory_regime ?? 'unknown'} onClose={() => setSelectedDriverId(null)} /> : null}
     {showLeaveEditor ? <LeaveDrawer drivers={drivers} selectedDriverId={selectedDriverId ?? ''} fromDate={fromDate} policies={snapshot.leave_policies} onClose={() => { setShowLeaveEditor(false); setSelectedDriverId(null); }} onChanged={loadPlanning} setMessage={setMessage} /> : null}
+    {showLeaveOverview ? <Drawer wide title="Leave this week" subtitle="Holiday and absence already appear on the Coverage and Drivers boards." onClose={() => setShowLeaveOverview(false)}><LeaveView drivers={drivers} dates={dates} availability={snapshot.availability} policies={snapshot.leave_policies} onAdd={(driverId) => { setShowLeaveOverview(false); setSelectedDriverId(driverId); setShowLeaveEditor(true); }} /></Drawer> : null}
     {showJobEditor ? <JobDrawer onClose={() => setShowJobEditor(false)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
     {showRunEditor ? <RunDrawer fromDate={fromDate} slots={snapshot.slots} onClose={() => setShowRunEditor(false)} onChanged={loadPlanning} setMessage={setMessage} /> : null}
     {showTemplateEditor ? <TemplateDrawer onClose={() => setShowTemplateEditor(false)} refreshAndSelect={async (templateId) => { const refreshed = await loadPlanning(); const persisted = refreshed?.templates.some((template) => template.id === templateId) ?? false; if (persisted) setSelectedTemplateId(templateId); return persisted; }} setMessage={setMessage} /> : null}
     {showApplyPreview ? <ApplyPreviewDialog preview={applyPreview} busy={busy} onCancel={() => setShowApplyPreview(false)} onConfirm={() => void applyTemplate()} /> : null}
-    {showReview ? <ReviewDialog review={review} busy={busy} onCancel={() => setShowReview(false)} onPublish={() => void publishReady()} onInspectDuties={() => { setShowReview(false); setActiveView('duties'); }} /> : null}
+    {showReview ? <ReviewDialog review={review} busy={busy} onCancel={() => setShowReview(false)} onPublish={() => void publishReady()} onInspectDuties={() => { setShowReview(false); setShowDutyRegister(true); }} /> : null}
+    {bulkSlots.length ? <BulkFillDrawer slots={bulkSlots} drivers={drivers} allSlots={snapshot.slots} assignments={snapshot.assignments} availability={snapshot.availability} regimes={snapshot.driver_planning_profiles} onClose={() => setBulkSlots([])} onChanged={loadPlanning} setMessage={setMessage} /> : null}
+    {showPatternManager ? <PatternManagerDrawer templates={snapshot.templates} slots={snapshot.template_slots} onNew={() => { setShowPatternManager(false); setShowTemplateEditor(true); }} onClose={() => setShowPatternManager(false)} /> : null}
+    {showDutyRegister ? <Drawer wide title="Duty register" subtitle="View and manage duties already assigned to drivers." onClose={() => setShowDutyRegister(false)}><ShiftPlanner onOpenJobPlanner={onOpenJobPlanner} /></Drawer> : null}
+    <button type="button" onClick={() => setShowDutyRegister(true)} className="text-xs font-bold text-slate-500 hover:text-slate-300">Open duty register</button>
   </div>;
 }
 
@@ -234,7 +257,10 @@ function LeaveView({ drivers, dates, availability, policies, onAdd }: { drivers:
 }
 
 function TemplatesView({ templates, slots, onNew }: { templates: RotaTemplate[]; slots: TemplateSlot[]; onNew: () => void }) {
-  return <section className="rounded-2xl border border-brand-border bg-brand-card p-5"><div className="flex items-center justify-between"><div><h2 className="text-lg font-black text-white">Staffing patterns</h2><p className="text-xs text-slate-400">Multi-day demand patterns; individual driver rotations are not inferred.</p></div><button type="button" onClick={onNew} className="inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-2 text-xs font-black text-white"><Plus size={14} />New pattern</button></div><div className="mt-4 grid gap-4 xl:grid-cols-2">{templates.map((template) => { const lines = slots.filter((slot) => slot.template_id === template.id); return <article key={template.id} className="rounded-xl border border-brand-border bg-brand-dark/35 p-4"><div className="flex items-start justify-between"><div><h3 className="font-black text-white">{template.name}</h3><p className="text-xs text-slate-500">{template.description ?? 'Reusable staffing demand'}</p></div><span className="rounded-full bg-brand-accent/10 px-2 py-1 text-[10px] font-black text-brand-accent">{template.cycle_length_days}-day cycle</span></div><div className="mt-3 max-h-64 overflow-auto"><table className="w-full text-xs"><thead><tr className="text-left text-[9px] uppercase text-slate-500"><th className="py-1">Day</th><th>Requirement</th><th>Time</th><th className="text-right">People</th></tr></thead><tbody className="divide-y divide-white/5">{lines.map((line) => <tr key={line.id}><td className="py-2 font-black text-brand-accent">{cycleDayLabel(line.cycle_day, template.cycle_length_days)}</td><td className="text-white">{line.role_label}</td><td className="text-slate-400">{line.start_time.slice(0, 5)}–{line.end_time.slice(0, 5)}</td><td className="text-right font-black text-white">{line.required_headcount}</td></tr>)}</tbody></table></div></article>; })}{templates.length === 0 ? <p className="col-span-full rounded-xl border border-dashed border-brand-border p-10 text-center text-sm text-slate-500">Create a pattern with requirements across its cycle.</p> : null}</div></section>;
+  return <section className="rounded-2xl border border-brand-border bg-brand-card p-5">
+    <div className="flex items-center justify-between"><div><h2 className="text-lg font-black text-white">Staffing patterns</h2><p className="text-xs text-slate-400">Save your usual staffing pattern and reuse it each week.</p></div><button type="button" onClick={onNew} className="inline-flex items-center gap-2 rounded-lg bg-brand-accent px-3 py-2 text-xs font-black text-white"><Plus size={14} />New pattern</button></div>
+    <div className="mt-4 grid gap-4 xl:grid-cols-2">{templates.map((template) => { const lines = slots.filter((slot) => slot.template_id === template.id); return <article key={template.id} className="rounded-xl border border-brand-border bg-brand-dark/35 p-4"><div className="flex items-start justify-between"><div><h3 className="font-black text-white">{template.name}</h3><p className="text-xs text-slate-500">{template.description ?? 'Reusable staffing pattern'}</p></div><span className="rounded-full bg-brand-accent/10 px-2 py-1 text-[10px] font-black text-brand-accent">{template.cycle_length_days} days</span></div><div className="mt-3 max-h-64 overflow-auto"><table className="w-full text-xs"><thead><tr className="text-left text-[9px] uppercase text-slate-500"><th className="py-1">Day</th><th>Requirement</th><th>Time</th><th className="text-right">People</th></tr></thead><tbody className="divide-y divide-white/5">{lines.map((line) => <tr key={line.id}><td className="py-2 font-black text-brand-accent">{cycleDayLabel(line.cycle_day, template.cycle_length_days)}</td><td className="text-white">{line.role_label}</td><td className="text-slate-400">{line.start_time.slice(0, 5)}–{line.end_time.slice(0, 5)}</td><td className="text-right font-black text-white">{line.required_headcount}</td></tr>)}</tbody></table></div></article>; })}{templates.length === 0 ? <p className="col-span-full rounded-xl border border-dashed border-brand-border p-10 text-center text-sm text-slate-500">Create a reusable week or rotating staffing pattern.</p> : null}</div>
+  </section>;
 }
 
 function VacancyDrawer({ slot, drivers, vehicles, trailers, slots, assignments, availability, regimes, onClose, onChanged, setMessage }: { slot: PlanningSlot; drivers: Driver[]; vehicles: Vehicle[]; trailers: Vehicle[]; slots: PlanningSlot[]; assignments: PlanningAssignment[]; availability: PlanningAvailability[]; regimes: DriverPlanningProfile[]; onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
@@ -345,7 +371,57 @@ function TemplateDrawer({ onClose, refreshAndSelect, setMessage }: { onClose: ()
 
 function ApplyPreviewDialog({ preview, busy, onCancel, onConfirm }: { preview: Record<string, number> | null; busy: boolean; onCancel: () => void; onConfirm: () => void }) { return <Dialog title="Apply staffing pattern" onClose={onCancel}><p className="text-sm text-slate-400">Review the bounded change before any dated requirements are created.</p><div className="mt-4 grid grid-cols-2 gap-3"><Metric label="Days covered" value={String(preview?.days_covered ?? 0)} /><Metric label="Requirements" value={String(preview?.requirements ?? 0)} /><Metric label="Total positions" value={String(preview?.total_positions ?? 0)} /><Metric label="Existing draft rows" value={String(preview?.existing_draft_requirements ?? 0)} /><Metric label="Leave records" value={String(preview?.leave_records_in_period ?? 0)} /><Metric label="Cycle" value={`${preview?.cycle_length_days ?? 0} days`} /></div><div className="mt-5 flex gap-3"><button type="button" onClick={onCancel} className="flex-1 rounded-lg border border-brand-border py-3 text-xs font-black text-slate-300">Cancel</button><button type="button" onClick={onConfirm} disabled={busy} className="flex-1 rounded-lg bg-brand-accent py-3 text-xs font-black text-white disabled:opacity-50">{busy ? 'Applying…' : 'Confirm cover'}</button></div></Dialog>; }
 function ReviewDialog({ review, busy, onCancel, onPublish, onInspectDuties }: { review: ReturnType<typeof buildReview>; busy: boolean; onCancel: () => void; onPublish: () => void; onInspectDuties: () => void }) { return <Dialog title="Publish week" onClose={onCancel}><p className="text-sm text-slate-400">Every duty is checked again against current operational data immediately before publication.</p><div className="mt-4 grid grid-cols-2 gap-3"><Metric label="Draft duties" value={String(review.duties)} tone="good" /><Metric label="Unfilled vacancies" value={String(review.vacancies)} tone={review.vacancies ? 'warning' : 'good'} /><Metric label="Missing vehicle" value={String(review.missingVehicles)} tone={review.missingVehicles ? 'warning' : 'good'} /><Metric label="Availability conflicts" value={String(review.availabilityConflicts)} tone={review.availabilityConflicts ? 'danger' : 'good'} /><Metric label="Unstaffed runs" value={String(review.unstaffedRuns)} tone={review.unstaffedRuns ? 'warning' : 'good'} /><Metric label="Jobs waiting" value={String(review.unallocatedRunJobs)} tone={review.unallocatedRunJobs ? 'warning' : 'good'} /></div>{review.vacancies ? <p className="mt-4 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100"><AlertTriangle size={15} className="shrink-0" />Unfilled requirements remain in planning and are never represented by driverless shifts.</p> : null}<div className="mt-5 flex flex-wrap gap-3"><button type="button" onClick={onInspectDuties} className="flex-1 rounded-lg border border-brand-border py-3 text-xs font-black text-slate-300">Inspect assigned duties</button><button type="button" onClick={onPublish} disabled={busy || review.duties === 0} className="flex-1 rounded-lg bg-brand-accent py-3 text-xs font-black text-white disabled:opacity-50">{busy ? 'Checking…' : 'Publish ready duties'}</button></div></Dialog>; }
-function Drawer({ title, subtitle, onClose, wide = false, children }: { title: string; subtitle: string; onClose: () => void; wide?: boolean; children: React.ReactNode }) { return <div className="fixed inset-0 z-50 bg-black/55" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><aside role="dialog" aria-modal="true" aria-label={title} className={`absolute inset-y-0 right-0 overflow-auto border-l border-brand-border bg-brand-card p-5 shadow-2xl ${wide ? 'w-full max-w-3xl' : 'w-full max-w-lg'}`}><div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-xl font-black text-white">{title}</h2><p className="mt-1 text-xs text-slate-400">{subtitle}</p></div><button type="button" onClick={onClose} aria-label="Close" className="rounded-lg border border-brand-border p-2 text-slate-400"><X size={17} /></button></div>{children}</aside></div>; }
+
+function LocalWarning({ text }: { text: string }) { return <div role="status" className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100"><AlertTriangle size={15} className="mt-0.5 shrink-0" /><span>{text}</span></div>; }
+function BoardFailure({ text, onRetry }: { text: string; onRetry: () => void }) { return <section role="alert" className="rounded-2xl border border-red-500/30 bg-brand-card p-10 text-center"><AlertTriangle className="mx-auto text-red-300" size={28} /><h2 className="mt-3 font-black text-white">This week's plan is unavailable</h2><p className="mt-1 text-sm text-red-200">{text}</p><button type="button" onClick={onRetry} className="mt-4 rounded-lg bg-brand-accent px-4 py-2 text-xs font-black text-white">Try again</button></section>; }
+
+function PatternManagerDrawer({ templates, slots, onNew, onClose }: { templates: RotaTemplate[]; slots: TemplateSlot[]; onNew: () => void; onClose: () => void }) {
+  return <Drawer title="Staffing patterns" subtitle="Save your usual staffing pattern and reuse it each week." onClose={onClose}><TemplatesView templates={templates} slots={slots} onNew={onNew} /></Drawer>;
+}
+
+function JobTray({ open, jobs, unallocatedJobs, runs, jobsError, onToggle, onNewJob, onChanged, setMessage }: { open: boolean; jobs: Job[]; unallocatedJobs: Job[]; runs: PlannedRun[]; jobsError: string | null; onToggle: () => void; onNewJob: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
+  const [search, setSearch] = useState(''); const [moving, setMoving] = useState<string | null>(null);
+  const visible = unallocatedJobs.filter((job) => `${job.reference} ${job.title} ${job.customer_name ?? ''}`.toLowerCase().includes(search.toLowerCase())).slice(0, 40);
+  const move = async (jobId: string, runId: string) => {
+    if (!runId) return; setMoving(jobId);
+    try {
+      const { error } = await planningRpc('place_job_on_planned_run', { p_job_id: jobId, p_planned_run_id: runId, p_sequence: undefined }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Job tray placement failed', error); setMessage({ kind: 'error', text: "We couldn't move this job. Try again." }); }
+      else { setMessage({ kind: 'success', text: 'Job moved to the run.' }); onChanged(); }
+    } catch (error) { console.error('Job tray transport failed', error); setMessage({ kind: 'error', text: "We couldn't confirm the move. Refresh planning before trying again." }); }
+    finally { setMoving(null); }
+  };
+  return <section className="overflow-hidden rounded-2xl border border-brand-border bg-brand-card shadow-lg"><button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3 text-left"><Briefcase size={16} className="text-brand-accent" /><span className="font-black text-white">Jobs waiting</span><span className="rounded-full bg-brand-accent/15 px-2 py-1 text-[10px] font-black text-brand-accent">{unallocatedJobs.length}</span><span className="ml-auto text-xs text-slate-500">Available throughout this week</span><ChevronDown size={16} className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} /></button>{open ? <div className="border-t border-brand-border p-4">{jobsError ? <LocalWarning text={jobsError} /> : <><div className="flex gap-2"><label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-brand-border bg-brand-dark px-3"><Search size={14} className="text-slate-500" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search waiting jobs" className="min-w-0 flex-1 bg-transparent py-2 text-xs text-white outline-none" /></label><button type="button" onClick={onNewJob} className="rounded-lg bg-brand-accent px-3 text-xs font-black text-white">+ Add job</button></div><div className="mt-3 grid max-h-52 gap-2 overflow-auto md:grid-cols-2 xl:grid-cols-3">{visible.map((job) => <article key={job.id} className="rounded-xl border border-brand-border bg-brand-dark/35 p-3"><p className="text-xs font-black text-white">{job.reference} · {job.title}</p><p className="mt-1 line-clamp-1 text-[10px] text-slate-500">{job.customer_name ?? job.address_text}</p><select aria-label={`Move ${job.reference} to run`} disabled={moving === job.id || runs.length === 0} defaultValue="" onChange={(event) => { void move(job.id, event.target.value); event.currentTarget.value = ''; }} className="input mt-2 w-full"><option value="">Move to run…</option>{runs.map((run) => <option key={run.id} value={run.id}>{format(parseISO(run.run_date), 'EEE')} · {run.run_label}</option>)}</select></article>)}</div>{jobs.length === 0 ? <p className="py-5 text-center text-xs text-slate-500">No jobs have been entered yet.</p> : null}</>}</div> : null}</section>;
+}
+
+function BulkFillDrawer({ slots, drivers, allSlots, assignments, availability, regimes, onClose, onChanged, setMessage }: { slots: PlanningSlot[]; drivers: Driver[]; allSlots: PlanningSlot[]; assignments: PlanningAssignment[]; availability: PlanningAvailability[]; regimes: DriverPlanningProfile[]; onClose: () => void; onChanged: () => void; setMessage: (message: { kind: 'success' | 'error'; text: string }) => void }) {
+  const availableDates = [...new Set(slots.map((slot) => slot.slot_date))].sort();
+  const [driverIds, setDriverIds] = useState<string[]>([]); const [dates, setDates] = useState<string[]>(availableDates); const [busy, setBusy] = useState(false); const [requestKey] = useState(() => crypto.randomUUID()); const [serverItems, setServerItems] = useState<BulkCandidate[] | null>(null);
+  const chosenSlots = slots.filter((slot) => dates.includes(slot.slot_date));
+  const regimeMap = Object.fromEntries(regimes.map((entry) => [entry.driver_id, entry.regulatory_regime]));
+  const preview = useMemo(() => buildBulkAssignmentPreview({ driverIds, slotIds: chosenSlots.map((slot) => slot.id), slots: allSlots, assignments, availability, regimes: regimeMap }), [allSlots, assignments, availability, chosenSlots, driverIds, regimeMap]);
+  const shown = serverItems ?? preview; const ready = preview.filter((item) => item.status === 'READY' || item.status === 'NEEDS_REVIEW');
+  const toggle = (values: string[], value: string, setter: (next: string[]) => void) => setter(values.includes(value) ? values.filter((entry) => entry !== value) : [...values, value]);
+  const confirm = async () => {
+    if (ready.length === 0) return; setBusy(true);
+    try {
+      const { data, error } = await planningRpc('bulk_assign_rota_positions', { p_items: ready.map((item) => ({ slot_id: item.slotId, driver_id: item.driverId })), p_request_key: requestKey, p_commit: true }).abortSignal(AbortSignal.timeout(PLANNING_REQUEST_TIMEOUT_MS));
+      if (error) { console.error('Bulk staffing failed', error); return setMessage({ kind: 'error', text: "We couldn't fill these vacancies. Nothing was changed. Try again." }); }
+      const result = data as { items?: Array<{ slot_id: string; driver_id: string; status: BulkCandidate['status']; reason: string }> } | null;
+      const items = (result?.items ?? []).map((item) => ({ driverId: item.driver_id, slotId: item.slot_id, date: allSlots.find((slot) => slot.id === item.slot_id)?.slot_date ?? '', status: item.status, reason: item.reason }));
+      setServerItems(items); const committed = items.filter((item) => item.status === 'READY' || item.status === 'NEEDS_REVIEW').length;
+      setMessage({ kind: 'success', text: `${committed} assignments added. ${items.length - committed} need attention.` }); await onChanged();
+    } catch (error) { console.error('Bulk staffing transport failed', error); setMessage({ kind: 'error', text: "We couldn't confirm the bulk assignment. Refresh planning before trying again." }); }
+    finally { setBusy(false); }
+  };
+  const counts = (status: BulkCandidate['status']) => shown.filter((item) => item.status === status).length;
+  return <Drawer wide title="Fill vacancies" subtitle="Choose drivers and days once, review every result, then confirm together." onClose={onClose}><div className="grid gap-5 lg:grid-cols-[1fr_1fr]"><section><div className="flex items-center justify-between"><h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Available drivers</h3><button type="button" onClick={() => setDriverIds(drivers.map((driver) => driver.id))} className="text-xs font-bold text-brand-accent">Select all</button></div><div className="mt-2 max-h-72 space-y-1 overflow-auto">{drivers.map((driver) => { const awayDays = availableDates.filter((date) => availability.some((entry) => entry.driver_id === driver.id && entry.starts_on <= date && entry.ends_on >= date)); return <label key={driver.id} className="flex items-center gap-3 rounded-lg border border-brand-border px-3 py-2"><input type="checkbox" checked={driverIds.includes(driver.id)} onChange={() => toggle(driverIds, driver.id, setDriverIds)} /><span className="min-w-0 flex-1 text-xs font-bold text-white">{driver.full_name ?? 'Unnamed driver'}</span><span className={`text-[9px] ${awayDays.length ? 'text-violet-200' : 'text-emerald-200'}`}>{awayDays.length ? `${awayDays.length} away` : 'Available'}</span></label>; })}</div><h3 className="mt-5 text-xs font-black uppercase tracking-widest text-slate-400">Apply to days</h3><div className="mt-2 flex flex-wrap gap-2">{availableDates.map((date) => <label key={date} className={`rounded-lg border px-3 py-2 text-xs font-black ${dates.includes(date) ? 'border-brand-accent bg-brand-accent/10 text-white' : 'border-brand-border text-slate-500'}`}><input className="sr-only" type="checkbox" checked={dates.includes(date)} onChange={() => toggle(dates, date, setDates)} />{format(parseISO(date), 'EEE d')}</label>)}</div></section><section><h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Preview</h3><div className="mt-2 grid grid-cols-2 gap-2"><Metric label="Ready" value={String(counts('READY'))} tone="good" /><Metric label="Needs review" value={String(counts('NEEDS_REVIEW'))} tone="warning" /><Metric label="Unavailable" value={String(counts('UNAVAILABLE'))} tone="danger" /><Metric label="Already assigned / conflict" value={String(counts('CONFLICT'))} tone="warning" /></div><div className="mt-3 max-h-64 overflow-auto rounded-xl border border-brand-border"><table className="w-full text-left text-[10px]"><tbody className="divide-y divide-brand-border">{shown.map((item) => <tr key={`${item.slotId}:${item.driverId}`}><td className="p-2 font-bold text-white">{drivers.find((driver) => driver.id === item.driverId)?.full_name ?? 'Driver'}</td><td className="p-2 text-slate-400">{format(parseISO(item.date), 'EEE d')}</td><td className="p-2 font-black text-slate-200">{item.status === 'CONFLICT' && item.reason === 'Already assigned' ? 'Already assigned' : item.status.replace('_', ' ')}</td><td className="p-2 text-slate-500">{item.reason}</td></tr>)}</tbody></table></div><button type="button" onClick={() => void confirm()} disabled={busy || ready.length === 0 || Boolean(serverItems)} className="mt-4 w-full rounded-lg bg-brand-accent px-4 py-3 text-xs font-black text-white disabled:opacity-40">{busy ? 'Assigning…' : serverItems ? 'Assignments added' : `Confirm ${ready.length} assignments`}</button></section></div></Drawer>;
+}
+
+function Drawer({ title, subtitle, onClose, wide = false, children }: { title: string; subtitle: string; onClose: () => void; wide?: boolean; children: React.ReactNode }) {
+  const displaySubtitle = title === 'New staffing pattern' ? 'Add the people you usually need on each day.' : subtitle;
+  return <div className="fixed inset-0 z-50 bg-black/55" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><aside role="dialog" aria-modal="true" aria-label={title} className={`absolute inset-y-0 right-0 overflow-auto border-l border-brand-border bg-brand-card p-5 shadow-2xl ${wide ? 'w-full max-w-3xl' : 'w-full max-w-lg'}`}><div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-xl font-black text-white">{title}</h2><p className="mt-1 text-xs text-slate-400">{displaySubtitle}</p></div><button type="button" onClick={onClose} aria-label="Close" className="rounded-lg border border-brand-border p-2 text-slate-400"><X size={17} /></button></div>{children}</aside></div>;
+}
 function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"><div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-xl rounded-2xl border border-brand-border bg-brand-card p-6 shadow-2xl"><div className="flex items-center justify-between"><h2 className="text-xl font-black text-white">{title}</h2><button type="button" onClick={onClose} aria-label="Close" className="text-slate-400"><X size={18} /></button></div>{children}</div></div>; }
 function Metric({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'good' | 'warning' | 'danger' }) { const color = tone === 'good' ? 'text-emerald-200' : tone === 'warning' ? 'text-amber-200' : tone === 'danger' ? 'text-red-200' : 'text-white'; return <div className="rounded-xl border border-brand-border bg-brand-dark/40 p-3"><p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p><p className={`mt-1 text-lg font-black ${color}`}>{value}</p></div>; }
 function groupOrder(group: 'available' | 'needs_review' | 'unavailable') { return group === 'available' ? 0 : group === 'needs_review' ? 1 : 2; }
