@@ -20,12 +20,53 @@
   --hw-slate-300: #CBD5E1;
   --hw-slate-500: #64748B;
   --hw-white: #FFFFFF;
+
+  /* Shared form-control contract. These tokens intentionally sit outside the
+     Tailwind palette so native controls, autofill and option popovers use the
+     same semantic colours as authored components. */
+  --hw-control-bg: #0D1B2E;
+  --hw-control-bg-hover: #10233A;
+  --hw-control-bg-disabled: #111C2B;
+  --hw-control-bg-readonly: #0B1628;
+  --hw-control-border: #475569;
+  --hw-control-border-hover: #64748B;
+  --hw-control-text: #F8FAFC;
+  --hw-control-text-muted: #CBD5E1;
+  --hw-control-placeholder: #94A3B8;
+  --hw-control-focus: #38BDF8;
+  --hw-control-error: #F87171;
+  --hw-control-success: #4ADE80;
+  --hw-control-option-bg: #0D1B2E;
 }
 
 @layer base {
   body {
     @apply bg-brand-dark text-slate-200 font-sans;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Low-specificity safety net for legacy native controls. Utility classes
+     and light-theme forms can still override every colour locally. */
+  :where(
+      input:not([type='button']):not([type='checkbox']):not([type='color']):not([type='file']):not([type='hidden']):not([type='radio']):not([type='range']):not([type='reset']):not([type='submit']),
+      select,
+      textarea
+    ) {
+    border-color: var(--hw-control-border);
+    background-color: var(--hw-control-bg);
+    color: var(--hw-control-text);
+    color-scheme: dark;
+  }
+
+  :where(input, textarea)::placeholder {
+    color: var(--hw-control-placeholder);
+    opacity: 1;
+  }
+
+  :where(input, select, textarea):focus-visible {
+    border-color: var(--hw-control-focus);
+    outline: 2px solid color-mix(in srgb, var(--hw-control-focus) 45%, transparent);
+    outline-offset: 1px;
   }
 
   .timer-value,
@@ -35,6 +76,114 @@
 }
 
 @layer components {
+  .input,
+  .hw-input,
+  .hw-select,
+  .hw-textarea {
+    @apply w-full rounded-xl border px-3 py-2.5 text-sm shadow-sm transition-colors duration-150;
+    border-color: var(--hw-control-border);
+    background-color: var(--hw-control-bg);
+    color: var(--hw-control-text);
+    caret-color: var(--hw-control-focus);
+    color-scheme: dark;
+  }
+
+  .input:hover:not(:disabled):not([readonly]),
+  .hw-input:hover:not(:disabled):not([readonly]),
+  .hw-select:hover:not(:disabled),
+  .hw-textarea:hover:not(:disabled):not([readonly]) {
+    border-color: var(--hw-control-border-hover);
+    background-color: var(--hw-control-bg-hover);
+  }
+
+  .input:focus,
+  .hw-input:focus,
+  .hw-select:focus,
+  .hw-textarea:focus {
+    border-color: var(--hw-control-focus);
+    outline: 2px solid color-mix(in srgb, var(--hw-control-focus) 45%, transparent);
+    outline-offset: 1px;
+  }
+
+  .input:disabled,
+  .hw-input:disabled,
+  .hw-select:disabled,
+  .hw-textarea:disabled {
+    cursor: not-allowed;
+    border-color: var(--hw-navy-800);
+    background-color: var(--hw-control-bg-disabled);
+    color: var(--hw-control-placeholder);
+    opacity: 1;
+  }
+
+  .input[readonly],
+  .hw-input[readonly],
+  .hw-textarea[readonly] {
+    border-color: var(--hw-navy-800);
+    background-color: var(--hw-control-bg-readonly);
+    color: var(--hw-control-text-muted);
+  }
+
+  .input[aria-invalid='true'],
+  .hw-input[aria-invalid='true'],
+  .hw-select[aria-invalid='true'],
+  .hw-textarea[aria-invalid='true'],
+  .hw-control-error {
+    border-color: var(--hw-control-error);
+  }
+
+  .input[aria-invalid='true']:focus,
+  .hw-input[aria-invalid='true']:focus,
+  .hw-select[aria-invalid='true']:focus,
+  .hw-textarea[aria-invalid='true']:focus,
+  .hw-control-error:focus {
+    outline-color: color-mix(in srgb, var(--hw-control-error) 48%, transparent);
+  }
+
+  .hw-control-success {
+    border-color: var(--hw-control-success);
+  }
+
+  .hw-field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-300;
+  }
+
+  .hw-field-hint {
+    @apply mt-1.5 text-xs text-slate-400;
+  }
+
+  .hw-field-error {
+    @apply mt-1.5 text-xs font-medium text-red-300;
+  }
+
+  select.input option,
+  select.hw-select option,
+  select.hw-input option {
+    background-color: var(--hw-control-option-bg);
+    color: var(--hw-control-text);
+  }
+
+  input.input[type='checkbox'],
+  input.input[type='radio'],
+  input.hw-input[type='checkbox'],
+  input.hw-input[type='radio'] {
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    accent-color: var(--hw-control-focus);
+  }
+
+  .input:-webkit-autofill,
+  .input:-webkit-autofill:hover,
+  .input:-webkit-autofill:focus,
+  .hw-input:-webkit-autofill,
+  .hw-input:-webkit-autofill:hover,
+  .hw-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--hw-control-text);
+    caret-color: var(--hw-control-focus);
+    box-shadow: 0 0 0 1000px var(--hw-control-bg) inset;
+  }
+
   .hw-hero-bg {
     background:
       radial-gradient(circle at 20% 10%, rgba(37,99,235,0.25), transparent 35%),

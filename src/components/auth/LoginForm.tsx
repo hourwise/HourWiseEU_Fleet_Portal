@@ -41,7 +41,7 @@ export function LoginForm() {
                 <div className="space-y-6">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">{t('auth.email')}</label>
-                        <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="your.email@company.com" required /></div>
+                        <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="your.email@company.com" required /></div>
                     </div>
                     <button onClick={handlePasswordReset} disabled={loading} className="w-full bg-brand-accent-dark text-white py-3 rounded-lg font-medium hover:bg-brand-accent transition disabled:opacity-50">{loading ? t('common.loading') : t('auth.sendResetLink')}</button>
                 </div>
@@ -52,11 +52,11 @@ export function LoginForm() {
                 <div className="space-y-6">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">{t('auth.email')}</label>
-                        <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="manager@company.com" required /></div>
+                        <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="manager@company.com" required /></div>
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">{t('auth.password')}</label>
-                        <div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="••••••••" required /></div>
+                        <div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input w-full pl-11 pr-4 py-3 bg-brand-dark border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent text-white" placeholder="••••••••" required /></div>
                     </div>
                     <button onClick={handlePasswordSignIn} disabled={loading} className="w-full bg-brand-accent-dark text-white py-3 rounded-lg font-medium hover:bg-brand-accent transition disabled:opacity-50">{loading ? t('common.loading') : t('auth.login')}</button>
                 </div>
