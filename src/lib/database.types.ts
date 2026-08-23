@@ -3790,6 +3790,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          request_key: string | null
           updated_at: string
         }
         Insert: {
@@ -3801,6 +3802,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          request_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -3812,6 +3814,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          request_key?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -7186,6 +7189,7 @@ export type Database = {
           p_cycle_length_days: number
           p_description: string
           p_name: string
+          p_request_key: string
           p_slots: Json
         }
         Returns: Json
