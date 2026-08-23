@@ -1447,6 +1447,69 @@ export type Database = {
           },
         ]
       }
+      driver_vehicle_qualifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          driver_id: string
+          id: string
+          vehicle_class: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          driver_id: string
+          id?: string
+          vehicle_class: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          driver_id?: string
+          id?: string
+          vehicle_class?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_vehicle_qualifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_qualifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_qualifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_qualifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_qualifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_reviews: {
         Row: {
           created_at: string
@@ -3672,6 +3735,7 @@ export type Database = {
           plan_id: string
           required_headcount: number
           required_skill: string | null
+          required_vehicle_class: string | null
           role_label: string
           run_group: string | null
           slot_date: string
@@ -3691,6 +3755,7 @@ export type Database = {
           plan_id: string
           required_headcount?: number
           required_skill?: string | null
+          required_vehicle_class?: string | null
           role_label: string
           run_group?: string | null
           slot_date: string
@@ -3710,6 +3775,7 @@ export type Database = {
           plan_id?: string
           required_headcount?: number
           required_skill?: string | null
+          required_vehicle_class?: string | null
           role_label?: string
           run_group?: string | null
           slot_date?: string
@@ -3781,6 +3847,7 @@ export type Database = {
           id: string
           required_headcount: number
           required_skill: string | null
+          required_vehicle_class: string | null
           role_label: string
           sort_order: number
           start_time: string
@@ -3794,6 +3861,7 @@ export type Database = {
           id?: string
           required_headcount?: number
           required_skill?: string | null
+          required_vehicle_class?: string | null
           role_label: string
           sort_order?: number
           start_time: string
@@ -3807,6 +3875,7 @@ export type Database = {
           id?: string
           required_headcount?: number
           required_skill?: string | null
+          required_vehicle_class?: string | null
           role_label?: string
           sort_order?: number
           start_time?: string
@@ -6609,6 +6678,7 @@ export type Database = {
           make: string
           model: string | null
           mot_due_date: string | null
+          planning_vehicle_class: string | null
           pmi_due_date: string | null
           pmi_interval_weeks: number | null
           reg_number: string
@@ -6633,6 +6703,7 @@ export type Database = {
           make: string
           model?: string | null
           mot_due_date?: string | null
+          planning_vehicle_class?: string | null
           pmi_due_date?: string | null
           pmi_interval_weeks?: number | null
           reg_number: string
@@ -6657,6 +6728,7 @@ export type Database = {
           make?: string
           model?: string | null
           mot_due_date?: string | null
+          planning_vehicle_class?: string | null
           pmi_due_date?: string | null
           pmi_interval_weeks?: number | null
           reg_number?: string
@@ -7368,6 +7440,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_rota_template: { Args: { p_template_id: string }; Returns: Json }
       finalize_job_evidence_upload: {
         Args: {
           p_evidence_type: string
@@ -7901,6 +7974,10 @@ export type Database = {
       }
       send_manager_message_with_event: {
         Args: { p_body: string; p_recipient_driver_id?: string }
+        Returns: Json
+      }
+      set_driver_vehicle_qualifications: {
+        Args: { p_driver_id: string; p_vehicle_classes: Json }
         Returns: Json
       }
       set_operational_task_handling: {

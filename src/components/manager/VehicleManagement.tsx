@@ -6,6 +6,7 @@ import { MaintenanceAuditTrail } from './MaintenanceAuditTrail';
 import { useTranslation } from 'react-i18next';
 import { useVehicleTachoSummary } from '../../hooks/useVehicleTachoSummary';
 import type { Database, Json } from '../../lib/database.types';
+import { allowedPlanningClassesForAsset, planningVehicleClassLabel, type PlanningVehicleClass } from '../../lib/planningVehicleClasses';
 
 type VehicleRow = Database['public']['Tables']['vehicles']['Row'];
 type MaintenanceLog = Database['public']['Tables']['maintenance_logs']['Row'];
@@ -41,6 +42,10 @@ function readAlertRegNumber(metadata: Json | null): string | null {
 
 function parseVehicleClass(value: string): VehicleClass {
   return value === 'rigid' || value === 'artic_unit' || value === 'trailer' || value === 'van' ? value : 'van';
+}
+
+function defaultPlanningClass(vehicleClass: VehicleClass): PlanningVehicleClass | null {
+  return vehicleClass === 'van' ? '3_5t' : vehicleClass === 'artic_unit' ? 'class_1' : vehicleClass === 'rigid' ? '7_5t' : null;
 }
 
 export function VehicleManagement({
@@ -1031,7 +1036,8 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
     loler_due_date: vehicle.loler_due_date || '',
     insurance_expiry: vehicle.insurance_expiry || '',
     current_odometer: vehicle.current_odometer,
-    vehicle_class: vehicle.vehicle_class
+    vehicle_class: vehicle.vehicle_class,
+    planning_vehicle_class: vehicle.planning_vehicle_class as PlanningVehicleClass | null
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1049,6 +1055,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
           insurance_expiry: formData.insurance_expiry || null,
           current_odometer: formData.current_odometer,
           vehicle_class: formData.vehicle_class,
+          planning_vehicle_class: formData.vehicle_class === 'trailer' ? null : formData.planning_vehicle_class,
           updated_at: new Date().toISOString()
         })
         .eq('id', vehicle.id);
@@ -1101,7 +1108,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
               <select
                 className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white"
                 value={formData.vehicle_class}
-                onChange={e => setFormData({...formData, vehicle_class: parseVehicleClass(e.target.value)})}
+                onChange={e => { const vehicleClass = parseVehicleClass(e.target.value); setFormData({...formData, vehicle_class: vehicleClass, planning_vehicle_class: defaultPlanningClass(vehicleClass)}); }}
               >
                 <option value="van">Van</option>
                 <option value="rigid">Rigid</option>
@@ -1109,6 +1116,7 @@ function EditVehicleDatesModal({ vehicle, onClose, onSuccess }: { vehicle: Vehic
                 <option value="trailer">Trailer</option>
               </select>
             </div>
+            {!isTrailer && <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Rota Vehicle Type</label><select required className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-bold bg-white" value={formData.planning_vehicle_class ?? ''} onChange={e => setFormData({...formData, planning_vehicle_class: e.target.value as PlanningVehicleClass})}>{allowedPlanningClassesForAsset(formData.vehicle_class).map(value => <option key={value} value={value}>{planningVehicleClassLabel(value)}</option>)}</select></div>}
             {!isTrailer && (
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.labels.odometer')} (km)</label>
@@ -1145,6 +1153,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
     year: new Date().getFullYear(),
     vehicle_type: 'Van',
     vehicle_class: 'van' as Vehicle['vehicle_class'],
+    planning_vehicle_class: '3_5t' as PlanningVehicleClass,
     vin_number: '',
     mot_due_date: '',
     pmi_due_date: '',
@@ -1243,7 +1252,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                 <select
                   className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 transition-all shadow-sm appearance-none cursor-pointer"
                   value={formData.vehicle_class}
-                  onChange={e => setFormData({...formData, vehicle_class: parseVehicleClass(e.target.value)})}
+                  onChange={e => { const vehicleClass = parseVehicleClass(e.target.value); setFormData({...formData, vehicle_class: vehicleClass, planning_vehicle_class: defaultPlanningClass(vehicleClass)}); }}
                 >
                   <option value="van">Van</option>
                   <option value="rigid">Rigid</option>
@@ -1251,6 +1260,7 @@ function AddVehicleModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                   <option value="trailer">Trailer</option>
                 </select>
               </div>
+              {!isTrailer && <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Rota Vehicle Type</label><select required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900 transition-all shadow-sm" value={formData.planning_vehicle_class ?? ''} onChange={e => setFormData({...formData, planning_vehicle_class: e.target.value as PlanningVehicleClass})}>{allowedPlanningClassesForAsset(formData.vehicle_class).map(value => <option key={value} value={value}>{planningVehicleClassLabel(value)}</option>)}</select></div>}
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">{t('fleet.modal.type')}</label>
                 <input required type="text" placeholder="e.g. 3.5t Panel Van" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white transition-all shadow-sm" value={formData.vehicle_type} onChange={e => setFormData({...formData, vehicle_type: e.target.value})} />

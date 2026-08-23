@@ -15,7 +15,7 @@ const workspace = readFileSync('src/components/manager/RotaPlanningWorkspace.tsx
 const requestKey = '11111111-1111-4111-8111-111111111111';
 const templateId = '22222222-2222-4222-8222-222222222222';
 const oneRequirement: RotaTemplateRequirementDraft[] = [{
-  id: 'row-1', cycleDay: 1, roleLabel: 'Day Driver', startTime: '08:00', endTime: '18:00', headcount: 5,
+  id: 'row-1', cycleDay: 1, roleLabel: 'Day Driver', startTime: '08:00', endTime: '18:00', headcount: 5, vehicleClass: '',
 }];
 
 afterEach(() => {
@@ -59,6 +59,7 @@ describe('Batch 24A rota template save reliability', () => {
         start_time: '08:00',
         end_time: '18:00',
         required_headcount: 5,
+        required_vehicle_class: null,
         sort_order: 0,
       }],
     });
@@ -97,7 +98,7 @@ describe('Batch 24A rota template save reliability', () => {
 
   it('serializes multiple requirements deterministically', () => {
     const payload = args([...oneRequirement, {
-      id: 'row-2', cycleDay: 2, roleLabel: ' Night Driver ', startTime: '18:00', endTime: '04:00', headcount: 3,
+      id: 'row-2', cycleDay: 2, roleLabel: ' Night Driver ', startTime: '18:00', endTime: '04:00', headcount: 3, vehicleClass: 'class_1',
     }]);
     expect(payload.p_slots).toEqual([
       expect.objectContaining({ cycle_day: 1, sort_order: 0 }),
@@ -173,7 +174,7 @@ describe('Batch 24A rota template save reliability', () => {
   it('keeps generated RPC arguments aligned and removes the unsafe detached generic cast', () => {
     expect(generatedTypes).toContain('create_cyclic_rota_template: {');
     expect(generatedTypes).toContain('p_request_key: string');
-    expect(workspace).toContain("supabase.rpc('create_cyclic_rota_template', payload).abortSignal(signal)");
+    expect(workspace.replace(/\s+/g, '')).toMatch(/supabase\.rpc\(["']create_cyclic_rota_template["'],payload\)\.abortSignal\(signal\)/);
     expect(workspace).not.toContain('supabase.rpc as unknown as');
     expect(workspace).toContain('const planningRpc: typeof supabase.rpc = supabase.rpc.bind(supabase);');
   });

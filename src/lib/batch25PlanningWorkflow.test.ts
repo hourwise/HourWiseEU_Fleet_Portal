@@ -81,7 +81,7 @@ describe('Batch 25 unified board workflows', () => {
   });
 
   it('has one weekly page with three representations and persistent stateful tools', () => {
-    expect(workspace).toContain("type PlannerView = 'coverage' | 'drivers' | 'runs'"); expect(workspace).toContain('Weekly planning board'); expect(workspace).toContain('<JobTray open={showJobTray}');
+    expect(workspace).toMatch(/type PlannerView = ["']coverage["'] \| ["']drivers["'] \| ["']runs["']/); expect(workspace).toContain('Weekly planning board'); expect(workspace).toMatch(/<JobTray\s+open=\{showJobTray\}/);
     expect(workspace).toContain('Manage patterns'); expect(workspace).toContain('Fill vacancies across week');
     expect(workspace).not.toContain("{ id: 'leave', label: 'Leave' }"); expect(workspace).not.toContain("{ id: 'templates', label: 'Templates' }"); expect(workspace).not.toContain("{ id: 'duties', label: 'Assigned duties' }");
   });
