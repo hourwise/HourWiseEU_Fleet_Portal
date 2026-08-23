@@ -43,9 +43,9 @@ describe('Batch 23 rota, workforce and dispatch contracts', () => {
     expect(migration).toContain('alter table public.planned_runs enable row level security');
   });
 
-  it('moves legacy cell-by-cell shift entry behind a secondary view', () => {
-    expect(workspace).toContain("{ id: 'duties', label: 'Assigned duties' }");
-    expect(workspace).toContain("activeView === 'duties'");
+  it('keeps legacy duty lifecycle behind a secondary register', () => {
+    expect(workspace).toContain('Open duty register');
+    expect(workspace).toContain('showDutyRegister');
     expect(workspace).not.toContain('<ShiftPlanner onOpenJobPlanner={onOpenJobPlanner} />\n    <DriverHoursPlanningPanel');
     expect(workspace).toContain('Rules need confirming');
   });
