@@ -3221,6 +3221,55 @@ export type Database = {
           },
         ]
       }
+      planning_bulk_assignment_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          request_key: string
+          result: Json
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          request_key: string
+          result: Json
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          request_key?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_bulk_assignment_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_bulk_assignment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships_v"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "planning_bulk_assignment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_reconciliation_runs: {
         Row: {
           batch_limit: number
@@ -7079,6 +7128,10 @@ export type Database = {
         Args: { p_job_assignment_id: string; p_original_file_name: string }
         Returns: Json
       }
+      bulk_assign_rota_positions: {
+        Args: { p_commit?: boolean; p_items: Json; p_request_key: string }
+        Returns: Json
+      }
       can_access_defect_photo_object: {
         Args: { p_name: string }
         Returns: boolean
@@ -7416,6 +7469,10 @@ export type Database = {
       }
       get_my_company_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
+      get_planning_recorded_work_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       get_planning_workspace_snapshot: {
         Args: { p_from: string; p_to: string }
         Returns: Json
